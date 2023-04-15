@@ -1,6 +1,6 @@
 export { createApp } from './app'
 export { nextTick } from './scheduler'
-export { reactive } from '@vue/reactivity'
+export { reactive, effect } from '@vue/reactivity'
 
 import { createApp } from './app'
 
