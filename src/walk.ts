@@ -42,7 +42,7 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {}
       ctx = createScopedContext(ctx, scope)
-      ctx.cleanups.push(registerScope(el, ctx.scope))
+      ctx.cleanups.push(registerScope(el, ctx.scope, exp || undefined))
       if (scope.$template) {
         resolveTemplate(el, scope.$template)
       }

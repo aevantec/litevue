@@ -9,6 +9,11 @@ export interface LiteVueDevtools {
    */
   scopes: Map<Element, Record<string, any>>
   /**
+   * Raw v-scope expressions for registered scope roots, for labeling in
+   * inspection UIs. App roots without v-scope have no entry.
+   */
+  exps: Map<Element, string>
+  /**
    * Find the scope governing a node by walking up the DOM to the nearest
    * registered scope root. Usable from the console: __LITE_VUE__.getScope($0)
    */
@@ -25,6 +30,15 @@ export interface LiteVueDevtools {
 }
 
 const scopes = new Map<Element, Record<string, any>>()
+const exps = new Map<Element, string>()
+
+let disabled = false
+
+// checked lazily so the flag also works when set after the lib loads but
+// before mount
+const isDisabled = () =>
+  disabled ||
+  (typeof window !== 'undefined' && window.__LITE_VUE_DEVTOOLS__ === false)
 
 const listeners: Record<DevtoolsEvent, Set<Listener>> = {
   'scope:mount': new Set(),
@@ -36,14 +50,20 @@ const emit = (event: DevtoolsEvent, ...args: any[]) => {
   listeners[event].forEach((fn) => fn(...args))
 }
 
+const noop = () => {}
+
 export const registerScope = (
   el: Element,
-  scope: Record<string, any>
+  scope: Record<string, any>,
+  exp?: string
 ): (() => void) => {
+  if (isDisabled()) return noop
   scopes.set(el, scope)
+  if (exp) exps.set(el, exp)
   emit('scope:mount', el, scope)
   return () => {
     if (scopes.delete(el)) {
+      exps.delete(el)
       emit('scope:unmount', el)
     }
   }
@@ -57,6 +77,7 @@ export const emitFlush = () => {
 
 export const devtools: LiteVueDevtools = {
   scopes,
+  exps,
   getScope(node) {
     let el: Element | null =
       node.nodeType === 1 ? (node as Element) : node.parentElement
@@ -75,12 +96,31 @@ export const devtools: LiteVueDevtools = {
   }
 }
 
-declare global {
-  interface Window {
-    __LITE_VUE__?: LiteVueDevtools
+/**
+ * Turn devtools off for production: stops scope registration, clears
+ * everything already registered, and removes window.__LITE_VUE__. For
+ * script-tag users, setting window.__LITE_VUE_DEVTOOLS__ = false before the
+ * library loads has the same effect.
+ */
+export const disableDevtools = () => {
+  disabled = true
+  scopes.clear()
+  exps.clear()
+  for (const event in listeners) {
+    listeners[event as DevtoolsEvent].clear()
+  }
+  if (typeof window !== 'undefined' && window.__LITE_VUE__ === devtools) {
+    delete window.__LITE_VUE__
   }
 }
 
-if (typeof window !== 'undefined') {
+declare global {
+  interface Window {
+    __LITE_VUE__?: LiteVueDevtools
+    __LITE_VUE_DEVTOOLS__?: boolean
+  }
+}
+
+if (typeof window !== 'undefined' && !isDisabled()) {
   window.__LITE_VUE__ = devtools
 }

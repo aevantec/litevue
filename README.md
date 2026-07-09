@@ -306,6 +306,69 @@ createApp({
 }).mount()
 ```
 
+## Devtools
+
+Every mounted app exposes a devtools registry on `window.__LITE_VUE__` (also exported as `devtools`). Scopes are live reactive objects — reading them is always current, and writing to them updates the page.
+
+From the browser console:
+
+```js
+// inspect the scope governing the element selected in the elements panel
+__LITE_VUE__.getScope($0)
+
+// live-edit state — the page reacts immediately
+__LITE_VUE__.getScope($0).count = 42
+
+// all mounted scope roots (app roots and v-scope elements)
+__LITE_VUE__.scopes
+```
+
+Subscribe to registry events (the basis for inspection UIs):
+
+```js
+const off = __LITE_VUE__.on('scope:mount', (el, scope) => { ... })
+__LITE_VUE__.on('scope:unmount', (el) => { ... })
+__LITE_VUE__.on('flush', () => { ... }) // reactive queue flushed; state may have changed
+```
+
+### Disabling in Production
+
+Devtools are on by default. To turn them off in production (no `window.__LITE_VUE__`, no scope registration):
+
+```html
+<!-- script-tag users: set the flag before the library loads -->
+<script>
+  window.__LITE_VUE_DEVTOOLS__ = false
+</script>
+<script src="https://unpkg.com/petite-vue" defer init></script>
+```
+
+```js
+// bundler users: call it once before mounting
+import { createApp, disableDevtools } from 'petite-vue'
+
+if (import.meta.env.PROD) disableDevtools()
+createApp().mount()
+```
+
+`disableDevtools()` also clears anything already registered, so calling it late is safe.
+
+### Inspector Panel
+
+A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~2.7kb gzipped) so it adds zero weight to the core. Load it after the library, during development only:
+
+```html
+<script src="https://unpkg.com/petite-vue" defer init></script>
+<script src="/path/to/lite-vue-devtools.iife.js" defer></script>
+```
+
+A `⚡ lite-vue` pill appears bottom-right and expands into a panel with:
+
+- a scope tree (app roots and `v-scope` elements, labeled with their expressions)
+- a state view separating own from inherited state, with inline editing of strings/numbers/booleans
+- hover-to-highlight the owning element on the page, and a `pick` mode to select a scope by clicking the page
+- the selected scope exposed as `window.$scope` for console access
+
 ## Examples
 
 Check out the [examples directory](https://github.com/vuejs/petite-vue/tree/main/examples).
