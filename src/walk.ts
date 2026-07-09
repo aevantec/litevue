@@ -8,6 +8,7 @@ import { evaluate } from './eval'
 import { checkAttr } from './utils'
 import { ref } from './directives/ref'
 import { Context, createScopedContext } from './context'
+import { registerScope } from './devtools'
 
 const dirRE = /^(?:v-|:|@)/
 const modifierRE = /\.([\w-]+)/g
@@ -41,6 +42,7 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {}
       ctx = createScopedContext(ctx, scope)
+      ctx.cleanups.push(registerScope(el, ctx.scope))
       if (scope.$template) {
         resolveTemplate(el, scope.$template)
       }

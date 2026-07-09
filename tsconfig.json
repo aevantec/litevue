@@ -10,6 +10,7 @@
     "allowJs": false,
     "strict": true,
     "noUnusedLocals": true,
+    "skipLibCheck": true,
     "rootDir": ".",
     "types": ["vite/client"]
   },

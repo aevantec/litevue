@@ -4,6 +4,7 @@ import { Directive } from './directives'
 import { bindContextMethods, createContext } from './context'
 import { toDisplayString } from './directives/text'
 import { nextTick } from './scheduler'
+import { devtools, registerScope } from './devtools'
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&')
@@ -78,7 +79,15 @@ export const createApp = (initialData?: any) => {
         )
       }
 
-      rootBlocks = roots.map((el) => new Block(el, ctx, true))
+      rootBlocks = roots.map((el) => {
+        const block = new Block(el, ctx, true)
+        // roots with v-scope are registered with their scoped context during
+        // walk; only register roots the walk didn't claim
+        if (!devtools.scopes.has(el)) {
+          ctx.cleanups.push(registerScope(el, ctx.scope))
+        }
+        return block
+      })
       return this
     },
 

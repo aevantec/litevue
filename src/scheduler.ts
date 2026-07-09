@@ -1,3 +1,5 @@
+import { emitFlush } from './devtools'
+
 let queued = false
 const queue: Function[] = []
 const p = Promise.resolve()
@@ -18,4 +20,5 @@ const flushJobs = () => {
   }
   queue.length = 0
   queued = false
+  emitFlush()
 }
