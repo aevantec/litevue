@@ -1,26 +1,23 @@
-# petite-vue
+# lite-vue
 
-`petite-vue` is an alternative distribution of [Vue](https://vuejs.org) optimized for [progressive enhancement](https://developer.mozilla.org/en-US/docs/Glossary/Progressive_Enhancement). It provides the same template syntax and reactivity mental model as standard Vue. However, it is specifically optimized for "sprinkling" a small amount of interactions on an existing HTML page rendered by a server framework. See more details on [how it differs from standard Vue](#comparison-with-standard-vue).
+`lite-vue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for [progressive enhancement](https://developer.mozilla.org/en-US/docs/Glossary/Progressive_Enhancement). It provides the same template syntax and reactivity mental model as standard Vue. However, it is specifically optimized for "sprinkling" a small amount of interactions on an existing HTML page rendered by a server framework. See more details on [how it differs from standard Vue](#comparison-with-standard-vue).
 
-- Only ~6kb
+- Only ~7kb
 - Vue-compatible template syntax
 - DOM-based, mutates in place
 - Driven by `@vue/reactivity`
+- Built-in [devtools](#devtools)
 
 ## Status
 
-- This is pretty new. There are probably bugs and there might still be API changes, so **use at your own risk.** Is it usable though? Very much. Check out the [examples](https://github.com/vuejs/petite-vue/tree/main/examples) to see what it's capable of.
-
-- The issue list is intentionally disabled because I have higher priority things to focus on for now and don't want to be distracted. If you found a bug, you'll have to either workaround it or submit a PR to fix it yourself. That said, feel free to use the discussions tab to help each other out.
-
-- Feature requests are unlikely to be accepted at this time - the scope of this project is intentionally kept to a bare minimum.
+- `lite-vue` continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Additions so far: a devtools registry and in-page inspector panel, plus compatibility fixes for modern `@vue/reactivity`.
 
 ## Usage
 
-`petite-vue` can be used without a build step. Simply load it from a CDN:
+`lite-vue` can be used without a build step. Simply load it from a CDN:
 
 ```html
-<script src="https://unpkg.com/petite-vue" defer init></script>
+<script src="https://unpkg.com/lite-vue" defer init></script>
 
 <!-- anywhere on the page -->
 <div v-scope="{ count: 0 }">
@@ -29,18 +26,18 @@
 </div>
 ```
 
-- Use `v-scope` to mark regions on the page that should be controlled by `petite-vue`.
+- Use `v-scope` to mark regions on the page that should be controlled by `lite-vue`.
 - The `defer` attribute makes the script execute after HTML content is parsed.
-- The `init` attribute tells `petite-vue` to automatically query and initialize all elements that have `v-scope` on the page.
+- The `init` attribute tells `lite-vue` to automatically query and initialize all elements that have `v-scope` on the page.
 
 ### Manual Init
 
 If you don't want the auto init, remove the `init` attribute and move the scripts to end of `<body>`:
 
 ```html
-<script src="https://unpkg.com/petite-vue"></script>
+<script src="https://unpkg.com/lite-vue"></script>
 <script>
-  PetiteVue.createApp().mount()
+  LiteVue.createApp().mount()
 </script>
 ```
 
@@ -48,7 +45,7 @@ Or, use the ES module build:
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/petite-vue?module'
+  import { createApp } from 'https://unpkg.com/lite-vue?module'
   createApp().mount()
 </script>
 ```
@@ -57,9 +54,9 @@ Or, use the ES module build:
 
 The short CDN URL is meant for prototyping. For production usage, use a fully resolved CDN URL to avoid resolving and redirect cost:
 
-- Global build: `https://unpkg.com/petite-vue@0.2.2/dist/petite-vue.iife.js`
-  - exposes `PetiteVue` global, supports auto init
-- ESM build: `https://unpkg.com/petite-vue@0.2.2/dist/petite-vue.es.js`
+- Global build: `https://unpkg.com/lite-vue@0.4.1/dist/lite-vue.iife.js`
+  - exposes `LiteVue` global, supports auto init
+- ESM build: `https://unpkg.com/lite-vue@0.4.1/dist/lite-vue.es.js`
   - Must be used with `<script type="module">`
 
 ### Root Scope
@@ -68,7 +65,7 @@ The `createApp` function accepts a data object that serves as the root scope for
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/petite-vue?module'
+  import { createApp } from 'https://unpkg.com/lite-vue?module'
 
   createApp({
     // exposed to all expressions
@@ -92,17 +89,17 @@ The `createApp` function accepts a data object that serves as the root scope for
 </div>
 ```
 
-Note `v-scope` doesn't need to have a value here and simply serves as a hint for `petite-vue` to process the element.
+Note `v-scope` doesn't need to have a value here and simply serves as a hint for `lite-vue` to process the element.
 
 ### Explicit Mount Target
 
-You can specify a mount target (selector or element) to limit `petite-vue` to only that region of the page:
+You can specify a mount target (selector or element) to limit `lite-vue` to only that region of the page:
 
 ```js
 createApp().mount('#only-this-div')
 ```
 
-This also means you can have multiple `petite-vue` apps to control different regions on the same page:
+This also means you can have multiple `lite-vue` apps to control different regions on the same page:
 
 ```js
 createApp({
@@ -147,13 +144,13 @@ Another example of replacing the `todo-focus` directive found in the original Vu
 
 ### Components
 
-The concept of "Components" are different in `petite-vue`, as it is much more bare-bones.
+The concept of "Components" are different in `lite-vue`, as it is much more bare-bones.
 
 First, reusable scope logic can be created with functions:
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/petite-vue?module'
+  import { createApp } from 'https://unpkg.com/lite-vue?module'
 
   function Counter(props) {
     return {
@@ -189,7 +186,7 @@ If you also want to reuse a piece of template, you can provide a special `$templ
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/petite-vue?module'
+  import { createApp } from 'https://unpkg.com/lite-vue?module'
 
   function Counter(props) {
     return {
@@ -224,7 +221,7 @@ You can use the `reactive` method (re-exported from `@vue/reactivity`) to create
 
 ```html
 <script type="module">
-  import { createApp, reactive } from 'https://unpkg.com/petite-vue?module'
+  import { createApp, reactive } from 'https://unpkg.com/lite-vue?module'
 
   const store = reactive({
     count: 0,
@@ -340,12 +337,12 @@ Devtools are on by default. To turn them off in production (no `window.__LITE_VU
 <script>
   window.__LITE_VUE_DEVTOOLS__ = false
 </script>
-<script src="https://unpkg.com/petite-vue" defer init></script>
+<script src="https://unpkg.com/lite-vue" defer init></script>
 ```
 
 ```js
 // bundler users: call it once before mounting
-import { createApp, disableDevtools } from 'petite-vue'
+import { createApp, disableDevtools } from 'lite-vue'
 
 if (import.meta.env.PROD) disableDevtools()
 createApp().mount()
@@ -358,7 +355,7 @@ createApp().mount()
 A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~2.7kb gzipped) so it adds zero weight to the core. Load it after the library, during development only:
 
 ```html
-<script src="https://unpkg.com/petite-vue" defer init></script>
+<script src="https://unpkg.com/lite-vue" defer init></script>
 <script src="/path/to/lite-vue-devtools.iife.js" defer></script>
 ```
 
@@ -371,11 +368,11 @@ A `⚡ lite-vue` pill appears bottom-right and expands into a panel with:
 
 ## Examples
 
-Check out the [examples directory](https://github.com/vuejs/petite-vue/tree/main/examples).
+Check out the [examples directory](https://github.com/abiacarl/lite-vue/tree/main/examples).
 
 ## Features
 
-### `petite-vue` only
+### `lite-vue` only
 
 - `v-scope`
 - `v-effect`
@@ -411,7 +408,7 @@ Check out the [examples directory](https://github.com/vuejs/petite-vue/tree/main
 Some features are dropped because they have a relatively low utility/size ratio in the context of progressive enhancement. If you need these features, you should probably just use standard Vue.
 
 - `ref()`, `computed()` etc.
-- Render functions (`petite-vue` has no virtual DOM)
+- Render functions (`lite-vue` has no virtual DOM)
 - Reactivity for Collection Types (Map, Set, etc., removed for smaller size)
 - Transition, KeepAlive, Teleport, Suspense
 - `v-for` deep destructure
@@ -421,7 +418,7 @@ Some features are dropped because they have a relatively low utility/size ratio 
 
 ## Comparison with standard Vue
 
-The point of `petite-vue` is not just about being small. It's about using the optimal implementation for the intended use case (progressive enhancement).
+The point of `lite-vue` is not just about being small. It's about using the optimal implementation for the intended use case (progressive enhancement).
 
 Standard Vue can be used with or without a build step. When using a build setup (e.g. with Single-File Components), we pre-compile all the templates so there's no template processing to be done at runtime. And thanks to tree-shaking, we can ship optional features in standard Vue that doesn't bloat your bundle size when not used. This is the optimal usage of standard Vue, but since it involves a build setup, it is better suited when building SPAs or apps with relatively heavy interactions.
 
@@ -432,27 +429,27 @@ When using standard Vue without a build step and mounting to in-DOM templates, i
 - The compiler then compiles the string into a JavaScript render function
 - Vue then replaces existing DOM templates with new DOM generated from the render function.
 
-`petite-vue` avoids all this overhead by walking the existing DOM and attaching fine-grained reactive effects to the elements directly. The DOM _is_ the template. This means `petite-vue` is much more efficient in progressive enhancement scenarios.
+`lite-vue` avoids all this overhead by walking the existing DOM and attaching fine-grained reactive effects to the elements directly. The DOM _is_ the template. This means `lite-vue` is much more efficient in progressive enhancement scenarios.
 
 This is also how Vue 1 worked. The trade-off here is that this approach is coupled to the DOM and thus not suitable for platform agnostic rendering or JavaScript SSR. We also lose the ability to work with render functions for advanced abstractions. However as you can probably tell, these capabilities are rarely needed in the context of progressive enhancement.
 
 ## Comparison with Alpine
 
-`petite-vue` is indeed addressing a similar scope to [Alpine](https://alpinejs.dev), but aims to be (1) even more minimal and (2) more Vue-compatible.
+`lite-vue` is indeed addressing a similar scope to [Alpine](https://alpinejs.dev), but aims to be (1) even more minimal and (2) more Vue-compatible.
 
-- `petite-vue` is around half the size of Alpine.
+- `lite-vue` is around half the size of Alpine.
 
-- `petite-vue` has no transition system (maybe this can be an opt-in plugin).
+- `lite-vue` has no transition system (maybe this can be an opt-in plugin).
 
 - Although Alpine largely resembles Vue's design, there are various cases where the behavior is different from Vue itself. It may also diverge more from Vue in the future. This is good because Alpine shouldn't have to restrict its design to strictly follow Vue - it should have the freedom to develop in a direction that makes sense for its goals.
 
-  In comparison, `petite-vue` will try to align with standard Vue behavior whenever possible so that there is less friction moving to standard Vue if needed. It's intended to be **part of the Vue ecosystem** to cover the progressive enhancement use case where standard Vue is less optimized for nowadays.
+  In comparison, `lite-vue` will try to align with standard Vue behavior whenever possible so that there is less friction moving to standard Vue if needed. It's intended to be **part of the Vue ecosystem** to cover the progressive enhancement use case where standard Vue is less optimized for nowadays.
 
 ## Security and CSP
 
-`petite-vue` evaluates JavaScript expressions in the templates. This means **if** `petite-vue` is mounted on a region of the DOM that contains non-sanitized HTML from user data, it may lead to XSS attacks. **If your page renders user-submitted HTML, you should prefer initializing `petite-vue` using [explicit mount target](#explicit-mount-target) so that it only processes parts that are controlled by you**. You can also sanitize any user-submitted HTML for the `v-scope` attribute.
+`lite-vue` evaluates JavaScript expressions in the templates. This means **if** `lite-vue` is mounted on a region of the DOM that contains non-sanitized HTML from user data, it may lead to XSS attacks. **If your page renders user-submitted HTML, you should prefer initializing `lite-vue` using [explicit mount target](#explicit-mount-target) so that it only processes parts that are controlled by you**. You can also sanitize any user-submitted HTML for the `v-scope` attribute.
 
-`petite-vue` evaluates the expressions using `new Function()`, which may be prohibited in strict CSP settings. There is no plan to provide a CSP build because it involves shipping an expression parser which defeats the purpose of being lightweight. If you have strict CSP requirements, you should probably use standard Vue and pre-compile the templates.
+`lite-vue` evaluates the expressions using `new Function()`, which may be prohibited in strict CSP settings. There is no plan to provide a CSP build because it involves shipping an expression parser which defeats the purpose of being lightweight. If you have strict CSP requirements, you should probably use standard Vue and pre-compile the templates.
 
 ## License
 

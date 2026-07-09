@@ -72,9 +72,9 @@ export const createApp = (initialData?: any) => {
         roots[0] === document.documentElement
       ) {
         console.warn(
-          `Mounting on documentElement - this is non-optimal as petite-vue ` +
+          `Mounting on documentElement - this is non-optimal as lite-vue ` +
             `will be forced to crawl the entire page's DOM. ` +
-            `Consider explicitly marking elements controlled by petite-vue ` +
+            `Consider explicitly marking elements controlled by lite-vue ` +
             `with \`v-scope\`.`
         )
       }
