@@ -1,7 +1,7 @@
 <script type="module">
-  import { createApp, reactive } from '../src'
+  import { createApp, reactive } from '../src';
 
-  const API_URL = `https://api.github.com/repos/vuejs/vue-next/commits?per_page=3&sha=`
+  const API_URL = `https://api.github.com/repos/vuejs/vue-next/commits?per_page=3&sha=`;
 
   createApp({
     branches: ['master', 'v2-compat'],
@@ -9,22 +9,22 @@
     commits: null,
 
     truncate(v) {
-      const newline = v.indexOf('\n')
-      return newline > 0 ? v.slice(0, newline) : v
+      const newline = v.indexOf('\n');
+      return newline > 0 ? v.slice(0, newline) : v;
     },
 
     formatDate(v) {
-      return v.replace(/T|Z/g, ' ')
+      return v.replace(/T|Z/g, ' ');
     },
 
     fetchData() {
       fetch(`${API_URL}${this.currentBranch}`)
         .then((res) => res.json())
         .then((data) => {
-          this.commits = data
-        })
-    }
-  }).mount()
+          this.commits = data;
+        });
+    },
+  }).mount();
 </script>
 
 <div v-scope v-effect="fetchData()">
@@ -69,7 +69,8 @@
     line-height: 1.5em;
     margin-bottom: 20px;
   }
-  .author, .date {
+  .author,
+  .date {
     font-weight: bold;
   }
 </style>

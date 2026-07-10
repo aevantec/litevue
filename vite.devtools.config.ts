@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 // separate build for the standalone devtools panel bundle so it never adds
 // weight to the core library
 export default defineConfig({
   esbuild: {
-    minify: true
+    minify: true,
   },
   build: {
     target: 'esnext',
@@ -14,15 +14,15 @@ export default defineConfig({
       format: {
         // escape non-ASCII (⚡ ▶ ƒ …) so the panel's icons render correctly
         // on pages served without an explicit utf-8 charset
-        ascii_only: true
-      }
+        ascii_only: true,
+      },
     },
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',
       formats: ['iife'],
-      fileName: () => 'lite-vue-devtools.iife.js'
-    }
-  }
-})
+      fileName: () => 'lite-vue-devtools.iife.js',
+    },
+  },
+});

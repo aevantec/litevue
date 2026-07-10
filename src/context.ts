@@ -1,23 +1,23 @@
 import {
   effect as rawEffect,
   reactive,
-  ReactiveEffectRunner
-} from '@vue/reactivity'
-import { hasOwn } from '@vue/shared'
-import { Block } from './block'
-import { Directive } from './directives'
-import { queueJob } from './scheduler'
-import { inOnce } from './walk'
+  ReactiveEffectRunner,
+} from '@vue/reactivity';
+import { hasOwn } from '@vue/shared';
+import { Block } from './block';
+import { Directive } from './directives';
+import { queueJob } from './scheduler';
+import { inOnce } from './walk';
 export interface Context {
-  key?: any
-  scope: Record<string, any>
-  dirs: Record<string, Directive>
-  blocks: Block[]
-  effect: typeof rawEffect
-  effects: ReactiveEffectRunner[]
-  cleanups: (() => void)[]
-  delimiters: [string, string]
-  delimitersRE: RegExp
+  key?: any;
+  scope: Record<string, any>;
+  dirs: Record<string, Directive>;
+  blocks: Block[];
+  effect: typeof rawEffect;
+  effects: ReactiveEffectRunner[];
+  cleanups: (() => void)[];
+  delimiters: [string, string];
+  delimitersRE: RegExp;
 }
 
 export const createContext = (parent?: Context): Context => {
@@ -32,24 +32,24 @@ export const createContext = (parent?: Context): Context => {
     cleanups: [],
     effect: (fn) => {
       if (inOnce) {
-        queueJob(fn)
-        return fn as any
+        queueJob(fn);
+        return fn as any;
       }
       const e: ReactiveEffectRunner = rawEffect(fn, {
-        scheduler: () => queueJob(e)
-      })
-      ctx.effects.push(e)
-      return e
-    }
-  }
-  return ctx
-}
+        scheduler: () => queueJob(e),
+      });
+      ctx.effects.push(e);
+      return e;
+    },
+  };
+  return ctx;
+};
 
 export const createScopedContext = (ctx: Context, data = {}): Context => {
-  const parentScope = ctx.scope
-  const mergedScope = Object.create(parentScope)
-  Object.defineProperties(mergedScope, Object.getOwnPropertyDescriptors(data))
-  mergedScope.$refs = Object.create(parentScope.$refs)
+  const parentScope = ctx.scope;
+  const mergedScope = Object.create(parentScope);
+  Object.defineProperties(mergedScope, Object.getOwnPropertyDescriptors(data));
+  mergedScope.$refs = Object.create(parentScope.$refs);
   const reactiveProxy = reactive(
     new Proxy(mergedScope, {
       set(target, key, val, receiver) {
@@ -60,24 +60,24 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
         // parent reactive proxy, whose instrumented hasOwnProperty
         // (@vue/reactivity >= 3.2.46) recurses infinitely on this proxy
         if (receiver === reactiveProxy && !hasOwn(target, key)) {
-          return Reflect.set(parentScope, key, val)
+          return Reflect.set(parentScope, key, val);
         }
-        return Reflect.set(target, key, val, receiver)
-      }
+        return Reflect.set(target, key, val, receiver);
+      },
     })
-  )
+  );
 
-  bindContextMethods(reactiveProxy)
+  bindContextMethods(reactiveProxy);
   return {
     ...ctx,
-    scope: reactiveProxy
-  }
-}
+    scope: reactiveProxy,
+  };
+};
 
 export const bindContextMethods = (scope: Record<string, any>) => {
   for (const key of Object.keys(scope)) {
     if (typeof scope[key] === 'function') {
-      scope[key] = scope[key].bind(scope)
+      scope[key] = scope[key].bind(scope);
     }
   }
-}
+};

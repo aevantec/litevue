@@ -1,9 +1,9 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
   esbuild: {
-    minify: true
+    minify: true,
   },
   build: {
     target: 'esnext',
@@ -12,13 +12,13 @@ export default defineConfig({
       format: {
         // escape non-ASCII so bundles render correctly on pages served
         // without an explicit utf-8 charset
-        ascii_only: true
-      }
+        ascii_only: true,
+      },
     },
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'LiteVue',
-      formats: ['es', 'umd', 'iife']
+      formats: ['es', 'umd', 'iife'],
     },
     rollupOptions: {
       plugins: [
@@ -28,11 +28,11 @@ export default defineConfig({
             if (id.endsWith('reactivity.esm-bundler.js')) {
               return code
                 .replace(`mutableCollectionHandlers,`, `null,`)
-                .replace(`readonlyCollectionHandlers,`, `null,`)
+                .replace(`readonlyCollectionHandlers,`, `null,`);
             }
-          }
-        }
-      ]
-    }
-  }
-})
+          },
+        },
+      ],
+    },
+  },
+});

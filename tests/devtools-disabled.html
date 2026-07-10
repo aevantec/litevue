@@ -1,11 +1,11 @@
 <!-- classic script runs before the deferred module below, so the flag is set
      before the library evaluates -->
 <script>
-  window.__LITE_VUE_DEVTOOLS__ = false
+  window.__LITE_VUE_DEVTOOLS__ = false;
 </script>
 <script type="module">
-  import { createApp } from '../src'
-  createApp().mount()
+  import { createApp } from '../src';
+  createApp().mount();
 </script>
 
 <div id="app" v-scope="{ msg: 'devtools disabled', count: 0 }">

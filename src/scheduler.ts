@@ -1,24 +1,24 @@
-import { emitFlush } from './devtools'
+import { emitFlush } from './devtools';
 
-let queued = false
-const queue: Function[] = []
-const p = Promise.resolve()
+let queued = false;
+const queue: Function[] = [];
+const p = Promise.resolve();
 
-export const nextTick = (fn: () => void) => p.then(fn)
+export const nextTick = (fn: () => void) => p.then(fn);
 
 export const queueJob = (job: Function) => {
-  if (!queue.includes(job)) queue.push(job)
+  if (!queue.includes(job)) queue.push(job);
   if (!queued) {
-    queued = true
-    nextTick(flushJobs)
+    queued = true;
+    nextTick(flushJobs);
   }
-}
+};
 
 const flushJobs = () => {
   for (const job of queue) {
-    job()
+    job();
   }
-  queue.length = 0
-  queued = false
-  emitFlush()
-}
+  queue.length = 0;
+  queued = false;
+  emitFlush();
+};

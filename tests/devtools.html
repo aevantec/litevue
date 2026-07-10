@@ -1,18 +1,18 @@
 <script type="module">
-  import { createApp } from '../src'
+  import { createApp } from '../src';
 
-  window.events = []
+  window.events = [];
   __LITE_VUE__.on('scope:mount', (el, scope) => {
-    window.events.push(['mount', el.id || el.tagName])
-  })
+    window.events.push(['mount', el.id || el.tagName]);
+  });
   __LITE_VUE__.on('scope:unmount', (el) => {
-    window.events.push(['unmount', el.id || el.tagName])
-  })
+    window.events.push(['unmount', el.id || el.tagName]);
+  });
   __LITE_VUE__.on('flush', () => {
-    window.events.push(['flush'])
-  })
+    window.events.push(['flush']);
+  });
 
-  createApp().mount()
+  createApp().mount();
 </script>
 
 <div id="outer" v-scope="{ msg: 'hello', show: true }">

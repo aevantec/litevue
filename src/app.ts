@@ -1,69 +1,69 @@
-import { reactive } from '@vue/reactivity'
-import { Block } from './block'
-import { Directive } from './directives'
-import { bindContextMethods, createContext } from './context'
-import { toDisplayString } from './directives/text'
-import { nextTick } from './scheduler'
-import { devtools, registerScope } from './devtools'
+import { reactive } from '@vue/reactivity';
+import { Block } from './block';
+import { Directive } from './directives';
+import { bindContextMethods, createContext } from './context';
+import { toDisplayString } from './directives/text';
+import { nextTick } from './scheduler';
+import { devtools, registerScope } from './devtools';
 
 const escapeRegex = (str: string) =>
-  str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&')
+  str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
 
 export const createApp = (initialData?: any) => {
   // root context
-  const ctx = createContext()
+  const ctx = createContext();
   if (initialData) {
-    ctx.scope = reactive(initialData)
-    bindContextMethods(ctx.scope)
+    ctx.scope = reactive(initialData);
+    bindContextMethods(ctx.scope);
 
     // handle custom delimiters
     if (initialData.$delimiters) {
-      const [open, close] = (ctx.delimiters = initialData.$delimiters)
+      const [open, close] = (ctx.delimiters = initialData.$delimiters);
       ctx.delimitersRE = new RegExp(
         escapeRegex(open) + '([^]+?)' + escapeRegex(close),
         'g'
-      )
+      );
     }
   }
 
   // global internal helpers
-  ctx.scope.$s = toDisplayString
-  ctx.scope.$nextTick = nextTick
-  ctx.scope.$refs = Object.create(null)
+  ctx.scope.$s = toDisplayString;
+  ctx.scope.$nextTick = nextTick;
+  ctx.scope.$refs = Object.create(null);
 
-  let rootBlocks: Block[]
+  let rootBlocks: Block[];
 
   return {
     directive(name: string, def?: Directive) {
       if (def) {
-        ctx.dirs[name] = def
-        return this
+        ctx.dirs[name] = def;
+        return this;
       } else {
-        return ctx.dirs[name]
+        return ctx.dirs[name];
       }
     },
 
     mount(el?: string | Element | null) {
       if (typeof el === 'string') {
-        el = document.querySelector(el)
+        el = document.querySelector(el);
         if (!el) {
           import.meta.env.DEV &&
-            console.error(`selector ${el} has no matching element.`)
-          return
+            console.error(`selector ${el} has no matching element.`);
+          return;
         }
       }
 
-      el = el || document.documentElement
-      let roots: Element[]
+      el = el || document.documentElement;
+      let roots: Element[];
       if (el.hasAttribute('v-scope')) {
-        roots = [el]
+        roots = [el];
       } else {
         roots = [...el.querySelectorAll(`[v-scope]`)].filter(
           (root) => !root.matches(`[v-scope] [v-scope]`)
-        )
+        );
       }
       if (!roots.length) {
-        roots = [el]
+        roots = [el];
       }
 
       if (
@@ -76,27 +76,27 @@ export const createApp = (initialData?: any) => {
             `will be forced to crawl the entire page's DOM. ` +
             `Consider explicitly marking elements controlled by lite-vue ` +
             `with \`v-scope\`.`
-        )
+        );
       }
 
       rootBlocks = roots.map((el) => {
         // read v-name before walk strips it from the element
-        const name = el.getAttribute('v-name')
-        const block = new Block(el, ctx, true)
+        const name = el.getAttribute('v-name');
+        const block = new Block(el, ctx, true);
         // roots with v-scope are registered with their scoped context during
         // walk; only register roots the walk didn't claim
         if (!devtools.scopes.has(el)) {
           ctx.cleanups.push(
             registerScope(el, ctx.scope, undefined, name || undefined)
-          )
+          );
         }
-        return block
-      })
-      return this
+        return block;
+      });
+      return this;
     },
 
     unmount() {
-      rootBlocks.forEach((block) => block.teardown())
-    }
-  }
-}
+      rootBlocks.forEach((block) => block.teardown());
+    },
+  };
+};
