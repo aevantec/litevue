@@ -113,6 +113,26 @@ const css = `
   min-width: 0;
   border-right: 1px solid var(--border);
 }
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+.tab {
+  flex: 1;
+  padding: 4px 0;
+  text-align: center;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--fg);
+}
+.tab.active {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
 .filter {
   margin: 6px 6px 2px;
   background: var(--bg2);
@@ -265,8 +285,12 @@ let pickBtn: HTMLElement;
 let themeBtn: HTMLElement;
 let highlightEl: HTMLElement;
 let selected: Element | null = null;
+let selectedStore: string | null = null;
 let picking = false;
 let filterText = '';
+let activeTab: 'Elements' | 'Stores' = 'Elements';
+let elementsTab: HTMLElement;
+let storesTab: HTMLElement;
 
 const icon = (paths: string) =>
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
@@ -398,37 +422,94 @@ const hideHighlight = () => {
 
 const select = (el: Element | null) => {
   if (el !== selected) expandedPaths.clear();
+  selectedStore = null;
   selected = el;
+  activeTab = 'Elements';
   (window as any).$scope = el ? devtools.scopes.get(el) : undefined;
   renderTree();
   renderState();
 };
 
+const selectStore = (name: string) => {
+  if (name !== selectedStore) expandedPaths.clear();
+  selected = null;
+  selectedStore = name;
+  activeTab = 'Stores';
+  (window as any).$scope = devtools.stores.get(name);
+  renderTree();
+  renderState();
+};
+
+const switchTab = (tab: 'Elements' | 'Stores') => {
+  activeTab = tab;
+  renderTree();
+};
+
 const nameOf = (el: Element) =>
   devtools.names.get(el) || el.id || el.tagName.toLowerCase();
 
+const renderTabs = () => {
+  const storeCount = devtools.stores ? devtools.stores.size : 0;
+  elementsTab.textContent = `Elements (${devtools.scopes.size})`;
+  elementsTab.className = activeTab === 'Elements' ? 'tab active' : 'tab';
+  storesTab.textContent = `Stores (${storeCount})`;
+  storesTab.className = activeTab === 'Stores' ? 'tab active' : 'tab';
+};
+
 const renderTree = () => {
+  renderTabs();
   treeEl.textContent = '';
-  const roots = [...devtools.scopes.keys()]
-    .filter((el) => nameOf(el).toLowerCase().includes(filterText))
-    .sort((a, b) =>
-      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-    );
-  if (!roots.length) {
+
+  if (activeTab === 'Elements') {
+    const roots = [...devtools.scopes.keys()]
+      .filter((el) => nameOf(el).toLowerCase().includes(filterText))
+      .sort((a, b) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+      );
+    if (!roots.length) {
+      treeEl.appendChild(
+        h(
+          'div',
+          'empty',
+          filterText ? 'no matching scopes' : 'no scopes mounted'
+        )
+      );
+      return;
+    }
+    for (const el of roots) {
+      const row = h('div', el === selected ? 'row sel' : 'row');
+      row.style.paddingLeft = 8 + depthOf(el) * 12 + 'px';
+      row.appendChild(tagOf(el));
+      const exp = devtools.exps.get(el);
+      if (exp) row.appendChild(h('span', 'exp', ' ' + exp));
+      row.onclick = () => select(el);
+      row.onmouseenter = () => showHighlight(el);
+      row.onmouseleave = hideHighlight;
+      treeEl.appendChild(row);
+    }
+    return;
+  }
+
+  const storeNames = [
+    ...(devtools.stores ? devtools.stores.keys() : []),
+  ].filter((n) => n.toLowerCase().includes(filterText));
+  if (!storeNames.length) {
     treeEl.appendChild(
-      h('div', 'empty', filterText ? 'no matching scopes' : 'no scopes mounted')
+      h(
+        'div',
+        'empty',
+        filterText ? 'no matching stores' : 'no stores registered'
+      )
     );
     return;
   }
-  for (const el of roots) {
-    const row = h('div', el === selected ? 'row sel' : 'row');
-    row.style.paddingLeft = 8 + depthOf(el) * 12 + 'px';
-    row.appendChild(tagOf(el));
-    const exp = devtools.exps.get(el);
-    if (exp) row.appendChild(h('span', 'exp', ' ' + exp));
-    row.onclick = () => select(el);
-    row.onmouseenter = () => showHighlight(el);
-    row.onmouseleave = hideHighlight;
+  for (const name of storeNames) {
+    const row = h('div', name === selectedStore ? 'row sel' : 'row');
+    const label = h('span', 'label');
+    label.appendChild(h('span', 'punct', '$store.'));
+    label.appendChild(h('span', 'name', name));
+    row.appendChild(label);
+    row.onclick = () => selectStore(name);
     treeEl.appendChild(row);
   }
 };
@@ -437,12 +518,15 @@ const renderState = () => {
   // don't clobber an in-progress edit
   if (stateEl.contains(shadow.activeElement)) return;
   stateEl.textContent = '';
-  if (!selected) {
-    stateEl.appendChild(h('div', 'empty', 'select a scope'));
+  const scope = selectedStore
+    ? devtools.stores.get(selectedStore)
+    : selected
+      ? devtools.scopes.get(selected)
+      : undefined;
+  if (!scope) {
+    stateEl.appendChild(h('div', 'empty', 'Select a scope'));
     return;
   }
-  const scope = devtools.scopes.get(selected);
-  if (!scope) return;
   const { own, inherited } = collectProps(scope);
   own.forEach((k) => addNode(k, scope, k, 0, 'prop', []));
   if (inherited.length) {
@@ -501,8 +585,12 @@ const addNode = (
 
   row.appendChild(h('span', 'spacer'));
   row.appendChild(h('span', 'key', key));
+  const desc = Object.getOwnPropertyDescriptor(container, key);
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
+  } else if (desc && desc.get && !desc.set) {
+    // getter without setter (e.g. computed store props) — read-only
+    row.appendChild(h('span', 'preview', fmt(v)));
   } else if (typeof v === 'boolean') {
     row.appendChild(h('span', 'bool', String(v)));
 
@@ -652,8 +740,16 @@ const build = () => {
 
   const body = h('div', 'body');
   const side = h('div', 'side');
+  const tabs = h('div', 'tabs');
+  elementsTab = h('div', 'tab active');
+  elementsTab.onclick = () => switchTab('Elements');
+  storesTab = h('div', 'tab');
+  storesTab.onclick = () => switchTab('Stores');
+  tabs.appendChild(elementsTab);
+  tabs.appendChild(storesTab);
+  side.appendChild(tabs);
   const filterInput = h('input', 'filter') as HTMLInputElement;
-  filterInput.placeholder = 'filter by name';
+  filterInput.placeholder = 'Filter by name';
   filterInput.oninput = () => {
     filterText = filterInput.value.trim().toLowerCase();
     renderTree();
@@ -681,6 +777,10 @@ const build = () => {
     if (el === selected) selected = null;
     scheduleRender();
   });
+  // guard for panels loaded against a core built before stores existed
+  if (devtools.stores) {
+    devtools.on('store:register', scheduleRender);
+  }
   devtools.on('flush', scheduleRender);
 };
 

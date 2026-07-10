@@ -1,4 +1,8 @@
-export type DevtoolsEvent = 'scope:mount' | 'scope:unmount' | 'flush';
+export type DevtoolsEvent =
+  | 'scope:mount'
+  | 'scope:unmount'
+  | 'store:register'
+  | 'flush';
 
 type Listener = (...args: any[]) => void;
 
@@ -19,6 +23,11 @@ export interface LiteVueDevtools {
    */
   names: Map<Element, string>;
   /**
+   * Global stores registered via store(), keyed by name. Store objects are
+   * reactive — writing to one updates every app using it.
+   */
+  stores: Map<string, Record<string, any>>;
+  /**
    * Find the scope governing a node by walking up the DOM to the nearest
    * registered scope root. Usable from the console: __LITE_VUE__.getScope($0)
    */
@@ -33,6 +42,7 @@ export interface LiteVueDevtools {
    * - 'scope:mount' (el, scope): a scope was registered. May fire again for
    *   the same element (upsert semantics).
    * - 'scope:unmount' (el): a scope root was torn down.
+   * - 'store:register' (name, store): a global store was registered.
    * - 'flush': the reactive job queue flushed; state may have changed.
    */
   on(event: DevtoolsEvent, fn: Listener): () => void;
@@ -42,6 +52,7 @@ export interface LiteVueDevtools {
 const scopes = new Map<Element, Record<string, any>>();
 const exps = new Map<Element, string>();
 const names = new Map<Element, string>();
+const storeMap = new Map<string, Record<string, any>>();
 
 let disabled = false;
 
@@ -54,6 +65,7 @@ const isDisabled = () =>
 const listeners: Record<DevtoolsEvent, Set<Listener>> = {
   'scope:mount': new Set(),
   'scope:unmount': new Set(),
+  'store:register': new Set(),
   flush: new Set(),
 };
 
@@ -83,6 +95,12 @@ export const registerScope = (
   };
 };
 
+export const registerStore = (name: string, store: Record<string, any>) => {
+  if (isDisabled()) return;
+  storeMap.set(name, store);
+  emit('store:register', name, store);
+};
+
 export const emitFlush = () => {
   if (listeners.flush.size) {
     emit('flush');
@@ -93,6 +111,7 @@ export const devtools: LiteVueDevtools = {
   scopes,
   exps,
   names,
+  stores: storeMap,
   getScopeByName(name) {
     for (const [el, n] of names) {
       if (n === name) return scopes.get(el);
@@ -127,6 +146,7 @@ export const disableDevtools = () => {
   scopes.clear();
   exps.clear();
   names.clear();
+  storeMap.clear();
   for (const event in listeners) {
     listeners[event as DevtoolsEvent].clear();
   }

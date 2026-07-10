@@ -1,4 +1,5 @@
 import { reactive } from '@vue/reactivity';
+import { registerStore } from './devtools';
 
 // the registry itself is reactive, so expressions reading $store.<name>
 // re-evaluate when a store is registered later
@@ -21,6 +22,7 @@ export const store = <T extends Record<string, any>>(
     if (typeof stores[name].init === 'function') {
       stores[name].init();
     }
+    registerStore(name, stores[name]);
   }
   return stores[name];
 };

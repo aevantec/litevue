@@ -1,6 +1,18 @@
 <script type="module">
-  import { createApp } from '../src';
+  import { createApp, store } from '../src';
   import '../src/devtools-panel';
+
+  store('cart', {
+    items: ['a'],
+    open: false,
+    add(item) {
+      this.items.push(item);
+    },
+    get total() {
+      return this.items.length;
+    },
+  });
+
   createApp().mount();
 </script>
 
@@ -10,7 +22,7 @@
     count: 0,
     label: 'clicks',
     enabled: true,
-    user: { name: 'carl', meta: { admin: true, tags: ['dev', 'vue'] } }
+    user: { name: 'John Doe', meta: { admin: true, tags: ['dev', 'vue'] } }
   }"
 >
   <p id="count-display">{{ label }}: {{ count }}</p>
@@ -30,6 +42,8 @@
 </div>
 
 <div id="list" v-name="cart" v-scope="{ items: ['a', 'b'], show: true }">
+  <span id="store-total">total: {{ $store.cart.total }}</span>
+  <button id="store-add" @click="$store.cart.add('x')">add to store</button>
   <button id="toggle" @click="show = !show">toggle</button>
   <ul v-if="show">
     <li v-for="item in items">{{ item }}</li>
