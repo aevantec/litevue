@@ -1,0 +1,63 @@
+<style>
+  #box {
+    width: 40px;
+    height: 40px;
+    background: #42b883;
+    opacity: 1;
+    transition: opacity 0.05s;
+  }
+  #box.fade {
+    opacity: 0;
+  }
+  @keyframes pop {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.2);
+    }
+  }
+  #box.popping {
+    animation: pop 0.05s;
+  }
+</style>
+
+<script type="module">
+  import { createApp } from '../src';
+  createApp({
+    open: true,
+    moves: 0,
+    scrolls: 0,
+    keys: 0,
+    stage: 'idle',
+    popping: false,
+    pops: 0,
+    trackWindow: true,
+  }).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <div id="dropdown" v-show="open" @click.outside="open = false">dropdown</div>
+
+  <div id="pad" @mousemove.debounce-100="moves++">moves: {{ moves }}</div>
+
+  <div v-if="trackWindow">
+    <span id="scrolls" @scroll.window.throttle-100="scrolls++"
+      >scrolls: {{ scrolls }}</span
+    >
+  </div>
+  <button id="stop-tracking" @click="trackWindow = false">stop</button>
+
+  <input id="field" @keyup.enter.debounce-50="keys++" />
+  <span id="keys">keys: {{ keys }}</span>
+
+  <!-- animation chain: fading -> (transitionend on opacity only) -> faded,
+       then pops counted only for the `pop` animation by name -->
+  <div
+    id="box"
+    :class="{ fade: stage === 'fading', popping: popping }"
+    @transitionend.prop-opacity="stage = 'faded'"
+    @animationend.name-pop="popping = false; pops++"
+  ></div>
+  <span id="stage">{{ stage }} / pops: {{ pops }}</span>
+</div>
