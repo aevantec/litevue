@@ -1,6 +1,5 @@
 import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
-import { listen } from '../utils';
 import { nextTick } from '../scheduler';
 
 // same as vue 2
@@ -28,6 +27,10 @@ const modifierGuards: Record<
   exact: (e, modifiers) =>
     systemModifiers.some((m) => (e as any)[`${m}Key`] && !modifiers[m]),
 };
+
+// modifiers that are never key-name filters on keyboard events
+const nonKeyModifierRE =
+  /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
 export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   if (!arg) {
@@ -62,9 +65,49 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       if (modifiers.middle) arg = 'mouseup';
     }
 
-    const raw = handler;
+    // rate-limit only the user callback so guards like .prevent still act
+    // on the event synchronously
+    let invoke = handler;
+    for (const key in modifiers) {
+      let m = /^debounce(?:-(\d+))?$/.exec(key);
+      if (m) {
+        const fn = invoke;
+        const ms = m[1] ? +m[1] : 250;
+        let t: ReturnType<typeof setTimeout>;
+        invoke = (e: Event) => {
+          clearTimeout(t);
+          t = setTimeout(fn, ms, e);
+        };
+        continue;
+      }
+      m = /^throttle(?:-(\d+))?$/.exec(key);
+      if (m) {
+        const fn = invoke;
+        const ms = m[1] ? +m[1] : 250;
+        let last = 0;
+        invoke = (e: Event) => {
+          const now = Date.now();
+          if (now - last >= ms) {
+            last = now;
+            fn(e);
+          }
+        };
+      }
+    }
+
+    const keyFilter = Object.keys(modifiers).filter(
+      (k) => !nonKeyModifierRE.test(k)
+    );
+
     handler = (e: Event) => {
-      if ('key' in e && !(hyphenate((e as KeyboardEvent).key) in modifiers)) {
+      if (modifiers.outside && el.contains(e.target as Node)) {
+        return;
+      }
+      if (
+        'key' in e &&
+        keyFilter.length &&
+        !(hyphenate((e as KeyboardEvent).key) in modifiers)
+      ) {
         return;
       }
       for (const key in modifiers) {
@@ -72,10 +115,37 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
         if (guard && guard(e, modifiers)) {
           return;
         }
+        // animation/transition event filters: @transitionend.prop-opacity,
+        // @animationend.name-bounce
+        if (
+          key.startsWith('prop-') &&
+          'propertyName' in e &&
+          (e as TransitionEvent).propertyName !== key.slice(5)
+        ) {
+          return;
+        }
+        if (
+          key.startsWith('name-') &&
+          'animationName' in e &&
+          (e as AnimationEvent).animationName !== key.slice(5)
+        ) {
+          return;
+        }
       }
-      return raw(e);
+      return invoke(e);
     };
   }
 
-  listen(el, arg, handler, modifiers);
+  // .window/.document/.outside listen beyond the element, so they need
+  // explicit cleanup — the element's own listeners die with it
+  const target: EventTarget = modifiers?.window
+    ? window
+    : modifiers?.document || modifiers?.outside
+    ? document
+    : el;
+  const event = arg;
+  target.addEventListener(event, handler, modifiers);
+  if (target !== el) {
+    return () => target.removeEventListener(event, handler, modifiers);
+  }
 };

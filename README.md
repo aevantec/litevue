@@ -321,6 +321,35 @@ const html = ({ el, get, effect }) => {
 }
 ```
 
+### Extra Event Modifiers
+
+On top of Vue's standard `v-on` modifiers (`.stop`, `.prevent`, `.self`, key/mouse filters, `.once`, `.capture`, `.passive`), lite-vue adds:
+
+- **`.window` / `.document`** — attach the listener to `window`/`document` instead of the element (cleaned up when the element unmounts):
+
+  ```html
+  <div @scroll.window.throttle-100="onScroll"></div>
+  ```
+
+- **`.outside`** — fire only for events originating outside the element (dropdowns, modals):
+
+  ```html
+  <div v-show="open" @click.outside="open = false">…</div>
+  ```
+
+- **`.debounce` / `.throttle`** — rate-limit the handler, with an optional duration: `.debounce-300` (default 250ms). Guards like `.prevent` still run synchronously; only your callback is delayed.
+
+- **Animation event filters** — `.prop-<propertyName>` on transition events and `.name-<animationName>` on animation events let you sequence complex, multi-property animations without manual checks in the handler:
+
+  ```html
+  <!-- advance the sequence only when the opacity transition finishes,
+       and only for the `bounce` keyframes animation -->
+  <div
+    @transitionend.prop-opacity="stage = 'next'"
+    @animationend.name-bounce="done()"
+  ></div>
+  ```
+
 ### Plugins
 
 Apps can install plugins with `use()`. A plugin is a function — or an object with an `install` method — that receives the app and optional options. Installing the same plugin twice is a no-op, and `use()` chains:
