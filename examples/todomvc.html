@@ -1,6 +1,6 @@
 <link
   rel="stylesheet"
-  href="https://unpkg.com/todomvc-app-css@2.4.1/index.css"
+  href="https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
 />
 <style>
   [v-cloak] {
@@ -10,6 +10,7 @@
 
 <script type="module">
   import { createApp } from '../src';
+  import '../src/devtools-panel';
 
   const STORAGE_KEY = 'todos-lite-vue';
   const todoStorage = {
@@ -152,7 +153,9 @@
         type="checkbox"
         v-model="allDone"
       />
-      <label for="toggle-all">Mark all as complete</label>
+      <label class="toggle-all-label" for="toggle-all"
+        >Mark all as complete</label
+      >
       <ul class="todo-list">
         <li
           v-for="todo in filteredTodos"
