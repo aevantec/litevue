@@ -141,13 +141,13 @@ createApp({
 
 ### Lifecycle Events
 
-You can listen to the special `vue:mounted` and `vue:unmounted` lifecycle events for each element (the `vue:` prefix is required since v0.4.0):
+You can listen to the special `mounted` and `unmounted` lifecycle events for each element (the petite-vue `vue:` prefix still works but is deprecated):
 
 ```html
 <div
   v-if="show"
-  @vue:mounted="console.log('mounted on: ', $el)"
-  @vue:unmounted="console.log('unmounted: ', $el)"
+  @mounted="console.log('mounted on: ', $el)"
+  @unmounted="console.log('unmounted: ', $el)"
 ></div>
 ```
 
@@ -197,7 +197,7 @@ First, reusable scope logic can be created with functions:
   }).mount()
 </script>
 
-<div v-scope="Counter({ initialCount: 1 })" @vue:mounted="mounted">
+<div v-scope="Counter({ initialCount: 1 })" @mounted="mounted">
   <p>{{ count }}</p>
   <button @click="inc">increment</button>
 </div>
@@ -555,7 +555,7 @@ Check out the [examples directory](https://github.com/abiacarl/lite-vue/tree/mai
 
 - `v-scope`
 - `v-effect`
-- `@vue:mounted` & `@vue:unmounted` events
+- `@mounted` & `@unmounted` events
 
 ### Has Different Behavior
 

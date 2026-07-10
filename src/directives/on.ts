@@ -44,17 +44,20 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     ? get(`(e => ${exp}(e))`)
     : get(`($event => { ${exp} })`);
 
-  // special lifecycle events
-  if (import.meta.env.DEV && (arg === 'mounted' || arg === 'unmounted')) {
-    console.error(
-      `mounted and unmounted hooks now need to be prefixed with vue: ` +
-        `- use @vue:${arg}="handler" instead.`
+  // special lifecycle events: @mounted / @unmounted
+  // (the legacy vue:-prefixed names still work but are deprecated)
+  if (
+    import.meta.env.DEV &&
+    (arg === 'vue:mounted' || arg === 'vue:unmounted')
+  ) {
+    console.warn(
+      `@${arg} is deprecated in lite-vue - use @${arg.slice(4)} instead.`
     );
   }
-  if (arg === 'vue:mounted') {
+  if (arg === 'mounted' || arg === 'vue:mounted') {
     nextTick(handler);
     return;
-  } else if (arg === 'vue:unmounted') {
+  } else if (arg === 'unmounted' || arg === 'vue:unmounted') {
     return () => handler();
   }
 
