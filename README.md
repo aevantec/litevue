@@ -336,7 +336,7 @@ __LITE_VUE__.getScopeByName('cart')
 __LITE_VUE__.names
 ```
 
-The inspector panel labels scopes by `v-name` first, then `#id`, then tag name.
+The inspector panel labels scopes as tags — `v-name` first, then element id, then tag name (e.g. `<cart>`, `<counter>`, `<div>`).
 
 Subscribe to registry events (the basis for inspection UIs):
 

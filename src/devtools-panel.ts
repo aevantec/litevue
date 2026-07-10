@@ -107,6 +107,12 @@ const css = `
 .row.sel {
   background: #094771;
 }
+.row .name {
+  color: #9cdcfe;
+}
+.row .punct {
+  color: #808080;
+}
 .row .exp {
   color: #6a9955;
 }
@@ -152,6 +158,15 @@ const css = `
 .muted {
   color: #808080;
   padding: 2px 8px;
+}
+.check {
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #42b883;
+  cursor: pointer;
+}
+.bool {
+  color: #ce9178;
 }
 .prop.inherited .key {
   color: #808080;
@@ -216,9 +231,21 @@ const h = (tag: string, className: string, text?: string) => {
   return el
 }
 
-const labelOf = (el: Element) =>
-  devtools.names.get(el) ||
-  (el.id ? `#${el.id}` : el.tagName.toLowerCase())
+// html-tag-style label for a scope root, e.g. <cart>. The name comes from
+// v-name, then the element id, then the tag name.
+const tagOf = (el: Element) => {
+  const label = h('span', 'label')
+  label.appendChild(h('span', 'punct', '<'))
+  label.appendChild(
+    h(
+      'span',
+      'name',
+      devtools.names.get(el) || el.id || el.tagName.toLowerCase()
+    )
+  )
+  label.appendChild(h('span', 'punct', '>'))
+  return label
+}
 
 const depthOf = (el: Element) => {
   let depth = 0
@@ -245,7 +272,6 @@ const coerce = (raw: string, old: unknown) => {
     const n = parseFloat(raw)
     return isNaN(n) ? raw : n
   }
-  if (typeof old === 'boolean') return raw === 'true'
   return raw
 }
 
@@ -297,7 +323,7 @@ const renderTree = () => {
   for (const el of roots) {
     const row = h('div', el === selected ? 'row sel' : 'row')
     row.style.paddingLeft = 8 + depthOf(el) * 12 + 'px'
-    row.appendChild(h('span', 'label', labelOf(el)))
+    row.appendChild(tagOf(el))
     const exp = devtools.exps.get(el)
     if (exp) row.appendChild(h('span', 'exp', ' ' + exp))
     row.onclick = () => select(el)
@@ -377,6 +403,20 @@ const addNode = (
   row.appendChild(h('span', 'key', key))
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'))
+  } else if (typeof v === 'boolean') {
+    const cb = h('input', 'check') as HTMLInputElement
+    cb.type = 'checkbox'
+    cb.checked = v
+    cb.onchange = () => {
+      container[key] = cb.checked
+      // release focus so the re-render isn't skipped
+      cb.blur()
+      // re-render ourselves: an edit to state no directive tracks never
+      // triggers a flush event
+      scheduleRender()
+    }
+    row.appendChild(cb)
+    row.appendChild(h('span', 'bool', String(v)))
   } else {
     const input = h('input', 'val') as HTMLInputElement
     input.value = fmt(v)
@@ -394,6 +434,9 @@ const addNode = (
       const next = coerce(input.value, v)
       if (next !== v) {
         container[key] = next
+        // re-render ourselves: an edit to state no directive tracks never
+        // triggers a flush event
+        scheduleRender()
       } else {
         input.value = fmt(v)
       }
