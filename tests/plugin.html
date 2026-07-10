@@ -1,0 +1,35 @@
+<script type="module">
+  import { createApp } from '../src';
+
+  window.installCounts = { upper: 0, helpers: 0 };
+
+  // function-style plugin with options: registers a custom directive
+  const upperPlugin = (app, options) => {
+    window.installCounts.upper++;
+    app.directive('upper', ({ el, get, effect }) => {
+      effect(() => {
+        el.textContent = String(get()).toUpperCase() + (options.suffix || '');
+      });
+    });
+  };
+
+  // object-style plugin: adds a magic helper to the root scope
+  const helpersPlugin = {
+    install(app) {
+      window.installCounts.helpers++;
+      app.scope.$double = (n) => n * 2;
+    },
+  };
+
+  createApp({ msg: 'hello', count: 2 })
+    .use(upperPlugin, { suffix: '!' })
+    .use(helpersPlugin)
+    .use(helpersPlugin) // installing twice is a no-op
+    .mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <p id="upper" v-upper="msg"></p>
+  <p id="double">{{ $double(count) }}</p>
+  <button id="inc" @click="count++">+1</button>
+</div>

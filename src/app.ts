@@ -9,6 +9,27 @@ import { devtools, registerScope } from './devtools';
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
 
+export interface App {
+  /**
+   * The reactive root scope. Plugins may attach helpers here (conventionally
+   * $-prefixed) to make them available to all expressions.
+   */
+  scope: Record<string, any>;
+  directive(name: string, def?: Directive): any;
+  /**
+   * Install a plugin. A plugin is a function (or object with an install
+   * method) that receives the app and optional options. Installing the same
+   * plugin twice is a no-op.
+   */
+  use<Options>(plugin: Plugin<Options>, options?: Options): App;
+  mount(el?: string | Element | null): App | void;
+  unmount(): void;
+}
+
+export type Plugin<Options = any> =
+  | ((app: App, options?: Options) => void)
+  | { install(app: App, options?: Options): void };
+
 export const createApp = (initialData?: any) => {
   // root context
   const ctx = createContext();
@@ -43,8 +64,13 @@ export const createApp = (initialData?: any) => {
   ctx.scope.$refs = Object.create(null);
 
   let rootBlocks: Block[];
+  const installedPlugins = new Set<Plugin>();
 
-  return {
+  const app: App = {
+    get scope() {
+      return ctx.scope;
+    },
+
     directive(name: string, def?: Directive) {
       if (def) {
         ctx.dirs[name] = def;
@@ -52,6 +78,14 @@ export const createApp = (initialData?: any) => {
       } else {
         return ctx.dirs[name];
       }
+    },
+
+    use(plugin, options) {
+      if (!installedPlugins.has(plugin)) {
+        installedPlugins.add(plugin);
+        (typeof plugin === 'function' ? plugin : plugin.install)(app, options);
+      }
+      return app;
     },
 
     mount(el?: string | Element | null) {
@@ -110,4 +144,6 @@ export const createApp = (initialData?: any) => {
       rootBlocks.forEach((block) => block.teardown());
     },
   };
+
+  return app;
 };

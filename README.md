@@ -321,6 +321,37 @@ const html = ({ el, get, effect }) => {
 }
 ```
 
+### Plugins
+
+Apps can install plugins with `use()`. A plugin is a function — or an object with an `install` method — that receives the app and optional options. Installing the same plugin twice is a no-op, and `use()` chains:
+
+```js
+import { createApp, Plugin } from 'lite-vue';
+
+// function style, with options
+const intersect = (app, options) => {
+  app.directive('intersect', ({ el, get, effect }) => {
+    // ... register an IntersectionObserver, return a cleanup
+  });
+};
+
+// object style
+const helpers = {
+  install(app) {
+    // app.scope is the reactive root scope — attach $-prefixed helpers
+    // to make them available to all expressions
+    app.scope.$format = (n) => n.toLocaleString();
+  },
+};
+
+createApp({ count: 0 })
+  .use(intersect, { rootMargin: '0px' })
+  .use(helpers)
+  .mount();
+```
+
+Plugins can register custom directives via `app.directive()` and extend the root scope via `app.scope`. Note that plugins require the manual-init style — the `init` script attribute auto-mounts without an app reference to call `use()` on.
+
 ### Custom Delimiters (0.3+)
 
 You can use custom delimiters by passing `$delimiters` to your root scope. This is useful when working alongside a server-side templating language that also uses mustaches:
