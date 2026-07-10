@@ -282,19 +282,19 @@ const themeIcons: Record<ThemeMode, string> = {
   dark: icon('<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'),
   light: icon(
     '<circle cx="12" cy="12" r="5"/>' +
-      '<line x1="12" y1="1" x2="12" y2="3"/>' +
-      '<line x1="12" y1="21" x2="12" y2="23"/>' +
-      '<line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>' +
-      '<line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>' +
-      '<line x1="1" y1="12" x2="3" y2="12"/>' +
-      '<line x1="21" y1="12" x2="23" y2="12"/>' +
-      '<line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>' +
-      '<line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>'
+    '<line x1="12" y1="1" x2="12" y2="3"/>' +
+    '<line x1="12" y1="21" x2="12" y2="23"/>' +
+    '<line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>' +
+    '<line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>' +
+    '<line x1="1" y1="12" x2="3" y2="12"/>' +
+    '<line x1="21" y1="12" x2="23" y2="12"/>' +
+    '<line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>' +
+    '<line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>'
   ),
   system: icon(
     '<rect x="2" y="3" width="20" height="14" rx="2"/>' +
-      '<line x1="8" y1="21" x2="16" y2="21"/>' +
-      '<line x1="12" y1="17" x2="12" y2="21"/>'
+    '<line x1="8" y1="21" x2="16" y2="21"/>' +
+    '<line x1="12" y1="17" x2="12" y2="21"/>'
   ),
 };
 
@@ -308,7 +308,7 @@ let theme: ThemeMode = 'dark';
 try {
   const saved = localStorage.getItem(THEME_KEY);
   if (saved === 'light' || saved === 'system') theme = saved;
-} catch {}
+} catch { }
 
 const prefersLight = matchMedia('(prefers-color-scheme: light)');
 
@@ -504,6 +504,9 @@ const addNode = (
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (typeof v === 'boolean') {
+    row.appendChild(h('span', 'bool', String(v)));
+
+    // checkbox input for boolean values, so the user can toggle them
     const cb = h('input', 'check') as HTMLInputElement;
     cb.type = 'checkbox';
     cb.checked = v;
@@ -516,7 +519,6 @@ const addNode = (
       scheduleRender();
     };
     row.appendChild(cb);
-    row.appendChild(h('span', 'bool', String(v)));
   } else {
     const input = h('input', 'val') as HTMLInputElement;
     input.value = fmt(v);
@@ -620,7 +622,7 @@ const build = () => {
     theme = nextTheme[theme];
     try {
       localStorage.setItem(THEME_KEY, theme);
-    } catch {}
+    } catch { }
     applyTheme();
   };
   header.appendChild(themeBtn);
@@ -632,10 +634,10 @@ const build = () => {
   pickBtn.title = 'pick an element on the page';
   pickBtn.innerHTML = icon(
     '<circle cx="12" cy="12" r="7"/>' +
-      '<line x1="12" y1="1" x2="12" y2="6"/>' +
-      '<line x1="12" y1="18" x2="12" y2="23"/>' +
-      '<line x1="1" y1="12" x2="6" y2="12"/>' +
-      '<line x1="18" y1="12" x2="23" y2="12"/>'
+    '<line x1="12" y1="1" x2="12" y2="6"/>' +
+    '<line x1="12" y1="18" x2="12" y2="23"/>' +
+    '<line x1="1" y1="12" x2="6" y2="12"/>' +
+    '<line x1="18" y1="12" x2="23" y2="12"/>'
   );
   pickBtn.onclick = () => (picking ? stopPicking() : startPicking());
   header.appendChild(pickBtn);
@@ -687,7 +689,7 @@ export const init = () => {
   if (!d) {
     console.warn(
       '[lite-vue devtools] window.__LITE_VUE__ not found — ' +
-        'load lite-vue before the devtools panel script.'
+      'load lite-vue before the devtools panel script.'
     );
     return;
   }
