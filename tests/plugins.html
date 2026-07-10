@@ -27,8 +27,9 @@
     <p>collapsible content line 2</p>
   </div>
 
-  <div style="height: 2000px"></div>
-
   <h3>intersect</h3>
+  <p>Is bottom seen? {{ seen ? 'Yes' : 'No' }}</p>
+
+  <div style="height: 2000px"></div>
   <div id="sentinel" v-intersect.once="seen = true">bottom sentinel</div>
 </div>

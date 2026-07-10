@@ -445,6 +445,16 @@ createApp({ open: false }).use(intersect).use(persist).mount();
 
 - **collapse** — `v-collapse="expression"` expands/collapses the element's height with a transition; the initial state applies without animating. `.duration-<ms>` overrides the default 250ms.
 
+- **transition** — `v-transition:name="expression"` is an animated `v-show` with Vue-style transition classes: `name-enter-from` / `name-enter-active` / `name-enter-to` on show, and the `leave-*` equivalents before hiding — the element is only hidden after the leave transition finishes (durations are read from computed styles). The name defaults to `v`; add `.appear` to animate the initial render. Use it *instead of* `v-show`.
+
+  ```html
+  <style>
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+  </style>
+  <div v-transition:fade="open">…</div>
+  ```
+
   ```html
   <div v-collapse.duration-150="open">…</div>
   ```
@@ -618,7 +628,7 @@ This is also how Vue 1 worked. The trade-off here is that this approach is coupl
 
 - `lite-vue` is around half the size of Alpine.
 
-- `lite-vue` has no transition system (maybe this can be an opt-in plugin).
+- `lite-vue` ships transitions as an opt-in plugin — see [v-transition](#first-party-plugins) (Vue-style classes on `v-show`-like toggling; `v-if` leave transitions are not supported).
 
 - Although Alpine largely resembles Vue's design, there are various cases where the behavior is different from Vue itself. It may also diverge more from Vue in the future. This is good because Alpine shouldn't have to restrict its design to strictly follow Vue - it should have the freedom to develop in a direction that makes sense for its goals.
 
