@@ -91,6 +91,34 @@ The `createApp` function accepts a data object that serves as the root scope for
 
 Note `v-scope` doesn't need to have a value here and simply serves as a hint for `lite-vue` to process the element.
 
+`createApp` also accepts a setup function, similar in spirit to Vue's `<script setup>`: it runs once and the object it returns becomes the root scope. This gives you a private closure for helpers and shared reactive state:
+
+```js
+import { createApp, reactive } from 'lite-vue';
+
+createApp(() => {
+  const store = reactive({ items: [] }); // closure state, shared by reference
+
+  function formatItem(item) {
+    // private helper — not exposed to templates unless returned
+    return item.toUpperCase();
+  }
+
+  return {
+    store,
+    count: 0,
+    inc() {
+      this.count++;
+    },
+    labels() {
+      return store.items.map(formatItem);
+    },
+  };
+}).mount();
+```
+
+Plain local variables (like `let count = 0`) captured in the closure are **not** reactive — mutate state through `this`, the returned object, or a `reactive()` object instead.
+
 ### Explicit Mount Target
 
 You can specify a mount target (selector or element) to limit `lite-vue` to only that region of the page:

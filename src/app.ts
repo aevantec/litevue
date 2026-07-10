@@ -12,6 +12,17 @@ const escapeRegex = (str: string) =>
 export const createApp = (initialData?: any) => {
   // root context
   const ctx = createContext();
+  // setup-function style: createApp(() => ({ count: 0, inc() {...} })) —
+  // the function runs once and its returned object becomes the root scope
+  if (typeof initialData === 'function') {
+    initialData = initialData();
+    if (
+      import.meta.env.DEV &&
+      (!initialData || typeof initialData !== 'object')
+    ) {
+      console.error(`createApp setup function must return an object.`);
+    }
+  }
   if (initialData) {
     ctx.scope = reactive(initialData);
     bindContextMethods(ctx.scope);
