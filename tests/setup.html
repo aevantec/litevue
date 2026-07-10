@@ -1,0 +1,34 @@
+<script type="module">
+  import { createApp, reactive } from '../src';
+
+  // object style
+  createApp({
+    count: 0,
+    inc() {
+      this.count++;
+    },
+  }).mount('#object-style');
+
+  // setup-function style: runs once, returns the root scope
+  createApp(() => {
+    const state = reactive({ double: 0 });
+    return {
+      count: 0,
+      state,
+      inc() {
+        this.count++;
+        state.double = this.count * 2;
+      },
+    };
+  }).mount('#setup-style');
+</script>
+
+<div id="object-style" v-scope>
+  <p id="obj-count">object: {{ count }}</p>
+  <button id="obj-inc" @click="inc">+1</button>
+</div>
+
+<div id="setup-style" v-scope>
+  <p id="setup-count">setup: {{ count }} / double: {{ state.double }}</p>
+  <button id="setup-inc" @click="inc">+1</button>
+</div>
