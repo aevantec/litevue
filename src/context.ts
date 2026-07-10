@@ -6,6 +6,7 @@ import {
 import { hasOwn } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
+import { createId, createWatch } from './magics';
 import { queueJob } from './scheduler';
 import { inOnce } from './walk';
 export interface Context {
@@ -67,11 +68,16 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
     })
   );
 
-  bindContextMethods(reactiveProxy);
-  return {
+  const scopedCtx: Context = {
     ...ctx,
     scope: reactiveProxy,
   };
+  // per-scope magics — defined on the raw merged scope (not through the
+  // proxy) so the set trap can't fall them through to the parent scope
+  mergedScope.$watch = createWatch(scopedCtx);
+  mergedScope.$id = createId();
+  bindContextMethods(reactiveProxy);
+  return scopedCtx;
 };
 
 export const bindContextMethods = (scope: Record<string, any>) => {

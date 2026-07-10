@@ -309,6 +309,36 @@ Alternatively, you can use the `reactive` method (re-exported from `@vue/reactiv
 </div>
 ```
 
+### Magic Properties
+
+Every expression has access to these magic properties:
+
+- **`$el`** — the current element.
+- **`$data`** — the current scope object.
+- **`$refs`** — elements registered with the `ref` attribute.
+- **`$nextTick(fn)`** — run `fn` after the next reactive flush.
+- **`$store`** — the [global stores](#global-state-management).
+- **`$dispatch(event, detail?)`** — fire a bubbling `CustomEvent` from the current element, e.g. to notify a parent scope:
+
+  ```html
+  <div @notify="handle($event.detail)">
+    <button @click="$dispatch('notify', { id: 1 })">notify up</button>
+  </div>
+  ```
+
+- **`$watch(source, callback)`** — watch a dot-path string or a getter function; the callback receives `(value, oldValue)`. Watchers stop automatically when their scope unmounts:
+
+  ```html
+  <div v-scope="{ count: 0 }" @mounted="$watch('count', (v, old) => save(v))">
+  ```
+
+- **`$id(name)`** — unique ids for accessibility attributes: stable within a scope (so pairs match), unique across scopes:
+
+  ```html
+  <label :for="$id('email')">Email</label>
+  <input :id="$id('email')" />
+  ```
+
 ### Custom Directives
 
 Custom directives are also supported but with a different interface:

@@ -5,6 +5,7 @@ import { bindContextMethods, createContext } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick } from './scheduler';
 import { devtools, registerScope } from './devtools';
+import { createId, createWatch } from './magics';
 import { stores } from './store';
 
 const escapeRegex = (str: string) =>
@@ -64,6 +65,8 @@ export const createApp = (initialData?: any) => {
   ctx.scope.$nextTick = nextTick;
   ctx.scope.$refs = Object.create(null);
   ctx.scope.$store = stores;
+  ctx.scope.$watch = createWatch(ctx);
+  ctx.scope.$id = createId();
 
   let rootBlocks: Block[];
   const installedPlugins = new Set<Plugin>();
