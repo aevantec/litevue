@@ -106,10 +106,32 @@ const css = `
   flex: 1;
   min-height: 0;
 }
-.tree {
+.side {
+  display: flex;
+  flex-direction: column;
   width: 40%;
-  overflow: auto;
+  min-width: 0;
   border-right: 1px solid var(--border);
+}
+.filter {
+  margin: 6px 6px 2px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--fg);
+  font: inherit;
+  padding: 2px 6px;
+  outline: none;
+}
+.filter:focus {
+  border-color: var(--accent);
+}
+.filter::placeholder {
+  color: var(--muted);
+}
+.tree {
+  flex: 1;
+  overflow: auto;
   padding: 4px 0;
 }
 .state {
@@ -244,6 +266,7 @@ let themeBtn: HTMLElement;
 let highlightEl: HTMLElement;
 let selected: Element | null = null;
 let picking = false;
+let filterText = '';
 
 const icon = (paths: string) =>
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
@@ -312,13 +335,7 @@ const h = (tag: string, className: string, text?: string) => {
 const tagOf = (el: Element) => {
   const label = h('span', 'label');
   label.appendChild(h('span', 'punct', '<'));
-  label.appendChild(
-    h(
-      'span',
-      'name',
-      devtools.names.get(el) || el.id || el.tagName.toLowerCase()
-    )
-  );
+  label.appendChild(h('span', 'name', nameOf(el)));
   label.appendChild(h('span', 'punct', '>'));
   return label;
 };
@@ -387,13 +404,20 @@ const select = (el: Element | null) => {
   renderState();
 };
 
+const nameOf = (el: Element) =>
+  devtools.names.get(el) || el.id || el.tagName.toLowerCase();
+
 const renderTree = () => {
   treeEl.textContent = '';
-  const roots = [...devtools.scopes.keys()].sort((a, b) =>
-    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-  );
+  const roots = [...devtools.scopes.keys()]
+    .filter((el) => nameOf(el).toLowerCase().includes(filterText))
+    .sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+    );
   if (!roots.length) {
-    treeEl.appendChild(h('div', 'empty', 'no scopes mounted'));
+    treeEl.appendChild(
+      h('div', 'empty', filterText ? 'no matching scopes' : 'no scopes mounted')
+    );
     return;
   }
   for (const el of roots) {
@@ -625,9 +649,25 @@ const build = () => {
   panelEl.appendChild(header);
 
   const body = h('div', 'body');
+  const side = h('div', 'side');
+  const filterInput = h('input', 'filter') as HTMLInputElement;
+  filterInput.placeholder = 'filter by name';
+  filterInput.oninput = () => {
+    filterText = filterInput.value.trim().toLowerCase();
+    renderTree();
+  };
+  filterInput.onkeydown = (e) => {
+    if (e.key === 'Escape') {
+      filterInput.value = '';
+      filterText = '';
+      renderTree();
+    }
+  };
+  side.appendChild(filterInput);
   treeEl = h('div', 'tree');
+  side.appendChild(treeEl);
   stateEl = h('div', 'state');
-  body.appendChild(treeEl);
+  body.appendChild(side);
   body.appendChild(stateEl);
   panelEl.appendChild(body);
   shadow.appendChild(panelEl);
