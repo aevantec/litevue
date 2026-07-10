@@ -1,0 +1,34 @@
+<script type="module">
+  import { createApp } from '../src';
+  import { intersect, persist, focus, collapse } from '../src/plugins';
+
+  createApp({ editing: false, open: false, seen: false })
+    .use(intersect)
+    .use(persist)
+    .use(focus)
+    .use(collapse)
+    .mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <h3>persist</h3>
+  <div id="counter" v-scope="{ count: 0 }" v-persist="plugins-counter">
+    <button id="inc" @click="count++">count: {{ count }}</button>
+  </div>
+
+  <h3>focus</h3>
+  <button id="edit" @click="editing = !editing">edit</button>
+  <input id="field" v-focus.select="editing" value="preset" />
+
+  <h3>collapse</h3>
+  <button id="toggle" @click="open = !open">toggle</button>
+  <div id="panel" v-collapse.duration-100="open">
+    <p>collapsible content line 1</p>
+    <p>collapsible content line 2</p>
+  </div>
+
+  <div style="height: 2000px"></div>
+
+  <h3>intersect</h3>
+  <div id="sentinel" v-intersect.once="seen = true">bottom sentinel</div>
+</div>

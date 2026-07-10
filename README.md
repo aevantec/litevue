@@ -352,6 +352,43 @@ createApp({ count: 0 })
 
 Plugins can register custom directives via `app.directive()` and extend the root scope via `app.scope`. Note that plugins require the manual-init style — the `init` script attribute auto-mounts without an app reference to call `use()` on.
 
+### First-Party Plugins
+
+A set of official plugins ships in a separate bundle (`lite-vue/plugins`, also `dist/lite-vue-plugins.iife.js` exposing a `LiteVuePlugins` global) so they add zero weight to the core — install only what you use:
+
+```js
+import { createApp } from 'lite-vue';
+import { intersect, persist, focus, collapse } from 'lite-vue/plugins';
+
+createApp({ open: false }).use(intersect).use(persist).mount();
+```
+
+- **intersect** — `v-intersect="expression"` runs the expression when the element enters the viewport. Modifiers: `.once` (stop after the first trigger), `.leave` (trigger on exit instead), `.full` (require full visibility).
+
+  ```html
+  <div v-intersect.once="loaded = true">…</div>
+  ```
+
+- **persist** — `v-persist="storage-key"` syncs the element's scope to localStorage: saved values restore on mount, and every change (deep ones included) writes back automatically. The attribute value is the literal storage key (falls back to the element id).
+
+  ```html
+  <div v-scope="{ count: 0 }" v-persist="counter">…</div>
+  ```
+
+- **focus** — `v-focus="expression"` focuses the element whenever the expression becomes truthy (including on mount). Add `.select` to also select the text.
+
+  ```html
+  <input v-focus.select="editing" />
+  ```
+
+- **collapse** — `v-collapse="expression"` expands/collapses the element's height with a transition; the initial state applies without animating. `.duration-<ms>` overrides the default 250ms.
+
+  ```html
+  <div v-collapse.duration-150="open">…</div>
+  ```
+
+### Custom Delimiters (0.3+)
+
 ### Custom Delimiters (0.3+)
 
 You can use custom delimiters by passing `$delimiters` to your root scope. This is useful when working alongside a server-side templating language that also uses mustaches:
