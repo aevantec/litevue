@@ -245,7 +245,40 @@ The `<template>` approach is recommended over inline strings because it is more 
 
 ### Global State Management
 
-You can use the `reactive` method (re-exported from `@vue/reactivity`) to create global state singletons:
+lite-vue has a first-class global store, shared across every app on the page and available to all expressions as `$store.<name>`:
+
+```html
+<script type="module">
+  import { createApp, store } from 'lite-vue';
+
+  store('cart', {
+    items: [],
+    add(item) {
+      this.items.push(item);
+    },
+    get count() {
+      return this.items.length;
+    },
+    init() {
+      // runs once when the store is registered
+    },
+  });
+
+  createApp().mount();
+
+  // read/mutate from JS anywhere — apps react
+  store('cart').add('book');
+</script>
+
+<div v-scope>
+  <button @click="$store.cart.add('thing')">add</button>
+  <span>{{ $store.cart.count }}</span>
+</div>
+```
+
+Stores are reactive (getters included), an `init()` method runs once at registration, and registering a store *after* mount is picked up reactively by expressions that reference it.
+
+Alternatively, you can use the `reactive` method (re-exported from `@vue/reactivity`) to create your own state singletons:
 
 ```html
 <script type="module">
