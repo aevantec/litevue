@@ -6,6 +6,29 @@ import type { LiteVueDevtools } from './devtools';
 const css = `
 :host {
   all: initial;
+  --bg: #1e1e1e;
+  --bg2: #252526;
+  --hover: #2a2d2e;
+  --border: #3c3c3c;
+  --fg: #d4d4d4;
+  --muted: #808080;
+  --accent: #42b883;
+  --sel: #094771;
+  --key: #9cdcfe;
+  --val: #ce9178;
+  --exp: #6a9955;
+}
+:host(.light) {
+  --bg: #ffffff;
+  --bg2: #f3f3f3;
+  --hover: #ececec;
+  --border: #d0d0d0;
+  --fg: #383a42;
+  --muted: #8e8e90;
+  --sel: #d2e5f5;
+  --key: #0451a5;
+  --val: #a31515;
+  --exp: #22863a;
 }
 * {
   box-sizing: border-box;
@@ -16,18 +39,18 @@ const css = `
   bottom: 12px;
   z-index: 2147483646;
   font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace;
-  color: #d4d4d4;
+  color: var(--fg);
 }
 .pill {
-  background: #1e1e1e;
-  border: 1px solid #3c3c3c;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 999px;
   padding: 4px 10px;
   cursor: pointer;
   user-select: none;
 }
 .pill:hover {
-  border-color: #42b883;
+  border-color: var(--accent);
 }
 .panel {
   display: flex;
@@ -36,8 +59,8 @@ const css = `
   max-width: calc(100vw - 24px);
   height: 440px;
   max-height: calc(100vh - 24px);
-  background: #1e1e1e;
-  border: 1px solid #3c3c3c;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
@@ -47,12 +70,12 @@ const css = `
   align-items: center;
   gap: 8px;
   padding: 4px 8px;
-  background: #252526;
-  border-bottom: 1px solid #3c3c3c;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
   user-select: none;
 }
 .title {
-  color: #42b883;
+  color: var(--accent);
   font-weight: bold;
   margin-right: auto;
 }
@@ -60,9 +83,9 @@ const css = `
   display: flex;
   align-items: center;
   background: none;
-  border: 1px solid #3c3c3c;
+  border: 1px solid var(--border);
   border-radius: 3px;
-  color: #d4d4d4;
+  color: var(--fg);
   font: inherit;
   padding: 3px 7px;
   cursor: pointer;
@@ -71,12 +94,12 @@ const css = `
   display: block;
 }
 .btn:hover {
-  border-color: #42b883;
+  border-color: var(--accent);
 }
 .btn.active {
-  background: #42b883;
-  border-color: #42b883;
-  color: #1e1e1e;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 .body {
   display: flex;
@@ -86,7 +109,7 @@ const css = `
 .tree {
   width: 40%;
   overflow: auto;
-  border-right: 1px solid #3c3c3c;
+  border-right: 1px solid var(--border);
   padding: 4px 0;
 }
 .state {
@@ -102,19 +125,19 @@ const css = `
   cursor: pointer;
 }
 .row:hover {
-  background: #2a2d2e;
+  background: var(--hover);
 }
 .row.sel {
-  background: #094771;
+  background: var(--sel);
 }
 .row .name {
-  color: #9cdcfe;
+  color: var(--key);
 }
 .row .punct {
-  color: #808080;
+  color: var(--muted);
 }
 .row .exp {
-  color: #6a9955;
+  color: var(--exp);
 }
 .prop {
   display: flex;
@@ -123,13 +146,13 @@ const css = `
   align-items: center;
 }
 .prop .key {
-  color: #9cdcfe;
+  color: var(--key);
   flex-shrink: 0;
 }
 .arrow {
   width: 12px;
   flex-shrink: 0;
-  color: #808080;
+  color: var(--muted);
   font-size: 9px;
   transition: transform 0.1s;
 }
@@ -145,31 +168,31 @@ const css = `
   user-select: none;
 }
 .prop.toggle:hover {
-  background: #2a2d2e;
+  background: var(--hover);
 }
 .preview {
   flex: 1;
   min-width: 0;
-  color: #808080;
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .muted {
-  color: #808080;
+  color: var(--muted);
   padding: 2px 8px;
 }
 .check {
   margin: 0;
   flex-shrink: 0;
-  accent-color: #42b883;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 .bool {
-  color: #ce9178;
+  color: var(--val);
 }
 .prop.inherited .key {
-  color: #808080;
+  color: var(--muted);
 }
 .prop .val {
   flex: 1;
@@ -177,7 +200,7 @@ const css = `
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
-  color: #ce9178;
+  color: var(--val);
   font: inherit;
   padding: 0 3px;
   white-space: nowrap;
@@ -185,26 +208,26 @@ const css = `
   text-overflow: ellipsis;
 }
 input.val:hover, input.val:focus {
-  border-color: #3c3c3c;
+  border-color: var(--border);
   outline: none;
-  background: #252526;
+  background: var(--bg2);
 }
 .divider {
   padding: 4px 8px 1px;
-  color: #808080;
+  color: var(--muted);
   font-size: 10px;
   text-transform: uppercase;
   user-select: none;
 }
 .empty {
   padding: 8px;
-  color: #808080;
+  color: var(--muted);
 }
 .highlight {
   position: fixed;
   z-index: 2147483645;
   background: rgba(66, 184, 131, 0.25);
-  border: 1px solid #42b883;
+  border: 1px solid var(--accent);
   pointer-events: none;
   display: none;
 }
@@ -217,9 +240,62 @@ let pillEl: HTMLElement;
 let treeEl: HTMLElement;
 let stateEl: HTMLElement;
 let pickBtn: HTMLElement;
+let themeBtn: HTMLElement;
 let highlightEl: HTMLElement;
 let selected: Element | null = null;
 let picking = false;
+
+const icon = (paths: string) =>
+  '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2">' +
+  paths +
+  '</svg>';
+
+type ThemeMode = 'dark' | 'light' | 'system';
+
+const THEME_KEY = 'lite-vue-devtools-theme';
+
+const themeIcons: Record<ThemeMode, string> = {
+  dark: icon('<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'),
+  light: icon(
+    '<circle cx="12" cy="12" r="5"/>' +
+      '<line x1="12" y1="1" x2="12" y2="3"/>' +
+      '<line x1="12" y1="21" x2="12" y2="23"/>' +
+      '<line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>' +
+      '<line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>' +
+      '<line x1="1" y1="12" x2="3" y2="12"/>' +
+      '<line x1="21" y1="12" x2="23" y2="12"/>' +
+      '<line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>' +
+      '<line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>'
+  ),
+  system: icon(
+    '<rect x="2" y="3" width="20" height="14" rx="2"/>' +
+      '<line x1="8" y1="21" x2="16" y2="21"/>' +
+      '<line x1="12" y1="17" x2="12" y2="21"/>'
+  ),
+};
+
+const nextTheme: Record<ThemeMode, ThemeMode> = {
+  dark: 'light',
+  light: 'system',
+  system: 'dark',
+};
+
+let theme: ThemeMode = 'dark';
+try {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === 'light' || saved === 'system') theme = saved;
+} catch {}
+
+const prefersLight = matchMedia('(prefers-color-scheme: light)');
+
+const applyTheme = () => {
+  const light =
+    theme === 'light' || (theme === 'system' && prefersLight.matches);
+  shadow.host.classList.toggle('light', light);
+  themeBtn.innerHTML = themeIcons[theme];
+  themeBtn.title = 'theme: ' + theme;
+};
 // property paths ("items", "items.0", …) the user has expanded; kept across
 // flush re-renders so the tree doesn't collapse while state changes
 const expandedPaths = new Set<string>();
@@ -515,16 +591,28 @@ const build = () => {
   panelEl.style.display = 'none';
   const header = h('div', 'header');
   header.appendChild(h('span', 'title', '⚡ lite-vue'));
+  themeBtn = h('button', 'btn');
+  themeBtn.onclick = () => {
+    theme = nextTheme[theme];
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {}
+    applyTheme();
+  };
+  header.appendChild(themeBtn);
+  prefersLight.addEventListener('change', () => {
+    if (theme === 'system') applyTheme();
+  });
+  applyTheme();
   pickBtn = h('button', 'btn');
   pickBtn.title = 'pick an element on the page';
-  pickBtn.innerHTML =
-    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
-    'stroke="currentColor" stroke-width="2">' +
+  pickBtn.innerHTML = icon(
     '<circle cx="12" cy="12" r="7"/>' +
-    '<line x1="12" y1="1" x2="12" y2="6"/>' +
-    '<line x1="12" y1="18" x2="12" y2="23"/>' +
-    '<line x1="1" y1="12" x2="6" y2="12"/>' +
-    '<line x1="18" y1="12" x2="23" y2="12"/></svg>';
+      '<line x1="12" y1="1" x2="12" y2="6"/>' +
+      '<line x1="12" y1="18" x2="12" y2="23"/>' +
+      '<line x1="1" y1="12" x2="6" y2="12"/>' +
+      '<line x1="18" y1="12" x2="23" y2="12"/>'
+  );
   pickBtn.onclick = () => (picking ? stopPicking() : startPicking());
   header.appendChild(pickBtn);
   const closeBtn = h('button', 'btn', '✕');

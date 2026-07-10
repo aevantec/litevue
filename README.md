@@ -383,6 +383,7 @@ A `⚡ lite-vue` pill appears bottom-right and expands into a panel with:
 - a state view separating own from inherited state; arrays and objects render as an expandable tree, and every primitive leaf (including nested ones) is editable inline with type coercion
 - hover-to-highlight the owning element on the page, and a `pick` mode to select a scope by clicking the page
 - the selected scope exposed as `window.$scope` for console access
+- a color mode toggle cycling dark → light → system (default dark, persisted in localStorage; system follows `prefers-color-scheme` live)
 
 ## Examples
 
