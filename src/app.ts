@@ -80,11 +80,15 @@ export const createApp = (initialData?: any) => {
       }
 
       rootBlocks = roots.map((el) => {
+        // read v-name before walk strips it from the element
+        const name = el.getAttribute('v-name')
         const block = new Block(el, ctx, true)
         // roots with v-scope are registered with their scoped context during
         // walk; only register roots the walk didn't claim
         if (!devtools.scopes.has(el)) {
-          ctx.cleanups.push(registerScope(el, ctx.scope))
+          ctx.cleanups.push(
+            registerScope(el, ctx.scope, undefined, name || undefined)
+          )
         }
         return block
       })

@@ -14,10 +14,20 @@ export interface LiteVueDevtools {
    */
   exps: Map<Element, string>
   /**
+   * User-given scope names from the v-name attribute, for elements that
+   * shouldn't rely on an id. The attribute is removed from the DOM at mount.
+   */
+  names: Map<Element, string>
+  /**
    * Find the scope governing a node by walking up the DOM to the nearest
    * registered scope root. Usable from the console: __LITE_VUE__.getScope($0)
    */
   getScope(node: Node): Record<string, any> | undefined
+  /**
+   * Find a scope by its v-name. Returns the first match in registration
+   * order: __LITE_VUE__.getScopeByName('cart')
+   */
+  getScopeByName(name: string): Record<string, any> | undefined
   /**
    * Subscribe to registry events. Returns an unsubscribe function.
    * - 'scope:mount' (el, scope): a scope was registered. May fire again for
@@ -31,6 +41,7 @@ export interface LiteVueDevtools {
 
 const scopes = new Map<Element, Record<string, any>>()
 const exps = new Map<Element, string>()
+const names = new Map<Element, string>()
 
 let disabled = false
 
@@ -55,15 +66,18 @@ const noop = () => {}
 export const registerScope = (
   el: Element,
   scope: Record<string, any>,
-  exp?: string
+  exp?: string,
+  name?: string
 ): (() => void) => {
   if (isDisabled()) return noop
   scopes.set(el, scope)
   if (exp) exps.set(el, exp)
+  if (name) names.set(el, name)
   emit('scope:mount', el, scope)
   return () => {
     if (scopes.delete(el)) {
       exps.delete(el)
+      names.delete(el)
       emit('scope:unmount', el)
     }
   }
@@ -78,6 +92,12 @@ export const emitFlush = () => {
 export const devtools: LiteVueDevtools = {
   scopes,
   exps,
+  names,
+  getScopeByName(name) {
+    for (const [el, n] of names) {
+      if (n === name) return scopes.get(el)
+    }
+  },
   getScope(node) {
     let el: Element | null =
       node.nodeType === 1 ? (node as Element) : node.parentElement
@@ -106,6 +126,7 @@ export const disableDevtools = () => {
   disabled = true
   scopes.clear()
   exps.clear()
+  names.clear()
   for (const event in listeners) {
     listeners[event as DevtoolsEvent].clear()
   }

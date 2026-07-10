@@ -38,11 +38,19 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
       return _for(el, exp, ctx)
     }
 
+    // v-name: devtools label for scopes on elements that shouldn't rely on
+    // an id. Read after the v-if/v-for early returns so the attribute stays
+    // in their templates, and stripped from every element so it never falls
+    // through to directive processing.
+    const name = checkAttr(el, 'v-name')
+
     // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {}
       ctx = createScopedContext(ctx, scope)
-      ctx.cleanups.push(registerScope(el, ctx.scope, exp || undefined))
+      ctx.cleanups.push(
+        registerScope(el, ctx.scope, exp || undefined, name || undefined)
+      )
       if (scope.$template) {
         resolveTemplate(el, scope.$template)
       }

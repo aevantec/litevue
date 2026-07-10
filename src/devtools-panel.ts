@@ -217,7 +217,8 @@ const h = (tag: string, className: string, text?: string) => {
 }
 
 const labelOf = (el: Element) =>
-  el.id ? `#${el.id}` : el.tagName.toLowerCase()
+  devtools.names.get(el) ||
+  (el.id ? `#${el.id}` : el.tagName.toLowerCase())
 
 const depthOf = (el: Element) => {
   let depth = 0

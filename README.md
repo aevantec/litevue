@@ -320,6 +320,24 @@ __LITE_VUE__.getScope($0).count = 42
 __LITE_VUE__.scopes
 ```
 
+### Naming Scopes
+
+Scopes are labeled by their element's `id` when present, but not every element needs one. Use the `v-name` attribute to give a scope an explicit devtools name — it is removed from the DOM at mount and only exists for inspection:
+
+```html
+<div v-name="cart" v-scope="{ items: [] }">...</div>
+```
+
+```js
+// look a scope up by name from the console
+__LITE_VUE__.getScopeByName('cart')
+
+// all names: Map<Element, string>
+__LITE_VUE__.names
+```
+
+The inspector panel labels scopes by `v-name` first, then `#id`, then tag name.
+
 Subscribe to registry events (the basis for inspection UIs):
 
 ```js

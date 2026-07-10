@@ -15,12 +15,16 @@
 >
   <p id="count-display">{{ label }}: {{ count }}</p>
   <button id="inc" @click="count++" :disabled="!enabled">+1</button>
-  <div id="nested" v-if="enabled" v-scope="{ note: 'inner' }">
+  <div id="nested" v-if="enabled" v-name="inner-note" v-scope="{ note: 'inner' }">
     <p id="note-display">{{ note }} / {{ label }}</p>
   </div>
 </div>
 
-<div id="list" v-scope="{ items: ['a', 'b'], show: true }">
+<div v-name="footer" v-scope="{ year: 2026 }">
+  <p>© {{ year }}</p>
+</div>
+
+<div id="list" v-name="cart" v-scope="{ items: ['a', 'b'], show: true }">
   <button id="toggle" @click="show = !show">toggle</button>
   <ul v-if="show">
     <li v-for="item in items">{{ item }}</li>
