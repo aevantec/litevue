@@ -362,7 +362,7 @@ A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtoo
 A `⚡ lite-vue` pill appears bottom-right and expands into a panel with:
 
 - a scope tree (app roots and `v-scope` elements, labeled with their expressions)
-- a state view separating own from inherited state, with inline editing of strings/numbers/booleans
+- a state view separating own from inherited state; arrays and objects render as an expandable tree, and every primitive leaf (including nested ones) is editable inline with type coercion
 - hover-to-highlight the owning element on the page, and a `pick` mode to select a scope by clicking the page
 - the selected scope exposed as `window.$scope` for console access
 

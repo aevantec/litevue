@@ -114,6 +114,39 @@ const css = `
   color: #9cdcfe;
   flex-shrink: 0;
 }
+.arrow {
+  width: 12px;
+  flex-shrink: 0;
+  color: #808080;
+  font-size: 9px;
+  transition: transform 0.1s;
+}
+.arrow.open {
+  transform: rotate(90deg);
+}
+.spacer {
+  width: 12px;
+  flex-shrink: 0;
+}
+.prop.toggle {
+  cursor: pointer;
+  user-select: none;
+}
+.prop.toggle:hover {
+  background: #2a2d2e;
+}
+.preview {
+  flex: 1;
+  min-width: 0;
+  color: #808080;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.muted {
+  color: #808080;
+  padding: 2px 8px;
+}
 .prop.inherited .key {
   color: #808080;
 }
@@ -166,6 +199,9 @@ let pickBtn: HTMLElement
 let highlightEl: HTMLElement
 let selected: Element | null = null
 let picking = false
+// property paths ("items", "items.0", …) the user has expanded; kept across
+// flush re-renders so the tree doesn't collapse while state changes
+const expandedPaths = new Set<string>()
 
 const h = (tag: string, className: string, text?: string) => {
   const el = document.createElement(tag)
@@ -235,6 +271,7 @@ const hideHighlight = () => {
 }
 
 const select = (el: Element | null) => {
+  if (el !== selected) expandedPaths.clear()
   selected = el
   ;(window as any).$scope = el ? devtools.scopes.get(el) : undefined
   renderTree()
@@ -274,47 +311,89 @@ const renderState = () => {
   const scope = devtools.scopes.get(selected)
   if (!scope) return
   const { own, inherited } = collectProps(scope)
-  const addProp = (key: string, cls: string) => {
-    const row = h('div', cls)
-    row.appendChild(h('span', 'key', key))
-    const v = scope[key]
-    if (v !== null && typeof v === 'object') {
-      const val = h('span', 'val', fmt(v))
-      val.title = 'objects are read-only here — edit via $scope in console'
-      row.appendChild(val)
-    } else {
-      const input = h('input', 'val') as HTMLInputElement
-      input.value = fmt(v)
-      input.onfocus = () => {
-        input.value = typeof v === 'string' ? v : String(v)
-      }
-      input.onkeydown = (e) => {
-        if (e.key === 'Enter') input.blur()
-        if (e.key === 'Escape') {
-          input.value = fmt(v)
-          input.blur()
-        }
-      }
-      input.onblur = () => {
-        const next = coerce(input.value, v)
-        if (next !== v) {
-          scope[key] = next
-        } else {
-          input.value = fmt(v)
-        }
-      }
-      row.appendChild(input)
-    }
-    stateEl.appendChild(row)
-  }
-  own.forEach((k) => addProp(k, 'prop'))
+  own.forEach((k) => addNode(k, scope, k, 0, 'prop', []))
   if (inherited.length) {
     stateEl.appendChild(h('div', 'divider', 'inherited'))
-    inherited.forEach((k) => addProp(k, 'prop inherited'))
+    inherited.forEach((k) => addNode(k, scope, k, 0, 'prop inherited', []))
   }
   if (!own.length && !inherited.length) {
     stateEl.appendChild(h('div', 'empty', 'empty scope'))
   }
+}
+
+const previewOf = (v: any) =>
+  Array.isArray(v) ? `(${v.length}) ${fmt(v)}` : fmt(v)
+
+const addNode = (
+  key: string,
+  container: Record<string, any>,
+  path: string,
+  depth: number,
+  cls: string,
+  ancestors: unknown[]
+) => {
+  const v = container[key]
+  const row = h('div', cls)
+  row.style.paddingLeft = 8 + depth * 14 + 'px'
+
+  if (v !== null && typeof v === 'object') {
+    const circular = ancestors.indexOf(v) > -1
+    const open = !circular && expandedPaths.has(path)
+    row.appendChild(h('span', open ? 'arrow open' : 'arrow', '▶'))
+    row.appendChild(h('span', 'key', key))
+    row.appendChild(
+      h('span', 'preview', circular ? '(circular)' : previewOf(v))
+    )
+    if (!circular) {
+      row.classList.add('toggle')
+      row.onclick = () => {
+        open ? expandedPaths.delete(path) : expandedPaths.add(path)
+        renderState()
+      }
+    }
+    stateEl.appendChild(row)
+    if (open) {
+      const keys = Object.keys(v)
+      if (!keys.length) {
+        const empty = h('div', 'muted', '(empty)')
+        empty.style.paddingLeft = 22 + (depth + 1) * 14 + 'px'
+        stateEl.appendChild(empty)
+      }
+      for (const k of keys) {
+        addNode(k, v, path + '.' + k, depth + 1, cls, ancestors.concat([v]))
+      }
+    }
+    return
+  }
+
+  row.appendChild(h('span', 'spacer'))
+  row.appendChild(h('span', 'key', key))
+  if (typeof v === 'function') {
+    row.appendChild(h('span', 'preview', 'ƒ'))
+  } else {
+    const input = h('input', 'val') as HTMLInputElement
+    input.value = fmt(v)
+    input.onfocus = () => {
+      input.value = typeof v === 'string' ? v : String(v)
+    }
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') input.blur()
+      if (e.key === 'Escape') {
+        input.value = fmt(v)
+        input.blur()
+      }
+    }
+    input.onblur = () => {
+      const next = coerce(input.value, v)
+      if (next !== v) {
+        container[key] = next
+      } else {
+        input.value = fmt(v)
+      }
+    }
+    row.appendChild(input)
+  }
+  stateEl.appendChild(row)
 }
 
 const onPickClick = (e: MouseEvent) => {

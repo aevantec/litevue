@@ -4,7 +4,15 @@
   createApp().mount()
 </script>
 
-<div id="counter" v-scope="{ count: 0, label: 'clicks', enabled: true }">
+<div
+  id="counter"
+  v-scope="{
+    count: 0,
+    label: 'clicks',
+    enabled: true,
+    user: { name: 'carl', meta: { admin: true, tags: ['dev', 'vue'] } }
+  }"
+>
   <p id="count-display">{{ label }}: {{ count }}</p>
   <button id="inc" @click="count++" :disabled="!enabled">+1</button>
   <div id="nested" v-if="enabled" v-scope="{ note: 'inner' }">
