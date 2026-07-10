@@ -8,6 +8,13 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'terser',
+    terserOptions: {
+      format: {
+        // escape non-ASCII so bundles render correctly on pages served
+        // without an explicit utf-8 charset
+        ascii_only: true
+      }
+    },
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'LiteVue',

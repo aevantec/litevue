@@ -32,9 +32,10 @@ const css = `
 .panel {
   display: flex;
   flex-direction: column;
-  width: 480px;
+  width: 640px;
   max-width: calc(100vw - 24px);
-  height: 320px;
+  height: 440px;
+  max-height: calc(100vh - 24px);
   background: #1e1e1e;
   border: 1px solid #3c3c3c;
   border-radius: 6px;
@@ -56,13 +57,18 @@ const css = `
   margin-right: auto;
 }
 .btn {
+  display: flex;
+  align-items: center;
   background: none;
   border: 1px solid #3c3c3c;
   border-radius: 3px;
   color: #d4d4d4;
   font: inherit;
-  padding: 1px 7px;
+  padding: 3px 7px;
   cursor: pointer;
+}
+.btn svg {
+  display: block;
 }
 .btn:hover {
   border-color: #42b883;
@@ -465,7 +471,16 @@ const build = () => {
   panelEl.style.display = 'none'
   const header = h('div', 'header')
   header.appendChild(h('span', 'title', '⚡ lite-vue'))
-  pickBtn = h('button', 'btn', 'pick')
+  pickBtn = h('button', 'btn')
+  pickBtn.title = 'pick an element on the page'
+  pickBtn.innerHTML =
+    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="2">' +
+    '<circle cx="12" cy="12" r="7"/>' +
+    '<line x1="12" y1="1" x2="12" y2="6"/>' +
+    '<line x1="12" y1="18" x2="12" y2="23"/>' +
+    '<line x1="1" y1="12" x2="6" y2="12"/>' +
+    '<line x1="18" y1="12" x2="23" y2="12"/></svg>'
   pickBtn.onclick = () => (picking ? stopPicking() : startPicking())
   header.appendChild(pickBtn)
   const closeBtn = h('button', 'btn', '✕')
