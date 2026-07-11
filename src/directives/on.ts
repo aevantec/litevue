@@ -144,8 +144,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   const target: EventTarget = modifiers?.window
     ? window
     : modifiers?.document || modifiers?.outside
-    ? document
-    : el;
+      ? document
+      : el;
   const event = arg;
   target.addEventListener(event, handler, modifiers);
   if (target !== el) {

@@ -4,9 +4,6 @@ import { resolve } from 'path';
 // separate build for the standalone devtools panel bundle so it never adds
 // weight to the core library
 export default defineConfig({
-  esbuild: {
-    minify: true,
-  },
   build: {
     target: 'esnext',
     minify: 'terser',

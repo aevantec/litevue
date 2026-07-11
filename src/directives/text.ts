@@ -11,5 +11,5 @@ export const toDisplayString = (value: any) =>
   value == null
     ? ''
     : isObject(value)
-    ? JSON.stringify(value, null, 2)
-    : String(value);
+      ? JSON.stringify(value, null, 2)
+      : String(value);

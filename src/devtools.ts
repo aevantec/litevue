@@ -1,8 +1,5 @@
 export type DevtoolsEvent =
-  | 'scope:mount'
-  | 'scope:unmount'
-  | 'store:register'
-  | 'flush';
+  'scope:mount' | 'scope:unmount' | 'store:register' | 'flush';
 
 type Listener = (...args: any[]) => void;
 
