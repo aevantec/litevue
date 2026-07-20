@@ -12,12 +12,14 @@
 
 - `lite-vue` continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Additions so far: a devtools registry and in-page inspector panel, plus compatibility fixes for modern `@vue/reactivity`.
 
+- Published on npm as **`litevue`** (the hyphenated name was already taken).
+
 ## Usage
 
 `lite-vue` can be used without a build step. Simply load it from a CDN:
 
 ```html
-<script src="https://unpkg.com/lite-vue" defer init></script>
+<script src="https://unpkg.com/litevue" defer init></script>
 
 <!-- anywhere on the page -->
 <div v-scope="{ count: 0 }">
@@ -35,9 +37,9 @@
 If you don't want the auto init, remove the `init` attribute and move the scripts to end of `<body>`:
 
 ```html
-<script src="https://unpkg.com/lite-vue"></script>
+<script src="https://unpkg.com/litevue"></script>
 <script>
-  LiteVue.createApp().mount()
+  LiteVue.createApp().mount();
 </script>
 ```
 
@@ -45,8 +47,8 @@ Or, use the ES module build:
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/lite-vue?module'
-  createApp().mount()
+  import { createApp } from 'https://unpkg.com/litevue?module';
+  createApp().mount();
 </script>
 ```
 
@@ -54,9 +56,9 @@ Or, use the ES module build:
 
 The short CDN URL is meant for prototyping. For production usage, use a fully resolved CDN URL to avoid resolving and redirect cost:
 
-- Global build: `https://unpkg.com/lite-vue@0.4.1/dist/lite-vue.iife.js`
+- Global build: `https://unpkg.com/litevue@0.5.0/dist/lite-vue.iife.js`
   - exposes `LiteVue` global, supports auto init
-- ESM build: `https://unpkg.com/lite-vue@0.4.1/dist/lite-vue.es.js`
+- ESM build: `https://unpkg.com/litevue@0.5.0/dist/lite-vue.es.js`
   - Must be used with `<script type="module">`
 
 ### Root Scope
@@ -65,20 +67,20 @@ The `createApp` function accepts a data object that serves as the root scope for
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/lite-vue?module'
+  import { createApp } from 'https://unpkg.com/litevue?module';
 
   createApp({
     // exposed to all expressions
     count: 0,
     // getters
     get plusOne() {
-      return this.count + 1
+      return this.count + 1;
     },
     // methods
     increment() {
-      this.count++
-    }
-  }).mount()
+      this.count++;
+    },
+  }).mount();
 </script>
 
 <!-- v-scope value can be omitted -->
@@ -94,7 +96,7 @@ Note `v-scope` doesn't need to have a value here and simply serves as a hint for
 `createApp` also accepts a setup function, similar in spirit to Vue's `<script setup>`: it runs once and the object it returns becomes the root scope. This gives you a private closure for helpers and shared reactive state:
 
 ```js
-import { createApp, reactive } from 'lite-vue';
+import { createApp, reactive } from 'litevue';
 
 createApp(() => {
   const store = reactive({ items: [] }); // closure state, shared by reference
@@ -124,7 +126,7 @@ Plain local variables (like `let count = 0`) captured in the closure are **not**
 You can specify a mount target (selector or element) to limit `lite-vue` to only that region of the page:
 
 ```js
-createApp().mount('#only-this-div')
+createApp().mount('#only-this-div');
 ```
 
 This also means you can have multiple `lite-vue` apps to control different regions on the same page:
@@ -132,11 +134,11 @@ This also means you can have multiple `lite-vue` apps to control different regio
 ```js
 createApp({
   // root scope for app one
-}).mount('#app1')
+}).mount('#app1');
 
 createApp({
   // root scope for app two
-}).mount('#app2')
+}).mount('#app2');
 ```
 
 ### Lifecycle Events
@@ -178,23 +180,23 @@ First, reusable scope logic can be created with functions:
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/lite-vue?module'
+  import { createApp } from 'https://unpkg.com/litevue?module';
 
   function Counter(props) {
     return {
       count: props.initialCount,
       inc() {
-        this.count++
+        this.count++;
       },
       mounted() {
-        console.log(`I'm mounted!`)
-      }
-    }
+        console.log(`I'm mounted!`);
+      },
+    };
   }
 
   createApp({
-    Counter
-  }).mount()
+    Counter,
+  }).mount();
 </script>
 
 <div v-scope="Counter({ initialCount: 1 })" @mounted="mounted">
@@ -214,21 +216,21 @@ If you also want to reuse a piece of template, you can provide a special `$templ
 
 ```html
 <script type="module">
-  import { createApp } from 'https://unpkg.com/lite-vue?module'
+  import { createApp } from 'https://unpkg.com/litevue?module';
 
   function Counter(props) {
     return {
       $template: '#counter-template',
       count: props.initialCount,
       inc() {
-        this.count++
-      }
-    }
+        this.count++;
+      },
+    };
   }
 
   createApp({
-    Counter
-  }).mount()
+    Counter,
+  }).mount();
 </script>
 
 <template id="counter-template">
@@ -249,7 +251,7 @@ lite-vue has a first-class global store, shared across every app on the page and
 
 ```html
 <script type="module">
-  import { createApp, store } from 'lite-vue';
+  import { createApp, store } from 'litevue';
 
   store('cart', {
     items: [],
@@ -276,28 +278,28 @@ lite-vue has a first-class global store, shared across every app on the page and
 </div>
 ```
 
-Stores are reactive (getters included), an `init()` method runs once at registration, and registering a store *after* mount is picked up reactively by expressions that reference it.
+Stores are reactive (getters included), an `init()` method runs once at registration, and registering a store _after_ mount is picked up reactively by expressions that reference it.
 
 Alternatively, you can use the `reactive` method (re-exported from `@vue/reactivity`) to create your own state singletons:
 
 ```html
 <script type="module">
-  import { createApp, reactive } from 'https://unpkg.com/lite-vue?module'
+  import { createApp, reactive } from 'https://unpkg.com/litevue?module';
 
   const store = reactive({
     count: 0,
     inc() {
-      this.count++
-    }
-  })
+      this.count++;
+    },
+  });
 
   // manipulate it here
-  store.inc()
+  store.inc();
 
   createApp({
     // share it with app scopes
-    store
-  }).mount()
+    store,
+  }).mount();
 </script>
 
 <div v-scope="{ localCount: 0 }">
@@ -329,14 +331,16 @@ Every expression has access to these magic properties:
 - **`$watch(source, callback)`** — watch a dot-path string or a getter function; the callback receives `(value, oldValue)`. Watchers stop automatically when their scope unmounts:
 
   ```html
-  <div v-scope="{ count: 0 }" @mounted="$watch('count', (v, old) => save(v))">
+  <div
+    v-scope="{ count: 0 }"
+    @mounted="$watch('count', (v, old) => save(v))"
+  ></div>
   ```
 
 - **`$id(name)`** — unique ids for accessibility attributes: stable within a scope (so pairs match), unique across scopes:
 
   ```html
-  <label :for="$id('email')">Email</label>
-  <input :id="$id('email')" />
+  <label :for="$id('email')">Email</label> <input :id="$id('email')" />
   ```
 
 ### Custom Directives
@@ -346,32 +350,32 @@ Custom directives are also supported but with a different interface:
 ```js
 const myDirective = (ctx) => {
   // the element the directive is on
-  ctx.el
+  ctx.el;
   // the raw value expression
   // e.g. v-my-dir="x" then this would be "x"
-  ctx.exp
+  ctx.exp;
   // v-my-dir:foo -> "foo"
-  ctx.arg
+  ctx.arg;
   // v-my-dir.mod -> { mod: true }
-  ctx.modifiers
+  ctx.modifiers;
   // evaluate the expression and get its value
-  ctx.get()
+  ctx.get();
   // evaluate arbitrary expression in current scope
-  ctx.get(`${ctx.exp} + 10`)
+  ctx.get(`${ctx.exp} + 10`);
 
   // run reactive effect
   ctx.effect(() => {
     // this will re-run every time the get() value changes
-    console.log(ctx.get())
-  })
+    console.log(ctx.get());
+  });
 
   return () => {
     // cleanup if the element is unmounted
-  }
-}
+  };
+};
 
 // register the directive
-createApp().directive('my-dir', myDirective).mount()
+createApp().directive('my-dir', myDirective).mount();
 ```
 
 This is how `v-html` is implemented:
@@ -379,9 +383,9 @@ This is how `v-html` is implemented:
 ```js
 const html = ({ el, get, effect }) => {
   effect(() => {
-    el.innerHTML = get()
-  })
-}
+    el.innerHTML = get();
+  });
+};
 ```
 
 ### Extra Event Modifiers
@@ -418,7 +422,7 @@ On top of Vue's standard `v-on` modifiers (`.stop`, `.prevent`, `.self`, key/mou
 Apps can install plugins with `use()`. A plugin is a function — or an object with an `install` method — that receives the app and optional options. Installing the same plugin twice is a no-op, and `use()` chains:
 
 ```js
-import { createApp, Plugin } from 'lite-vue';
+import { createApp, Plugin } from 'litevue';
 
 // function style, with options
 const intersect = (app, options) => {
@@ -449,8 +453,8 @@ Plugins can register custom directives via `app.directive()` and extend the root
 A set of official plugins ships in a separate bundle (`lite-vue/plugins`, also `dist/lite-vue-plugins.iife.js` exposing a `LiteVuePlugins` global) so they add zero weight to the core — install only what you use:
 
 ```js
-import { createApp } from 'lite-vue';
-import { intersect, persist, focus, collapse } from 'lite-vue/plugins';
+import { createApp } from 'litevue';
+import { intersect, persist, focus, collapse } from 'litevue/plugins';
 
 createApp({ open: false }).use(intersect).use(persist).mount();
 ```
@@ -475,12 +479,18 @@ createApp({ open: false }).use(intersect).use(persist).mount();
 
 - **collapse** — `v-collapse="expression"` expands/collapses the element's height with a transition; the initial state applies without animating. `.duration-<ms>` overrides the default 250ms.
 
-- **transition** — `v-transition:name="expression"` is an animated `v-show` with Vue-style transition classes: `name-enter-from` / `name-enter-active` / `name-enter-to` on show, and the `leave-*` equivalents before hiding — the element is only hidden after the leave transition finishes (durations are read from computed styles). The name defaults to `v`; add `.appear` to animate the initial render. Use it *instead of* `v-show`.
+- **transition** — `v-transition:name="expression"` is an animated `v-show` with Vue-style transition classes: `name-enter-from` / `name-enter-active` / `name-enter-to` on show, and the `leave-*` equivalents before hiding — the element is only hidden after the leave transition finishes (durations are read from computed styles). The name defaults to `v`; add `.appear` to animate the initial render. Use it _instead of_ `v-show`.
 
   ```html
   <style>
-    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
-    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: opacity 0.2s;
+    }
+    .fade-enter-from,
+    .fade-leave-to {
+      opacity: 0;
+    }
   </style>
   <div v-transition:fade="open">…</div>
   ```
@@ -497,8 +507,8 @@ You can use custom delimiters by passing `$delimiters` to your root scope. This 
 
 ```js
 createApp({
-  $delimiters: ['${', '}']
-}).mount()
+  $delimiters: ['${', '}'],
+}).mount();
 ```
 
 ## Devtools
@@ -509,13 +519,13 @@ From the browser console:
 
 ```js
 // inspect the scope governing the element selected in the elements panel
-__LITE_VUE__.getScope($0)
+__LITE_VUE__.getScope($0);
 
 // live-edit state — the page reacts immediately
-__LITE_VUE__.getScope($0).count = 42
+__LITE_VUE__.getScope($0).count = 42;
 
 // all mounted scope roots (app roots and v-scope elements)
-__LITE_VUE__.scopes
+__LITE_VUE__.scopes;
 ```
 
 ### Naming Scopes
@@ -528,10 +538,10 @@ Scopes are labeled by their element's `id` when present, but not every element n
 
 ```js
 // look a scope up by name from the console
-__LITE_VUE__.getScopeByName('cart')
+__LITE_VUE__.getScopeByName('cart');
 
 // all names: Map<Element, string>
-__LITE_VUE__.names
+__LITE_VUE__.names;
 ```
 
 The inspector panel labels scopes as tags — `v-name` first, then element id, then tag name (e.g. `<cart>`, `<counter>`, `<div>`).
@@ -551,17 +561,17 @@ Devtools are on by default. To turn them off in production (no `window.__LITE_VU
 ```html
 <!-- script-tag users: set the flag before the library loads -->
 <script>
-  window.__LITE_VUE_DEVTOOLS__ = false
+  window.__LITE_VUE_DEVTOOLS__ = false;
 </script>
-<script src="https://unpkg.com/lite-vue" defer init></script>
+<script src="https://unpkg.com/litevue" defer init></script>
 ```
 
 ```js
 // bundler users: call it once before mounting
-import { createApp, disableDevtools } from 'lite-vue'
+import { createApp, disableDevtools } from 'litevue';
 
-if (import.meta.env.PROD) disableDevtools()
-createApp().mount()
+if (import.meta.env.PROD) disableDevtools();
+createApp().mount();
 ```
 
 `disableDevtools()` also clears anything already registered, so calling it late is safe.
@@ -571,7 +581,7 @@ createApp().mount()
 A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~2.7kb gzipped) so it adds zero weight to the core. Load it after the library, during development only:
 
 ```html
-<script src="https://unpkg.com/lite-vue" defer init></script>
+<script src="https://unpkg.com/litevue" defer init></script>
 <script src="/path/to/lite-vue-devtools.iife.js" defer></script>
 ```
 

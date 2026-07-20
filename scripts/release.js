@@ -52,18 +52,26 @@ async function main() {
     return;
   }
 
+  // Verify before touching anything.
+  step('\nChecking formatting...');
+  await run('pnpm', ['prettier', '--check', '**/*.{ts,js,html,json}']);
+  step('\nType checking...');
+  await run('pnpm', ['tsc', '--noEmit']);
+  step('\nRunning tests...');
+  await run('pnpm', ['test']);
+
   // Update the package version.
   step('\nUpdating the package version...');
   updatePackage(targetVersion);
 
   // Build the package.
   step('\nBuilding the package...');
-  await run('yarn', ['build']);
+  await run('pnpm', ['build']);
 
   // Generate the changelog.
   step('\nGenerating the changelog...');
-  await run('yarn', ['changelog']);
-  await run('yarn', ['prettier', '--write', 'CHANGELOG.md']);
+  await run('pnpm', ['changelog']);
+  await run('pnpm', ['prettier', '--write', 'CHANGELOG.md']);
 
   const { yes: changelogOk } = await prompt({
     type: 'confirm',
@@ -75,21 +83,15 @@ async function main() {
     return;
   }
 
-  // Commit changes to the Git and create a tag.
+  // Commit changes to Git and create a tag.
   step('\nCommitting changes...');
   await run('git', ['add', 'CHANGELOG.md', 'package.json']);
   await run('git', ['commit', '-m', `release: v${targetVersion}`]);
   await run('git', ['tag', `v${targetVersion}`]);
 
-  // Publish the package.
+  // Publish the package (publishConfig.access: public covers the scope).
   step('\nPublishing the package...');
-  await run('yarn', [
-    'publish',
-    '--new-version',
-    targetVersion,
-    '--no-commit-hooks',
-    '--no-git-tag-version',
-  ]);
+  await run('pnpm', ['publish', '--no-git-checks']);
 
   // Push to GitHub.
   step('\nPushing to GitHub...');
@@ -106,4 +108,7 @@ function updatePackage(version) {
   fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 }
 
-main().catch((err) => console.error(err));
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

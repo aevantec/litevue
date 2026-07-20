@@ -1,6 +1,6 @@
 {
-  "name": "lite-vue",
-  "version": "0.4.1",
+  "name": "litevue",
+  "version": "0.5.0",
   "description": "Lightweight subset of Vue optimized for progressive enhancement. A fork of petite-vue with devtools.",
   "files": [
     "dist"
