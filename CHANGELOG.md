@@ -27,8 +27,16 @@ First release of `litevue`, a fork continuing from petite-vue
 - **core:** magic properties `$dispatch`, `$watch` (scope-lifecycle-tied),
   `$id`
 - **plugins:** first-party plugin bundle (`litevue/plugins`):
-  `intersect`, `persist`, `focus`, `collapse`, `transition` (Vue-style
-  enter/leave classes on show/hide, `.appear`)
+  `intersect`, `persist`, `focus` (incl. `v-trap` focus containment),
+  `collapse`, `mask` (`v-mask` input masking), `transition` (Vue-style
+  enter/leave classes on show/hide, `.appear`, and an unmount mode that
+  animates `v-if`/`v-for` enter/leave)
+- **core:** `v-teleport="selector"` — render an element under a different
+  parent while keeping its scope; composes with `v-if`
+- **core:** deferred block removal — leave transitions delay DOM removal
+  and `@unmounted` until the animation completes
+- **core:** `$root` magic property; `v-model.debounce[-ms]` and
+  `v-model.fill` modifiers
 
 ### Bug Fixes
 

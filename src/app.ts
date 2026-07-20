@@ -67,6 +67,12 @@ export const createApp = (initialData?: any) => {
   ctx.scope.$store = stores;
   ctx.scope.$watch = createWatch(ctx);
   ctx.scope.$id = createId();
+  // non-enumerable so serializing a scope ({{ $data }}, devtools previews)
+  // doesn't recurse into the self-reference
+  Object.defineProperty(ctx.scope, '$root', {
+    value: ctx.scope,
+    enumerable: false,
+  });
 
   let rootBlocks: Block[];
   const installedPlugins = new Set<Plugin>();

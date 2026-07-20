@@ -44,6 +44,27 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
     // through to directive processing.
     const name = checkAttr(el, 'v-name');
 
+    // v-teleport: move the element under a different parent (literal CSS
+    // selector) while it keeps rendering with its original scope. Processed
+    // after the v-if/v-for early returns so it composes with them, and
+    // removed from the target when the owning block unmounts.
+    let teleportNext: ChildNode | null | undefined;
+    if ((exp = checkAttr(el, 'v-teleport'))) {
+      const target = document.querySelector(exp);
+      if (target) {
+        // hand the parent's child walk its original next sibling — after
+        // the move, el.nextSibling points into the target instead
+        teleportNext = el.nextSibling;
+        // Block.insert must not pull a teleported block root back to the
+        // original position
+        (el as any).__teleported = true;
+        target.appendChild(el);
+        ctx.cleanups.push(() => el.remove());
+      } else if (import.meta.env.DEV) {
+        console.error(`v-teleport target "${exp}" not found.`);
+      }
+    }
+
     // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {};
@@ -92,6 +113,7 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
     if (hasVOnce) {
       inOnce = false;
     }
+    return teleportNext;
   } else if (type === 3) {
     // Text
     const data = (node as Text).data;

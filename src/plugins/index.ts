@@ -1,4 +1,5 @@
 export { intersect } from './intersect';
+export { mask } from './mask';
 export { transition } from './transition';
 export { persist } from './persist';
 export { focus } from './focus';

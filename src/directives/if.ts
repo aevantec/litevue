@@ -48,7 +48,11 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
 
   const removeActiveBlock = () => {
     if (block) {
-      parent.insertBefore(anchor, block.el);
+      // teleported roots don't live under parent — for those the anchor
+      // was never removed, so the position is already preserved
+      if (block.el.parentNode === parent) {
+        parent.insertBefore(anchor, block.el);
+      }
       block.remove();
       block = undefined;
     }
@@ -62,7 +66,9 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
           removeActiveBlock();
           block = new Block(el, ctx);
           block.insert(parent, anchor);
-          parent.removeChild(anchor);
+          if (block.el.parentNode === parent) {
+            parent.removeChild(anchor);
+          }
           activeBranchIndex = i;
         }
         return;

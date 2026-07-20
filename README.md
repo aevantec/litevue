@@ -311,12 +311,33 @@ Alternatively, you can use the `reactive` method (re-exported from `@vue/reactiv
 </div>
 ```
 
+### `v-teleport`
+
+`v-teleport="selector"` moves the element under a different parent (a literal CSS selector) while it keeps rendering with its original scope — for modals, dropdowns, and toasts that must escape overflow/z-index contexts. It composes with `v-if`, and the element is removed from the target when its owning scope unmounts:
+
+```html
+<div id="modals"></div>
+
+<div v-scope="{ open: false }">
+  <button @click="open = true">open</button>
+  <div v-if="open" v-teleport="#modals">rendered under #modals</div>
+</div>
+```
+
+### `v-model` Modifiers
+
+Alongside Vue's `.lazy` / `.number` / `.trim`, lite-vue adds:
+
+- **`.debounce[-ms]`** — rate-limit model writes from input events (default 250ms): `v-model.debounce-300="query"`.
+- **`.fill`** — seed empty model state from the input's `value` attribute, handy for server-rendered forms: `<input value="from-server" v-model.fill="name" />`.
+
 ### Magic Properties
 
 Every expression has access to these magic properties:
 
 - **`$el`** — the current element.
 - **`$data`** — the current scope object.
+- **`$root`** — the app's root scope, from any nested scope.
 - **`$refs`** — elements registered with the `ref` attribute.
 - **`$nextTick(fn)`** — run `fn` after the next reactive flush.
 - **`$store`** — the [global stores](#global-state-management).
@@ -471,15 +492,28 @@ createApp({ open: false }).use(intersect).use(persist).mount();
   <div v-scope="{ count: 0 }" v-persist="counter">…</div>
   ```
 
-- **focus** — `v-focus="expression"` focuses the element whenever the expression becomes truthy (including on mount). Add `.select` to also select the text.
+- **focus** — `v-focus="expression"` focuses the element whenever the expression becomes truthy (including on mount). Add `.select` to also select the text. The same plugin also provides **`v-trap="expression"`**: while truthy, Tab / Shift+Tab focus cycling is contained within the element (wrapping at the edges, pulling stray focus back in), focus moves to the first focusable child on activation, and the previously focused element is restored on release — accessible modals in one attribute.
 
   ```html
   <input v-focus.select="editing" />
+
+  <div v-show="open" v-trap="open">
+    <button>…</button>
+    <button @click="open = false">close</button>
+  </div>
   ```
 
 - **collapse** — `v-collapse="expression"` expands/collapses the element's height with a transition; the initial state applies without animating. `.duration-<ms>` overrides the default 250ms.
 
+- **mask** — `v-mask="(999) 999-9999"` formats the input's value as the user types. The attribute value is the literal mask: `9` = digit, `a` = letter, `*` = alphanumeric, everything else literal. Plays well with `v-model`, which receives the masked value.
+
 - **transition** — `v-transition:name="expression"` is an animated `v-show` with Vue-style transition classes: `name-enter-from` / `name-enter-active` / `name-enter-to` on show, and the `leave-*` equivalents before hiding — the element is only hidden after the leave transition finishes (durations are read from computed styles). The name defaults to `v`; add `.appear` to animate the initial render. Use it _instead of_ `v-show`.
+
+  With **no expression** — `v-transition:fade` on a `v-if`/`v-for` element — it switches to unmount mode: the enter transition runs when the element is inserted, and the core delays DOM removal (and `@unmounted`) until the leave transition finishes.
+
+  ```html
+  <div v-if="open" v-transition:fade>animates in and out with v-if</div>
+  ```
 
   ```html
   <style>

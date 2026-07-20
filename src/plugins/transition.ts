@@ -31,9 +31,14 @@ const durationOf = (el: Element) => {
  *
  * The name defaults to "v". The initial state applies without animating
  * unless the .appear modifier is present. Use it instead of v-show.
+ *
+ * With no expression (`v-transition:fade` on a v-if/v-for element) it
+ * switches to unmount mode: the enter transition runs when the element is
+ * inserted, and a leave hook is registered so the core delays removal until
+ * the leave transition finishes.
  */
 export const transition: Plugin = (app) => {
-  app.directive('transition', ({ el, get, effect, arg, modifiers }) => {
+  app.directive('transition', ({ el, get, effect, arg, modifiers, exp }) => {
     const elem = el as HTMLElement;
     const name = arg || 'v';
     const cls = (phase: string) => `${name}-${phase}`;
@@ -66,6 +71,17 @@ export const transition: Plugin = (app) => {
         }
       }, durationOf(elem));
     };
+
+    if (!exp) {
+      // unmount mode: the element's lifetime is controlled by v-if/v-for.
+      // enter runs a microtask later, once the block has been inserted
+      Promise.resolve().then(() => run('enter'));
+      (elem as any).__leave = () =>
+        new Promise<void>((resolve) => run('leave', resolve));
+      return () => {
+        delete (elem as any).__leave;
+      };
+    }
 
     effect(() => {
       const show = !!get();

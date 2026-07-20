@@ -1,0 +1,64 @@
+<style>
+  #outlet {
+    border: 1px dashed #42b883;
+    padding: 8px;
+    min-height: 40px;
+  }
+  #box {
+    width: 60px;
+    height: 60px;
+    background: #42b883;
+  }
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 300ms ease;
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+</style>
+
+<script type="module">
+  import { createApp } from '../src';
+  import { focus, mask, transition } from '../src/plugins';
+
+  createApp({ show: true, open: false, trapped: false, phone: '' })
+    .use(focus)
+    .use(mask)
+    .use(transition)
+    .mount('#app');
+</script>
+
+<h3>teleport outlet</h3>
+<div id="outlet"></div>
+
+<div id="app" v-scope>
+  <h3>v-teleport + v-if</h3>
+  <button id="tp-toggle" @click="open = !open">toggle teleported</button>
+  <div v-if="open" v-teleport="#outlet">
+    teleported! root: {{ $root ? 'yes' : 'no' }}
+  </div>
+
+  <h3>v-if leave transition</h3>
+  <button id="toggle" @click="show = !show">toggle box</button>
+  <div id="box" v-if="show" v-transition:fade></div>
+
+  <h3>v-trap</h3>
+  <button id="trap-open" @click="trapped = true">open trap</button>
+  <div v-show="trapped" style="border: 1px solid #999; padding: 8px">
+    <div v-trap="trapped">
+      <button>first</button>
+      <button>second</button>
+      <button @click="trapped = false">close (restores focus)</button>
+    </div>
+  </div>
+
+  <h3>v-mask</h3>
+  <input
+    v-mask="(999) 999-9999"
+    v-model.debounce-100="phone"
+    placeholder="phone"
+  />
+  <span>model: {{ phone }}</span>
+</div>

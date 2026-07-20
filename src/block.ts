@@ -61,7 +61,8 @@ export class Block {
         parent.insertBefore(this.start, this.end);
         parent.insertBefore(this.template, this.end);
       }
-    } else {
+    } else if (!(this.template as any).__teleported) {
+      // teleported roots already live under their target
       parent.insertBefore(this.template, anchor);
     }
   }
@@ -70,20 +71,33 @@ export class Block {
     if (this.parentCtx) {
       remove(this.parentCtx.blocks, this);
     }
-    if (this.start) {
-      const parent = this.start.parentNode!;
-      let node: Node | null = this.start;
-      let next: Node | null;
-      while (node) {
-        next = node.nextSibling;
-        parent.removeChild(node);
-        if (node === this.end) break;
-        node = next;
+    const removeNow = () => {
+      if (this.start) {
+        const parent = this.start.parentNode!;
+        let node: Node | null = this.start;
+        let next: Node | null;
+        while (node) {
+          next = node.nextSibling;
+          parent.removeChild(node);
+          if (node === this.end) break;
+          node = next;
+        }
+      } else {
+        this.template.parentNode!.removeChild(this.template);
       }
+      this.teardown();
+    };
+    // a leave hook on the root element (set by the transition plugin's
+    // unmount mode) defers removal until the leave animation finishes;
+    // effects stay live during the animation and teardown runs after
+    const leave = this.isFragment
+      ? undefined
+      : ((this.template as any).__leave as (() => Promise<void>) | undefined);
+    if (leave) {
+      leave().then(removeNow);
     } else {
-      this.template.parentNode!.removeChild(this.template);
+      removeNow();
     }
-    this.teardown();
   }
 
   teardown() {

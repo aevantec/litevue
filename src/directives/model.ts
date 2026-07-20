@@ -7,7 +7,7 @@ export const model: Directive<
 > = ({ el, exp, get, effect, modifiers }) => {
   const type = el.type;
   const assign = get(`(val) => { ${exp} = val }`);
-  const { trim, number = type === 'number' } = modifiers || {};
+  const { trim, number = type === 'number', lazy, fill } = modifiers || {};
 
   if (el.tagName === 'SELECT') {
     const sel = el as HTMLSelectElement;
@@ -95,16 +95,38 @@ export const model: Directive<
       return val;
     };
 
+    // .debounce[-ms]: rate-limit assignments from input events
+    let write = assign;
+    for (const key in modifiers || {}) {
+      const m = /^debounce(?:-(\d+))?$/.exec(key);
+      if (m) {
+        const ms = m[1] ? +m[1] : 250;
+        let t: ReturnType<typeof setTimeout>;
+        write = (val: any) => {
+          clearTimeout(t);
+          t = setTimeout(assign, ms, val);
+        };
+      }
+    }
+
     listen(el, 'compositionstart', onCompositionStart);
     listen(el, 'compositionend', onCompositionEnd);
-    listen(el, modifiers?.lazy ? 'change' : 'input', () => {
+    listen(el, lazy ? 'change' : 'input', () => {
       if ((el as any).composing) return;
-      assign(resolveValue(el.value));
+      write(resolveValue(el.value));
     });
     if (trim) {
       listen(el, 'change', () => {
         el.value = el.value.trim();
       });
+    }
+
+    // .fill: seed empty model state from the input's initial value
+    if (fill) {
+      const cur = get();
+      if ((cur == null || cur === '') && el.value) {
+        assign(resolveValue(el.value));
+      }
     }
 
     effect(() => {
