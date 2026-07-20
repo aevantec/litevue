@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --bg: #1e1e1e;
+        --bg2: #252526;
+        --border: #3c3c3c;
+        --fg: #d4d4d4;
+        --muted: #808080;
+        --accent: #42b883;
+        --sel: #094771;
+        --key: #9cdcfe;
+        --val: #ce9178;
+        --exp: #6a9955;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --bg2: #f3f3f3;
+          --border: #d0d0d0;
+          --fg: #383a42;
+          --muted: #8e8e90;
+          --sel: #d2e5f5;
+          --key: #0451a5;
+          --val: #a31515;
+          --exp: #22863a;
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          12px/1.5 ui-monospace,
+          Menlo,
+          Consolas,
+          monospace;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+      }
+      #tree {
+        width: 40%;
+        min-width: 180px;
+        overflow: auto;
+        border-right: 1px solid var(--border);
+        padding: 4px 0;
+      }
+      #state {
+        flex: 1;
+        overflow: auto;
+        padding: 4px 0;
+      }
+      .row {
+        padding: 2px 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+      }
+      .row.sel {
+        background: var(--sel);
+      }
+      .row .name {
+        color: var(--key);
+      }
+      .row .punct,
+      .divider,
+      .empty {
+        color: var(--muted);
+      }
+      .row .exp {
+        color: var(--exp);
+      }
+      .divider {
+        padding: 4px 8px 1px;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .empty {
+        padding: 8px;
+      }
+      .prop {
+        display: flex;
+        gap: 6px;
+        padding: 2px 8px;
+        align-items: baseline;
+      }
+      .prop .key {
+        color: var(--key);
+        flex-shrink: 0;
+      }
+      .prop input {
+        flex: 1;
+        min-width: 0;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        color: var(--val);
+        font: inherit;
+        padding: 0 3px;
+      }
+      .prop input:hover,
+      .prop input:focus {
+        border-color: var(--border);
+        outline: none;
+        background: var(--bg2);
+      }
+      .prop .ro {
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="tree"></div>
+      <div id="state"></div>
+    </div>
+    <script src="panel.js"></script>
+  </body>
+</html>

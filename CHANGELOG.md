@@ -37,12 +37,13 @@ First release of `litevue`, a fork continuing from petite-vue
   and `@unmounted` until the animation completes
 - **core:** `$root` magic property; `v-model.debounce[-ms]` and
   `v-model.fill` modifiers
-- **plugins:** `autoInit` — auto-mounts `v-scope` roots added to the DOM
-  after the initial mount (htmx swaps, `fetch` + `innerHTML`), into the
-  same app so fragments share the root scope and `$store`
-- **core:** `mount()` can be called repeatedly to add roots; `unmount()`
-  tears down every mounted batch (previously only the last, leaking
-  effects and listeners)
+- **core:** `mount()` can be called repeatedly to initialize dynamically
+  added content into the same app (the `Alpine.initTree` equivalent);
+  `unmount()` tears down every mounted batch (previously only the last,
+  leaking effects and listeners). Injected markup is deliberately inert
+  until explicitly mounted — automatic initialization of added DOM was
+  rejected as a security hazard (HTML injection must not become
+  expression execution)
 
 ### Bug Fixes
 

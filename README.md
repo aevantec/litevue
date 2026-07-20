@@ -141,6 +141,20 @@ createApp({
 }).mount('#app2');
 ```
 
+### Initializing Dynamic Content
+
+Markup added to the DOM after the initial mount (htmx swaps, `fetch` + `innerHTML`, CMS embeds) is **deliberately inert** — expressions in injected HTML never execute on their own, so an HTML injection can't become script execution. To initialize a new fragment, call `mount()` again on the same app (the equivalent of Alpine's `Alpine.initTree`):
+
+```js
+const app = createApp({ shared: 'state' }).mount();
+
+// later, after inserting new markup:
+container.innerHTML = '<div v-scope="{ n: 0 }">{{ n }} / {{ shared }}</div>';
+app.mount(container);
+```
+
+Fragments mounted this way join the same app, so they see the root scope and `$store`, and a single `unmount()` tears down every mounted batch.
+
 ### Lifecycle Events
 
 You can listen to the special `mounted` and `unmounted` lifecycle events for each element (the petite-vue `vue:` prefix still works but is deprecated):
@@ -504,13 +518,6 @@ createApp({ open: false }).use(intersect).use(persist).mount();
   ```
 
 - **collapse** — `v-collapse="expression"` expands/collapses the element's height with a transition; the initial state applies without animating. `.duration-<ms>` overrides the default 250ms.
-
-- **autoInit** — mounts `v-scope` roots that appear in the DOM *after* the initial mount: htmx swaps, `fetch` + `innerHTML`, CMS embeds. Added fragments are mounted into the same app, so they see the root scope and `$store`. No directive — just `use(autoInit)`:
-
-  ```js
-  createApp({ shared: 'state' }).use(autoInit).mount();
-  // later: element.innerHTML = '<div v-scope="{ n: 0 }">…</div>' just works
-  ```
 
 - **mask** — `v-mask="(999) 999-9999"` formats the input's value as the user types. The attribute value is the literal mask: `9` = digit, `a` = letter, `*` = alphanumeric, everything else literal. Plays well with `v-model`, which receives the masked value.
 

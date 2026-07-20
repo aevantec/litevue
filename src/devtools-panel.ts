@@ -59,10 +59,13 @@ const css = `
   max-width: calc(100vw - 24px);
   height: 440px;
   max-height: calc(100vh - 24px);
+  min-width: 320px;
+  min-height: 200px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  resize: both;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 .header {
@@ -73,6 +76,7 @@ const css = `
   background: var(--bg2);
   border-bottom: 1px solid var(--border);
   user-select: none;
+  cursor: move;
 }
 .title {
   color: var(--accent);
@@ -230,6 +234,32 @@ const css = `
   accent-color: var(--accent);
   cursor: pointer;
 }
+.del {
+  visibility: hidden;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0 2px;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.prop:hover .del {
+  visibility: visible;
+}
+.del:hover {
+  color: #e5534b;
+}
+.adder .key-in {
+  flex: 0 0 30%;
+  color: var(--key);
+}
+.adder input::placeholder {
+  color: var(--muted);
+}
+.adder input {
+  border-color: var(--border);
+}
 .bool {
   color: var(--val);
 }
@@ -301,6 +331,30 @@ const icon = (paths: string) =>
 type ThemeMode = 'dark' | 'light' | 'system';
 
 const THEME_KEY = 'lite-vue-devtools-theme';
+const UI_KEY = 'lite-vue-devtools-ui';
+
+// persisted panel chrome: open state, position (right/bottom offsets) and size
+interface UiState {
+  open?: boolean;
+  right?: number;
+  bottom?: number;
+  w?: number;
+  h?: number;
+}
+
+const loadUi = (): UiState => {
+  try {
+    return JSON.parse(localStorage.getItem(UI_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const saveUi = (patch: UiState) => {
+  try {
+    localStorage.setItem(UI_KEY, JSON.stringify({ ...loadUi(), ...patch }));
+  } catch {}
+};
 
 const themeIcons: Record<ThemeMode, string> = {
   dark: icon('<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'),
@@ -536,6 +590,43 @@ const renderState = () => {
   if (!own.length && !inherited.length) {
     stateEl.appendChild(h('div', 'empty', 'empty scope'));
   }
+  stateEl.appendChild(buildAdder(scope));
+};
+
+// "+ key / value" row for adding new state. Note: on nested v-scope proxies
+// an unknown key falls through to the owning parent scope, matching the
+// framework's write semantics.
+const buildAdder = (scope: Record<string, any>) => {
+  const row = h('div', 'prop adder');
+  row.appendChild(h('span', 'spacer'));
+  const keyIn = h('input', 'val key-in') as HTMLInputElement;
+  keyIn.placeholder = 'key';
+  const valIn = h('input', 'val') as HTMLInputElement;
+  valIn.placeholder = 'value';
+  const commit = () => {
+    const k = keyIn.value.trim();
+    if (!k) return;
+    const raw = valIn.value;
+    let v: any = raw;
+    if (raw === 'true') v = true;
+    else if (raw === 'false') v = false;
+    else if (raw !== '' && !isNaN(+raw)) v = +raw;
+    scope[k] = v;
+    keyIn.blur();
+    valIn.blur();
+    scheduleRender();
+    // refocus after the re-render so several keys can be added in a row
+    setTimeout(() => {
+      const next = stateEl.querySelector('.adder .key-in') as HTMLInputElement;
+      if (next) next.focus();
+    });
+  };
+  keyIn.onkeydown = valIn.onkeydown = (e) => {
+    if (e.key === 'Enter') commit();
+  };
+  row.appendChild(keyIn);
+  row.appendChild(valIn);
+  return row;
 };
 
 const previewOf = (v: any) =>
@@ -568,6 +659,7 @@ const addNode = (
         renderState();
       };
     }
+    appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
       const keys = Object.keys(v);
@@ -633,7 +725,32 @@ const addNode = (
     };
     row.appendChild(input);
   }
+  appendDelete(row, container, key, depth, cls);
   stateEl.appendChild(row);
+};
+
+// removable: top-level own keys of the selected scope/store
+const appendDelete = (
+  row: HTMLElement,
+  container: Record<string, any>,
+  key: string,
+  depth: number,
+  cls: string
+) => {
+  if (depth !== 0 || cls !== 'prop') return;
+  const desc = Object.getOwnPropertyDescriptor(container, key);
+  if (desc && desc.get) return;
+  const del = h('button', 'del', '✕');
+  del.title = `delete "${key}"`;
+  del.onclick = (e) => {
+    e.stopPropagation();
+    // release any focused editor so the re-render isn't skipped
+    const active = shadow.activeElement as HTMLElement | null;
+    if (active && active.blur) active.blur();
+    delete container[key];
+    scheduleRender();
+  };
+  row.appendChild(del);
 };
 
 const onPickClick = (e: MouseEvent) => {
@@ -697,6 +814,7 @@ const build = () => {
   pillEl.onclick = () => {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
+    saveUi({ open: true });
     scheduleRender();
   };
   shadow.appendChild(pillEl);
@@ -705,6 +823,33 @@ const build = () => {
   panelEl.style.display = 'none';
   const header = h('div', 'header');
   header.appendChild(h('span', 'title', '⚡ lite-vue'));
+
+  // drag the panel by its header; position persists as right/bottom offsets
+  header.addEventListener('mousedown', (e) => {
+    if ((e.target as Element).closest('.btn')) return;
+    e.preventDefault();
+    const rect = panelEl.getBoundingClientRect();
+    const startRight = window.innerWidth - rect.right;
+    const startBottom = window.innerHeight - rect.bottom;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const move = (ev: MouseEvent) => {
+      panelEl.style.right =
+        Math.max(0, startRight - (ev.clientX - startX)) + 'px';
+      panelEl.style.bottom =
+        Math.max(0, startBottom - (ev.clientY - startY)) + 'px';
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      saveUi({
+        right: parseInt(panelEl.style.right) || 12,
+        bottom: parseInt(panelEl.style.bottom) || 12,
+      });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
   themeBtn = h('button', 'btn');
   themeBtn.onclick = () => {
     theme = nextTheme[theme];
@@ -734,6 +879,7 @@ const build = () => {
     if (picking) stopPicking();
     panelEl.style.display = 'none';
     pillEl.style.display = '';
+    saveUi({ open: false });
   };
   header.appendChild(closeBtn);
   panelEl.appendChild(header);
@@ -769,6 +915,30 @@ const build = () => {
   body.appendChild(stateEl);
   panelEl.appendChild(body);
   shadow.appendChild(panelEl);
+
+  // restore persisted chrome: position, size, open state
+  const ui = loadUi();
+  if (ui.right != null) panelEl.style.right = ui.right + 'px';
+  if (ui.bottom != null) panelEl.style.bottom = ui.bottom + 'px';
+  if (ui.w) panelEl.style.width = ui.w + 'px';
+  if (ui.h) panelEl.style.height = ui.h + 'px';
+  if (ui.open) {
+    pillEl.style.display = 'none';
+    panelEl.style.display = 'flex';
+    scheduleRender();
+  }
+  // persist the native CSS resize grip's result (jsdom has no ResizeObserver)
+  if (typeof ResizeObserver !== 'undefined') {
+    let t: ReturnType<typeof setTimeout>;
+    new ResizeObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (panelEl.style.display !== 'none' && panelEl.offsetWidth) {
+          saveUi({ w: panelEl.offsetWidth, h: panelEl.offsetHeight });
+        }
+      }, 300);
+    }).observe(panelEl);
+  }
 
   document.body.appendChild(host);
 
