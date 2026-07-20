@@ -54,7 +54,7 @@ async function main() {
 
   // Verify before touching anything.
   step('\nChecking formatting...');
-  await run('pnpm', ['prettier', '--check', '**/*.{ts,js,html,json}']);
+  await run('pnpm', ['prettier', '--check', '**/*.{ts,mts,js,html,json}']);
   step('\nType checking...');
   await run('pnpm', ['tsc', '--noEmit']);
   step('\nRunning tests...');

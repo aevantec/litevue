@@ -24,7 +24,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm prettier --check "**/*.{ts,js,html,json}"
+        run: pnpm prettier --check "**/*.{ts,mts,js,html,json}"
 
       - name: Type check
         run: pnpm tsc --noEmit
