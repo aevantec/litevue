@@ -1,4 +1,4 @@
-# [0.5.0](https://github.com/abiacarl/lite-vue) (2026-07-11)
+# [0.5.0](https://github.com/abiacarl/litevue) (2026-07-11)
 
 First release of `litevue`, a fork continuing from petite-vue
 0.4.1 (upstream history preserved below).
@@ -37,6 +37,12 @@ First release of `litevue`, a fork continuing from petite-vue
   and `@unmounted` until the animation completes
 - **core:** `$root` magic property; `v-model.debounce[-ms]` and
   `v-model.fill` modifiers
+- **plugins:** `autoInit` — auto-mounts `v-scope` roots added to the DOM
+  after the initial mount (htmx swaps, `fetch` + `innerHTML`), into the
+  same app so fragments share the root scope and `$store`
+- **core:** `mount()` can be called repeatedly to add roots; `unmount()`
+  tears down every mounted batch (previously only the last, leaking
+  effects and listeners)
 
 ### Bug Fixes
 

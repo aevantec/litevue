@@ -1,0 +1,27 @@
+<style>
+  #box {
+    width: 60px;
+    height: 60px;
+    background: #42b883;
+  }
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 300ms ease;
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+</style>
+
+<script type="module">
+  import { createApp } from '../src';
+  import { transition } from '../src/plugins';
+  createApp({ show: true }).use(transition).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <h3>v-if leave transition (v-transition unmount mode)</h3>
+  <button id="toggle" @click="show = !show">toggle box</button>
+  <div id="box" v-if="show" v-transition:fade></div>
+</div>

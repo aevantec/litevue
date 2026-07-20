@@ -1,3 +1,4 @@
+export { autoInit } from './auto-init';
 export { intersect } from './intersect';
 export { mask } from './mask';
 export { transition } from './transition';

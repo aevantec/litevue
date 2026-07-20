@@ -1,0 +1,23 @@
+<style>
+  #outlet {
+    border: 1px dashed #42b883;
+    padding: 8px;
+    min-height: 40px;
+  }
+</style>
+
+<script type="module">
+  import { createApp } from '../src';
+  createApp({ open: false }).mount('#app');
+</script>
+
+<h3>teleport outlet</h3>
+<div id="outlet"></div>
+
+<div id="app" v-scope>
+  <h3>v-teleport + v-if</h3>
+  <button id="tp-toggle" @click="open = !open">toggle teleported</button>
+  <div v-if="open" v-teleport="#outlet">
+    teleported! root: {{ $root ? 'yes' : 'no' }}
+  </div>
+</div>

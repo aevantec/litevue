@@ -1,0 +1,15 @@
+<script type="module">
+  import { createApp } from '../src';
+  import { mask } from '../src/plugins';
+  createApp({ phone: '' }).use(mask).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <h3>v-mask + v-model.debounce</h3>
+  <input
+    v-mask="(999) 999-9999"
+    v-model.debounce-100="phone"
+    placeholder="phone"
+  />
+  <span>model: {{ phone }}</span>
+</div>

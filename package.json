@@ -39,7 +39,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/abiacarl/lite-vue.git"
+    "url": "git+https://github.com/abiacarl/litevue.git"
   },
   "keywords": [
     "vue"
@@ -47,9 +47,9 @@
   "author": "Evan You",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/abiacarl/lite-vue/issues"
+    "url": "https://github.com/abiacarl/litevue/issues"
   },
-  "homepage": "https://github.com/abiacarl/lite-vue#readme",
+  "homepage": "https://github.com/abiacarl/litevue#readme",
   "engines": {
     "node": ">=18"
   },

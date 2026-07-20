@@ -74,7 +74,7 @@ export const createApp = (initialData?: any) => {
     enumerable: false,
   });
 
-  let rootBlocks: Block[];
+  let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
 
   const app: App = {
@@ -135,7 +135,10 @@ export const createApp = (initialData?: any) => {
         );
       }
 
-      rootBlocks = roots.map((el) => {
+      // append rather than assign: mount() can be called repeatedly (extra
+      // roots, dynamically added fragments) and unmount() must tear down
+      // every mounted root, not just the last batch
+      for (const el of roots) {
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);
@@ -146,13 +149,14 @@ export const createApp = (initialData?: any) => {
             registerScope(el, ctx.scope, undefined, name || undefined)
           );
         }
-        return block;
-      });
+        rootBlocks.push(block);
+      }
       return this;
     },
 
     unmount() {
       rootBlocks.forEach((block) => block.teardown());
+      rootBlocks = [];
     },
   };
 
