@@ -1,4 +1,4 @@
-# lite-vue devtools extension
+# litevue devtools extension
 
 A devtools-tab version of the in-page inspector. Shows every mounted scope
 and global store of a page running litevue, with inline editing of top-level
@@ -16,7 +16,7 @@ v1 polls a JSON-safe snapshot every 500ms.
 
 - **Chrome**: `chrome://extensions` → enable Developer mode → "Load
   unpacked" → select this `extension/` directory. Open devtools on a page
-  using litevue → "lite-vue" tab.
+  using litevue → "litevue" tab.
 - **Firefox** (115+): `about:debugging#/runtime/this-firefox` → "Load
   Temporary Add-on…" → select `manifest.json`.
 

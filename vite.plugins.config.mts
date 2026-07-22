@@ -18,7 +18,7 @@ export default defineConfig({
       name: 'LiteVuePlugins',
       formats: ['es', 'iife'],
       // keep the historical file names — vite 3+ would otherwise emit .mjs
-      fileName: (format) => `lite-vue-plugins.${format}.js`,
+      fileName: (format) => `litevue-plugins.${format}.js`,
     },
   },
 });

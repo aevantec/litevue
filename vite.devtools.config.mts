@@ -19,7 +19,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',
       formats: ['iife'],
-      fileName: () => 'lite-vue-devtools.iife.js',
+      fileName: () => 'litevue-devtools.iife.js',
     },
   },
 });

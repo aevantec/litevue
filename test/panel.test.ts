@@ -20,7 +20,7 @@ describe('devtools panel', () => {
     await tick();
 
     expect(host()).toBeTruthy();
-    expect($('.pill').textContent).toContain('lite-vue');
+    expect($('.pill').textContent).toContain('litevue');
     $('.pill').click();
     await sleep(10);
 

@@ -810,7 +810,7 @@ const build = () => {
   highlightEl = h('div', 'highlight');
   shadow.appendChild(highlightEl);
 
-  pillEl = h('div', 'pill', '⚡ lite-vue');
+  pillEl = h('div', 'pill', '⚡ litevue');
   pillEl.onclick = () => {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
@@ -822,7 +822,7 @@ const build = () => {
   panelEl = h('div', 'panel');
   panelEl.style.display = 'none';
   const header = h('div', 'header');
-  header.appendChild(h('span', 'title', '⚡ lite-vue'));
+  header.appendChild(h('span', 'title', '⚡ litevue'));
 
   // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {

@@ -56,9 +56,9 @@ Or, use the ES module build:
 
 The short CDN URL is meant for prototyping. For production usage, use a fully resolved CDN URL to avoid resolving and redirect cost:
 
-- Global build: `https://unpkg.com/litevue@0.5.0/dist/lite-vue.iife.js`
+- Global build: `https://unpkg.com/litevue@0.5.0/dist/litevue.iife.js`
   - exposes `LiteVue` global, supports auto init
-- ESM build: `https://unpkg.com/litevue@0.5.0/dist/lite-vue.es.js`
+- ESM build: `https://unpkg.com/litevue@0.5.0/dist/litevue.es.js`
   - Must be used with `<script type="module">`
 
 ### Root Scope
@@ -485,7 +485,7 @@ Plugins can register custom directives via `app.directive()` and extend the root
 
 ### First-Party Plugins
 
-A set of official plugins ships in a separate bundle (`lite-vue/plugins`, also `dist/lite-vue-plugins.iife.js` exposing a `LiteVuePlugins` global) so they add zero weight to the core — install only what you use:
+A set of official plugins ships in a separate bundle (`litevue/plugins`, also `dist/litevue-plugins.iife.js` exposing a `LiteVuePlugins` global) so they add zero weight to the core — install only what you use:
 
 ```js
 import { createApp } from 'litevue';
@@ -626,14 +626,14 @@ createApp().mount();
 
 ### Inspector Panel
 
-A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~2.7kb gzipped) so it adds zero weight to the core. Load it after the library, during development only:
+A standalone in-page inspector ships as a separate bundle (`dist/litevue-devtools.iife.js`, ~2.7kb gzipped) so it adds zero weight to the core. Load it after the library, during development only:
 
 ```html
 <script src="https://unpkg.com/litevue" defer init></script>
-<script src="/path/to/lite-vue-devtools.iife.js" defer></script>
+<script src="/path/to/litevue-devtools.iife.js" defer></script>
 ```
 
-A `⚡ lite-vue` pill appears bottom-right and expands into a panel with:
+A `⚡ litevue` pill appears bottom-right and expands into a panel with:
 
 - a scope tree (app roots and `v-scope` elements, labeled with their expressions)
 - a state view separating own from inherited state; arrays and objects render as an expandable tree, and every primitive leaf (including nested ones) is editable inline with type coercion

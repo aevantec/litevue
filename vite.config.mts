@@ -29,7 +29,7 @@ export default defineConfig(({ command }) => ({
       name: 'LiteVue',
       formats: ['es', 'umd', 'iife'],
       // keep the historical file names — vite 3+ would otherwise emit .mjs
-      fileName: (format) => `lite-vue.${format}.js`,
+      fileName: (format) => `litevue.${format}.js`,
     },
     rollupOptions: {
       plugins: [

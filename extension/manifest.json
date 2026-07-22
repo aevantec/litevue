@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "lite-vue devtools",
+  "name": "litevue devtools",
   "version": "0.5.0",
   "description": "Inspect litevue scopes and global stores in the browser devtools.",
   "devtools_page": "devtools.html",

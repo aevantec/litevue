@@ -1,5 +1,5 @@
 /* global chrome */
-// lite-vue devtools extension panel. All page access goes through
+// litevue devtools extension panel. All page access goes through
 // chrome.devtools.inspectedWindow.eval (page world), so no content-script /
 // postMessage bridge is needed and the extension page itself stays free of
 // eval/new Function (MV3 CSP). v1 polls for snapshots.
@@ -66,7 +66,7 @@ const h = (tag, className, text) => {
 const renderTree = () => {
   treeEl.textContent = '';
   if (!snapshot.ok) {
-    treeEl.appendChild(h('div', 'empty', 'lite-vue not detected on this page'));
+    treeEl.appendChild(h('div', 'empty', 'litevue not detected on this page'));
     return;
   }
   snapshot.scopes.forEach((s, index) => {

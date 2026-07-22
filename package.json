@@ -5,19 +5,19 @@
   "files": [
     "dist"
   ],
-  "main": "dist/lite-vue.umd.js",
-  "unpkg": "dist/lite-vue.iife.js",
-  "jsdelivr": "dist/lite-vue.iife.js",
-  "module": "./dist/lite-vue.es.js",
+  "main": "dist/litevue.umd.js",
+  "unpkg": "dist/litevue.iife.js",
+  "jsdelivr": "dist/litevue.iife.js",
+  "module": "./dist/litevue.es.js",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/lite-vue.es.js",
-      "require": "./dist/lite-vue.umd.js"
+      "import": "./dist/litevue.es.js",
+      "require": "./dist/litevue.umd.js"
     },
     "./plugins": {
       "types": "./dist/types/plugins/index.d.ts",
-      "import": "./dist/lite-vue-plugins.es.js"
+      "import": "./dist/litevue-plugins.es.js"
     }
   },
   "types": "./dist/types/index.d.ts",

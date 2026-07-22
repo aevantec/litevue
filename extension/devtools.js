@@ -1,3 +1,3 @@
 /* global chrome */
-// registers the "lite-vue" tab in the browser devtools
-chrome.devtools.panels.create('lite-vue', '', 'panel.html');
+// registers the "litevue" tab in the browser devtools
+chrome.devtools.panels.create('litevue', '', 'panel.html');
