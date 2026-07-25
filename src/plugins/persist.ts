@@ -5,6 +5,59 @@ import { store as getStore } from '../store';
 
 const PREFIX = 'litevue:';
 
+/** The slice of the Web Storage API persistence needs. */
+export interface PersistStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+/** Custom storages registered by name, usable as a directive modifier. */
+const registry: Record<string, PersistStorage> = Object.create(null);
+
+let defaultStorage: PersistStorage | string = 'local';
+
+// resolved lazily: touching localStorage at module scope throws when storage
+// is blocked, and neither exists during SSR
+const builtin = (name: string): PersistStorage | undefined => {
+  try {
+    if (name === 'local' || name === 'localStorage') return localStorage;
+    if (name === 'session' || name === 'sessionStorage') return sessionStorage;
+  } catch {}
+};
+
+const resolve = (
+  storage?: PersistStorage | string
+): PersistStorage | undefined => {
+  const target = storage ?? defaultStorage;
+  if (typeof target !== 'string') return target;
+  return registry[target] ?? builtin(target);
+};
+
+/**
+ * Register a custom storage under a name, so it can be selected by name from
+ * anywhere — including as a directive modifier:
+ *
+ *   registerStorage('memory', myMemoryStorage);
+ *   persistStore('scratch', { storage: 'memory' });
+ *   <div v-persist.memory="scratch">…</div>
+ *
+ * Any object with getItem/setItem works — sessionStorage, an IndexedDB
+ * shim, an in-memory map, a server-backed store.
+ */
+export const registerStorage = (name: string, storage: PersistStorage) => {
+  registry[name] = storage;
+};
+
+/**
+ * Switch the storage used when none is specified. Accepts a registered name
+ * ('local', 'session', or your own) or a storage object.
+ *
+ *   setDefaultStorage('session'); // everything defaults to sessionStorage
+ */
+export const setDefaultStorage = (storage: PersistStorage | string) => {
+  defaultStorage = storage;
+};
+
 /**
  * Which own properties of `target` can round-trip through storage.
  * Methods are behavior, not state; getter-only properties are derived and
@@ -24,12 +77,14 @@ const sync = (
   target: Record<string, any>,
   key: string,
   keys: string[] | undefined,
+  storage: PersistStorage | undefined,
   run: (fn: () => void) => any
 ) => {
+  if (!storage) return run(() => {});
   const fields = persistable(target, keys);
 
   try {
-    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    const saved = JSON.parse(storage.getItem(key) || 'null');
     if (saved) {
       for (const k of fields) {
         if (k in saved) target[k] = saved[k];
@@ -43,15 +98,15 @@ const sync = (
     try {
       // stringify reads nested values inside the effect, so deep changes
       // are tracked and re-saved too
-      localStorage.setItem(key, JSON.stringify(snapshot));
+      storage.setItem(key, JSON.stringify(snapshot));
     } catch {}
   });
 };
 
 /**
- * v-persist="storage-key" — syncs the element's scope to localStorage.
- * Saved values are restored on mount, and every change (including nested
- * objects and arrays) is written back automatically.
+ * v-persist="storage-key" — syncs the element's scope to storage. Saved
+ * values are restored on mount, and every change (including nested objects
+ * and arrays) is written back automatically.
  *
  * The attribute value is used verbatim as the storage key (it is not
  * evaluated as an expression); it falls back to the element id.
@@ -59,20 +114,41 @@ const sync = (
  * An argument narrows what is stored to specific properties:
  *   v-persist:draft="composer"           — only `draft`
  *   v-persist:draft,recipient="composer" — only those two
+ *
+ * A modifier picks the storage — `local` (default), `session`, or any name
+ * passed to registerStorage():
+ *   v-persist.session="wizard"
+ *   v-persist:draft.session="composer"
  */
 export const persist: Plugin = (app) => {
-  app.directive('persist', ({ ctx, el, exp, arg, effect }) => {
+  app.directive('persist', ({ ctx, el, exp, arg, modifiers, effect }) => {
     const key = PREFIX + (exp || el.id);
     if (import.meta.env.DEV && key === PREFIX) {
       console.error(`v-persist needs a key: v-persist="my-key".`);
     }
+
+    let storage: PersistStorage | string | undefined;
+    for (const name in modifiers || {}) {
+      if (resolve(name)) {
+        storage = name;
+        break;
+      }
+      if (import.meta.env.DEV) {
+        console.error(
+          `v-persist: unknown storage ".${name}" — use .local, .session, or ` +
+            `a name passed to registerStorage().`
+        );
+      }
+    }
+
     const keys = arg
       ? arg
           .split(',')
           .map((k) => k.trim())
           .filter(Boolean)
       : undefined;
-    sync(ctx.scope, key, keys, effect);
+
+    sync(ctx.scope, key, keys, resolve(storage), effect);
   });
 };
 
@@ -81,13 +157,19 @@ export const persist: Plugin = (app) => {
  * have no element to hang a directive on. Restores immediately and saves on
  * every change; returns a function that stops persisting.
  *
- *   persistStore('cart')                      // the whole store
- *   persistStore('cart', { keys: ['items'] }) // only these properties
- *   persistStore('cart', { key: 'v2:cart' })  // custom storage key
+ *   persistStore('cart')                              // the whole store
+ *   persistStore('cart', { keys: ['items'] })         // only these properties
+ *   persistStore('cart', { key: 'v2:cart' })          // custom storage key
+ *   persistStore('draft', { storage: 'session' })     // a different storage
+ *   persistStore('scratch', { storage: myStorage })   // any getItem/setItem
  */
 export const persistStore = (
   name: string,
-  options: { key?: string; keys?: string[] } = {}
+  options: {
+    key?: string;
+    keys?: string[];
+    storage?: PersistStorage | string;
+  } = {}
 ) => {
   const target = getStore(name);
   if (!target) {
@@ -100,8 +182,16 @@ export const persistStore = (
     return () => {};
   }
 
+  const storage = resolve(options.storage);
+  if (import.meta.env.DEV && !storage) {
+    console.error(
+      `persistStore("${name}") — storage ` +
+        `"${String(options.storage)}" is not available.`
+    );
+  }
+
   let runner: any;
-  sync(target, PREFIX + (options.key ?? name), options.keys, (fn) => {
+  sync(target, PREFIX + (options.key ?? name), options.keys, storage, (fn) => {
     // batched through the scheduler so a burst of mutations writes once
     runner = rawEffect(fn, { scheduler: () => queueJob(runner) });
     return runner;

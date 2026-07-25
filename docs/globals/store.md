@@ -53,4 +53,5 @@ store('cart', { items: [], coupon: '' });
 
 persistStore('cart'); // whole store
 persistStore('cart', { keys: ['items'] }); // or just some properties
+persistStore('cart', { storage: 'session' }); // or a different storage
 ```

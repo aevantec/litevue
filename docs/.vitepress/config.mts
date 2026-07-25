@@ -5,7 +5,7 @@ export default defineConfig({
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   // served as a GitHub Pages project site
-  base: '/',
+  base: '/litevue/',
   head: [['link', { rel: 'icon', href: '/litevue/logo.png' }]],
   themeConfig: {
     logo: '/logo.png',

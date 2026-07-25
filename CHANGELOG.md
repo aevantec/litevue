@@ -35,6 +35,10 @@ First release of `litevue`, a fork continuing from petite-vue
   (`v-persist:draft,to="key"`) and exports `persistStore(name, options?)`
   for persisting global stores from JS (returns a stop function; getters
   and methods are skipped; writes batched through the scheduler)
+- **plugins:** persistence targets any storage — `localStorage` (default),
+  `sessionStorage`, or a custom `getItem`/`setItem` object — selected per
+  usage (`v-persist.session="key"`, `persistStore(n, { storage })`), by name
+  via `registerStorage()`, or globally via `setDefaultStorage()`
 - **core:** `v-teleport="selector"` — render an element under a different
   parent while keeping its scope; composes with `v-if`
 - **core:** deferred block removal — leave transitions delay DOM removal
