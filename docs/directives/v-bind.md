@@ -2,7 +2,7 @@
 title: v-bind
 ---
 
-# v-bind <Badge type="directive" text="Directive" />
+# v-bind <Badge type="section" text="Directive" />
 
 Binds an attribute to an expression. Shorthand: `:`.
 

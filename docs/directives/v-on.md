@@ -2,7 +2,7 @@
 title: v-on
 ---
 
-# v-on <Badge type="directive" text="Directive" />
+# v-on <Badge type="section" text="Directive" />
 
 Attaches an event listener. Shorthand: `@`.
 

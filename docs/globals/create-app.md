@@ -2,7 +2,7 @@
 title: createApp()
 ---
 
-# createApp() <Badge type="global" text="Global" />
+# createApp() <Badge type="section" text="Global" />
 
 Creates an app instance.
 

@@ -2,7 +2,7 @@
 title: v-scope
 ---
 
-# v-scope <Badge type="directive" text="Directive" />
+# v-scope <Badge type="section" text="Directive" />
 
 Marks a region of the page controlled by litevue and declares its state.
 

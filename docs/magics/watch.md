@@ -2,7 +2,7 @@
 title: $watch
 ---
 
-# $watch <Badge type="magic" text="Magic" />
+# $watch <Badge type="section" text="Magic" />
 
 Watches a piece of state and runs a callback with `(value, oldValue)` on change. The source is a dot-path string or a getter function:
 

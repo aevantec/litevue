@@ -2,7 +2,7 @@
 title: $data
 ---
 
-# $data <Badge type="magic" text="Magic" />
+# $data <Badge type="section" text="Magic" />
 
 The current scope object — handy for debugging and serialization:
 

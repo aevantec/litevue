@@ -2,7 +2,7 @@
 title: ref
 ---
 
-# ref <Badge type="directive" text="Directive" />
+# ref <Badge type="section" text="Directive" />
 
 Registers the element on the scope's [`$refs`](/magics/refs) object:
 

@@ -2,7 +2,7 @@
 title: $el
 ---
 
-# $el <Badge type="magic" text="Magic" />
+# $el <Badge type="section" text="Magic" />
 
 The current element, available in every expression:
 

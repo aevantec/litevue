@@ -2,7 +2,7 @@
 title: v-show
 ---
 
-# v-show <Badge type="directive" text="Directive" />
+# v-show <Badge type="section" text="Directive" />
 
 Toggles the element's `display` style. The element stays mounted — cheaper than [`v-if`](/directives/v-if) for frequent toggles, but hidden content still exists in the DOM.
 

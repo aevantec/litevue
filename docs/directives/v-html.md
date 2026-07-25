@@ -2,7 +2,7 @@
 title: v-html
 ---
 
-# v-html <Badge type="directive" text="Directive" />
+# v-html <Badge type="section" text="Directive" />
 
 Sets the element's `innerHTML` from an expression:
 

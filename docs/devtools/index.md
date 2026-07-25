@@ -2,7 +2,7 @@
 title: Devtools
 ---
 
-# Devtools <Badge type="devtools" text="Devtools" />
+# Devtools <Badge type="section" text="Devtools" />
 
 litevue ships inspection tooling in the box, built on the public [Devtools API](/globals/devtools) — and a single line [disables it all in production](/globals/devtools#disabling-in-production).
 

@@ -2,9 +2,9 @@
 title: Installation
 ---
 
-# Installation <Badge type="start-here" text="Start Here" />
+# Installation <Badge type="section" text="Start Here" />
 
-`litevue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML. Same template syntax, same reactivity mental model, ~8kb.
+Getting litevue onto a page. For what it is, how it compares to Vue and Alpine, and the security/CSP constraints, read the [Introduction](/start-here/introduction) first.
 
 ## From a CDN
 
@@ -50,6 +50,10 @@ Remove the `init` attribute to control mounting yourself — required when you u
   LiteVue.createApp().mount();
 </script>
 ```
+
+::: warning Mount explicitly on pages with user-generated HTML
+The `init` attribute and a bare `createApp().mount()` crawl the entire document. If any part of the page renders user-submitted HTML, pass an explicit target so litevue only processes markup you control — see [Security and CSP](/start-here/introduction#security-and-csp).
+:::
 
 ## Next steps
 

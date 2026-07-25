@@ -66,9 +66,10 @@ First release of `litevue`, a fork continuing from petite-vue
 - vitest + jsdom test suite (`pnpm test`), prettier `format` script, GitHub
   Actions CI
 - VitePress documentation site in `docs/` (`pnpm docs:dev`) — Alpine-style
-  structure with a page per directive/magic/plugin, essentials and globals
-  sections, migration guides (petite-vue, Alpine), brand theme and logo;
-  GitHub Pages deploy workflow; README reduced to a quick start
+  structure with a page per directive/magic/plugin, section overview pages,
+  an introduction covering Vue compatibility/limitations/security and CSP,
+  migration guides (petite-vue, Alpine), brand theme, logo and section
+  badges; GitHub Pages deploy workflow; README reduced to a quick start
 - devtools browser extension (Chrome + Firefox MV3) in `extension/`,
   reading the registry via `chrome.devtools.inspectedWindow.eval`
 

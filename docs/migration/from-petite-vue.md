@@ -2,7 +2,7 @@
 title: Migrating from petite-vue
 ---
 
-# Migrating from petite-vue <Badge type="migration" text="Migration" />
+# Migrating from petite-vue <Badge type="section" text="Migration" />
 
 litevue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Everything petite-vue does still works — the changes below are the full migration surface.
 

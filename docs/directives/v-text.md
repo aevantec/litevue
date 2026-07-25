@@ -2,7 +2,7 @@
 title: v-text
 ---
 
-# v-text <Badge type="directive" text="Directive" />
+# v-text <Badge type="section" text="Directive" />
 
 Sets the element's `textContent` from an expression — equivalent to mustache interpolation filling the whole element:
 

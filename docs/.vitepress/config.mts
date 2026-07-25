@@ -10,7 +10,7 @@ export default defineConfig({
   themeConfig: {
     logo: '/logo.png',
     nav: [
-      { text: 'Start Here', link: '/start-here/installation' },
+      { text: 'Start Here', link: '/start-here/introduction' },
       { text: 'Directives', link: '/directives/' },
       { text: 'Magics', link: '/magics/' },
       { text: 'Plugins', link: '/plugins/' },
@@ -19,7 +19,10 @@ export default defineConfig({
     sidebar: [
       {
         text: 'Start Here',
-        items: [{ text: 'Installation', link: '/start-here/installation' }],
+        items: [
+          { text: 'Introduction', link: '/start-here/introduction' },
+          { text: 'Installation', link: '/start-here/installation' },
+        ],
       },
       {
         text: 'Essentials',

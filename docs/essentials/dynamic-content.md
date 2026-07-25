@@ -2,7 +2,7 @@
 title: Dynamic Content
 ---
 
-# Dynamic Content <Badge type="essentials" text="Essentials" />
+# Dynamic Content <Badge type="section" text="Essentials" />
 
 Markup added to the DOM after the initial mount (htmx swaps, `fetch` + `innerHTML`, CMS embeds) is **deliberately inert** — expressions in injected HTML never execute on their own.
 

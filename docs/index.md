@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Start Here
-      link: /start-here/installation
+      link: /start-here/introduction
     - theme: alt
       text: Coming from Alpine?
       link: /migration/from-alpine

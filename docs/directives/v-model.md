@@ -2,7 +2,7 @@
 title: v-model
 ---
 
-# v-model <Badge type="directive" text="Directive" />
+# v-model <Badge type="section" text="Directive" />
 
 Two-way binding for form elements — text inputs, textareas, checkboxes, radios, and selects (including `multiple`).
 

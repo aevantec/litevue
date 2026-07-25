@@ -2,7 +2,7 @@
 title: focus
 ---
 
-# focus <Badge type="plugin" text="Plugin" />
+# focus <Badge type="section" text="Plugin" />
 
 Focus utilities: `v-focus` for autofocus behavior and `v-trap` for accessible focus containment.
 

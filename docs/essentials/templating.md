@@ -2,7 +2,7 @@
 title: Templating
 ---
 
-# Templating <Badge type="essentials" text="Essentials" />
+# Templating <Badge type="section" text="Essentials" />
 
 ## Interpolation
 

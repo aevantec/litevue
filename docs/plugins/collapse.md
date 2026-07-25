@@ -2,7 +2,7 @@
 title: collapse
 ---
 
-# collapse <Badge type="plugin" text="Plugin" />
+# collapse <Badge type="section" text="Plugin" />
 
 `v-collapse="expression"` expands and collapses the element's height with a transition — accordions and disclosure panels without measuring anything yourself.
 

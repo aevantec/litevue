@@ -2,7 +2,7 @@
 title: $root
 ---
 
-# $root <Badge type="magic" text="Magic" />
+# $root <Badge type="section" text="Magic" />
 
 The app's root scope, reachable from any nested scope — read or write:
 

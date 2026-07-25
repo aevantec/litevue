@@ -2,7 +2,7 @@
 title: Directives
 ---
 
-# Directives <Badge type="directive" text="Directive" />
+# Directives <Badge type="section" text="Directive" />
 
 Attributes that give elements behavior. Vue users will recognize almost all of them; `v-teleport` and `v-name` are litevue additions, and `v-on` / `v-model` carry extra modifiers.
 

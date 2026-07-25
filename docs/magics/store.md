@@ -2,7 +2,7 @@
 title: $store
 ---
 
-# $store <Badge type="magic" text="Magic" />
+# $store <Badge type="section" text="Magic" />
 
 Access the [global stores](/globals/store) from any expression:
 

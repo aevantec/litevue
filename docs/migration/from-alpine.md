@@ -2,7 +2,7 @@
 title: Coming from Alpine
 ---
 
-# Coming from Alpine <Badge type="migration" text="Migration" />
+# Coming from Alpine <Badge type="section" text="Migration" />
 
 litevue covers Alpine's feature set with Vue's syntax, at about half the size. This page maps the concepts.
 

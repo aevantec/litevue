@@ -2,7 +2,7 @@
 title: Plugins
 ---
 
-# Plugins <Badge type="plugin" text="Plugin" />
+# Plugins <Badge type="section" text="Plugin" />
 
 Apps install plugins with `use()`. A plugin is a function — or an object with an `install` method — receiving the app and optional options. Installing the same plugin twice is a no-op, and `use()` chains:
 

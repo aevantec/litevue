@@ -2,7 +2,7 @@
 title: v-once
 ---
 
-# v-once <Badge type="directive" text="Directive" />
+# v-once <Badge type="section" text="Directive" />
 
 Renders the element once and never updates it again, even when the state it read changes — an optimization for static-after-first-render content:
 

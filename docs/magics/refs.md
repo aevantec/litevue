@@ -2,7 +2,7 @@
 title: $refs
 ---
 
-# $refs <Badge type="magic" text="Magic" />
+# $refs <Badge type="section" text="Magic" />
 
 Elements registered with the [ref](/directives/ref) attribute, keyed by name:
 

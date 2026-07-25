@@ -2,7 +2,7 @@
 title: Lifecycle
 ---
 
-# Lifecycle <Badge type="essentials" text="Essentials" />
+# Lifecycle <Badge type="section" text="Essentials" />
 
 Listen to the special `mounted` and `unmounted` events on any element:
 

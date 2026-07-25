@@ -2,7 +2,7 @@
 title: Essentials
 ---
 
-# Essentials <Badge type="essentials" text="Essentials" />
+# Essentials <Badge type="section" text="Essentials" />
 
 The core concepts behind every litevue page: where state lives, how templates render it, when elements come and go, and how dynamically added markup becomes live.
 

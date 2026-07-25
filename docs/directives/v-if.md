@@ -2,7 +2,7 @@
 title: v-if
 ---
 
-# v-if <Badge type="directive" text="Directive" />
+# v-if <Badge type="section" text="Directive" />
 
 Conditionally mounts an element. Unlike [`v-show`](/directives/v-show), the element and its scope are fully created and destroyed — [lifecycle events](/essentials/lifecycle) fire on each toggle.
 

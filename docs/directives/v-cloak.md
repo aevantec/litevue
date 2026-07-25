@@ -2,7 +2,7 @@
 title: v-cloak
 ---
 
-# v-cloak <Badge type="directive" text="Directive" />
+# v-cloak <Badge type="section" text="Directive" />
 
 Removed from the element once litevue takes over — pair it with a CSS rule to hide uncompiled templates until mount:
 

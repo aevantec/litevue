@@ -2,7 +2,7 @@
 title: store()
 ---
 
-# store() <Badge type="global" text="Global" />
+# store() <Badge type="section" text="Global" />
 
 A first-class global store, shared across every app on the page and exposed to expressions as [`$store`](/magics/store).
 

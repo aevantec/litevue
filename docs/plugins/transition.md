@@ -2,7 +2,7 @@
 title: transition
 ---
 
-# transition <Badge type="plugin" text="Plugin" />
+# transition <Badge type="section" text="Plugin" />
 
 Vue-style enter/leave transitions.
 

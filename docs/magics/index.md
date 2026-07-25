@@ -2,7 +2,7 @@
 title: Magics
 ---
 
-# Magics <Badge type="magic" text="Magic" />
+# Magics <Badge type="section" text="Magic" />
 
 Magic properties are available in every expression — helpers for reaching the element, the scope tree, shared state, and timing.
 

@@ -2,7 +2,7 @@
 title: v-for
 ---
 
-# v-for <Badge type="directive" text="Directive" />
+# v-for <Badge type="section" text="Directive" />
 
 Renders a list. litevue does real **keyed reconciliation** — with `:key`, reorders move existing DOM nodes instead of rewriting them, preserving element state.
 

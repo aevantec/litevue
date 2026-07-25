@@ -2,7 +2,7 @@
 title: Globals
 ---
 
-# Globals <Badge type="global" text="Global" />
+# Globals <Badge type="section" text="Global" />
 
 The JavaScript API exported by the `litevue` package.
 
