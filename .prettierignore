@@ -3,3 +3,4 @@ pnpm-lock.yaml
 CHANGELOG.md
 .claude
 docs/.vitepress/cache
+docs/.vitepress/demos

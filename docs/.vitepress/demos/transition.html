@@ -1,0 +1,15 @@
+<style>
+  .demo-fade-enter-active,
+  .demo-fade-leave-active {
+    transition: opacity 0.35s ease;
+  }
+  .demo-fade-enter-from,
+  .demo-fade-leave-to {
+    opacity: 0;
+  }
+</style>
+
+<div v-scope="{ open: true }">
+  <button @click="open = !open">toggle</button>
+  <p v-transition:demo-fade="open">I fade in and out.</p>
+</div>

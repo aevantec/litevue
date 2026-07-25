@@ -69,7 +69,8 @@ First release of `litevue`, a fork continuing from petite-vue
   structure with a page per directive/magic/plugin, section overview pages,
   an introduction covering Vue compatibility/limitations/security and CSP,
   migration guides (petite-vue, Alpine), brand theme, logo and section
-  badges; GitHub Pages deploy workflow; README reduced to a quick start
+  badges, and live interactive demos running real litevue apps in the
+  page; GitHub Pages deploy workflow; README reduced to a quick start
 - devtools browser extension (Chrome + Firefox MV3) in `extension/`,
   reading the registry via `chrome.devtools.inspectedWindow.eval`
 

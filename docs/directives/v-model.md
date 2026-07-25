@@ -6,16 +6,9 @@ title: v-model
 
 Two-way binding for form elements — text inputs, textareas, checkboxes, radios, and selects (including `multiple`).
 
-```html
-<div v-scope="{ msg: '', agreed: false, pick: 'a' }">
-  <input v-model="msg" />
-  <input type="checkbox" v-model="agreed" />
-  <select v-model="pick">
-    <option>a</option>
-    <option>b</option>
-  </select>
-</div>
-```
+<<< ../.vitepress/demos/v-model.html{html}
+
+<LiveDemo src="v-model" />
 
 Non-string values work through `:value` bindings, and checkboxes support `:true-value` / `:false-value`.
 

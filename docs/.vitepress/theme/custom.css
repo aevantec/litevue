@@ -25,6 +25,65 @@
   --vp-c-brand-3: #38a573;
 }
 
+/* live demos: real litevue apps running inside the docs */
+.live-demo {
+  position: relative;
+  margin: 16px 0 24px;
+  padding: 28px 20px 20px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+.live-demo-label {
+  position: absolute;
+  top: 8px;
+  left: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+.live-demo-body > *:first-child {
+  margin-top: 0;
+}
+.live-demo-body > *:last-child {
+  margin-bottom: 0;
+}
+.live-demo-fallback {
+  color: var(--vp-c-text-3);
+}
+.live-demo-body button {
+  margin: 2px 6px 2px 0;
+  padding: 4px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.live-demo-body button:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+.live-demo-body input:not([type='checkbox']):not([type='radio']),
+.live-demo-body select {
+  padding: 4px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+}
+.live-demo-body input:focus,
+.live-demo-body select:focus {
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
 /* section badges shown beside page titles — one brand color throughout */
 h1 .VPBadge {
   vertical-align: middle;

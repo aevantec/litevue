@@ -15,20 +15,9 @@ createApp({ open: false }).use(transition).mount();
 
 `v-transition:name="expression"` is an animated [`v-show`](/directives/v-show) replacement. On show it applies `name-enter-from` → `name-enter-active` → `name-enter-to`; on hide the `leave-*` equivalents — and the element is only hidden **after** the leave transition finishes. Durations (including delays and keyframe animations) are read from computed styles:
 
-```html
-<style>
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.2s;
-  }
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-  }
-</style>
+<<< ../.vitepress/demos/transition.html{html}
 
-<div v-transition:fade="open">fades in and out</div>
-```
+<LiveDemo src="transition" plugins="transition" />
 
 - The name defaults to `v` (`v-enter-from`, …).
 - **`.appear`** animates the initial render.

@@ -6,13 +6,9 @@ title: v-if
 
 Conditionally mounts an element. Unlike [`v-show`](/directives/v-show), the element and its scope are fully created and destroyed — [lifecycle events](/essentials/lifecycle) fire on each toggle.
 
-```html
-<div v-scope="{ status: 'loading' }">
-  <p v-if="status === 'loading'">Loading…</p>
-  <p v-else-if="status === 'error'">Something broke.</p>
-  <p v-else>Ready.</p>
-</div>
-```
+<<< ../.vitepress/demos/v-if.html{html}
+
+<LiveDemo src="v-if" />
 
 `v-else` / `v-else-if` branches must be immediate siblings.
 

@@ -6,14 +6,9 @@ title: v-for
 
 Renders a list. litevue does real **keyed reconciliation** — with `:key`, reorders move existing DOM nodes instead of rewriting them, preserving element state.
 
-```html
-<div v-scope="{ items: [{ id: 1, text: 'a' }, { id: 2, text: 'b' }] }">
-  <ul>
-    <li v-for="item in items" :key="item.id">{{ item.text }}</li>
-  </ul>
-  <button @click="items.reverse()">reverse</button>
-</div>
-```
+<<< ../.vitepress/demos/v-for.html{html}
+
+<LiveDemo src="v-for" />
 
 Index and object forms work too:
 
