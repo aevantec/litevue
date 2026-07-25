@@ -1,4 +1,8 @@
-# createApp()
+---
+title: createApp()
+---
+
+# createApp() <Badge type="global" text="Global" />
 
 Creates an app instance.
 

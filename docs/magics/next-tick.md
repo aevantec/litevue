@@ -1,4 +1,8 @@
-# $nextTick
+---
+title: $nextTick
+---
+
+# $nextTick <Badge type="magic" text="Magic" />
 
 Runs a callback after the next reactive flush — when the DOM reflects the latest state:
 

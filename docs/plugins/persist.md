@@ -1,4 +1,8 @@
-# persist
+---
+title: persist
+---
+
+# persist <Badge type="plugin" text="Plugin" />
 
 `v-persist="storage-key"` syncs the element's scope to localStorage: saved values restore on mount, and every change — deep ones included — writes back automatically.
 

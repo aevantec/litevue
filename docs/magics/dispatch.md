@@ -1,4 +1,8 @@
-# $dispatch
+---
+title: $dispatch
+---
+
+# $dispatch <Badge type="magic" text="Magic" />
 
 Fires a bubbling `CustomEvent` from the current element — the standard way for a child scope to notify a parent:
 

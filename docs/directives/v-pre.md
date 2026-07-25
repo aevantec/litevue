@@ -1,4 +1,8 @@
-# v-pre
+---
+title: v-pre
+---
+
+# v-pre <Badge type="directive" text="Directive" />
 
 Skips compilation for the element and all of its children — interpolation and directives inside are left untouched:
 

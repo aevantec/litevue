@@ -1,4 +1,8 @@
-# Templating
+---
+title: Templating
+---
+
+# Templating <Badge type="essentials" text="Essentials" />
 
 ## Interpolation
 
@@ -7,6 +11,8 @@ Text between double curly braces is evaluated as an expression against the curre
 ```html
 <div v-scope="{ name: 'world' }">Hello {{ name.toUpperCase() }}!</div>
 ```
+
+Any JavaScript expression works — the scope chain, [magic properties](/magics/), and globals are all in reach. For attribute binding see [v-bind](/directives/v-bind); to fill an element's text or HTML from an expression see [v-text](/directives/v-text) and [v-html](/directives/v-html).
 
 ## Custom delimiters
 
@@ -18,60 +24,16 @@ createApp({
 }).mount();
 ```
 
-## Components
+## Hiding uncompiled templates
 
-"Components" are plain functions returning scope objects:
+Users on slow connections may briefly see raw mustaches before litevue mounts — hide them with [v-cloak](/directives/v-cloak):
 
-```html
-<script type="module">
-  import { createApp } from 'litevue';
-
-  function Counter(props) {
-    return {
-      count: props.initialCount,
-      inc() {
-        this.count++;
-      },
-    };
-  }
-
-  createApp({ Counter }).mount();
-</script>
-
-<div v-scope="Counter({ initialCount: 1 })">
-  <p>{{ count }}</p>
-  <button @click="inc">increment</button>
-</div>
+```css
+[v-cloak] {
+  display: none;
+}
 ```
 
-## Reusable templates
+## Reusing markup
 
-Provide a `$template` key — a template string or an ID selector to a `<template>` element:
-
-```html
-<script type="module">
-  import { createApp } from 'litevue';
-
-  function Counter(props) {
-    return {
-      $template: '#counter-template',
-      count: props.initialCount,
-      inc() {
-        this.count++;
-      },
-    };
-  }
-
-  createApp({ Counter }).mount();
-</script>
-
-<template id="counter-template">
-  My count is {{ count }}
-  <button @click="inc">++</button>
-</template>
-
-<div v-scope="Counter({ initialCount: 1 })"></div>
-<div v-scope="Counter({ initialCount: 2 })"></div>
-```
-
-The `<template>` approach is preferred — cloning a native template element is more efficient than parsing strings.
+For reusable logic and markup, see [Components](/essentials/components).

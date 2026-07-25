@@ -1,4 +1,8 @@
-# Lifecycle
+---
+title: Lifecycle
+---
+
+# Lifecycle <Badge type="essentials" text="Essentials" />
 
 Listen to the special `mounted` and `unmounted` events on any element:
 

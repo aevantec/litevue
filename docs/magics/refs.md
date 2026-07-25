@@ -1,4 +1,8 @@
-# $refs
+---
+title: $refs
+---
+
+# $refs <Badge type="magic" text="Magic" />
 
 Elements registered with the [ref](/directives/ref) attribute, keyed by name:
 

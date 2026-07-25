@@ -1,4 +1,8 @@
-# v-teleport
+---
+title: v-teleport
+---
+
+# v-teleport <Badge type="directive" text="Directive" />
 
 Moves the element under a different parent — a **literal CSS selector** — while it keeps rendering with its original scope. For modals, dropdowns, and toasts that must escape `overflow` or `z-index` contexts.
 

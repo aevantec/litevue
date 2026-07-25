@@ -1,4 +1,8 @@
-# v-scope
+---
+title: v-scope
+---
+
+# v-scope <Badge type="directive" text="Directive" />
 
 Marks a region of the page controlled by litevue and declares its state.
 
@@ -33,7 +37,7 @@ Nested scopes inherit from their parents; own keys shadow, and writes to inherit
 
 ## Component functions
 
-The expression can call a function that returns the scope — see [Templating](/essentials/templating#components).
+The expression can call a function that returns the scope — see [Templating](/essentials/components).
 
 ## See also
 

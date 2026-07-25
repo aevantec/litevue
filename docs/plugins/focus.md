@@ -1,4 +1,8 @@
-# focus
+---
+title: focus
+---
+
+# focus <Badge type="plugin" text="Plugin" />
 
 Focus utilities: `v-focus` for autofocus behavior and `v-trap` for accessible focus containment.
 

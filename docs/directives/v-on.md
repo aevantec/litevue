@@ -1,4 +1,8 @@
-# v-on
+---
+title: v-on
+---
+
+# v-on <Badge type="directive" text="Directive" />
 
 Attaches an event listener. Shorthand: `@`.
 

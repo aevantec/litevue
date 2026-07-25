@@ -1,4 +1,8 @@
-# $el
+---
+title: $el
+---
+
+# $el <Badge type="magic" text="Magic" />
 
 The current element, available in every expression:
 

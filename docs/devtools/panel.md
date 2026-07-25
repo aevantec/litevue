@@ -1,4 +1,8 @@
-# Inspector Panel
+---
+title: Inspector Panel
+---
+
+# Inspector Panel <Badge type="devtools" text="Devtools" />
 
 A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~4kb gzipped) — zero weight added to the core. Load it after the library, during development only:
 

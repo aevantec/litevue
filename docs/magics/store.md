@@ -1,4 +1,8 @@
-# $store
+---
+title: $store
+---
+
+# $store <Badge type="magic" text="Magic" />
 
 Access the [global stores](/globals/store) from any expression:
 

@@ -1,4 +1,8 @@
-# v-effect
+---
+title: v-effect
+---
+
+# v-effect <Badge type="directive" text="Directive" />
 
 Runs a **reactive** inline statement — it re-executes whenever the reactive state it reads changes:
 

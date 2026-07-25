@@ -1,4 +1,8 @@
-# transition
+---
+title: transition
+---
+
+# transition <Badge type="plugin" text="Plugin" />
 
 Vue-style enter/leave transitions.
 

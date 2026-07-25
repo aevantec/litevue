@@ -1,4 +1,8 @@
-# v-html
+---
+title: v-html
+---
+
+# v-html <Badge type="directive" text="Directive" />
 
 Sets the element's `innerHTML` from an expression:
 

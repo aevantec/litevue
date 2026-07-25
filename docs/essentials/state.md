@@ -1,4 +1,8 @@
-# State
+---
+title: State
+---
+
+# State <Badge type="essentials" text="Essentials" />
 
 State lives in scopes. A scope is declared either at the app level (the root scope) or on an element with [`v-scope`](/directives/v-scope). Child scopes inherit from their parents through the prototype chain, and writes to inherited properties fall through to the owning parent.
 

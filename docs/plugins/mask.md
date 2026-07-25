@@ -1,4 +1,8 @@
-# mask
+---
+title: mask
+---
+
+# mask <Badge type="plugin" text="Plugin" />
 
 `v-mask` formats an input's value as the user types.
 

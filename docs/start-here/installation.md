@@ -1,4 +1,8 @@
-# Installation
+---
+title: Installation
+---
+
+# Installation <Badge type="start-here" text="Start Here" />
 
 `litevue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML. Same template syntax, same reactivity mental model, ~8kb.
 

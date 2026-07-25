@@ -1,4 +1,8 @@
-# intersect
+---
+title: intersect
+---
+
+# intersect <Badge type="plugin" text="Plugin" />
 
 `v-intersect="expression"` runs the expression when the element enters the viewport — lazy loading, scroll-triggered reveals, analytics.
 

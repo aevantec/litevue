@@ -24,3 +24,62 @@
   --vp-c-brand-2: #42b883;
   --vp-c-brand-3: #38a573;
 }
+
+/* section badges shown beside page titles */
+h1 .VPBadge {
+  vertical-align: middle;
+  margin-left: 10px;
+  transform: translateY(-2px);
+}
+.VPBadge.start-here,
+.VPBadge.essentials {
+  background: rgba(66, 184, 131, 0.14);
+  color: #2f9464;
+}
+.dark .VPBadge.start-here,
+.dark .VPBadge.essentials {
+  color: #42d392;
+}
+.VPBadge.directive {
+  background: rgba(100, 108, 255, 0.14);
+  color: #5c66f5;
+}
+.dark .VPBadge.directive {
+  color: #8b93ff;
+}
+.VPBadge.magic {
+  background: rgba(158, 96, 255, 0.14);
+  color: #8a4df0;
+}
+.dark .VPBadge.magic {
+  color: #b48cff;
+}
+.VPBadge.global {
+  background: rgba(232, 140, 48, 0.16);
+  color: #c46e10;
+}
+.dark .VPBadge.global {
+  color: #f0a35c;
+}
+.VPBadge.plugin {
+  background: rgba(20, 150, 170, 0.14);
+  color: #12798a;
+}
+.dark .VPBadge.plugin {
+  color: #4cc4d9;
+}
+.VPBadge.devtools {
+  background: rgba(53, 73, 94, 0.14);
+  color: #35495e;
+}
+.dark .VPBadge.devtools {
+  background: rgba(160, 180, 200, 0.16);
+  color: #a9bdd1;
+}
+.VPBadge.migration {
+  background: rgba(214, 158, 46, 0.16);
+  color: #a87b13;
+}
+.dark .VPBadge.migration {
+  color: #e6bb56;
+}

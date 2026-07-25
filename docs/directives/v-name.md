@@ -1,4 +1,8 @@
-# v-name
+---
+title: v-name
+---
+
+# v-name <Badge type="directive" text="Directive" />
 
 Gives a scope an explicit [devtools](/devtools/panel) name, so the element doesn't need an `id`. The attribute is removed from the DOM at mount and exists only for inspection:
 

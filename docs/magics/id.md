@@ -1,4 +1,8 @@
-# $id
+---
+title: $id
+---
+
+# $id <Badge type="magic" text="Magic" />
 
 Unique ids for accessibility attributes. Ids are **stable within a scope** — repeated calls with the same name return the same id, so label/input pairs match — and **unique across scopes**:
 

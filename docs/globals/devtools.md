@@ -1,4 +1,8 @@
-# Devtools API
+---
+title: Devtools API
+---
+
+# Devtools API <Badge type="global" text="Global" />
 
 Every mounted app registers into `window.__LITE_VUE__` (also exported as `devtools`). Scopes are live reactive objects — reading is always current, writing updates the page.
 

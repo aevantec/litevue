@@ -1,4 +1,8 @@
-# Coming from Alpine
+---
+title: Coming from Alpine
+---
+
+# Coming from Alpine <Badge type="migration" text="Migration" />
 
 litevue covers Alpine's feature set with Vue's syntax, at about half the size. This page maps the concepts.
 
@@ -39,7 +43,7 @@ litevue adds [animation-event filters](/directives/v-on#animation-event-filters)
 | Alpine | litevue |
 | --- | --- |
 | `Alpine.store('cart', {...})` / `$store.cart` | [`store('cart', {...})`](/globals/store) / [`$store.cart`](/magics/store) |
-| `Alpine.data('dropdown', ...)` | plain functions as [components](/essentials/templating#components) |
+| `Alpine.data('dropdown', ...)` | plain functions as [components](/essentials/components) |
 | `Alpine.initTree(el)` | [`app.mount(el)`](/essentials/dynamic-content) |
 | `$el` `$refs` `$watch` `$dispatch` `$nextTick` `$data` `$root` `$id` | same names — see [Magics](/magics/el) |
 

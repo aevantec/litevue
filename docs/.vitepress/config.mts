@@ -11,10 +11,10 @@ export default defineConfig({
     logo: '/logo.png',
     nav: [
       { text: 'Start Here', link: '/start-here/installation' },
-      { text: 'Directives', link: '/directives/v-scope' },
-      { text: 'Magics', link: '/magics/el' },
+      { text: 'Directives', link: '/directives/' },
+      { text: 'Magics', link: '/magics/' },
       { text: 'Plugins', link: '/plugins/' },
-      { text: 'Devtools', link: '/devtools/panel' },
+      { text: 'Devtools', link: '/devtools/' },
     ],
     sidebar: [
       {
@@ -24,8 +24,10 @@ export default defineConfig({
       {
         text: 'Essentials',
         items: [
+          { text: 'Overview', link: '/essentials/' },
           { text: 'State', link: '/essentials/state' },
           { text: 'Templating', link: '/essentials/templating' },
+          { text: 'Components', link: '/essentials/components' },
           { text: 'Lifecycle', link: '/essentials/lifecycle' },
           { text: 'Dynamic Content', link: '/essentials/dynamic-content' },
         ],
@@ -34,6 +36,7 @@ export default defineConfig({
         text: 'Directives',
         collapsed: false,
         items: [
+          { text: 'Overview', link: '/directives/' },
           { text: 'v-scope', link: '/directives/v-scope' },
           { text: 'v-bind', link: '/directives/v-bind' },
           { text: 'v-on', link: '/directives/v-on' },
@@ -56,6 +59,7 @@ export default defineConfig({
         text: 'Magics',
         collapsed: false,
         items: [
+          { text: 'Overview', link: '/magics/' },
           { text: '$el', link: '/magics/el' },
           { text: '$data', link: '/magics/data' },
           { text: '$root', link: '/magics/root' },
@@ -70,6 +74,7 @@ export default defineConfig({
       {
         text: 'Globals',
         items: [
+          { text: 'Overview', link: '/globals/' },
           { text: 'createApp()', link: '/globals/create-app' },
           { text: 'store()', link: '/globals/store' },
           { text: 'Devtools API', link: '/globals/devtools' },
@@ -91,6 +96,7 @@ export default defineConfig({
       {
         text: 'Devtools',
         items: [
+          { text: 'Overview', link: '/devtools/' },
           { text: 'Inspector Panel', link: '/devtools/panel' },
           { text: 'Browser Extension', link: '/devtools/extension' },
         ],
