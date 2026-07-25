@@ -10,8 +10,8 @@ import type { Plugin } from '../app';
  */
 export const persist: Plugin = (app) => {
   app.directive('persist', ({ ctx, el, exp, effect }) => {
-    const key = 'lite-vue:' + (exp || el.id);
-    if (import.meta.env.DEV && key === 'lite-vue:') {
+    const key = 'litevue:' + (exp || el.id);
+    if (import.meta.env.DEV && key === 'litevue:') {
       console.error(`v-persist needs a key: v-persist="my-key".`);
     }
     const scope = ctx.scope;
