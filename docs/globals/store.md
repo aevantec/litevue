@@ -40,3 +40,17 @@ store('cart').add('book');
 - `init()` runs once at registration.
 - Registering a store **after** mount is picked up reactively by expressions referencing it.
 - Stores appear in the [devtools panel](/devtools/panel) under the Stores tab.
+
+## Persisting a store
+
+Use `persistStore()` from the [persist plugin](/plugins/persist#persisting-a-store) to keep a store in localStorage across page loads:
+
+```js
+import { store } from 'litevue';
+import { persistStore } from 'litevue/plugins';
+
+store('cart', { items: [], coupon: '' });
+
+persistStore('cart'); // whole store
+persistStore('cart', { keys: ['items'] }); // or just some properties
+```

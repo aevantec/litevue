@@ -31,6 +31,10 @@ First release of `litevue`, a fork continuing from petite-vue
   `collapse`, `mask` (`v-mask` input masking), `transition` (Vue-style
   enter/leave classes on show/hide, `.appear`, and an unmount mode that
   animates `v-if`/`v-for` enter/leave)
+- **plugins:** `persist` can narrow to specific properties
+  (`v-persist:draft,to="key"`) and exports `persistStore(name, options?)`
+  for persisting global stores from JS (returns a stop function; getters
+  and methods are skipped; writes batched through the scheduler)
 - **core:** `v-teleport="selector"` — render an element under a different
   parent while keeping its scope; composes with `v-if`
 - **core:** deferred block removal — leave transitions delay DOM removal

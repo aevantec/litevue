@@ -56,7 +56,7 @@ describe('persist plugin', () => {
     (document.querySelector('button') as HTMLElement).click();
     (document.querySelector('button') as HTMLElement).click();
     await tick();
-    expect(JSON.parse(localStorage.getItem('lite-vue:test-counter')!)).toEqual({
+    expect(JSON.parse(localStorage.getItem('litevue:test-counter')!)).toEqual({
       count: 2,
     });
     appA.unmount();
