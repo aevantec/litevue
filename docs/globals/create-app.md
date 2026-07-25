@@ -15,13 +15,13 @@ app.mount(); // whole document, or app.mount('#region') / app.mount(el)
 
 ## The app instance
 
-| Member | Description |
-| --- | --- |
-| `mount(target?)` | Mounts `v-scope` regions under the target (selector, element, or the whole document). Repeatable — later calls initialize [dynamic content](/essentials/dynamic-content) into the same app. |
-| `unmount()` | Tears down every mounted batch: effects, listeners, devtools registrations. |
-| `use(plugin, options?)` | Installs a [plugin](/plugins/). Chainable; installing the same plugin twice is a no-op. |
-| `directive(name, fn?)` | Registers or retrieves a custom directive. |
-| `scope` | The reactive root scope — plugins attach `$`-prefixed helpers here. |
+| Member                  | Description                                                                                                                                                                                 |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mount(target?)`        | Mounts `v-scope` regions under the target (selector, element, or the whole document). Repeatable — later calls initialize [dynamic content](/essentials/dynamic-content) into the same app. |
+| `unmount()`             | Tears down every mounted batch: effects, listeners, devtools registrations.                                                                                                                 |
+| `use(plugin, options?)` | Installs a [plugin](/plugins/). Chainable; installing the same plugin twice is a no-op.                                                                                                     |
+| `directive(name, fn?)`  | Registers or retrieves a custom directive.                                                                                                                                                  |
+| `scope`                 | The reactive root scope — plugins attach `$`-prefixed helpers here.                                                                                                                         |
 
 ## Custom directives
 

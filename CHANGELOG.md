@@ -26,6 +26,9 @@ First release of `litevue`, a fork continuing from petite-vue
   registry, `init()` hook, reactive late registration
 - **core:** magic properties `$dispatch`, `$watch` (scope-lifecycle-tied),
   `$id`
+- **core:** `watchEffect(fn)` — JS-side reactive effects batched through the
+  scheduler, returning a stop function (the `v-effect` counterpart for work
+  not tied to an element); `persistStore()` is built on it
 - **plugins:** first-party plugin bundle (`litevue/plugins`):
   `intersect`, `persist`, `focus` (incl. `v-trap` focus containment),
   `collapse`, `mask` (`v-mask` input masking), `transition` (Vue-style

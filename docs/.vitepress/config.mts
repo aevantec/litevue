@@ -80,6 +80,7 @@ export default defineConfig({
           { text: 'Overview', link: '/globals/' },
           { text: 'createApp()', link: '/globals/create-app' },
           { text: 'store()', link: '/globals/store' },
+          { text: 'watchEffect()', link: '/globals/watch-effect' },
           { text: 'Devtools API', link: '/globals/devtools' },
         ],
       },

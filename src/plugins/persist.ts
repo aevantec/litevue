@@ -1,6 +1,5 @@
-import { effect as rawEffect, stop } from '@vue/reactivity';
 import type { Plugin } from '../app';
-import { queueJob } from '../scheduler';
+import { watchEffect } from '../effect';
 import { store as getStore } from '../store';
 
 const PREFIX = 'litevue:';
@@ -73,13 +72,13 @@ const persistable = (target: Record<string, any>, keys?: string[]) =>
   });
 
 /** Restore saved values, then keep storage in sync with every change. */
-const sync = (
+const sync = <T>(
   target: Record<string, any>,
   key: string,
   keys: string[] | undefined,
   storage: PersistStorage | undefined,
-  run: (fn: () => void) => any
-) => {
+  run: (fn: () => void) => T
+): T => {
   if (!storage) return run(() => {});
   const fields = persistable(target, keys);
 
@@ -190,12 +189,13 @@ export const persistStore = (
     );
   }
 
-  let runner: any;
-  sync(target, PREFIX + (options.key ?? name), options.keys, storage, (fn) => {
-    // batched through the scheduler so a burst of mutations writes once
-    runner = rawEffect(fn, { scheduler: () => queueJob(runner) });
-    return runner;
-  });
-
-  return () => stop(runner);
+  // watchEffect batches through the scheduler, so a burst of mutations in
+  // one tick writes once, and it hands back the stop function
+  return sync(
+    target,
+    PREFIX + (options.key ?? name),
+    options.keys,
+    storage,
+    watchEffect
+  );
 };
