@@ -15,6 +15,6 @@ createApp().use(persist).mount();
 
 <LiveDemo src="persist" plugins="persist" />
 
-- The attribute value is the **literal** storage key (stored as `lite-vue:<key>`); it falls back to the element's id.
+- The attribute value is the **literal** storage key (stored as `litevue:<key>`); it falls back to the element's id.
 - All non-`$`, non-function own properties of the scope are persisted.
 - Deep mutations re-save automatically (the snapshot is taken inside a reactive effect).
