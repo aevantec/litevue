@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
-  title: 'litevue',
+  title: 'LiteVue',
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   // served as a GitHub Pages project site

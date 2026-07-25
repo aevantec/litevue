@@ -35,20 +35,27 @@ Plugins need an app reference to call `use()` on, so use [manual init](/start-he
 
 ## First-party plugins
 
-Shipped in a separate bundle so they add zero weight to the core — import from `litevue/plugins`, or load `dist/lite-vue-plugins.iife.js` for the `LiteVuePlugins` global:
+Shipped in a separate bundle so they add zero weight to the core — import from `litevue/plugins`, or load `dist/litevue-plugins.iife.js` for the `LiteVuePlugins` global:
 
 ```js
 import { createApp } from 'litevue';
-import { intersect, persist, focus, collapse, mask, transition } from 'litevue/plugins';
+import {
+  intersect,
+  persist,
+  focus,
+  collapse,
+  mask,
+  transition,
+} from 'litevue/plugins';
 
 createApp({ open: false }).use(transition).use(persist).mount();
 ```
 
-| Plugin | Directives | Purpose |
-| --- | --- | --- |
-| [intersect](/plugins/intersect) | `v-intersect` | run expressions on viewport entry |
-| [persist](/plugins/persist) | `v-persist` | sync scope state to localStorage |
-| [focus](/plugins/focus) | `v-focus`, `v-trap` | autofocus and focus trapping |
-| [collapse](/plugins/collapse) | `v-collapse` | animated height expand/collapse |
-| [mask](/plugins/mask) | `v-mask` | input masking |
-| [transition](/plugins/transition) | `v-transition` | Vue-style enter/leave transitions |
+| Plugin                            | Directives          | Purpose                           |
+| --------------------------------- | ------------------- | --------------------------------- |
+| [intersect](/plugins/intersect)   | `v-intersect`       | run expressions on viewport entry |
+| [persist](/plugins/persist)       | `v-persist`         | sync scope state to localStorage  |
+| [focus](/plugins/focus)           | `v-focus`, `v-trap` | autofocus and focus trapping      |
+| [collapse](/plugins/collapse)     | `v-collapse`        | animated height expand/collapse   |
+| [mask](/plugins/mask)             | `v-mask`            | input masking                     |
+| [transition](/plugins/transition) | `v-transition`      | Vue-style enter/leave transitions |

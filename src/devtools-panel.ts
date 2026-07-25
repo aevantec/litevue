@@ -330,8 +330,8 @@ const icon = (paths: string) =>
 
 type ThemeMode = 'dark' | 'light' | 'system';
 
-const THEME_KEY = 'lite-vue-devtools-theme';
-const UI_KEY = 'lite-vue-devtools-ui';
+const THEME_KEY = 'litevue-devtools-theme';
+const UI_KEY = 'litevue-devtools-ui';
 
 // persisted panel chrome: open state, position (right/bottom offsets) and size
 interface UiState {
@@ -810,7 +810,7 @@ const build = () => {
   highlightEl = h('div', 'highlight');
   shadow.appendChild(highlightEl);
 
-  pillEl = h('div', 'pill', '⚡ litevue');
+  pillEl = h('div', 'pill', '⚡ LiteVue');
   pillEl.onclick = () => {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
@@ -822,7 +822,7 @@ const build = () => {
   panelEl = h('div', 'panel');
   panelEl.style.display = 'none';
   const header = h('div', 'header');
-  header.appendChild(h('span', 'title', '⚡ litevue'));
+  header.appendChild(h('span', 'title', '⚡ LiteVue'));
 
   // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {
@@ -958,8 +958,8 @@ export const init = () => {
   const d = window.__LITE_VUE__;
   if (!d) {
     console.warn(
-      '[lite-vue devtools] window.__LITE_VUE__ not found — ' +
-        'load lite-vue before the devtools panel script.'
+      '[LiteVue devtools] window.__LITE_VUE__ not found — ' +
+        'load LiteVue before the devtools panel script.'
     );
     return;
   }

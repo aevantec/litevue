@@ -4,14 +4,54 @@ title: Inspector Panel
 
 # Inspector Panel <Badge type="section" text="Devtools" />
 
-A standalone in-page inspector ships as a separate bundle (`dist/lite-vue-devtools.iife.js`, ~4kb gzipped) — zero weight added to the core. Load it after the library, during development only:
+A standalone in-page inspector ships as a separate bundle (~5kb gzipped) — zero weight added to the core. Load it **after** the library, and **only during development**.
+
+## With a script tag
 
 ```html
 <script src="https://unpkg.com/litevue" defer init></script>
-<script src="https://unpkg.com/litevue/dist/lite-vue-devtools.iife.js" defer></script>
+<script
+  src="https://unpkg.com/litevue/dist/litevue-devtools.iife.js"
+  defer
+></script>
 ```
 
-A `⚡ lite-vue` pill appears bottom-right and expands into the panel:
+## Installed via npm
+
+The panel is a **side-effect import** — importing it mounts the inspector, there is nothing to call:
+
+```js
+import { createApp } from 'litevue';
+import 'litevue/devtools';
+
+createApp().mount();
+```
+
+Guard it so it never reaches production. With Vite (or anything exposing `import.meta.env`), a dynamic import keeps the bundle out of the production build entirely:
+
+```js
+import { createApp } from 'litevue';
+
+if (import.meta.env.DEV) {
+  await import('litevue/devtools');
+}
+
+createApp().mount();
+```
+
+The webpack/Node equivalent:
+
+```js
+if (process.env.NODE_ENV !== 'production') {
+  await import('litevue/devtools');
+}
+```
+
+::: tip Import it before mounting
+The panel picks up apps and stores through registry events, so import order isn't critical — but importing before `mount()` means the first render is already captured when the panel opens.
+:::
+
+A `⚡ LiteVue` pill appears bottom-right and expands into the panel:
 
 - **Elements / Stores** tabs with live counts — scopes labeled as tags (`v-name` → id → tag name, e.g. `<cart>`)
 - a name **filter** (case-insensitive; Escape clears)

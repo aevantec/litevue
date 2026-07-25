@@ -20,7 +20,7 @@ Non-string values work through `:value` bindings, and checkboxes support `:true-
 - **`.number`** — cast the value to a number.
 - **`.trim`** — trim whitespace.
 
-### litevue additions
+### LiteVue additions
 
 - **`.debounce[-ms]`** — rate-limit model writes from input events (default 250ms):
 

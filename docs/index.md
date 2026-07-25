@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: litevue
+  name: LiteVue
   text: Vue's template syntax in ~8kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
   image:
     src: /logo.png
-    alt: litevue
+    alt: LiteVue
   actions:
     - theme: brand
       text: Start Here

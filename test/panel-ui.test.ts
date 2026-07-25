@@ -32,7 +32,7 @@ const boot = async () => {
 describe('devtools panel chrome', () => {
   test('restores persisted open state, position and size', async () => {
     localStorage.setItem(
-      'lite-vue-devtools-ui',
+      'litevue-devtools-ui',
       JSON.stringify({ open: true, right: 50, bottom: 60, w: 500, h: 300 })
     );
     const { $ } = await boot();
@@ -50,11 +50,11 @@ describe('devtools panel chrome', () => {
     // close button is the last header button
     const btns = $$('.header .btn');
     btns[btns.length - 1].click();
-    expect(JSON.parse(localStorage.getItem('lite-vue-devtools-ui')!).open).toBe(
+    expect(JSON.parse(localStorage.getItem('litevue-devtools-ui')!).open).toBe(
       false
     );
     $('.pill').click();
-    expect(JSON.parse(localStorage.getItem('lite-vue-devtools-ui')!).open).toBe(
+    expect(JSON.parse(localStorage.getItem('litevue-devtools-ui')!).open).toBe(
       true
     );
   });
@@ -75,7 +75,7 @@ describe('devtools panel chrome', () => {
     );
     document.dispatchEvent(new MouseEvent('mouseup'));
     // moved 40px left and 20px up -> right/bottom offsets grow
-    const savedUi = JSON.parse(localStorage.getItem('lite-vue-devtools-ui')!);
+    const savedUi = JSON.parse(localStorage.getItem('litevue-devtools-ui')!);
     expect(parseInt(panel.style.right)).toBeGreaterThan(before.right);
     expect(parseInt(panel.style.bottom)).toBeGreaterThan(before.bottom);
     expect(savedUi.right).toBe(parseInt(panel.style.right));

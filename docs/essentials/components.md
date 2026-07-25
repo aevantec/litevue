@@ -4,7 +4,7 @@ title: Components
 
 # Components <Badge type="section" text="Essentials" />
 
-"Components" in litevue are deliberately bare-bones: plain functions returning scope objects, used from [`v-scope`](/directives/v-scope).
+"Components" in LiteVue are deliberately bare-bones: plain functions returning scope objects, used from [`v-scope`](/directives/v-scope).
 
 ## Reusable logic
 

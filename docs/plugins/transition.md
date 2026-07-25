@@ -21,7 +21,7 @@ createApp({ open: false }).use(transition).mount();
 
 - The name defaults to `v` (`v-enter-from`, …).
 - **`.appear`** animates the initial render.
-- Use it *instead of* `v-show`.
+- Use it _instead of_ `v-show`.
 
 ## Unmount mode (v-if / v-for)
 

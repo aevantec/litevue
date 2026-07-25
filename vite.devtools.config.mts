@@ -18,8 +18,10 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',
-      formats: ['iife'],
-      fileName: () => 'litevue-devtools.iife.js',
+      // iife for <script> tags, es so npm consumers can
+      // `import 'litevue/devtools'` from a bundler
+      formats: ['es', 'iife'],
+      fileName: (format) => `litevue-devtools.${format}.js`,
     },
   },
 });

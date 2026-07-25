@@ -26,7 +26,7 @@ createApp({
 
 ## Hiding uncompiled templates
 
-Users on slow connections may briefly see raw mustaches before litevue mounts — hide them with [v-cloak](/directives/v-cloak):
+Users on slow connections may briefly see raw mustaches before LiteVue mounts — hide them with [v-cloak](/directives/v-cloak):
 
 ```css
 [v-cloak] {

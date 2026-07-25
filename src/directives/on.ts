@@ -35,7 +35,7 @@ const nonKeyModifierRE =
 export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   if (!arg) {
     if (import.meta.env.DEV) {
-      console.error(`v-on="obj" syntax is not supported in lite-vue.`);
+      console.error(`v-on="obj" syntax is not supported in LiteVue.`);
     }
     return;
   }
@@ -51,7 +51,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     (arg === 'vue:mounted' || arg === 'vue:unmounted')
   ) {
     console.warn(
-      `@${arg} is deprecated in lite-vue - use @${arg.slice(4)} instead.`
+      `@${arg} is deprecated in LiteVue - use @${arg.slice(4)} instead.`
     );
   }
   if (arg === 'mounted' || arg === 'vue:mounted') {

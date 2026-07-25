@@ -18,7 +18,7 @@ createApp({ seen: false }).use(intersect).mount();
 ## Modifiers
 
 - **`.once`** — stop observing after the first trigger.
-- **`.leave`** — trigger when the element *exits* the viewport instead.
+- **`.leave`** — trigger when the element _exits_ the viewport instead.
 - **`.full`** — require full visibility (threshold 1).
 
 The observer disconnects automatically when the element unmounts.

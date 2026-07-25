@@ -8,7 +8,8 @@ First release of `litevue`, a fork continuing from petite-vue
 - **devtools:** registry on `window.__LITE_VUE__` (scopes, names, stores,
   events, `getScope` / `getScopeByName`) with production kill-switch
   (`disableDevtools()` / `window.__LITE_VUE_DEVTOOLS__ = false`)
-- **devtools:** in-page inspector panel as a separate bundle — elements /
+- **devtools:** in-page inspector panel as a separate bundle, loadable by
+  script tag (iife) or `import 'litevue/devtools'` from npm (esm) — elements /
   stores tabs with live counts, name filter, tag-style labels, expandable
   state tree with inline editing (boolean checkboxes, read-only getters),
   hover highlight, pick mode, dark / light / system themes
@@ -69,6 +70,14 @@ First release of `litevue`, a fork continuing from petite-vue
   rename) works again via `@mounted`
 
 ### Build & Tooling
+
+- brand name is written **LiteVue** in all display text — devtools panel and
+  extension, dev-mode console messages, examples, tests and docs (the npm
+  package, subpath imports, bundle filenames, `litevue:` storage prefix and
+  `__LITE_VUE__` global keep their lowercase identifiers)
+- devtools panel state keys renamed `lite-vue-devtools-*` →
+  `litevue-devtools-*` (a stale pre-rebrand name; resets a saved panel
+  position/theme once)
 
 - published as `litevue` (the hyphenated `lite-vue` npm name is squatted);
   version continues from upstream 0.4.1 as 0.5.0

@@ -9,7 +9,7 @@ import { queueJob } from './scheduler';
  * watchEffect(fn) — run `fn` now, then again whenever any reactive state it
  * read changes. The JS-side counterpart to `v-effect`, for work that isn't
  * tied to an element: syncing state to storage or the URL, updating
- * document.title, driving a non-litevue widget.
+ * document.title, driving a non-LiteVue widget.
  *
  * Re-runs go through the framework scheduler, so a burst of mutations in one
  * tick triggers a single run and the DOM is already up to date by then —

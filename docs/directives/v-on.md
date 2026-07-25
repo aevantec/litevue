@@ -16,7 +16,7 @@ The event object is available as `$event`; method references receive it as their
 
 `.stop`, `.prevent`, `.self`, `.exact`, key filters (`.enter`, `.escape`, …), mouse buttons (`.left`, `.middle`, `.right`), system keys (`.ctrl`, `.shift`, `.alt`, `.meta`), and the listener options `.once`, `.capture`, `.passive`.
 
-## litevue extras
+## LiteVue extras
 
 ### `.window` / `.document`
 

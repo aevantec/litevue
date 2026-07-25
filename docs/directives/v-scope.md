@@ -4,7 +4,7 @@ title: v-scope
 
 # v-scope <Badge type="section" text="Directive" />
 
-Marks a region of the page controlled by litevue and declares its state.
+Marks a region of the page controlled by LiteVue and declares its state.
 
 <<< ../.vitepress/demos/v-scope.html{html}
 
@@ -17,9 +17,7 @@ With the `init` script attribute (or a bare `createApp().mount()`), every top-le
 The value can be omitted when the region only uses inherited or root state — the attribute then simply marks the element for processing:
 
 ```html
-<div v-scope>
-  {{ rootStateHere }}
-</div>
+<div v-scope>{{ rootStateHere }}</div>
 ```
 
 ## Inheritance
@@ -29,7 +27,8 @@ Nested scopes inherit from their parents; own keys shadow, and writes to inherit
 ```html
 <div v-scope="{ msg: 'parent' }">
   <div v-scope="{ own: 1 }">
-    {{ msg }} <!-- 'parent' -->
+    {{ msg }}
+    <!-- 'parent' -->
     <button @click="msg = 'set from child'">updates the parent</button>
   </div>
 </div>

@@ -4,15 +4,15 @@ title: Migrating from petite-vue
 
 # Migrating from petite-vue <Badge type="section" text="Migration" />
 
-litevue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Everything petite-vue does still works — the changes below are the full migration surface.
+LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Everything petite-vue does still works — the changes below are the full migration surface.
 
 ## Package and globals
 
-| | petite-vue | litevue |
-| --- | --- | --- |
-| npm package | `petite-vue` | `litevue` |
-| IIFE/UMD global | `PetiteVue` | `LiteVue` |
-| Bundle files | `dist/petite-vue.*.js` | `dist/lite-vue.*.js` |
+|                 | petite-vue             | LiteVue             |
+| --------------- | ---------------------- | ------------------- |
+| npm package     | `petite-vue`           | `litevue`           |
+| IIFE/UMD global | `PetiteVue`            | `LiteVue`           |
+| Bundle files    | `dist/petite-vue.*.js` | `dist/litevue.*.js` |
 
 ```diff
 - import { createApp } from 'petite-vue';

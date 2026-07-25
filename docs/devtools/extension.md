@@ -12,7 +12,7 @@ The panel reads the page's `window.__LITE_VUE__` registry through `chrome.devtoo
 
 ## Load it
 
-- **Chrome**: `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` directory. Open devtools on a page using litevue → **lite-vue** tab.
+- **Chrome**: `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` directory. Open devtools on a page using LiteVue → **lite-vue** tab.
 - **Firefox** (115+): `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on…" → select `manifest.json`.
 
 ## Limitations (v1)
