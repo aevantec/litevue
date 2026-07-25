@@ -40,12 +40,12 @@ createApp({ count: 0 }).mount();
 
 Full documentation lives in the **[docs site](https://abiacarl.github.io/litevue/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
 
-- [Getting Started](https://abiacarl.github.io/litevue/guide/getting-started) — install, root scope, setup functions, components, dynamic content
-- [Directives & Events](https://abiacarl.github.io/litevue/guide/directives) — lifecycle hooks, `v-teleport`, event and `v-model` modifiers
-- [Store & Magic Properties](https://abiacarl.github.io/litevue/guide/store-and-magics)
-- [Plugins](https://abiacarl.github.io/litevue/guide/plugins) — the plugin system and all first-party plugins
-- [Devtools](https://abiacarl.github.io/litevue/guide/devtools) — panel, extension, production kill-switch
-- [Migrating from petite-vue](https://abiacarl.github.io/litevue/guide/migrating-from-petite-vue) · [Coming from Alpine](https://abiacarl.github.io/litevue/guide/coming-from-alpine)
+- [Getting Started](https://abiacarl.github.io/litevue/start-here/installation) — install, root scope, setup functions, components, dynamic content
+- [Directives & Events](https://abiacarl.github.io/litevue/directives/v-scope) — lifecycle hooks, `v-teleport`, event and `v-model` modifiers
+- [Store & Magic Properties](https://abiacarl.github.io/litevue/magics/el)
+- [Plugins](https://abiacarl.github.io/litevue/plugins/) — the plugin system and all first-party plugins
+- [Devtools](https://abiacarl.github.io/litevue/devtools/panel) — panel, extension, production kill-switch
+- [Migrating from petite-vue](https://abiacarl.github.io/litevue/migration/from-petite-vue) · [Coming from Alpine](https://abiacarl.github.io/litevue/migration/from-alpine)
 
 ## Development
 

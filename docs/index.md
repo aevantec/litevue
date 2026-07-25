@@ -5,13 +5,16 @@ hero:
   name: litevue
   text: Vue's template syntax in ~8kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
+  image:
+    src: /logo.png
+    alt: litevue
   actions:
     - theme: brand
-      text: Get Started
-      link: /guide/getting-started
+      text: Start Here
+      link: /start-here/installation
     - theme: alt
       text: Coming from Alpine?
-      link: /guide/coming-from-alpine
+      link: /migration/from-alpine
     - theme: alt
       text: GitHub
       link: https://github.com/abiacarl/litevue
@@ -26,7 +29,7 @@ features:
   - icon: 🪶
     title: Tiny and dependency-light
     details:
-      ~8kb gzipped core. Plugins (~2kb for all eight) and devtools (~4kb)
+      ~8kb gzipped core. Plugins (~2kb for all of them) and devtools (~4kb)
       ship as separate opt-in bundles that add zero weight to the core.
   - icon: 🔍
     title: Built-in devtools
@@ -47,8 +50,8 @@ features:
   - icon: 🛡️
     title: Safe with dynamic content
     details:
-      Injected markup stays inert until you explicitly initialize it —
-      HTML injection can never become expression execution.
+      Injected markup stays inert until you explicitly initialize it — HTML
+      injection can never become expression execution.
 ---
 
 ## Quick start
@@ -76,4 +79,4 @@ import { createApp } from 'litevue';
 createApp({ count: 0 }).mount();
 ```
 
-Head to the [guide](/guide/getting-started) for the rest.
+Head to [Installation](/start-here/installation) for the rest.

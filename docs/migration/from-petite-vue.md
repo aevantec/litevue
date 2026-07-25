@@ -35,4 +35,4 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 
 ## Everything new is opt-in
 
-Devtools (on by default in the sense that the registry exists — [disable for production](./devtools#disabling-in-production)), the plugin system and first-party plugins, the global store, magic properties, extra event modifiers, `v-teleport`, and transitions are all additions — no petite-vue template needs to change to adopt litevue.
+The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-extras), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
