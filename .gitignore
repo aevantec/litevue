@@ -4,3 +4,4 @@ dist
 explorations
 ROADMAP.md
 .DS_Store
+docs/.vitepress/cache
