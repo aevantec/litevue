@@ -20,35 +20,29 @@ hero:
       link: https://github.com/abiacarl/litevue
 
 features:
-  - icon: ⚡
-    title: Vue-compatible syntax
+  - title: Vue-compatible syntax
     details:
       The same template syntax and reactivity mental model as Vue, driven by
       the real @vue/reactivity — interpolation, v-if/v-for with keyed
       reconciliation, v-model, and more.
-  - icon: 🪶
-    title: Tiny and dependency-light
+  - title: Tiny and dependency-light
     details:
       ~8kb gzipped core. Plugins (~2kb for all of them) and devtools (~4kb)
       ship as separate opt-in bundles that add zero weight to the core.
-  - icon: 🔍
-    title: Built-in devtools
+  - title: Built-in devtools
     details:
       An in-page inspector panel with live state editing, a stores tab, pick
       mode and themes — plus a browser-extension variant. One line disables
       everything for production.
-  - icon: 🎬
-    title: Transitions that work with v-if
+  - title: Transitions that work with v-if
     details:
       Vue-style enter/leave classes on show/hide, plus an unmount mode that
       delays DOM removal until the leave animation finishes.
-  - icon: 🧩
-    title: Plugin system
+  - title: Plugin system
     details:
       app.use() with typed plugins. First-party — intersect, persist, focus
       (+trap), collapse, transition, mask.
-  - icon: 🛡️
-    title: Safe with dynamic content
+  - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML
       injection can never become expression execution.
