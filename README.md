@@ -1,6 +1,6 @@
-# lite-vue
+# litevue
 
-`lite-vue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML with the same template syntax and reactivity mental model as standard Vue.
+`litevue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML with the same template syntax and reactivity mental model as standard Vue.
 
 Published on npm as **`litevue`** (the hyphenated name was already taken).
 
@@ -61,8 +61,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the fork's history.
 
 ## Status
 
-`lite-vue` continues from petite-vue 0.4.1, which is no longer actively maintained upstream. It aims to stay aligned with standard Vue behavior so code can graduate to Vue with minimal friction.
+`litevue` continues from petite-vue 0.4.1, which is no longer actively maintained upstream. It aims to stay aligned with standard Vue behavior so code can graduate to Vue with minimal friction.
 
 ## License
 
-MIT. Original petite-vue by Evan You; fork additions by the lite-vue contributors.
+MIT. Original petite-vue by Evan You; fork additions by the litevue contributors.
