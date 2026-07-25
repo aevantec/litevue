@@ -1,0 +1,15 @@
+<div v-scope="{ clicks: 0, moves: 0, open: false }">
+  <p>clicks: {{ clicks }} &middot; debounced moves: {{ moves }}</p>
+
+  <button @click="clicks++">click me</button>
+  <span @mousemove.debounce-200="moves++" style="padding: 4px 10px; border: 1px dashed currentColor">
+    move the pointer here
+  </span>
+
+  <p>
+    <button @click.stop="open = true">open</button>
+    <span v-show="open" @click.outside="open = false" style="margin-left: 8px">
+      now click anywhere outside me
+    </span>
+  </p>
+</div>

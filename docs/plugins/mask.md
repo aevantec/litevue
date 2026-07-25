@@ -11,9 +11,9 @@ import { mask } from 'litevue/plugins';
 createApp({ phone: '' }).use(mask).mount();
 ```
 
-```html
-<input v-mask="(999) 999-9999" v-model="phone" placeholder="phone" />
-```
+<<< ../.vitepress/demos/mask.html{html}
+
+<LiveDemo src="mask" plugins="mask" />
 
 - The attribute value is the **literal** mask (not evaluated).
 - Tokens: `9` = digit, `a` = letter, `*` = alphanumeric; every other character is a literal.

@@ -6,9 +6,9 @@ title: v-scope
 
 Marks a region of the page controlled by litevue and declares its state.
 
-```html
-<div v-scope="{ open: false, items: [] }">…</div>
-```
+<<< ../.vitepress/demos/v-scope.html{html}
+
+<LiveDemo src="v-scope" />
 
 With the `init` script attribute (or a bare `createApp().mount()`), every top-level `v-scope` region becomes an app root.
 

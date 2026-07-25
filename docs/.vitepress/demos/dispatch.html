@@ -1,0 +1,9 @@
+<div v-scope="{ got: '\u2014' }" @notify="got = $event.detail.from">
+  <p>the parent received: {{ got }}</p>
+
+  <div v-scope="{}">
+    <button @click="$dispatch('notify', { from: 'the child button' })">
+      dispatch upward
+    </button>
+  </div>
+</div>

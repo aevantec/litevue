@@ -1,0 +1,9 @@
+<div v-scope>
+  <p>cart items: {{ $store.demoCart.count }}</p>
+  <button @click="$store.demoCart.add()">add</button>
+  <button @click="$store.demoCart.reset()">reset</button>
+</div>
+
+<div v-scope>
+  <p>a separate scope, same store: {{ $store.demoCart.count }}</p>
+</div>

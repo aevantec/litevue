@@ -6,11 +6,8 @@ title: $refs
 
 Elements registered with the [ref](/directives/ref) attribute, keyed by name:
 
-```html
-<div v-scope="{}">
-  <input ref="field" />
-  <button @click="$refs.field.select()">select</button>
-</div>
-```
+<<< ../.vitepress/demos/refs.html{html}
+
+<LiveDemo src="refs" />
 
 Each `v-scope` gets its own `$refs` object that inherits from the parent scope's refs.

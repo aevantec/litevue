@@ -11,11 +11,9 @@ import { persist } from 'litevue/plugins';
 createApp().use(persist).mount();
 ```
 
-```html
-<div v-scope="{ count: 0 }" v-persist="counter">
-  <button @click="count++">{{ count }}</button>
-</div>
-```
+<<< ../.vitepress/demos/persist.html{html}
+
+<LiveDemo src="persist" plugins="persist" />
 
 - The attribute value is the **literal** storage key (stored as `lite-vue:<key>`); it falls back to the element's id.
 - All non-`$`, non-function own properties of the scope are persisted.

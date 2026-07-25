@@ -1,0 +1,8 @@
+<div v-name="demo-cart" v-scope="{ items: 3, lookup: '\u2014' }">
+  <p>items: {{ items }} &middot; looked up by name: {{ lookup }}</p>
+
+  <button @click="items++">add an item</button>
+  <button @click="lookup = __LITE_VUE__.getScopeByName('demo-cart').items">
+    find this scope by its v-name
+  </button>
+</div>

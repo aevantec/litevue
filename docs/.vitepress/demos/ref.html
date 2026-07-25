@@ -1,0 +1,6 @@
+<div v-scope="{}">
+  <input ref="field" value="focus and select me" />
+  <button @click="$refs.field.focus(); $refs.field.select()">
+    focus + select via $refs
+  </button>
+</div>

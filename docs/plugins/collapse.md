@@ -11,12 +11,9 @@ import { collapse } from 'litevue/plugins';
 createApp({ open: false }).use(collapse).mount();
 ```
 
-```html
-<button @click="open = !open">toggle</button>
-<div v-collapse="open">
-  <p>collapsible content</p>
-</div>
-```
+<<< ../.vitepress/demos/collapse.html{html}
+
+<LiveDemo src="collapse" plugins="collapse" />
 
 - The initial state applies without animating.
 - After expanding, the fixed height is released so content can resize freely.

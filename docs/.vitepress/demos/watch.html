@@ -1,0 +1,10 @@
+<div
+  v-scope="{ count: 0, log: [] }"
+  @mounted="$watch('count', (value, old) => log.unshift(old + ' \u2192 ' + value))"
+>
+  <button @click="count++">count: {{ count }}</button>
+
+  <ul>
+    <li v-for="entry in log">{{ entry }}</li>
+  </ul>
+</div>

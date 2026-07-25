@@ -6,11 +6,9 @@ title: v-on
 
 Attaches an event listener. Shorthand: `@`.
 
-```html
-<button @click="count++">inc</button>
-<button @click="handle">method reference</button>
-<input @keyup.enter="submit" />
-```
+<<< ../.vitepress/demos/v-on.html{html}
+
+<LiveDemo src="v-on" />
 
 The event object is available as `$event`; method references receive it as their argument.
 

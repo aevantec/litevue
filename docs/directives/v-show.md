@@ -6,12 +6,9 @@ title: v-show
 
 Toggles the element's `display` style. The element stays mounted — cheaper than [`v-if`](/directives/v-if) for frequent toggles, but hidden content still exists in the DOM.
 
-```html
-<div v-scope="{ open: false }">
-  <button @click="open = !open">toggle</button>
-  <div v-show="open">now you see me</div>
-</div>
-```
+<<< ../.vitepress/demos/v-show.html{html}
+
+<LiveDemo src="v-show" />
 
 ## Animating v-show
 

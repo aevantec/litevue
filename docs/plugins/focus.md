@@ -15,9 +15,9 @@ createApp({ editing: false, open: false }).use(focus).mount();
 
 Focuses the element whenever the expression becomes truthy (including on mount, making it an autofocus). Add `.select` to also select the text:
 
-```html
-<input v-focus.select="editing" />
-```
+<<< ../.vitepress/demos/focus.html{html}
+
+<LiveDemo src="focus" plugins="focus" />
 
 ## v-trap
 

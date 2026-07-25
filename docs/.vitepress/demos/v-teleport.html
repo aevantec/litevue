@@ -1,0 +1,10 @@
+<div id="demo-teleport-target" style="padding: 8px; border: 1px dashed currentColor">
+  teleport target
+</div>
+
+<div v-scope="{ open: false }">
+  <button @click="open = !open">toggle the teleported node</button>
+  <div v-if="open" v-teleport="#demo-teleport-target">
+    I render inside the box above, but my scope lives down here.
+  </div>
+</div>

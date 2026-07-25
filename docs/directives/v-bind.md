@@ -6,13 +6,9 @@ title: v-bind
 
 Binds an attribute to an expression. Shorthand: `:`.
 
-```html
-<div v-scope="{ url: '/a', active: true }">
-  <a :href="url" :class="{ active }" :style="{ color: active ? 'green' : '' }">
-    link
-  </a>
-</div>
-```
+<<< ../.vitepress/demos/v-bind.html{html}
+
+<LiveDemo src="v-bind" />
 
 - `:class` accepts Vue's string / object / array forms and merges with the static `class` attribute.
 - `:style` accepts object syntax, `!important`, and auto-prefixing.

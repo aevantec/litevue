@@ -1,0 +1,8 @@
+<div v-scope="{ open: false }">
+  <button @click="open = !open">toggle panel</button>
+
+  <div v-collapse="open">
+    <p>Line one of the collapsible content.</p>
+    <p>Line two, so the height change is visible.</p>
+  </div>
+</div>

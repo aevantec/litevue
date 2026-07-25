@@ -6,9 +6,9 @@ title: v-name
 
 Gives a scope an explicit [devtools](/devtools/panel) name, so the element doesn't need an `id`. The attribute is removed from the DOM at mount and exists only for inspection:
 
-```html
-<div v-name="cart" v-scope="{ items: [] }">…</div>
-```
+<<< ../.vitepress/demos/v-name.html{html}
+
+<LiveDemo src="v-name" />
 
 ```js
 // look a scope up by name from the console

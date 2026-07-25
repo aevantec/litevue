@@ -11,9 +11,9 @@ import { intersect } from 'litevue/plugins';
 createApp({ seen: false }).use(intersect).mount();
 ```
 
-```html
-<div v-intersect.once="seen = true">…</div>
-```
+<<< ../.vitepress/demos/intersect.html{html}
+
+<LiveDemo src="intersect" plugins="intersect" />
 
 ## Modifiers
 

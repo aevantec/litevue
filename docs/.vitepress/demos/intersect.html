@@ -1,0 +1,6 @@
+<div v-scope="{ seen: false }">
+  <p>sentinel seen: <strong>{{ seen ? 'yes' : 'not yet' }}</strong></p>
+  <div v-intersect.once="seen = true">
+    &uarr; flips the moment this line enters the viewport
+  </div>
+</div>

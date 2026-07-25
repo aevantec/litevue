@@ -1,0 +1,4 @@
+<div v-scope="{ count: 0 }">
+  <p v-effect="$el.textContent = 'the effect wrote: ' + count"></p>
+  <button @click="count++">++</button>
+</div>

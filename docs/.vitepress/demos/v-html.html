@@ -1,0 +1,4 @@
+<div v-scope="{ content: '<em>emphasised</em> and <strong>bold</strong>' }">
+  <p v-html="content"></p>
+  <button @click="content = '<code>updated markup</code>'">change the HTML</button>
+</div>

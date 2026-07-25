@@ -1,0 +1,13 @@
+<div v-scope="{ n: 0, measured: '\u2014' }">
+  <p ref="out">n is {{ n }}</p>
+  <p>{{ measured }}</p>
+
+  <button @click="n++; measured = 'read immediately: ' + $refs.out.textContent">
+    read immediately
+  </button>
+  <button
+    @click="n++; $nextTick(() => (measured = 'read after $nextTick: ' + $refs.out.textContent))"
+  >
+    read after $nextTick
+  </button>
+</div>

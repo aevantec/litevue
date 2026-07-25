@@ -6,10 +6,8 @@ title: $data
 
 The current scope object — handy for debugging and serialization:
 
-```html
-<div v-scope="{ a: 1, b: 2 }">
-  <pre>{{ JSON.stringify($data) }}</pre>
-</div>
-```
+<<< ../.vitepress/demos/data.html{html}
+
+<LiveDemo src="data" />
 
 Only the scope's own state serializes; inherited parent state and `$`-helpers are excluded.
