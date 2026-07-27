@@ -9,7 +9,7 @@ body:
         thing you can include — without one we usually can't act on the report.
 
         Questions and "how do I…" belong in
-        [Discussions](https://github.com/abiacarl/litevue/discussions).
+        [Discussions](https://github.com/aevantec/litevue/discussions).
 
   - type: input
     id: version

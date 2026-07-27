@@ -75,7 +75,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/abiacarl/litevue.git"
+    "url": "git+https://github.com/aevantec/litevue.git"
   },
   "keywords": [
     "vue",
@@ -94,9 +94,9 @@
   "author": "abiacarl <abiacarl@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/abiacarl/litevue/issues"
+    "url": "https://github.com/aevantec/litevue/issues"
   },
-  "homepage": "https://github.com/abiacarl/litevue#readme",
+  "homepage": "https://github.com/aevantec/litevue#readme",
   "engines": {
     "node": ">=18"
   },

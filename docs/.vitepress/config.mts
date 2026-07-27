@@ -120,7 +120,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/abiacarl/litevue' },
+      { icon: 'github', link: 'https://github.com/aevantec/litevue' },
     ],
     search: { provider: 'local' },
     footer: {

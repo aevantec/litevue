@@ -17,7 +17,7 @@ hero:
       link: /migration/from-alpine
     - theme: alt
       text: GitHub
-      link: https://github.com/abiacarl/litevue
+      link: https://github.com/aevantec/litevue
 
 features:
   - title: Vue-compatible syntax

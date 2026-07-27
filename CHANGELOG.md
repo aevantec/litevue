@@ -1,4 +1,4 @@
-# [0.5.0](https://github.com/abiacarl/litevue) (2026-07-11)
+# [0.5.0](https://github.com/aevantec/litevue) (2026-07-11)
 
 First release of `litevue`, a fork continuing from petite-vue
 0.4.1 (upstream history preserved below).

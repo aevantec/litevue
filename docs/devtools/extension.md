@@ -4,7 +4,7 @@ title: Browser Extension
 
 # Browser Extension <Badge type="section" text="Devtools" />
 
-A devtools-tab variant of the inspector for Chrome and Firefox lives in the repo's [`extension/`](https://github.com/abiacarl/litevue/tree/main/extension) directory.
+A devtools-tab variant of the inspector for Chrome and Firefox lives in the repo's [`extension/`](https://github.com/aevantec/litevue/tree/main/extension) directory.
 
 ## How it works
 

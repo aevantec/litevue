@@ -24,7 +24,7 @@ what it's there for, and a third-party plugin needs no permission from us.
 Requires Node >= 18 and [pnpm](https://pnpm.io) 10.
 
 ```bash
-git clone https://github.com/abiacarl/litevue.git
+git clone https://github.com/aevantec/litevue.git
 cd litevue
 pnpm install
 ```
@@ -123,18 +123,18 @@ squash merge, that's the only message that ends up in history).
 
 ## Reporting bugs
 
-Open a [bug report](https://github.com/abiacarl/litevue/issues/new/choose) and
+Open a [bug report](https://github.com/aevantec/litevue/issues/new/choose) and
 include a **minimal reproduction** — a small HTML page, a
 [StackBlitz](https://stackblitz.com), or a CodePen. Reports without one can't be
 triaged and will be closed after 14 days of inactivity.
 
 Questions and "how do I…" belong in
-[Discussions](https://github.com/abiacarl/litevue/discussions), not issues.
+[Discussions](https://github.com/aevantec/litevue/discussions), not issues.
 
 ## Security
 
 Do not open a public issue for a security vulnerability. Report it privately
-through [GitHub security advisories](https://github.com/abiacarl/litevue/security/advisories/new).
+through [GitHub security advisories](https://github.com/aevantec/litevue/security/advisories/new).
 
 One thing that is *not* a vulnerability: `litevue` evaluates expressions found in
 HTML attributes, by design. Mounting it on markup built from untrusted input will
