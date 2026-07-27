@@ -100,6 +100,15 @@ First release of `litevue`, a fork continuing from petite-vue
 
 # Upstream petite-vue history
 
+## [0.5.1](https://github.com/aevantec/litevue/compare/v0.5.0...v0.5.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **ci:** make release-please tag and changelog match the repo ([#22](https://github.com/aevantec/litevue/issues/22)) ([5cc170a](https://github.com/aevantec/litevue/commit/5cc170a3098d78853db4bcfd5369c8488504276c))
+* **docs:** serve the site from litevue.dev only ([#21](https://github.com/aevantec/litevue/issues/21)) ([d06b1b9](https://github.com/aevantec/litevue/commit/d06b1b9036c6dea4a3cc8ceabf36b994e4b3bf70))
+* **docs:** update docs ([#19](https://github.com/aevantec/litevue/issues/19)) ([0b88307](https://github.com/aevantec/litevue/commit/0b88307450e322c68d8c331dd294028a5c9d979e))
+
 ## [0.4.1](https://github.com/vuejs/petite-vue/compare/v0.4.0...v0.4.1) (2022-01-18)
 
 ### Bug Fixes
