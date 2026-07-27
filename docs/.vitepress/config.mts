@@ -12,6 +12,10 @@ export default defineConfig({
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   base,
+  // Cloudflare already 307s /foo.html to /foo, so emitting .html links meant
+  // every internal link and every sitemap entry pointed at a redirect rather
+  // than the URL actually served.
+  cleanUrls: true,
   // Now that there's a stable canonical domain, emit a sitemap — the docs are
   // the discovery path for this project, more so since the npm name is scoped.
   sitemap: { hostname },

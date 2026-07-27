@@ -1,6 +1,7 @@
 TODOs.md
 node_modules
-.claude/settings.local.json
+# local editor/agent config — machine-specific absolute paths, not portable
+.claude
 dist
 explorations
 ROADMAP.md
