@@ -33,7 +33,7 @@ Guard it so it never reaches production. With Vite (or anything exposing `import
 import { createApp } from '@aevantec/litevue';
 
 if (import.meta.env.DEV) {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 
 createApp().mount();
@@ -43,7 +43,7 @@ The webpack/Node equivalent:
 
 ```js
 if (process.env.NODE_ENV !== 'production') {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 ```
 
