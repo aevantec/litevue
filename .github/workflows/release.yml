@@ -43,9 +43,8 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.tag }}
 
+      # version comes from the packageManager field in package.json
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:

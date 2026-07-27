@@ -21,13 +21,19 @@ what it's there for, and a third-party plugin needs no permission from us.
 
 ## Getting set up
 
-Requires Node >= 18 and [pnpm](https://pnpm.io) 10.
+Requires Node >= 18 and [pnpm](https://pnpm.io) 10 — the exact version is pinned in
+the `packageManager` field, so `corepack enable` gets you the right one.
 
 ```bash
 git clone https://github.com/aevantec/litevue.git
 cd litevue
 pnpm install
 ```
+
+`npm install` and `yarn` will not work here: the lockfile is pnpm's, and npm
+crashes outright when it meets a pnpm-created `node_modules`
+(`Cannot read properties of null (reading 'matches')`). If you hit that, use
+`pnpm install`.
 
 Common commands:
 
