@@ -98,7 +98,7 @@
   "bugs": {
     "url": "https://github.com/aevantec/litevue/issues"
   },
-  "homepage": "https://github.com/aevantec/litevue#readme",
+  "homepage": "https://litevue.dev",
   "engines": {
     "node": ">=18"
   },
