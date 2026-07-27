@@ -51,15 +51,16 @@ pnpm format     # prettier
 | Path | What's in it |
 | --- | --- |
 | `src/` | Library source — core, directives, plugins, devtools |
-| `test/` | Automated tests (vitest + jsdom) |
-| `tests/` | Manual HTML pages for browser testing via `pnpm dev` |
+| `test/` | Automated tests (vitest + jsdom) — run by `pnpm test` |
+| `playground/` | Manual HTML pages you open in a browser via `pnpm dev` |
 | `docs/` | VitePress documentation site |
-| `examples/` | Standalone usage examples |
+| `examples/` | Standalone usage examples, linked from the docs |
 | `extension/` | Browser devtools extension |
-| `scripts/` | Release tooling |
+| `scripts/` | Build and release tooling |
 
-Note the `test/` vs `tests/` distinction: **automated tests go in `test/`**,
-hand-driven browser pages go in `tests/`.
+**Automated tests go in `test/`.** `playground/` holds hand-driven pages for the
+behavior jsdom can't reproduce — transitions, focus order, caret position, the
+devtools panel. Nothing there runs in CI; see [playground/README.md](playground/README.md).
 
 ## Making a change
 
