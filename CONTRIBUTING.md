@@ -118,8 +118,13 @@ docs(directives): document v-mask token syntax
 feat(core)!: drop @vue:mounted alias in favor of @mounted
 ```
 
-Commit messages are checked by CI. If the check fails, edit your PR title (for a
-squash merge, that's the only message that ends up in history).
+The PR title matters most: on a squash merge it's the only message that ends up in
+history, and it's what determines the next version number. Check yours locally
+with:
+
+```bash
+echo "feat(plugins): add v-clipboard plugin" | pnpm commitlint
+```
 
 ## Reporting bugs
 
