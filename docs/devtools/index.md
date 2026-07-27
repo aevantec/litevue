@@ -26,7 +26,7 @@ LiteVue ships inspection tooling in the box, built on the public [Devtools API](
 ```js
 // npm: a dev-only side-effect import
 if (import.meta.env.DEV) {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 ```
 
