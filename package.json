@@ -1,6 +1,9 @@
 {
-  "name": "litevue",
+  "name": "@aevantec/litevue",
   "version": "0.5.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Lightweight subset of Vue optimized for progressive enhancement. A fork of petite-vue with devtools.",
   "type": "commonjs",
   "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import \u2014 both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",

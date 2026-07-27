@@ -2,7 +2,9 @@
 
 `litevue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML with the same template syntax and reactivity mental model as standard Vue.
 
-Published on npm as **`litevue`** (the hyphenated name was already taken).
+Published on npm as **[`@aevantec/litevue`](https://www.npmjs.com/package/@aevantec/litevue)** — the
+unscoped name is blocked by an unrelated `lite-vue` package. The IIFE/UMD global
+stays `LiteVue`.
 
 - **~8kb** gzipped core, driven by the real `@vue/reactivity`
 - Vue-compatible syntax: `{{ }}`, `v-if`/`v-for` (keyed), `v-model`, `v-show`, …
@@ -16,7 +18,7 @@ Published on npm as **`litevue`** (the hyphenated name was already taken).
 ## Quick start
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 
 <div v-scope="{ count: 0 }">
   {{ count }}
@@ -27,11 +29,11 @@ Published on npm as **`litevue`** (the hyphenated name was already taken).
 Or with a bundler:
 
 ```sh
-npm install litevue
+npm install @aevantec/litevue
 ```
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 createApp({ count: 0 }).mount();
 ```

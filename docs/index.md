@@ -53,7 +53,7 @@ features:
 Drop it on any server-rendered page:
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 
 <div v-scope="{ count: 0 }">
   {{ count }}
@@ -64,11 +64,11 @@ Drop it on any server-rendered page:
 Or install it:
 
 ```sh
-npm install litevue
+npm install @aevantec/litevue
 ```
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 createApp({ count: 0 }).mount();
 ```

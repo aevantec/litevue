@@ -7,7 +7,7 @@ title: collapse
 `v-collapse="expression"` expands and collapses the element's height with a transition — accordions and disclosure panels without measuring anything yourself.
 
 ```js
-import { collapse } from 'litevue/plugins';
+import { collapse } from '@aevantec/litevue/plugins';
 createApp({ open: false }).use(collapse).mount();
 ```
 

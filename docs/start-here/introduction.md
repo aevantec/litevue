@@ -9,7 +9,7 @@ title: Introduction
 It is a maintained fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You, continuing from 0.4.1 with devtools, transitions, a plugin system, a global store, and additional directives — while keeping the original goal of staying as close to standard Vue as the format allows.
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 
 <div v-scope="{ count: 0 }">
   {{ count }}
@@ -36,7 +36,7 @@ This is roughly how Vue 1 worked, and it is a genuinely better fit for the "spri
 LiteVue is not a Vue look-alike with its own reactivity implementation. It depends on **`@vue/reactivity`** — the exact package that powers Vue 3 — so proxies, dependency tracking, effect scheduling, computed getters, and batching all behave the way they do in Vue:
 
 ```js
-import { createApp, reactive } from 'litevue';
+import { createApp, reactive } from '@aevantec/litevue';
 
 const store = reactive({ items: [] });
 
