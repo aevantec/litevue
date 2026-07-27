@@ -1,12 +1,17 @@
 import { defineConfig } from 'vitepress';
 
+// GitHub Pages serves this as a project site under /litevue/; hosts that
+// serve from a domain root (Cloudflare Pages/Workers, Netlify, a custom
+// domain) need '/'. Set DOCS_BASE=/ there.
+const base = process.env.DOCS_BASE ?? '/litevue/';
+
 export default defineConfig({
   title: 'LiteVue',
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
-  // served as a GitHub Pages project site
-  base: '/litevue/',
-  head: [['link', { rel: 'icon', href: '/litevue/logo.png' }]],
+  base,
+  // head entries are emitted verbatim, so this one needs the base itself
+  head: [['link', { rel: 'icon', href: `${base}logo.png` }]],
   themeConfig: {
     logo: '/logo.png',
     nav: [
