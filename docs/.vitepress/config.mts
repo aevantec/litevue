@@ -27,6 +27,19 @@ export default defineConfig({
     ['meta', { property: 'og:image', content: `${hostname}/logo.png` }],
     ['meta', { name: 'twitter:card', content: 'summary' }],
   ],
+  // Whatever host serves a page — workers.dev, a per-version preview URL, or
+  // litevue.dev itself — every page declares litevue.dev as the original, so
+  // copies can't compete with it in search results.
+  transformPageData(pageData) {
+    const path = pageData.relativePath
+      .replace(/index\.md$/, '')
+      .replace(/\.md$/, '');
+    pageData.frontmatter.head ??= [];
+    pageData.frontmatter.head.push([
+      'link',
+      { rel: 'canonical', href: `${hostname}/${path}` },
+    ]);
+  },
   themeConfig: {
     logo: '/logo.png',
     nav: [
