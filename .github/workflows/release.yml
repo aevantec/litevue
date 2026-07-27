@@ -3,6 +3,14 @@ name: Release
 on:
   push:
     branches: [main]
+  # Lets release-please be re-run from the Actions tab without pushing a commit
+  # to main — useful when a run failed for a reason outside the code, such as
+  # the repository not yet allowing Actions to open pull requests.
+  #
+  # Safe to run at any time: release-please only refreshes its release PR, and
+  # the publish job stays gated on release_created, which is only true when a
+  # release PR is merged.
+  workflow_dispatch:
 
 permissions:
   contents: read
