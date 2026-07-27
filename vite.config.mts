@@ -28,8 +28,12 @@ export default defineConfig(({ command }) => ({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'LiteVue',
       formats: ['es', 'umd', 'iife'],
-      // keep the historical file names — vite 3+ would otherwise emit .mjs
-      fileName: (format) => `litevue.${format}.js`,
+      // The package is "type": "commonjs", so .js is CJS to Node — correct for
+      // the umd build, wrong for the esm one. The esm build must be .mjs or
+      // `import 'litevue'` throws "Cannot use import statement outside a
+      // module" in Node. umd/iife keep their historical .js names.
+      fileName: (format) =>
+        format === 'es' ? `litevue.mjs` : `litevue.${format}.js`,
     },
     rollupOptions: {
       plugins: [

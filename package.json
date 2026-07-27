@@ -2,27 +2,51 @@
   "name": "litevue",
   "version": "0.5.0",
   "description": "Lightweight subset of Vue optimized for progressive enhancement. A fork of petite-vue with devtools.",
+  "type": "commonjs",
+  "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import — both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",
+  "sideEffects": [
+    "./dist/litevue.*",
+    "./dist/litevue-devtools.*"
+  ],
   "files": [
     "dist"
   ],
   "main": "dist/litevue.umd.js",
   "unpkg": "dist/litevue.iife.js",
   "jsdelivr": "dist/litevue.iife.js",
-  "module": "./dist/litevue.es.js",
+  "module": "./dist/litevue.mjs",
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/litevue.es.js",
-      "require": "./dist/litevue.umd.js"
+      "import": {
+        "types": "./dist/types/index.d.mts",
+        "default": "./dist/litevue.mjs"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/litevue.umd.js"
+      }
     },
     "./plugins": {
-      "types": "./dist/types/plugins/index.d.ts",
-      "import": "./dist/litevue-plugins.es.js"
+      "import": {
+        "types": "./dist/types/plugins/index.d.mts",
+        "default": "./dist/litevue-plugins.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/index.d.ts",
+        "default": "./dist/litevue-plugins.umd.js"
+      }
     },
     "./devtools": {
-      "types": "./dist/types/devtools-panel.d.ts",
-      "import": "./dist/litevue-devtools.es.js"
-    }
+      "import": {
+        "types": "./dist/types/devtools-panel.d.mts",
+        "default": "./dist/litevue-devtools.mjs"
+      },
+      "require": {
+        "types": "./dist/types/devtools-panel.d.ts",
+        "default": "./dist/litevue-devtools.umd.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "types": "./dist/types/index.d.ts",
   "typesVersions": {
@@ -37,7 +61,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && tsc --emitDeclarationOnly && mv dist/src dist/types",
+    "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && pnpm build:types",
+    "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
+    "lint:package": "publint --strict && attw --pack .",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
@@ -78,6 +104,9 @@
     "@vue/reactivity": "~3.4.0"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
     "@vue/shared": "~3.4.0",
     "chalk": "^4.1.1",
     "conventional-changelog-cli": "^2.1.1",
@@ -85,6 +114,7 @@
     "execa": "^5.0.0",
     "jsdom": "^25.0.1",
     "prettier": "^3.4.0",
+    "publint": "^0.3.22",
     "semver": "^7.3.5",
     "terser": "^5.36.0",
     "typescript": "^5.6.0",
