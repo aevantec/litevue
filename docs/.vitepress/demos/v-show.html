@@ -1,0 +1,4 @@
+<div v-scope="{ visible: true }">
+  <button @click="visible = !visible">toggle</button>
+  <p v-show="visible">I stay in the DOM — only my display style changes.</p>
+</div>

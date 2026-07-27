@@ -1,49 +1,49 @@
-import { Directive } from '.'
+import { Directive } from '.';
 import {
   normalizeClass,
   normalizeStyle,
   isString,
   isArray,
   hyphenate,
-  camelize
-} from '@vue/shared'
+  camelize,
+} from '@vue/shared';
 
-const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/
+const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
 
 export const bind: Directive<Element & { _class?: string }> = ({
   el,
   get,
   effect,
   arg,
-  modifiers
+  modifiers,
 }) => {
-  let prevValue: any
+  let prevValue: any;
 
   // record static class
   if (arg === 'class') {
-    el._class = el.className
+    el._class = el.className;
   }
 
   effect(() => {
-    let value = get()
+    let value = get();
     if (arg) {
       if (modifiers?.camel) {
-        arg = camelize(arg)
+        arg = camelize(arg);
       }
-      setProp(el, arg, value, prevValue)
+      setProp(el, arg, value, prevValue);
     } else {
       for (const key in value) {
-        setProp(el, key, value[key], prevValue && prevValue[key])
+        setProp(el, key, value[key], prevValue && prevValue[key]);
       }
       for (const key in prevValue) {
         if (!value || !(key in value)) {
-          setProp(el, key, null)
+          setProp(el, key, null);
         }
       }
     }
-    prevValue = value
-  })
-}
+    prevValue = value;
+  });
+};
 
 const setProp = (
   el: Element & { _class?: string },
@@ -55,22 +55,22 @@ const setProp = (
     el.setAttribute(
       'class',
       normalizeClass(el._class ? [el._class, value] : value) || ''
-    )
+    );
   } else if (key === 'style') {
-    value = normalizeStyle(value)
-    const { style } = el as HTMLElement
+    value = normalizeStyle(value);
+    const { style } = el as HTMLElement;
     if (!value) {
-      el.removeAttribute('style')
+      el.removeAttribute('style');
     } else if (isString(value)) {
-      if (value !== prevValue) style.cssText = value
+      if (value !== prevValue) style.cssText = value;
     } else {
       for (const key in value) {
-        setStyle(style, key, value[key])
+        setStyle(style, key, value[key]);
       }
       if (prevValue && !isString(prevValue)) {
         for (const key in prevValue) {
           if (value[key] == null) {
-            setStyle(style, key, '')
+            setStyle(style, key, '');
           }
         }
       }
@@ -81,10 +81,10 @@ const setProp = (
     !forceAttrRE.test(key)
   ) {
     // @ts-ignore
-    el[key] = value
+    el[key] = value;
     if (key === 'value') {
       // @ts-ignore
-      el._value = value
+      el._value = value;
     }
   } else {
     // special case for <input v-model type="checkbox"> with
@@ -92,18 +92,18 @@ const setProp = (
     // store value as dom properties since non-string values will be
     // stringified.
     if (key === 'true-value') {
-      ;(el as any)._trueValue = value
+      (el as any)._trueValue = value;
     } else if (key === 'false-value') {
-      ;(el as any)._falseValue = value
+      (el as any)._falseValue = value;
     } else if (value != null) {
-      el.setAttribute(key, value)
+      el.setAttribute(key, value);
     } else {
-      el.removeAttribute(key)
+      el.removeAttribute(key);
     }
   }
-}
+};
 
-const importantRE = /\s*!important$/
+const importantRE = /\s*!important$/;
 
 const setStyle = (
   style: CSSStyleDeclaration,
@@ -111,11 +111,11 @@ const setStyle = (
   val: string | string[]
 ) => {
   if (isArray(val)) {
-    val.forEach((v) => setStyle(style, name, v))
+    val.forEach((v) => setStyle(style, name, v));
   } else {
     if (name.startsWith('--')) {
       // custom property definition
-      style.setProperty(name, val)
+      style.setProperty(name, val);
     } else {
       if (importantRE.test(val)) {
         // !important
@@ -123,10 +123,10 @@ const setStyle = (
           hyphenate(name),
           val.replace(importantRE, ''),
           'important'
-        )
+        );
       } else {
-        style[name as any] = val
+        style[name as any] = val;
       }
     }
   }
-}
+};

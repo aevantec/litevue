@@ -1,0 +1,17 @@
+<script type="module">
+  import { createApp } from '../src';
+  import { focus } from '../src/plugins';
+  createApp({ trapped: false }).use(focus).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <h3>v-trap (focus containment)</h3>
+  <button id="trap-open" @click="trapped = true">open trap</button>
+  <div v-show="trapped" style="border: 1px solid #999; padding: 8px">
+    <div v-trap="trapped">
+      <button>first</button>
+      <button>second</button>
+      <button @click="trapped = false">close (restores focus)</button>
+    </div>
+  </div>
+</div>

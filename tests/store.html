@@ -1,0 +1,38 @@
+<script type="module">
+  import { createApp, store } from '../src';
+
+  store('cart', {
+    items: [],
+    add(item) {
+      this.items.push(item);
+    },
+    get count() {
+      return this.items.length;
+    },
+  });
+
+  store('settings', {
+    theme: '',
+    init() {
+      this.theme = 'dark';
+    },
+  });
+
+  // two independent apps sharing the same stores
+  createApp().mount('#app-a');
+  createApp({ local: 'b' }).mount('#app-b');
+
+  // a store registered after mount — expressions pick it up reactively
+  window.registerLate = () => store('late', { msg: 'late store' });
+</script>
+
+<div id="app-a" v-scope>
+  <button id="add" @click="$store.cart.add('item')">add</button>
+  <span id="count-a">a: {{ $store.cart.count }}</span>
+  <span id="theme">theme: {{ $store.settings.theme }}</span>
+</div>
+
+<div id="app-b" v-scope>
+  <span id="count-b">b: {{ $store.cart.count }} ({{ local }})</span>
+  <span id="late">{{ $store.late ? $store.late.msg : 'not yet' }}</span>
+</div>

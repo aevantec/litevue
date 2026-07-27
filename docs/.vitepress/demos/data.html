@@ -1,0 +1,5 @@
+<div v-scope="{ a: 1, b: 'two', c: [3, 4] }">
+  <pre>{{ JSON.stringify($data, null, 2) }}</pre>
+  <button @click="a++">change a</button>
+  <button @click="c.push(c.length + 3)">push to c</button>
+</div>

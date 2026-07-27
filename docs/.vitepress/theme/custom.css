@@ -1,0 +1,96 @@
+/* litevue brand — the devtools/logo green */
+:root {
+  --vp-c-brand-1: #42b883;
+  --vp-c-brand-2: #38a573;
+  --vp-c-brand-3: #2f9464;
+  --vp-c-brand-soft: rgba(66, 184, 131, 0.14);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #42b883 30%, #35495e);
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(66, 184, 131, 0.35) 50%,
+    rgba(53, 73, 94, 0.35) 50%
+  );
+  --vp-home-hero-image-filter: blur(56px);
+}
+
+.dark {
+  --vp-c-brand-1: #42d392;
+  --vp-c-brand-2: #42b883;
+  --vp-c-brand-3: #38a573;
+}
+
+/* live demos: real litevue apps running inside the docs */
+.live-demo {
+  position: relative;
+  margin: 16px 0 24px;
+  padding: 28px 20px 20px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+.live-demo-label {
+  position: absolute;
+  top: 8px;
+  left: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vp-c-brand-1);
+}
+.live-demo-body > *:first-child {
+  margin-top: 0;
+}
+.live-demo-body > *:last-child {
+  margin-bottom: 0;
+}
+.live-demo-fallback {
+  color: var(--vp-c-text-3);
+}
+.live-demo-body button {
+  margin: 2px 6px 2px 0;
+  padding: 4px 12px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.live-demo-body button:hover {
+  border-color: var(--vp-c-brand-1);
+  color: var(--vp-c-brand-1);
+}
+.live-demo-body input:not([type='checkbox']):not([type='radio']),
+.live-demo-body select {
+  padding: 4px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+}
+.live-demo-body input:focus,
+.live-demo-body select:focus {
+  border-color: var(--vp-c-brand-1);
+  outline: none;
+}
+
+/* section badges shown beside page titles — one brand color throughout */
+h1 .VPBadge {
+  vertical-align: middle;
+  margin-left: 10px;
+  transform: translateY(-2px);
+}
+.VPBadge.section {
+  background: rgba(66, 184, 131, 0.14);
+  color: #2f9464;
+}
+.dark .VPBadge.section {
+  background: rgba(66, 211, 146, 0.16);
+  color: #42d392;
+}

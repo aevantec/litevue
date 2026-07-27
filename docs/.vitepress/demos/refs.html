@@ -1,0 +1,7 @@
+<div v-scope="{}">
+  <input ref="first" placeholder="first" />
+  <input ref="second" placeholder="second" />
+
+  <button @click="$refs.first.focus()">focus first</button>
+  <button @click="$refs.second.focus()">focus second</button>
+</div>

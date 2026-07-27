@@ -2,3 +2,6 @@ TODOs.md
 node_modules
 dist
 explorations
+ROADMAP.md
+.DS_Store
+docs/.vitepress/cache

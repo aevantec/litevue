@@ -1,0 +1,4 @@
+<div v-scope="{ msg: 'set through v-text' }">
+  <p v-text="msg"></p>
+  <button @click="msg = msg + '!'">append</button>
+</div>

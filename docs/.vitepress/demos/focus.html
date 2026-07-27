@@ -1,0 +1,13 @@
+<div v-scope="{ editing: false, open: false }">
+  <button @click="editing = !editing">toggle autofocus</button>
+  <input v-focus.select="editing" value="focused and selected" />
+
+  <p><button @click.stop="open = true">open a focus trap</button></p>
+
+  <div v-show="open" v-trap="open" style="padding: 8px; border: 1px dashed currentColor">
+    Tab cycles inside this box only.
+    <button>first</button>
+    <button>second</button>
+    <button @click="open = false">close (restores focus)</button>
+  </div>
+</div>

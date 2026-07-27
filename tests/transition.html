@@ -1,0 +1,29 @@
+<style>
+  #box,
+  #appear-box {
+    width: 60px;
+    height: 60px;
+    background: #42b883;
+  }
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 100ms ease;
+  }
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+</style>
+
+<script type="module">
+  import { createApp } from '../src';
+  import { transition } from '../src/plugins';
+
+  createApp({ open: true }).use(transition).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <button id="toggle" @click="open = !open">toggle</button>
+  <div id="box" v-transition:fade="open">fading box</div>
+  <div id="appear-box" v-transition:fade.appear="true">appears on load</div>
+</div>

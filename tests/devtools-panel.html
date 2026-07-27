@@ -1,0 +1,51 @@
+<script type="module">
+  import { createApp, store } from '../src';
+  import '../src/devtools-panel';
+
+  store('cart', {
+    items: ['a'],
+    open: false,
+    add(item) {
+      this.items.push(item);
+    },
+    get total() {
+      return this.items.length;
+    },
+  });
+
+  createApp().mount();
+</script>
+
+<div
+  id="counter"
+  v-scope="{
+    count: 0,
+    label: 'clicks',
+    enabled: true,
+    user: { name: 'John Doe', meta: { admin: true, tags: ['dev', 'vue'] } }
+  }"
+>
+  <p id="count-display">{{ label }}: {{ count }}</p>
+  <button id="inc" @click="count++" :disabled="!enabled">+1</button>
+  <div
+    id="nested"
+    v-if="enabled"
+    v-name="inner-note"
+    v-scope="{ note: 'inner' }"
+  >
+    <p id="note-display">{{ note }} / {{ label }}</p>
+  </div>
+</div>
+
+<div v-name="footer" v-scope="{ year: 2026 }">
+  <p>&copy; {{ year }}</p>
+</div>
+
+<div id="list" v-name="cart" v-scope="{ items: ['a', 'b'], show: true }">
+  <span id="store-total">total: {{ $store.cart.total }}</span>
+  <button id="store-add" @click="$store.cart.add('x')">add to store</button>
+  <button id="toggle" @click="show = !show">toggle</button>
+  <ul v-if="show">
+    <li v-for="item in items">{{ item }}</li>
+  </ul>
+</div>

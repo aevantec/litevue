@@ -1,0 +1,26 @@
+<script type="module">
+  import { createApp } from '../src';
+  window.events = [];
+  createApp({
+    show: true,
+    log(e) {
+      window.events.push(e);
+    },
+  }).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <button id="toggle" @click="show = !show">toggle</button>
+  <div
+    id="hooked"
+    v-if="show"
+    @mounted="log('mounted')"
+    @unmounted="log('unmounted')"
+  >
+    hooked element
+  </div>
+  <!-- legacy prefixed names keep working (deprecated) -->
+  <div id="legacy" v-if="show" @vue:mounted="log('legacy-mounted')">
+    legacy element
+  </div>
+</div>

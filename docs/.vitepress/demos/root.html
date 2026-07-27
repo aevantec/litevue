@@ -1,0 +1,5 @@
+<div v-scope="{ theme: 'dark (local)' }">
+  <p>local theme: {{ theme }}</p>
+  <p>root theme: {{ $root.theme }}</p>
+  <button @click="$root.theme = 'written from a child'">write to $root</button>
+</div>

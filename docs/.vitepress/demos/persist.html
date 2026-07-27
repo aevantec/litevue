@@ -1,0 +1,5 @@
+<div v-scope="{ count: 0 }" v-persist="docs-demo-counter">
+  <p>count: {{ count }} &mdash; reload this page, the value survives</p>
+  <button @click="count++">++</button>
+  <button @click="count = 0">reset</button>
+</div>

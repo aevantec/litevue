@@ -1,6 +1,6 @@
 <link
   rel="stylesheet"
-  href="https://unpkg.com/todomvc-app-css@2.4.1/index.css"
+  href="https://cdn.jsdelivr.net/npm/todomvc-app-css@2.4.3/index.min.css"
 />
 <style>
   [v-cloak] {
@@ -9,38 +9,38 @@
 </style>
 
 <script type="module">
-  import { createApp } from '../src'
+  import { createApp } from '../src';
 
-  const STORAGE_KEY = 'todos-petite-vue'
+  const STORAGE_KEY = 'todos-litevue';
   const todoStorage = {
     fetch() {
-      const todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+      const todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
       todos.forEach((todo, index) => {
-        todo.id = index
-      })
-      todoStorage.uid = todos.length
-      return todos
+        todo.id = index;
+      });
+      todoStorage.uid = todos.length;
+      return todos;
     },
     save(todos) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos))
-    }
-  }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    },
+  };
 
   const filters = {
     all(todos) {
-      return todos
+      return todos;
     },
     active(todos) {
       return todos.filter((todo) => {
-        return !todo.completed
-      })
+        return !todo.completed;
+      });
     },
     completed(todos) {
       return todos.filter(function (todo) {
-        return todo.completed
-      })
-    }
-  }
+        return todo.completed;
+      });
+    },
+  };
 
   createApp({
     todos: todoStorage.fetch(),
@@ -49,87 +49,87 @@
     visibility: 'all',
 
     get filteredTodos() {
-      return filters[this.visibility](this.todos)
+      return filters[this.visibility](this.todos);
     },
 
     get remaining() {
-      return filters.active(this.todos).length
+      return filters.active(this.todos).length;
     },
 
     get allDone() {
-      return this.remaining === 0
+      return this.remaining === 0;
     },
 
     set allDone(value) {
       this.todos.forEach(function (todo) {
-        todo.completed = value
-      })
+        todo.completed = value;
+      });
     },
 
     save() {
-      todoStorage.save(this.todos)
+      todoStorage.save(this.todos);
     },
 
     setupRouting() {
       const onHashChange = () => {
-        var visibility = window.location.hash.replace(/#\/?/, '')
+        var visibility = window.location.hash.replace(/#\/?/, '');
         if (filters[visibility]) {
-          this.visibility = visibility
+          this.visibility = visibility;
         } else {
-          window.location.hash = ''
-          this.visibility = 'all'
+          window.location.hash = '';
+          this.visibility = 'all';
         }
-      }
-      window.addEventListener('hashchange', onHashChange)
-      onHashChange()
+      };
+      window.addEventListener('hashchange', onHashChange);
+      onHashChange();
     },
 
     addTodo() {
-      var value = this.newTodo && this.newTodo.trim()
+      var value = this.newTodo && this.newTodo.trim();
       if (!value) {
-        return
+        return;
       }
       this.todos.push({
         id: todoStorage.uid++,
         title: value,
-        completed: false
-      })
-      this.newTodo = ''
+        completed: false,
+      });
+      this.newTodo = '';
     },
 
     removeTodo(todo) {
-      this.todos.splice(this.todos.indexOf(todo), 1)
+      this.todos.splice(this.todos.indexOf(todo), 1);
     },
 
     editTodo(todo) {
-      this.beforeEditCache = todo.title
-      this.editedTodo = todo
+      this.beforeEditCache = todo.title;
+      this.editedTodo = todo;
     },
 
     doneEdit(todo) {
       if (!this.editedTodo) {
-        return
+        return;
       }
-      this.editedTodo = null
-      todo.title = todo.title.trim()
+      this.editedTodo = null;
+      todo.title = todo.title.trim();
       if (!todo.title) {
-        this.removeTodo(todo)
+        this.removeTodo(todo);
       }
     },
 
     cancelEdit(todo) {
-      this.editedTodo = null
-      todo.title = this.beforeEditCache
+      this.editedTodo = null;
+      todo.title = this.beforeEditCache;
     },
 
     removeCompleted() {
-      this.todos = filters.active(this.todos)
+      this.todos = filters.active(this.todos);
     },
 
     pluralize(n) {
-      return n === 1 ? 'item' : 'items'
-    }
-  }).mount('#app')
+      return n === 1 ? 'item' : 'items';
+    },
+  }).mount('#app');
 </script>
 
 <div id="app" @mounted="setupRouting" v-effect="save()" v-cloak>
@@ -152,7 +152,9 @@
         type="checkbox"
         v-model="allDone"
       />
-      <label for="toggle-all">Mark all as complete</label>
+      <label class="toggle-all-label" for="toggle-all"
+        >Mark all as complete</label
+      >
       <ul class="todo-list">
         <li
           v-for="todo in filteredTodos"

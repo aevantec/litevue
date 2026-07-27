@@ -1,17 +1,17 @@
 <script src="https://unpkg.com/marked@2.1.3/lib/marked.js"></script>
 <script src="https://unpkg.com/lodash@4.17.21/lodash.min.js"></script>
 <script type="module">
-  import { createApp } from '../src'
+  import { createApp } from '../src';
 
   createApp({
     input: '# hello',
     get compiledMarkdown() {
-      return marked(this.input)
+      return marked(this.input);
     },
     update: _.debounce(function (e) {
-      this.input = e.target.value
-    }, 100)
-  }).mount('#editor')
+      this.input = e.target.value;
+    }, 100),
+  }).mount('#editor');
 </script>
 
 <div id="editor">

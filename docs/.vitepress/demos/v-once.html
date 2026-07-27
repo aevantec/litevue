@@ -1,0 +1,5 @@
+<div v-scope="{ n: 0 }">
+  <p v-once>frozen at first render: {{ n }}</p>
+  <p>live: {{ n }}</p>
+  <button @click="n++">++</button>
+</div>

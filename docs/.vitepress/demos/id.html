@@ -1,0 +1,11 @@
+<div v-scope="{}">
+  <label :for="$id('email')">Email</label>
+  <input :id="$id('email')" />
+  <p>this scope generated: {{ $id('email') }}</p>
+</div>
+
+<div v-scope="{}">
+  <label :for="$id('email')">Email (a second scope)</label>
+  <input :id="$id('email')" />
+  <p>this scope generated: {{ $id('email') }}</p>
+</div>

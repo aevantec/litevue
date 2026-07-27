@@ -1,0 +1,15 @@
+<style>
+  .demo-highlight {
+    color: #42b883;
+    font-weight: 700;
+  }
+</style>
+
+<div v-scope="{ active: false, size: 15 }">
+  <p :class="{ 'demo-highlight': active }" :style="{ fontSize: size + 'px' }">
+    class and style are bound to state
+  </p>
+
+  <button @click="active = !active">toggle class</button>
+  <button @click="size = size === 15 ? 22 : 15">toggle size</button>
+</div>

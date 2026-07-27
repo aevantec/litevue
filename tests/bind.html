@@ -17,7 +17,7 @@
 </style>
 
 <script type="module">
-  import { createApp, reactive } from '../src'
+  import { createApp, reactive } from '../src';
 
   // for testing
   const data = (window.data = reactive({
@@ -25,11 +25,11 @@
     classes: ['foo', { red: true }],
     style: { color: 'blue' },
     obj: {
-      class: 'orange'
-    }
-  }))
+      class: 'orange',
+    },
+  }));
 
-  createApp(data).mount()
+  createApp(data).mount();
 </script>
 
 <div v-scope v-cloak>

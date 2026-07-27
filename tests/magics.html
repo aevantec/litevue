@@ -1,0 +1,40 @@
+<script type="module">
+  import { createApp } from '../src';
+  window.watchLog = [];
+  createApp({ received: '', count: 0, show: true }).mount('#app');
+</script>
+
+<div id="app" v-scope>
+  <!-- $dispatch: child fires a bubbling custom event, parent listens -->
+  <div @notify="received = $event.detail.from">
+    <button id="dispatch" @click="$dispatch('notify', { from: 'child' })">
+      dispatch
+    </button>
+  </div>
+  <span id="received">received: {{ received }}</span>
+
+  <!-- $watch on the root scope, registered from a lifecycle hook -->
+  <span
+    id="watcher"
+    @mounted="$watch('count', (v, old) => watchLog.push(['root', v, old]))"
+  ></span>
+  <button id="inc" @click="count++">count: {{ count }}</button>
+
+  <!-- $watch inside a v-if scope stops when the scope unmounts -->
+  <button id="toggle" @click="show = !show">toggle</button>
+  <div
+    id="inner"
+    v-if="show"
+    v-scope="{}"
+    @mounted="$watch('count', (v) => watchLog.push(['inner', v]))"
+  ></div>
+
+  <!-- $id: stable within a scope, unique across scopes -->
+  <div id="ids-a" v-scope="{}">
+    <label :for="$id('field')">A</label>
+    <input :id="$id('field')" />
+  </div>
+  <div id="ids-b" v-scope="{}">
+    <input :id="$id('field')" />
+  </div>
+</div>

@@ -1,0 +1,8 @@
+<div v-scope="{ user: 'ada' }">
+  <p>outer scope: {{ user }}</p>
+
+  <div v-scope="{ role: 'admin' }">
+    <p>inner sees both: {{ user }} / {{ role }}</p>
+    <button @click="user = 'grace'">write to the inherited key</button>
+  </div>
+</div>

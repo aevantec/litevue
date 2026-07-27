@@ -1,0 +1,4 @@
+<div v-scope="{ phone: '' }">
+  <input v-mask="(999) 999-9999" v-model="phone" placeholder="type some digits" />
+  <p>model value: {{ phone || '\u2014' }}</p>
+</div>

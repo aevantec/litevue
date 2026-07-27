@@ -1,0 +1,18 @@
+<div v-scope="{ msg: 'hello', agreed: false, pick: 'a' }">
+  <p><input v-model="msg" /> {{ msg }}</p>
+
+  <p>
+    <label>
+      <input type="checkbox" v-model="agreed" />
+      agreed: {{ agreed }}
+    </label>
+  </p>
+
+  <p>
+    <select v-model="pick">
+      <option>a</option>
+      <option>b</option>
+    </select>
+    picked: {{ pick }}
+  </p>
+</div>

@@ -1,0 +1,9 @@
+<div v-scope="{ status: 'loading' }">
+  <p v-if="status === 'loading'">Loading…</p>
+  <p v-else-if="status === 'error'">Something broke.</p>
+  <p v-else>Ready.</p>
+
+  <button @click="status = 'loading'">loading</button>
+  <button @click="status = 'error'">error</button>
+  <button @click="status = 'ok'">ok</button>
+</div>
