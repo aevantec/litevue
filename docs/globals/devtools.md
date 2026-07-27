@@ -38,12 +38,12 @@ These events are the protocol behind the [inspector panel](/devtools/panel) and 
 <script>
   window.__LITE_VUE_DEVTOOLS__ = false;
 </script>
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 ```
 
 ```js
 // bundler users: call it once before mounting
-import { createApp, disableDevtools } from 'litevue';
+import { createApp, disableDevtools } from '@aevantec/litevue';
 
 if (import.meta.env.PROD) disableDevtools();
 createApp().mount();

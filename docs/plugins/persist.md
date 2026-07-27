@@ -7,7 +7,7 @@ title: persist
 `v-persist="storage-key"` syncs the element's scope to storage: saved values restore on mount, and every change — deep ones included — writes back automatically. It writes to `localStorage` unless you [choose another storage](#choosing-a-storage).
 
 ```js
-import { persist } from 'litevue/plugins';
+import { persist } from '@aevantec/litevue/plugins';
 createApp().use(persist).mount();
 ```
 
@@ -43,8 +43,8 @@ Properties left out are neither saved nor restored — they start from whatever 
 Global [stores](/globals/store) have no element to hang a directive on, so the plugin also exports `persistStore()` for JS:
 
 ```js
-import { store } from 'litevue';
-import { persistStore } from 'litevue/plugins';
+import { store } from '@aevantec/litevue';
+import { persistStore } from '@aevantec/litevue/plugins';
 
 store('cart', { items: [], coupon: '' });
 
@@ -106,7 +106,7 @@ persistStore('scratch', { storage: myStorage });
 …or register it under a name, which also makes it available as a directive modifier:
 
 ```js
-import { registerStorage } from 'litevue/plugins';
+import { registerStorage } from '@aevantec/litevue/plugins';
 
 registerStorage('vault', myStorage);
 
@@ -122,7 +122,7 @@ persistStore('secrets', { storage: 'vault' });
 To move everything at once — say, an app that should never write to disk:
 
 ```js
-import { setDefaultStorage } from 'litevue/plugins';
+import { setDefaultStorage } from '@aevantec/litevue/plugins';
 
 setDefaultStorage('session'); // or a storage object
 ```

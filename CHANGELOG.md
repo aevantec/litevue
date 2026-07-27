@@ -9,7 +9,7 @@ First release of `litevue`, a fork continuing from petite-vue
   events, `getScope` / `getScopeByName`) with production kill-switch
   (`disableDevtools()` / `window.__LITE_VUE_DEVTOOLS__ = false`)
 - **devtools:** in-page inspector panel as a separate bundle, loadable by
-  script tag (iife) or `import 'litevue/devtools'` from npm (esm) — elements /
+  script tag (iife) or `import '@aevantec/litevue/devtools'` from npm (esm) — elements /
   stores tabs with live counts, name filter, tag-style labels, expandable
   state tree with inline editing (boolean checkboxes, read-only getters),
   hover highlight, pick mode, dark / light / system themes

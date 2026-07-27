@@ -7,7 +7,7 @@ title: mask
 `v-mask` formats an input's value as the user types.
 
 ```js
-import { mask } from 'litevue/plugins';
+import { mask } from '@aevantec/litevue/plugins';
 createApp({ phone: '' }).use(mask).mount();
 ```
 

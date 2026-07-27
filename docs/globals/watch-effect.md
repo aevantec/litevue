@@ -7,7 +7,7 @@ title: watchEffect()
 Runs a function now, then again whenever any reactive state it read changes — the JS-side counterpart to [`v-effect`](/directives/v-effect), for work that isn't tied to an element.
 
 ```js
-import { store, watchEffect } from 'litevue';
+import { store, watchEffect } from '@aevantec/litevue';
 
 store('cart', { items: [] });
 

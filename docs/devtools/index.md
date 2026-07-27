@@ -16,9 +16,9 @@ LiteVue ships inspection tooling in the box, built on the public [Devtools API](
 
 ```html
 <!-- script tag: load the panel after the library -->
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 <script
-  src="https://unpkg.com/litevue/dist/litevue-devtools.iife.js"
+  src="https://unpkg.com/@aevantec/litevue/dist/litevue-devtools.iife.js"
   defer
 ></script>
 ```
