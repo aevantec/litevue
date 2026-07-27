@@ -63,6 +63,7 @@ jobs:
           # into the pattern that everyone then copies.
           ignoreLabels: |
             dependencies
+            autorelease: pending
             ignore-semantic-pull-request
           # Reject a capitalised first word, so subjects read like the rest of
           # the changelog: "add v-clipboard plugin", not "Add v-clipboard plugin".
