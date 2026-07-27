@@ -37,7 +37,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # required for npm provenance attestation
+      # npm authenticates this job by OIDC — no token anywhere. The package is
+      # configured on npmjs.com with this repo and this workflow filename as a
+      # trusted publisher; renaming this file breaks publishing until the
+      # trusted publisher is updated to match.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +56,12 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      # Trusted publishing needs npm >= 11.5.1; Node 22 still bundles npm 10.
+      - name: Use an npm that supports trusted publishing
+        run: |
+          npm install -g npm@latest
+          npm --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -64,7 +74,11 @@ jobs:
       - name: Validate package
         run: pnpm lint:package
 
+      # No NODE_AUTH_TOKEN: the OIDC exchange above is the credential.
+      # Provenance is generated automatically when publishing this way, and
+      # access comes from publishConfig in package.json.
       - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
+
+      - name: Verify it is on the registry
+        run: npm view @aevantec/litevue@${{ needs.release-please.outputs.version }} version
