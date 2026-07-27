@@ -133,14 +133,9 @@ Questions and "how do I…" belong in
 
 ## Security
 
-Do not open a public issue for a security vulnerability. Report it privately
-through [GitHub security advisories](https://github.com/aevantec/litevue/security/advisories/new).
-
-One thing that is *not* a vulnerability: `litevue` evaluates expressions found in
-HTML attributes, by design. Mounting it on markup built from untrusted input will
-execute that markup's expressions — sanitize before it reaches the DOM. See the
-[security and CSP notes](https://litevue.pages.dev/start-here/introduction) in the
-docs.
+Do not open a public issue for a security vulnerability — see
+[SECURITY.md](SECURITY.md) for private reporting, and for what does and doesn't
+count as one.
 
 ## Releases
 
