@@ -34,3 +34,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Cloudflare deploys the docs; this only checks they still compile
+      # (VitePress fails the build on dead links and bad markdown).
+      - name: Build docs
+        run: pnpm docs:build

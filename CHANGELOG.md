@@ -91,7 +91,8 @@ First release of `litevue`, a fork continuing from petite-vue
   migration guides (petite-vue, Alpine), brand theme, logo and section
   badges, and live interactive demos on every directive, magic and plugin
   page (30 in total, each running a real litevue app from the same file
-  the code block shows); GitHub Pages deploy workflow; README reduced to a quick start
+  the code block shows); deployed to Cloudflare via `wrangler.jsonc`; README
+  reduced to a quick start
 - devtools browser extension (Chrome + Firefox MV3) in `extension/`,
   reading the registry via `chrome.devtools.inspectedWindow.eval`
 
