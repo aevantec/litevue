@@ -40,17 +40,17 @@ createApp({ count: 0 }).mount();
 
 ## Documentation
 
-Full documentation lives in the **[docs site](https://litevue.pages.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
+Full documentation lives in the **[docs site](https://litevue.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
 
-- [Introduction](https://litevue.pages.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
-- [Installation](https://litevue.pages.dev/start-here/installation) — CDN, npm, and mount options
-- [Essentials](https://litevue.pages.dev/essentials/) — state, templating, components, lifecycle, dynamic content
-- [Directives](https://litevue.pages.dev/directives/) — a page per directive, with live demos
-- [Magics](https://litevue.pages.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
-- [Globals](https://litevue.pages.dev/globals/) — `createApp()`, `store()`, the devtools API
-- [Plugins](https://litevue.pages.dev/plugins/) — the plugin system and all first-party plugins
-- [Devtools](https://litevue.pages.dev/devtools/) — inspector panel, browser extension, production kill-switch
-- [Migrating from petite-vue](https://litevue.pages.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.pages.dev/migration/from-alpine)
+- [Introduction](https://litevue.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
+- [Installation](https://litevue.dev/start-here/installation) — CDN, npm, and mount options
+- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content
+- [Directives](https://litevue.dev/directives/) — a page per directive, with live demos
+- [Magics](https://litevue.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
+- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, the devtools API
+- [Plugins](https://litevue.dev/plugins/) — the plugin system and all first-party plugins
+- [Devtools](https://litevue.dev/devtools/) — inspector panel, browser extension, production kill-switch
+- [Migrating from petite-vue](https://litevue.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.dev/migration/from-alpine)
 
 ## Development
 

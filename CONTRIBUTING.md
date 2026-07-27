@@ -16,7 +16,7 @@ Before proposing a feature, it helps to know what `litevue` is trying to be:
 - **No build step required.** It has to keep working from a `<script>` tag.
 
 Features that don't fit the core often fit the **plugin system**
-(`app.use()` — see the [plugin docs](https://litevue.pages.dev/plugins/)). That's
+(`app.use()` — see the [plugin docs](https://litevue.dev/plugins/)). That's
 what it's there for, and a third-party plugin needs no permission from us.
 
 ## Getting set up

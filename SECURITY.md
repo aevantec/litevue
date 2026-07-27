@@ -24,7 +24,7 @@ you in the advisory unless you'd rather stay anonymous.
   the DOM.
 - Expression evaluation uses `new Function()`, so a CSP without `'unsafe-eval'`
   blocks it. See the
-  [security and CSP notes](https://litevue.pages.dev/start-here/introduction).
+  [security and CSP notes](https://litevue.dev/start-here/introduction).
 
 Reports of the above will be closed as working-as-documented. In scope: escaping
 the intended scope of an expression, prototype pollution, bypassing the devtools

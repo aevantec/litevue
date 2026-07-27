@@ -1,18 +1,28 @@
 import { defineConfig } from 'vitepress';
 
-// Served from a domain root (Cloudflare, and later the litevue.dev custom
-// domain), so local dev matches production. A host that serves the site
-// under a sub-path — e.g. a GitHub Pages project site — needs
-// DOCS_BASE=/litevue/.
+// Served from the root of litevue.dev, so local dev matches production. A host
+// that serves the site under a sub-path — e.g. a GitHub Pages project site —
+// needs DOCS_BASE=/litevue/.
 const base = process.env.DOCS_BASE ?? '/';
+
+const hostname = 'https://litevue.dev';
 
 export default defineConfig({
   title: 'LiteVue',
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   base,
-  // head entries are emitted verbatim, so this one needs the base itself
-  head: [['link', { rel: 'icon', href: `${base}logo.png` }]],
+  // Now that there's a stable canonical domain, emit a sitemap — the docs are
+  // the discovery path for this project, more so since the npm name is scoped.
+  sitemap: { hostname },
+  head: [
+    // head entries are emitted verbatim, so this one needs the base itself
+    ['link', { rel: 'icon', href: `${base}logo.png` }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:url', content: hostname }],
+    ['meta', { property: 'og:image', content: `${hostname}/logo.png` }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
+  ],
   themeConfig: {
     logo: '/logo.png',
     nav: [
