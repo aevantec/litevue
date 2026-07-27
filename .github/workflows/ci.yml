@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -39,3 +43,43 @@ jobs:
       # (VitePress fails the build on dead links and bad markdown).
       - name: Build docs
         run: pnpm docs:build
+
+      # Catches exports-map and type-resolution breakage in review rather than
+      # at publish time: every entry point must stay resolvable from both ESM
+      # and CJS, and the .d.mts tree must match the .d.ts one.
+      - name: Validate package
+        run: pnpm lint:package
+
+  # Versions and the changelog are generated from commit messages, so they have
+  # to parse. On a squash merge the PR title is the only message that lands,
+  # which is what this checks.
+  commit-messages:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$PR_TITLE" | pnpm commitlint --verbose
+
+      - name: Lint commits
+        run: >-
+          pnpm commitlint --verbose
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}

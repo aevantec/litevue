@@ -1,5 +1,6 @@
 TODOs.md
 node_modules
+.claude/settings.local.json
 dist
 explorations
 ROADMAP.md

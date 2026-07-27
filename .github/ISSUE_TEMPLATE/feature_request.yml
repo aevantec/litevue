@@ -1,0 +1,71 @@
+name: Feature request
+description: Propose a new capability for litevue
+labels: ['feature', 'needs-decision']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before proposing, it helps to know what litevue is optimizing for:
+
+        - **Small** — the core is ~8kb gzipped, and new bytes have to earn their place
+        - **Vue-aligned** — syntax and semantics should match standard Vue
+        - **No build step** — it has to keep working from a `<script>` tag
+
+        Many good ideas belong in a [plugin](https://litevue.pages.dev/plugins/)
+        rather than the core, and you can publish one without our involvement.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: >-
+        Describe the use case, not the solution. What are you building, and what
+        makes it awkward today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How are you working around it now?
+      description: Show the code you write today, if any.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: What would the template syntax or JS API look like?
+      render: html
+    validations:
+      required: false
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which part of litevue would this touch?
+      options:
+        - Core (reactivity, scopes, mounting)
+        - A directive
+        - Event handling / modifiers
+        - Magic property
+        - Store
+        - A plugin (or a new first-party plugin)
+        - Devtools / extension
+        - TypeScript types
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and discussions for this idea.
+          required: true
+        - label: >-
+            I've considered whether this could be a userland plugin via
+            `app.use()` instead of a core change.
+          required: true
