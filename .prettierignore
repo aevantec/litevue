@@ -4,3 +4,4 @@ CHANGELOG.md
 .claude
 docs/.vitepress/cache
 docs/.vitepress/demos
+docs/.vitepress/dist

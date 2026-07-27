@@ -16,9 +16,14 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/plugins/index.ts'),
       name: 'LiteVuePlugins',
-      formats: ['es', 'iife'],
-      // keep the historical file names — vite 3+ would otherwise emit .mjs
-      fileName: (format) => `litevue-plugins.${format}.js`,
+      formats: ['es', 'umd', 'iife'],
+      // .mjs for the esm build so Node reads it as ESM (see vite.config.mts);
+      // umd backs the `require` condition; iife keeps its historical .js name
+      // for <script> tags.
+      fileName: (format) =>
+        format === 'es'
+          ? `litevue-plugins.mjs`
+          : `litevue-plugins.${format}.js`,
     },
   },
 });

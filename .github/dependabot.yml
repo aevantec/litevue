@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Dev tooling churns constantly and is safe to batch into one PR.
+      dev-dependencies:
+        dependency-type: development
+        update-types: ['minor', 'patch']
+    ignore:
+      # @vue/reactivity is the only runtime dependency and is pinned to ~3.4.
+      # Crossing its major is a breaking change for litevue, so it's a deliberate
+      # decision, not a bot PR.
+      - dependency-name: '@vue/reactivity'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci

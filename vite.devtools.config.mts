@@ -19,9 +19,14 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',
       // iife for <script> tags, es so npm consumers can
-      // `import 'litevue/devtools'` from a bundler
-      formats: ['es', 'iife'],
-      fileName: (format) => `litevue-devtools.${format}.js`,
+      // `import 'litevue/devtools'` from a bundler, umd for `require`
+      formats: ['es', 'umd', 'iife'],
+      // .mjs for the esm build so Node reads it as ESM (see vite.config.mts);
+      // the umd/iife builds keep their historical .js names.
+      fileName: (format) =>
+        format === 'es'
+          ? `litevue-devtools.mjs`
+          : `litevue-devtools.${format}.js`,
     },
   },
 });

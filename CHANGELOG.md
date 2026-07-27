@@ -1,4 +1,4 @@
-# [0.5.0](https://github.com/abiacarl/litevue) (2026-07-11)
+# [0.5.0](https://github.com/aevantec/litevue) (2026-07-11)
 
 First release of `litevue`, a fork continuing from petite-vue
 0.4.1 (upstream history preserved below).
@@ -91,7 +91,8 @@ First release of `litevue`, a fork continuing from petite-vue
   migration guides (petite-vue, Alpine), brand theme, logo and section
   badges, and live interactive demos on every directive, magic and plugin
   page (30 in total, each running a real litevue app from the same file
-  the code block shows); GitHub Pages deploy workflow; README reduced to a quick start
+  the code block shows); deployed to Cloudflare via `wrangler.jsonc`; README
+  reduced to a quick start
 - devtools browser extension (Chrome + Firefox MV3) in `extension/`,
   reading the registry via `chrome.devtools.inspectedWindow.eval`
 

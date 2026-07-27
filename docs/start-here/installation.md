@@ -26,7 +26,7 @@ No build step required:
 For production, pin a version and use a fully resolved URL:
 
 - Global build: `https://unpkg.com/litevue@0.5.0/dist/litevue.iife.js` — exposes the `LiteVue` global, supports the `init` attribute.
-- ESM build: `https://unpkg.com/litevue@0.5.0/dist/litevue.es.js` — use with `<script type="module">`.
+- ESM build: `https://unpkg.com/litevue@0.5.0/dist/litevue.mjs` — use with `<script type="module">`.
 
 ## From npm
 

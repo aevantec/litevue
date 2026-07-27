@@ -38,17 +38,17 @@ createApp({ count: 0 }).mount();
 
 ## Documentation
 
-Full documentation lives in the **[docs site](https://abiacarl.github.io/litevue/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
+Full documentation lives in the **[docs site](https://litevue.pages.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
 
-- [Introduction](https://abiacarl.github.io/litevue/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
-- [Installation](https://abiacarl.github.io/litevue/start-here/installation) — CDN, npm, and mount options
-- [Essentials](https://abiacarl.github.io/litevue/essentials/) — state, templating, components, lifecycle, dynamic content
-- [Directives](https://abiacarl.github.io/litevue/directives/) — a page per directive, with live demos
-- [Magics](https://abiacarl.github.io/litevue/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
-- [Globals](https://abiacarl.github.io/litevue/globals/) — `createApp()`, `store()`, the devtools API
-- [Plugins](https://abiacarl.github.io/litevue/plugins/) — the plugin system and all first-party plugins
-- [Devtools](https://abiacarl.github.io/litevue/devtools/) — inspector panel, browser extension, production kill-switch
-- [Migrating from petite-vue](https://abiacarl.github.io/litevue/migration/from-petite-vue) · [Coming from Alpine](https://abiacarl.github.io/litevue/migration/from-alpine)
+- [Introduction](https://litevue.pages.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
+- [Installation](https://litevue.pages.dev/start-here/installation) — CDN, npm, and mount options
+- [Essentials](https://litevue.pages.dev/essentials/) — state, templating, components, lifecycle, dynamic content
+- [Directives](https://litevue.pages.dev/directives/) — a page per directive, with live demos
+- [Magics](https://litevue.pages.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
+- [Globals](https://litevue.pages.dev/globals/) — `createApp()`, `store()`, the devtools API
+- [Plugins](https://litevue.pages.dev/plugins/) — the plugin system and all first-party plugins
+- [Devtools](https://litevue.pages.dev/devtools/) — inspector panel, browser extension, production kill-switch
+- [Migrating from petite-vue](https://litevue.pages.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.pages.dev/migration/from-alpine)
 
 ## Development
 

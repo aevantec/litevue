@@ -1,12 +1,18 @@
 import { defineConfig } from 'vitepress';
 
+// Served from a domain root (Cloudflare, and later the litevue.dev custom
+// domain), so local dev matches production. A host that serves the site
+// under a sub-path — e.g. a GitHub Pages project site — needs
+// DOCS_BASE=/litevue/.
+const base = process.env.DOCS_BASE ?? '/';
+
 export default defineConfig({
   title: 'LiteVue',
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
-  // served as a GitHub Pages project site
-  base: '/litevue/',
-  head: [['link', { rel: 'icon', href: '/litevue/logo.png' }]],
+  base,
+  // head entries are emitted verbatim, so this one needs the base itself
+  head: [['link', { rel: 'icon', href: `${base}logo.png` }]],
   themeConfig: {
     logo: '/logo.png',
     nav: [
@@ -114,7 +120,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/abiacarl/litevue' },
+      { icon: 'github', link: 'https://github.com/aevantec/litevue' },
     ],
     search: { provider: 'local' },
     footer: {

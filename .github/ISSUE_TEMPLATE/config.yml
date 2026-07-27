@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/aevantec/litevue/discussions
+    about: Ask in Discussions — issues are for bugs and feature proposals.
+  - name: Documentation
+    url: https://litevue.pages.dev/
+    about: Directives, magics, plugins, devtools, and the migration guides.
+  - name: Security vulnerability
+    url: https://github.com/aevantec/litevue/security/advisories/new
+    about: Report privately. Please do not open a public issue.

@@ -12,7 +12,7 @@ LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained 
 | --------------- | ---------------------- | ------------------- |
 | npm package     | `petite-vue`           | `litevue`           |
 | IIFE/UMD global | `PetiteVue`            | `LiteVue`           |
-| Bundle files    | `dist/petite-vue.*.js` | `dist/litevue.*.js` |
+| Bundle files    | `dist/petite-vue.*.js` | `dist/litevue.iife.js`, `dist/litevue.umd.js`, `dist/litevue.mjs` (ESM) |
 
 ```diff
 - import { createApp } from 'petite-vue';
