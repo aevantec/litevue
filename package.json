@@ -108,7 +108,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@vue/shared": "~3.4.0",
     "chalk": "^4.1.1",
-    "conventional-changelog-cli": "^2.1.1",
+    "conventional-changelog-cli": "^5.0.0",
     "enquirer": "^2.3.6",
     "execa": "^5.0.0",
     "jsdom": "^25.0.1",
