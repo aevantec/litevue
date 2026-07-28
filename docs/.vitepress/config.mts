@@ -20,8 +20,20 @@ export default defineConfig({
   // the discovery path for this project, more so since the npm name is scoped.
   sitemap: { hostname },
   head: [
-    // head entries are emitted verbatim, so this one needs the base itself
-    ['link', { rel: 'icon', href: `${base}logo.png` }],
+    // head entries are emitted verbatim, so these need the base itself.
+    // favicon.ico covers the bare /favicon.ico that browsers request without
+    // being told to — and cache hard, including the 404.
+    ['link', { rel: 'icon', type: 'image/x-icon', href: `${base}favicon.ico` }],
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '128x128',
+        href: `${base}logo.png`,
+      },
+    ],
+    ['link', { rel: 'apple-touch-icon', href: `${base}logo.png` }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:url', content: hostname }],
     ['meta', { property: 'og:image', content: `${hostname}/logo.png` }],
