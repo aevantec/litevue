@@ -15,8 +15,8 @@ body:
     id: version
     attributes:
       label: litevue version
-      description: 'Run `npm list litevue`, or give the CDN URL you loaded.'
-      placeholder: 0.5.0
+      description: 'Run `npm list @aevantec/litevue`, or give the CDN URL you loaded.'
+      placeholder: 0.5.1
     validations:
       required: true
 
