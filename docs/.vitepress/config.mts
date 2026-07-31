@@ -12,17 +12,46 @@ export default defineConfig({
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   base,
+  // Cloudflare already 307s /foo.html to /foo, so emitting .html links meant
+  // every internal link and every sitemap entry pointed at a redirect rather
+  // than the URL actually served.
+  cleanUrls: true,
   // Now that there's a stable canonical domain, emit a sitemap — the docs are
   // the discovery path for this project, more so since the npm name is scoped.
   sitemap: { hostname },
   head: [
-    // head entries are emitted verbatim, so this one needs the base itself
-    ['link', { rel: 'icon', href: `${base}logo.png` }],
+    // head entries are emitted verbatim, so these need the base itself.
+    // favicon.ico covers the bare /favicon.ico that browsers request without
+    // being told to — and cache hard, including the 404.
+    ['link', { rel: 'icon', type: 'image/x-icon', href: `${base}favicon.ico` }],
+    [
+      'link',
+      {
+        rel: 'icon',
+        type: 'image/png',
+        sizes: '128x128',
+        href: `${base}logo.png`,
+      },
+    ],
+    ['link', { rel: 'apple-touch-icon', href: `${base}logo.png` }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:url', content: hostname }],
     ['meta', { property: 'og:image', content: `${hostname}/logo.png` }],
     ['meta', { name: 'twitter:card', content: 'summary' }],
   ],
+  // Whatever host serves a page — workers.dev, a per-version preview URL, or
+  // litevue.dev itself — every page declares litevue.dev as the original, so
+  // copies can't compete with it in search results.
+  transformPageData(pageData) {
+    const path = pageData.relativePath
+      .replace(/index\.md$/, '')
+      .replace(/\.md$/, '');
+    pageData.frontmatter.head ??= [];
+    pageData.frontmatter.head.push([
+      'link',
+      { rel: 'canonical', href: `${hostname}/${path}` },
+    ]);
+  },
   themeConfig: {
     logo: '/logo.png',
     nav: [

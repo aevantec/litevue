@@ -57,7 +57,9 @@
           "section": "Chores",
           "hidden": true
         }
-      ]
+      ],
+      "include-component-in-tag": false,
+      "extra-files": ["docs/start-here/installation.md"]
     }
   }
 }

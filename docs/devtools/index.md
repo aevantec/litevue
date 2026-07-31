@@ -26,8 +26,10 @@ LiteVue ships inspection tooling in the box, built on the public [Devtools API](
 ```js
 // npm: a dev-only side-effect import
 if (import.meta.env.DEV) {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 ```
+
+`import.meta.env.DEV` is Vite's flag. On webpack, Rollup, or Node, guard with `process.env.NODE_ENV !== 'production'` instead — the point is that the import stays inside a condition your bundler can resolve at build time, so the panel never reaches the production bundle.
 
 See the [inspector panel](/devtools/panel) for the full setup, and [disabling in production](/globals/devtools#disabling-in-production) for shipping without any devtools surface.
