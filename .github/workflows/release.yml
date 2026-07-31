@@ -3,6 +3,14 @@ name: Release
 on:
   push:
     branches: [main]
+  # Lets release-please be re-run from the Actions tab without pushing a commit
+  # to main — useful when a run failed for a reason outside the code, such as
+  # the repository not yet allowing Actions to open pull requests.
+  #
+  # Safe to run at any time: release-please only refreshes its release PR, and
+  # the publish job stays gated on release_created, which is only true when a
+  # release PR is merged.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -74,11 +82,26 @@ jobs:
       - name: Validate package
         run: pnpm lint:package
 
-      # No NODE_AUTH_TOKEN: the OIDC exchange above is the credential.
-      # Provenance is generated automatically when publishing this way, and
+      # No NODE_AUTH_TOKEN: the OIDC exchange above is the credential, and
       # access comes from publishConfig in package.json.
+      #
+      # Provenance is attached automatically when publishing this way, but only
+      # once this repository is public — npm requires a publicly resolvable
+      # repository, since an attestation nobody can check against the source is
+      # worthless. 0.5.1 went out without one for that reason. Passing
+      # --provenance explicitly while private makes the publish fail outright,
+      # so the flag stays off and the check below reports the outcome instead.
       - name: Publish to npm
         run: npm publish
 
       - name: Verify it is on the registry
         run: npm view @aevantec/litevue@${{ needs.release-please.outputs.version }} version
+
+      - name: Report provenance status
+        run: |
+          version='${{ needs.release-please.outputs.version }}'
+          if npm view "@aevantec/litevue@${version}" dist.attestations 2>/dev/null | grep -q provenance; then
+            echo "provenance attestation present for ${version}"
+          else
+            echo "::warning::${version} published without a provenance attestation — expected while the repository is private, a regression once it is public"
+          fi
