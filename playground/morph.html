@@ -1,0 +1,54 @@
+<script type="module">
+  import { createApp } from '../src';
+  import { morph, morphPlugin } from '../src/plugins';
+
+  createApp({ log: '' }).use(morphPlugin).mount('#app');
+
+  // stands in for a server response
+  let round = 0;
+  window.serverHtml = () => {
+    round++;
+    const rows =
+      round % 2
+        ? `<li id="b" v-scope="{ n: 0 }">B <input placeholder="type here" />
+             <button @click="n++">+</button><b>{{ n }}</b></li>
+           <li id="a">A round ${round}</li>`
+        : `<li id="a">A round ${round}</li>
+           <li id="b" v-scope="{ n: 0 }">B <input placeholder="type here" />
+             <button @click="n++">+</button><b>{{ n }}</b></li>
+           <li id="c">C (new this round)</li>`;
+    return `<ul id="list" title="round-${round}">${rows}</ul>`;
+  };
+</script>
+
+<div id="app" v-scope>
+  <h3>morph</h3>
+  <p>
+    Type in the input, click <code>+</code> a few times, put the cursor in the
+    input, then morph. Focus, caret, typed text and the counter must all survive
+    — and the rows reorder rather than rebuild.
+  </p>
+
+  <ul id="list" ref="list" title="round-0">
+    <li id="a">A round 0</li>
+    <li id="b" v-scope="{ n: 0 }">
+      B <input placeholder="type here" /> <button @click="n++">+</button>
+      <b>{{ n }}</b>
+    </li>
+  </ul>
+
+  <button @click="$morph($refs.list, window.serverHtml())">morph</button>
+  <button
+    @click="$refs.list.innerHTML = window.serverHtml(); log = 'replaced (state lost)'"
+  >
+    replace instead (for contrast)
+  </button>
+  <span>{{ log }}</span>
+
+  <p>
+    <small
+      >The <code>title</code> attribute on the list should track the round
+      number, proving plain attributes are patched.</small
+    >
+  </p>
+</div>

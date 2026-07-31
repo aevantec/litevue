@@ -166,7 +166,7 @@ The core stays small because everything else is opt-in and separately bundled:
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
 | Core                              | ~9kb           | reactivity, directives, [store](/globals/store), [magics](/magics/) |
-| [Plugins](/plugins/)              | ~2kb (all six) | intersect, persist, focus, collapse, mask, transition               |
+| [Plugins](/plugins/)              | ~3kb (all seven) | intersect, persist, focus, collapse, mask, morph, transition       |
 | [Devtools panel](/devtools/panel) | ~5kb           | dev-only; never load it in production                               |
 
 Devtools registration can also be [disabled entirely](/globals/devtools#disabling-in-production) with one line so no scope data is exposed in production builds.

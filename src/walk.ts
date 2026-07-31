@@ -69,6 +69,10 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {};
       ctx = createScopedContext(ctx, scope);
+      // stash the context so code that inserts markup into a live tree later
+      // (the morph plugin) can walk it with the scope it landed in, instead of
+      // guessing or falling back to the root
+      (el as any).__ctx = ctx;
       ctx.cleanups.push(
         registerScope(el, ctx.scope, exp || undefined, name || undefined)
       );

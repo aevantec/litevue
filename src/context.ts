@@ -19,6 +19,13 @@ export interface Context {
   cleanups: (() => void)[];
   delimiters: [string, string];
   delimitersRE: RegExp;
+  /**
+   * The framework walker, published on the root context by `mount()` and
+   * inherited by every child context through the spreads below. Plugins that
+   * insert markup into a live tree (morph) need it to bind that markup, and
+   * reading it here keeps them from importing — and re-bundling — the core.
+   */
+  walk?: (node: Node, ctx: Context) => ChildNode | null | void;
 }
 
 export const createContext = (parent?: Context): Context => {
