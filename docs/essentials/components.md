@@ -10,7 +10,7 @@ title: Components
 
 ```html
 <script type="module">
-  import { createApp } from 'litevue';
+  import { createApp } from '@aevantec/litevue';
 
   function Counter(props) {
     return {
@@ -36,7 +36,7 @@ Provide a `$template` key — a template string or an ID selector to a `<templat
 
 ```html
 <script type="module">
-  import { createApp } from 'litevue';
+  import { createApp } from '@aevantec/litevue';
 
   function Counter(props) {
     return {

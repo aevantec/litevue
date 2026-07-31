@@ -16,7 +16,7 @@ LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained 
 
 ```diff
 - import { createApp } from 'petite-vue';
-+ import { createApp } from 'litevue';
++ import { createApp } from '@aevantec/litevue';
 ```
 
 ## Lifecycle hook rename

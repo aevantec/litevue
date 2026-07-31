@@ -11,7 +11,7 @@ Getting LiteVue onto a page. For what it is, how it compares to Vue and Alpine, 
 No build step required:
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 
 <div v-scope="{ count: 0 }">
   {{ count }}
@@ -25,17 +25,22 @@ No build step required:
 
 For production, pin a version and use a fully resolved URL:
 
-- Global build: `https://unpkg.com/litevue@0.5.0/dist/litevue.iife.js` — exposes the `LiteVue` global, supports the `init` attribute.
-- ESM build: `https://unpkg.com/litevue@0.5.0/dist/litevue.mjs` — use with `<script type="module">`.
+- Global build: `https://unpkg.com/@aevantec/litevue@0.5.1/dist/litevue.iife.js` <!-- x-release-please-version --> — exposes the `LiteVue` global, supports the `init` attribute.
+- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.1/dist/litevue.mjs` <!-- x-release-please-version --> — use with `<script type="module">`.
 
 ## From npm
 
+The package is scoped — the unscoped `litevue` name is blocked on npm by an
+unrelated `lite-vue` package. Only the install and import specifiers carry the
+scope; the global stays `LiteVue`, and the subpaths are
+`@aevantec/litevue/plugins` and `@aevantec/litevue/devtools`.
+
 ```sh
-npm install litevue
+npm install @aevantec/litevue
 ```
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 createApp().mount();
 ```
@@ -45,7 +50,7 @@ createApp().mount();
 Remove the `init` attribute to control mounting yourself — required when you use [plugins](/plugins/):
 
 ```html
-<script src="https://unpkg.com/litevue"></script>
+<script src="https://unpkg.com/@aevantec/litevue"></script>
 <script>
   LiteVue.createApp().mount();
 </script>

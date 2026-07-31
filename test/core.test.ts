@@ -47,14 +47,8 @@ describe('createApp', () => {
   });
 
   test('setup-function style: returned object becomes root scope', async () => {
-    const { $ } = await mount(
-      `<div v-scope>
-        <span>{{ count }}</span>
-        <button @click="inc"></button>
-      </div>`,
-      undefined
-    );
-    // mount() helper passes data through createApp; test the fn form directly
+    // the mount() helper passes data straight through to createApp, so the
+    // setup-function form is driven directly here
     document.body.innerHTML = `<div id="s" v-scope><i>{{ n }}</i><button @click="inc"></button></div>`;
     const app = createApp(() => ({
       n: 5,
