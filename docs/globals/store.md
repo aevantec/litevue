@@ -7,7 +7,7 @@ title: store()
 A first-class global store, shared across every app on the page and exposed to expressions as [`$store`](/magics/store).
 
 ```js
-import { createApp, store } from 'litevue';
+import { createApp, store } from '@aevantec/litevue';
 
 store('cart', {
   items: [],
@@ -46,8 +46,8 @@ store('cart').add('book');
 Use `persistStore()` from the [persist plugin](/plugins/persist#persisting-a-store) to keep a store in localStorage across page loads:
 
 ```js
-import { store } from 'litevue';
-import { persistStore } from 'litevue/plugins';
+import { store } from '@aevantec/litevue';
+import { persistStore } from '@aevantec/litevue/plugins';
 
 store('cart', { items: [], coupon: '' });
 
