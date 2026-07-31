@@ -41,6 +41,11 @@ jobs:
             ci
             chore
             revert
+          # `main` is here for release-please, which titles its PR
+          # "chore(main): release x.y.z" and offers no way to change that.
+          # Without it the release PR passes only via the autorelease label
+          # below, so a run that happens before the label is attached fails on
+          # the scope — and this is the one required status check on main.
           scopes: |
             core
             directives
@@ -55,6 +60,7 @@ jobs:
             build
             deps
             deps-dev
+            main
           # A scope is useful but not worth blocking a contribution over.
           requireScope: false
           # Dependabot writes "Bump x from 1 to 2" — capitalised, and not
