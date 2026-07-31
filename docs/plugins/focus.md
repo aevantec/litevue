@@ -7,7 +7,7 @@ title: focus
 Focus utilities: `v-focus` for autofocus behavior and `v-trap` for accessible focus containment.
 
 ```js
-import { focus } from 'litevue/plugins';
+import { focus } from '@aevantec/litevue/plugins';
 createApp({ editing: false, open: false }).use(focus).mount();
 ```
 

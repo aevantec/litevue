@@ -7,7 +7,7 @@ title: createApp()
 Creates an app instance.
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 const app = createApp({ count: 0 }); // object or setup function
 app.mount(); // whole document, or app.mount('#region') / app.mount(el)

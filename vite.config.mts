@@ -30,7 +30,7 @@ export default defineConfig(({ command }) => ({
       formats: ['es', 'umd', 'iife'],
       // The package is "type": "commonjs", so .js is CJS to Node — correct for
       // the umd build, wrong for the esm one. The esm build must be .mjs or
-      // `import 'litevue'` throws "Cannot use import statement outside a
+      // `import '@aevantec/litevue'` throws "Cannot use import statement outside a
       // module" in Node. umd/iife keep their historical .js names.
       fileName: (format) =>
         format === 'es' ? `litevue.mjs` : `litevue.${format}.js`,
