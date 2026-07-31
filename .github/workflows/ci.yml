@@ -38,6 +38,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # The plugins bundle must keep the core external. Inlining it gives that
+      # bundle a second store registry, and persistence then fails silently.
+      - name: Check bundle boundaries
+        run: pnpm check:bundles
+
       # Cloudflare deploys the docs; this only checks they still compile
       # (VitePress fails the build on dead links and bad markdown).
       - name: Build docs
