@@ -14,6 +14,12 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 3000,
   },
+  // the plugins import the core by package name so the published bundles keep
+  // it external (see vite.plugins.config.mts); the playground pages load source
+  // directly, so point it back at src
+  resolve: {
+    alias: { '@aevantec/litevue': resolve(__dirname, 'src/index.ts') },
+  },
   build: {
     target: 'esnext',
     minify: 'terser',

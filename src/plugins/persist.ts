@@ -1,6 +1,9 @@
 import type { Plugin } from '../app';
-import { watchEffect } from '../effect';
-import { store as getStore } from '../store';
+// imported by package name, not by relative path: the plugins bundle keeps the
+// core external, and a bare specifier is what lets it resolve to the *same*
+// module instance the app loaded. `stores` is a module-level singleton, so a
+// second copy would give this bundle its own registry.
+import { store as getStore, watchEffect } from '@aevantec/litevue';
 
 const PREFIX = 'litevue:';
 
