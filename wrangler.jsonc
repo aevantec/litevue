@@ -13,6 +13,15 @@
     "command": "DOCS_BASE=/ pnpm docs:build"
   },
 
+  // litevue.dev is the only address the docs should answer on. Left enabled,
+  // litevue.abiacarl.workers.dev serves a byte-identical copy, which is a
+  // second indexable site competing with the real one.
+  "workers_dev": false,
+
+  // preview_urls defaults to the value of workers_dev, so it needs setting
+  // back explicitly — per-version URLs are how branch builds get reviewed.
+  "preview_urls": true,
+
   // static assets only — no Worker script, so wrangler doesn't try to
   // auto-configure a framework (which is what demanded Vite >= 6)
   "assets": {

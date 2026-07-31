@@ -7,7 +7,7 @@ title: Plugins
 Apps install plugins with `use()`. A plugin is a function — or an object with an `install` method — receiving the app and optional options. Installing the same plugin twice is a no-op, and `use()` chains:
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 // function style, with options
 const myPlugin = (app, options) => {
@@ -38,7 +38,7 @@ Plugins need an app reference to call `use()` on, so use [manual init](/start-he
 Shipped in a separate bundle so they add zero weight to the core — import from `litevue/plugins`, or load `dist/litevue-plugins.iife.js` for the `LiteVuePlugins` global:
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 import {
   intersect,
   persist,
@@ -46,7 +46,7 @@ import {
   collapse,
   mask,
   transition,
-} from 'litevue/plugins';
+} from '@aevantec/litevue/plugins';
 
 createApp({ open: false }).use(transition).use(persist).mount();
 ```

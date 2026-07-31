@@ -10,4 +10,4 @@ Runs a callback after the next reactive flush — when the DOM reflects the late
 
 <LiveDemo src="next-tick" />
 
-Also exported for JS use: `import { nextTick } from 'litevue'`.
+Also exported for JS use: `import { nextTick } from '@aevantec/litevue'`.

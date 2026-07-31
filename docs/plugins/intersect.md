@@ -7,7 +7,7 @@ title: intersect
 `v-intersect="expression"` runs the expression when the element enters the viewport — lazy loading, scroll-triggered reveals, analytics.
 
 ```js
-import { intersect } from 'litevue/plugins';
+import { intersect } from '@aevantec/litevue/plugins';
 createApp({ seen: false }).use(intersect).mount();
 ```
 

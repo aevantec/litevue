@@ -7,7 +7,7 @@ title: transition
 Vue-style enter/leave transitions.
 
 ```js
-import { transition } from 'litevue/plugins';
+import { transition } from '@aevantec/litevue/plugins';
 createApp({ open: false }).use(transition).mount();
 ```
 

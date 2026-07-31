@@ -2,7 +2,9 @@
 
 `litevue` is a fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You — an alternative distribution of [Vue](https://vuejs.org) optimized for progressive enhancement: sprinkling interactivity onto server-rendered HTML with the same template syntax and reactivity mental model as standard Vue.
 
-Published on npm as **`litevue`** (the hyphenated name was already taken).
+Published on npm as **[`@aevantec/litevue`](https://www.npmjs.com/package/@aevantec/litevue)** — the
+unscoped name is blocked by an unrelated `lite-vue` package. The IIFE/UMD global
+stays `LiteVue`.
 
 - **~8kb** gzipped core, driven by the real `@vue/reactivity`
 - Vue-compatible syntax: `{{ }}`, `v-if`/`v-for` (keyed), `v-model`, `v-show`, …
@@ -16,7 +18,7 @@ Published on npm as **`litevue`** (the hyphenated name was already taken).
 ## Quick start
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 
 <div v-scope="{ count: 0 }">
   {{ count }}
@@ -27,28 +29,28 @@ Published on npm as **`litevue`** (the hyphenated name was already taken).
 Or with a bundler:
 
 ```sh
-npm install litevue
+npm install @aevantec/litevue
 ```
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 createApp({ count: 0 }).mount();
 ```
 
 ## Documentation
 
-Full documentation lives in the **[docs site](https://litevue.pages.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
+Full documentation lives in the **[docs site](https://litevue.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
 
-- [Introduction](https://litevue.pages.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
-- [Installation](https://litevue.pages.dev/start-here/installation) — CDN, npm, and mount options
-- [Essentials](https://litevue.pages.dev/essentials/) — state, templating, components, lifecycle, dynamic content
-- [Directives](https://litevue.pages.dev/directives/) — a page per directive, with live demos
-- [Magics](https://litevue.pages.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
-- [Globals](https://litevue.pages.dev/globals/) — `createApp()`, `store()`, the devtools API
-- [Plugins](https://litevue.pages.dev/plugins/) — the plugin system and all first-party plugins
-- [Devtools](https://litevue.pages.dev/devtools/) — inspector panel, browser extension, production kill-switch
-- [Migrating from petite-vue](https://litevue.pages.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.pages.dev/migration/from-alpine)
+- [Introduction](https://litevue.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
+- [Installation](https://litevue.dev/start-here/installation) — CDN, npm, and mount options
+- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content
+- [Directives](https://litevue.dev/directives/) — a page per directive, with live demos
+- [Magics](https://litevue.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
+- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, the devtools API
+- [Plugins](https://litevue.dev/plugins/) — the plugin system and all first-party plugins
+- [Devtools](https://litevue.dev/devtools/) — inspector panel, browser extension, production kill-switch
+- [Migrating from petite-vue](https://litevue.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.dev/migration/from-alpine)
 
 ## Development
 
