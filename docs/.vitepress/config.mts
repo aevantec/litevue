@@ -125,6 +125,7 @@ export default defineConfig({
           { text: 'Overview', link: '/globals/' },
           { text: 'createApp()', link: '/globals/create-app' },
           { text: 'store()', link: '/globals/store' },
+          { text: 'computed()', link: '/globals/computed' },
           { text: 'watchEffect()', link: '/globals/watch-effect' },
           { text: 'Devtools API', link: '/globals/devtools' },
         ],

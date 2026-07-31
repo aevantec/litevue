@@ -55,7 +55,7 @@ A `⚡ LiteVue` pill appears bottom-right and expands into the panel:
 
 - **Elements / Stores** tabs with live counts — scopes labeled as tags (`v-name` → id → tag name, e.g. `<cart>`)
 - a name **filter** (case-insensitive; Escape clears)
-- a state view separating own from inherited state; arrays and objects render as an **expandable tree**; every primitive leaf edits inline with type coercion, booleans get checkboxes, getter-only props are read-only
+- a state view separating own from inherited state; arrays and objects render as an **expandable tree**; every primitive leaf edits inline with type coercion, booleans get checkboxes, and derived values — getter-only props and [`computed()`](/globals/computed) — are read-only
 - an **add-key row** and per-row ✕ delete for top-level keys
 - hover-to-highlight, plus a **pick mode** — click any element on the page to select its scope
 - dark / light / system **themes**; the selected scope is exposed as `window.$scope`
