@@ -51,9 +51,20 @@ jobs:
             types
             docs
             extension
+            ci
+            build
             deps
+            deps-dev
           # A scope is useful but not worth blocking a contribution over.
           requireScope: false
+          # Dependabot writes "Bump x from 1 to 2" — capitalised, and not
+          # something it can be configured out of. Skipping its PRs keeps the
+          # style rule meaningful for humans instead of forcing an exception
+          # into the pattern that everyone then copies.
+          ignoreLabels: |
+            dependencies
+            autorelease: pending
+            ignore-semantic-pull-request
           # Reject a capitalised first word, so subjects read like the rest of
           # the changelog: "add v-clipboard plugin", not "Add v-clipboard plugin".
           subjectPattern: ^(?![A-Z]).+$

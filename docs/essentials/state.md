@@ -11,7 +11,7 @@ State lives in scopes. A scope is declared either at the app level (the root sco
 `createApp` accepts a data object exposed to every expression:
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 createApp({
   count: 0,
@@ -36,7 +36,7 @@ createApp({
 `createApp` also accepts a function (in the spirit of Vue's `<script setup>`): it runs once and its returned object becomes the root scope, giving you a private closure:
 
 ```js
-import { createApp, reactive } from 'litevue';
+import { createApp, reactive } from '@aevantec/litevue';
 
 createApp(() => {
   const store = reactive({ items: [] });

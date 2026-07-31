@@ -16,7 +16,7 @@ Before proposing a feature, it helps to know what `litevue` is trying to be:
 - **No build step required.** It has to keep working from a `<script>` tag.
 
 Features that don't fit the core often fit the **plugin system**
-(`app.use()` — see the [plugin docs](https://litevue.pages.dev/plugins/)). That's
+(`app.use()` — see the [plugin docs](https://litevue.dev/plugins/)). That's
 what it's there for, and a third-party plugin needs no permission from us.
 
 ## Getting set up
@@ -51,15 +51,16 @@ pnpm format     # prettier
 | Path | What's in it |
 | --- | --- |
 | `src/` | Library source — core, directives, plugins, devtools |
-| `test/` | Automated tests (vitest + jsdom) |
-| `tests/` | Manual HTML pages for browser testing via `pnpm dev` |
+| `test/` | Automated tests (vitest + jsdom) — run by `pnpm test` |
+| `playground/` | Manual HTML pages you open in a browser via `pnpm dev` |
 | `docs/` | VitePress documentation site |
-| `examples/` | Standalone usage examples |
+| `examples/` | Standalone usage examples, linked from the docs |
 | `extension/` | Browser devtools extension |
-| `scripts/` | Release tooling |
+| `scripts/` | Build and release tooling |
 
-Note the `test/` vs `tests/` distinction: **automated tests go in `test/`**,
-hand-driven browser pages go in `tests/`.
+**Automated tests go in `test/`.** `playground/` holds hand-driven pages for the
+behavior jsdom can't reproduce — transitions, focus order, caret position, the
+devtools panel. Nothing there runs in CI; see [playground/README.md](playground/README.md).
 
 ## Making a change
 

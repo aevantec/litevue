@@ -9,9 +9,9 @@ A standalone in-page inspector ships as a separate bundle (~5kb gzipped) — zer
 ## With a script tag
 
 ```html
-<script src="https://unpkg.com/litevue" defer init></script>
+<script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 <script
-  src="https://unpkg.com/litevue/dist/litevue-devtools.iife.js"
+  src="https://unpkg.com/@aevantec/litevue/dist/litevue-devtools.iife.js"
   defer
 ></script>
 ```
@@ -21,8 +21,8 @@ A standalone in-page inspector ships as a separate bundle (~5kb gzipped) — zer
 The panel is a **side-effect import** — importing it mounts the inspector, there is nothing to call:
 
 ```js
-import { createApp } from 'litevue';
-import 'litevue/devtools';
+import { createApp } from '@aevantec/litevue';
+import '@aevantec/litevue/devtools';
 
 createApp().mount();
 ```
@@ -30,10 +30,10 @@ createApp().mount();
 Guard it so it never reaches production. With Vite (or anything exposing `import.meta.env`), a dynamic import keeps the bundle out of the production build entirely:
 
 ```js
-import { createApp } from 'litevue';
+import { createApp } from '@aevantec/litevue';
 
 if (import.meta.env.DEV) {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 
 createApp().mount();
@@ -43,7 +43,7 @@ The webpack/Node equivalent:
 
 ```js
 if (process.env.NODE_ENV !== 'production') {
-  await import('litevue/devtools');
+  await import('@aevantec/litevue/devtools');
 }
 ```
 
