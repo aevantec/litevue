@@ -51,6 +51,17 @@ import {
 createApp({ open: false }).use(transition).use(persist).mount();
 ```
 
+::: warning Load the core first
+The plugins bundle keeps the core **external** rather than carrying its own copy, so with `<script>` tags it must come after LiteVue:
+
+```html
+<script src="https://unpkg.com/@aevantec/litevue"></script>
+<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
+```
+
+That's what lets `persistStore()` reach the same store registry `store()` writes to — a bundled second copy would give the plugins their own, and persistence would silently do nothing.
+:::
+
 | Plugin                            | Directives          | Purpose                           |
 | --------------------------------- | ------------------- | --------------------------------- |
 | [intersect](/plugins/intersect)   | `v-intersect`       | run expressions on viewport entry |

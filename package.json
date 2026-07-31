@@ -67,6 +67,7 @@
     "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && pnpm build:types",
     "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
     "lint:package": "publint --strict && attw --pack .",
+    "check:bundles": "node scripts/check-bundles.mjs",
     "prepublishOnly": "pnpm build && publint --strict",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",

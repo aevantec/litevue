@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    // the plugins import the core by package name so the published bundles can
+    // keep it external; in-repo it has to resolve to the source
+    "paths": {
+      "@aevantec/litevue": ["src/index.ts"]
+    },
     "outDir": "dist",
     "declaration": true,
     "sourceMap": false,
