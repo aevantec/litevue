@@ -148,6 +148,7 @@ export default defineConfig({
           { text: 'focus', link: '/plugins/focus' },
           { text: 'collapse', link: '/plugins/collapse' },
           { text: 'mask', link: '/plugins/mask' },
+          { text: 'morph', link: '/plugins/morph' },
           { text: 'transition', link: '/plugins/transition' },
         ],
       },

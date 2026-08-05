@@ -27,7 +27,7 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~9kb gzipped core. Plugins (~2kb for all of them) and devtools (~5kb)
+      ~9kb gzipped core. Plugins (~3kb for all of them) and devtools (~5kb)
       ship as separate opt-in bundles that add zero weight to the core.
   - title: Built-in devtools
     details:
