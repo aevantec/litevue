@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { createApp, store } from '../src';
+import { computed, createApp, store } from '../src';
 import {
   persist,
   persistStore,
@@ -138,6 +138,17 @@ describe('persistStore()', () => {
     expect(() => persistStore('derived')).not.toThrow();
     expect(store('derived').items).toEqual(['a', 'b']);
     expect(store('derived').count).toBe(2);
+  });
+
+  test('skips computed() values, like getter-only props', async () => {
+    const s = store('computed-persist', { items: ['a'] });
+    s.total = computed(() => s.items.length);
+
+    persistStore('computed-persist');
+    s.items.push('b');
+    await tick();
+    // derived, and readonly on restore — it has no business in storage
+    expect(saved('computed-persist')).toEqual({ items: ['a', 'b'] });
   });
 
   test('returns a stop function that halts saving', async () => {

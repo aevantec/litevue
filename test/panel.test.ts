@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { createApp, store } from '../src';
+import { computed, createApp, store } from '../src';
 import '../src/devtools-panel';
 import { tick, sleep } from './utils';
 
@@ -63,6 +63,43 @@ describe('devtools panel', () => {
     cb.click();
     await sleep(10);
     expect(store('panel-store').flag).toBe(false);
+
+    app.unmount();
+  });
+
+  test('renders computed and getter-only props read-only', async () => {
+    const s = store('computed-store', { items: ['a', 'b'] });
+    s.total = computed(() => s.items.length);
+    Object.defineProperty(s, 'label', { get: () => 'ro', enumerable: true });
+
+    const container = document.createElement('div');
+    container.innerHTML = `<div id="c" v-scope="{ n: 1 }"></div>`;
+    document.body.appendChild(container);
+    const app = createApp();
+    app.mount(container.firstElementChild as Element);
+    await tick();
+    if ($('.panel').style.display !== 'flex') $('.pill').click();
+    await sleep(10);
+
+    $$('.tab')[1].click();
+    await sleep(10);
+    $$('.tree .row')
+      .find((r) => r.textContent!.includes('computed-store'))!
+      .click();
+    await sleep(10);
+
+    const rowFor = (key: string) =>
+      $$('.state .prop').find(
+        (r) => r.querySelector('.key')!.textContent === key
+      )!;
+
+    // a computed unwraps to a number, so without the readonly check it would
+    // render an input whose edits silently vanish
+    const total = rowFor('total');
+    expect(total.querySelector('.preview')!.textContent).toBe('2');
+    expect(total.querySelector('input')).toBeNull();
+
+    expect(rowFor('label').querySelector('input')).toBeNull();
 
     app.unmount();
   });

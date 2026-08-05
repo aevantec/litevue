@@ -446,6 +446,31 @@ const coerce = (raw: string, old: unknown) => {
   return raw;
 };
 
+// scopes inherit through a prototype chain, so a plain
+// getOwnPropertyDescriptor misses everything under the "inherited" divider
+const descriptorOf = (o: any, key: string): PropertyDescriptor | undefined => {
+  for (let t = o; t && t !== Object.prototype; t = Object.getPrototypeOf(t)) {
+    const d = Object.getOwnPropertyDescriptor(t, key);
+    if (d) return d;
+  }
+};
+
+/**
+ * True for values the panel must not offer an editor for: accessors with no
+ * setter, and getter-only `computed()` refs.
+ *
+ * A computed sits in the scope as a readonly ref — reading it through the
+ * reactive proxy already unwrapped it, so it can only be recognized from the
+ * raw descriptor. The reactivity flags are read directly rather than importing
+ * isRef/isReadonly, to keep @vue/reactivity out of this standalone bundle.
+ */
+const isReadOnly = (desc?: PropertyDescriptor) => {
+  if (!desc) return false;
+  if (desc.get && !desc.set) return true;
+  const raw = desc.value;
+  return !!raw && raw.__v_isRef === true && raw.__v_isReadonly === true;
+};
+
 const collectProps = (scope: Record<string, any>) => {
   const isData = (o: any, k: string) =>
     k[0] !== '$' && typeof o[k] !== 'function';
@@ -677,11 +702,12 @@ const addNode = (
 
   row.appendChild(h('span', 'spacer'));
   row.appendChild(h('span', 'key', key));
-  const desc = Object.getOwnPropertyDescriptor(container, key);
+  const desc = descriptorOf(container, key);
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
-  } else if (desc && desc.get && !desc.set) {
-    // getter without setter (e.g. computed store props) — read-only
+  } else if (isReadOnly(desc)) {
+    // a getter without a setter, or a computed() — writes go nowhere, so
+    // don't offer an input that would silently discard them
     row.appendChild(h('span', 'preview', fmt(v)));
   } else if (typeof v === 'boolean') {
     row.appendChild(h('span', 'bool', String(v)));
