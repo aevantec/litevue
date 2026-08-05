@@ -21,6 +21,41 @@
   --vp-c-brand-3: #38a573;
 }
 
+/* Code blocks stay dark in both site themes.
+ *
+ * config.mts pins Shiki to a single dark theme, which fixes the token colours.
+ * Everything around the tokens — background, gutter, copy button, code-group
+ * tabs — is still driven by VitePress variables that flip with the site theme,
+ * so light mode is given the dark values here. These are the defaults read off
+ * the running dark theme, not approximations.
+ *
+ * Inline `code` in prose is deliberately left alone: dark chips scattered
+ * through light-mode paragraphs hurt readability rather than helping.
+ */
+:root:not(.dark) {
+  --vp-code-block-bg: #161618;
+  /* the fallback foreground, used by any span Shiki did not colour — without
+     it, uncoloured text keeps the light theme's near-black on a dark block */
+  --vp-code-block-color: #98989f;
+  --vp-code-block-divider-color: #000000;
+  --vp-code-line-highlight-color: rgba(101, 117, 133, 0.16);
+  --vp-code-line-number-color: #6a6a71;
+
+  --vp-code-copy-code-bg: #202127;
+  --vp-code-copy-code-hover-bg: #1b1b1f;
+  --vp-code-copy-code-active-text: #98989f;
+  --vp-code-copy-code-border-color: #2e2e32;
+  --vp-code-lang-color: #6a6a71;
+
+  --vp-code-tab-divider: #000000;
+  --vp-code-tab-bg: #161618;
+  --vp-code-tab-text-color: #98989f;
+  --vp-code-tab-hover-text-color: #dfdfd6;
+  --vp-code-tab-active-text-color: #dfdfd6;
+  /* the brighter brand green, which is what reads correctly on a dark bar */
+  --vp-code-tab-active-bar-color: #42d392;
+}
+
 /* live demos: real litevue apps running inside the docs */
 .live-demo {
   position: relative;
