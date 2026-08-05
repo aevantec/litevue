@@ -1,7 +1,12 @@
+# Dependency PRs go to main-next like everything else, so a bump is integrated
+# alongside whatever else is queued before it reaches main. Without this
+# Dependabot opens against the default branch and quietly bypasses the
+# integration step. (This file itself is still read from the default branch.)
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    target-branch: main-next
     schedule:
       interval: weekly
       day: monday
@@ -23,6 +28,7 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    target-branch: main-next
     schedule:
       interval: weekly
       day: monday

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/aevantec/litevue/compare/v0.5.1...v0.5.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **build:** keep the core external in the plugins bundle ([#32](https://github.com/aevantec/litevue/issues/32)) ([2056079](https://github.com/aevantec/litevue/commit/20560797874f79114273cb67f60606192b1131cf))
+
 ## [0.5.1](https://github.com/aevantec/litevue/compare/v0.5.0...v0.5.1) (2026-07-27)
 
 ### Bug Fixes
