@@ -19,6 +19,14 @@ export default defineConfig({
   // Now that there's a stable canonical domain, emit a sitemap — the docs are
   // the discovery path for this project, more so since the npm name is scoped.
   sitemap: { hostname },
+  markdown: {
+    // A single theme instead of VitePress's light/dark pair, so snippets are
+    // dark in both site themes. With a pair, Shiki emits --shiki-light and
+    // --shiki-dark on every token and CSS picks one; with one theme the colours
+    // are fixed. The block's own chrome is still theme-driven, so custom.css
+    // pins that in light mode to match.
+    theme: 'github-dark',
+  },
   head: [
     // head entries are emitted verbatim, so these need the base itself.
     // favicon.ico covers the bare /favicon.ico that browsers request without
