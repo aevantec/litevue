@@ -10,10 +10,11 @@ stays `LiteVue`.
 - Vue-compatible syntax: `{{ }}`, `v-if`/`v-for` (keyed), `v-model`, `v-show`, …
 - **Built-in devtools** — in-page inspector panel + browser extension, one line to disable in production
 - **Transitions** that work with `v-show` *and* `v-if` (deferred unmount)
-- **Plugin system** with first-party plugins: intersect, persist, focus (+trap), collapse, transition, mask
+- **Plugin system** with first-party plugins: intersect, persist, focus (+trap), collapse, transition, mask, morph
 - **Global store** (`store()` / `$store`) and magic properties (`$dispatch`, `$watch`, `$id`, `$root`, …)
+- **Cached derived state** with `computed()`, alongside `reactive()` and `watchEffect()`
 - Extra event modifiers: `.outside`, `.window`, `.debounce`, `.throttle`, animation-event filters
-- Safe with dynamic content: injected markup stays inert until explicitly mounted
+- Safe with dynamic content: injected markup stays inert until explicitly mounted, and `morph` updates a server-rendered region in place without losing scope state, focus or scroll
 
 ## Quick start
 
@@ -47,7 +48,7 @@ Full documentation lives in the **[docs site](https://litevue.dev/)** (source in
 - [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content
 - [Directives](https://litevue.dev/directives/) — a page per directive, with live demos
 - [Magics](https://litevue.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
-- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, the devtools API
+- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, `computed()`, `watchEffect()`, the devtools API
 - [Plugins](https://litevue.dev/plugins/) — the plugin system and all first-party plugins
 - [Devtools](https://litevue.dev/devtools/) — inspector panel, browser extension, production kill-switch
 - [Migrating from petite-vue](https://litevue.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.dev/migration/from-alpine)
