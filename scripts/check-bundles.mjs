@@ -7,8 +7,11 @@ import { readFileSync } from 'fs';
 const read = (f) =>
   readFileSync(new URL(`../dist/${f}`, import.meta.url), 'utf8');
 
-// a reactivity-internal marker that survives minification
-const REACTIVITY = /__v_isRef/;
+// A reactivity-internal marker that survives minification, and that plugin
+// source has no legitimate reason to contain. Not __v_isRef/__v_isReadonly:
+// persist.ts reads those flags directly to spot a computed() without importing
+// @vue/reactivity, so matching on them reports every build as inlined.
+const REACTIVITY = /__v_raw/;
 const PKG = '@aevantec/litevue';
 
 const failures = [];
