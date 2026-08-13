@@ -33,9 +33,27 @@ jobs:
       tag: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
     steps:
+      # GitHub raises no workflow runs for events caused by GITHUB_TOKEN, so a
+      # release PR opened with it got no checks at all — and since "Validate PR
+      # title" is the only required check on main, it stayed unmergeable until
+      # someone closed and reopened the PR by hand, every single release.
+      #
+      # An app token is a different identity, so its PR triggers workflows
+      # normally. The token is minted per run and expires in an hour, unlike a
+      # PAT that expires on a calendar and is tied to one person's account.
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
+
       - uses: googleapis/release-please-action@v4
         id: release
         with:
+          # deliberately no `|| secrets.GITHUB_TOKEN` fallback: that would
+          # quietly restore the broken behaviour if the app is ever uninstalled
+          # or the secrets go missing, instead of failing where it can be seen
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
