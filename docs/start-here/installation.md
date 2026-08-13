@@ -35,9 +35,25 @@ unrelated `lite-vue` package. Only the install and import specifiers carry the
 scope; the global stays `LiteVue`, and the subpaths are
 `@aevantec/litevue/plugins` and `@aevantec/litevue/devtools`.
 
-```sh
+::: code-group
+
+```sh [npm]
 npm install @aevantec/litevue
 ```
+
+```sh [pnpm]
+pnpm add @aevantec/litevue
+```
+
+```sh [yarn]
+yarn add @aevantec/litevue
+```
+
+```sh [bun]
+bun add @aevantec/litevue
+```
+
+:::
 
 ```js
 import { createApp } from '@aevantec/litevue';

@@ -56,12 +56,13 @@ LiteVue adds [animation-event filters](/directives/v-on#animation-event-filters)
 | Focus (`x-trap`, `$focus`) | [`focus`](/plugins/focus) (`v-focus`, `v-trap`)                           |
 | Collapse                   | [`collapse`](/plugins/collapse)                                           |
 | Mask                       | [`mask`](/plugins/mask)                                                   |
-| Anchor / Morph / Sort      | not shipped — they'd pull in Floating UI / SortableJS; use those directly |
+| Morph (`Alpine.morph`)     | [`morph`](/plugins/morph) — `morph(el, html)` or `$morph` in templates    |
+| Anchor / Sort              | not shipped — they'd pull in Floating UI / SortableJS; use those directly |
 
 ## What's different by design
 
 - **Vue semantics**: expressions evaluate against a prototype chain of scopes; writes to inherited state fall through to the owning parent.
 - **Keyed `v-for`**: real list reconciliation — reorders move DOM nodes instead of rewriting them.
-- **Dynamic content is inert** until you call `app.mount(el)` — Alpine auto-initializes added DOM; LiteVue treats that as an [injection hazard](/essentials/dynamic-content).
+- **Dynamic content is inert** until you call `app.mount(el)` — Alpine auto-initializes added DOM; LiteVue treats that as an [injection hazard](/essentials/dynamic-content). For _updating_ a region the server re-rendered, reach for [`morph`](/plugins/morph) rather than replacing and re-mounting.
 - **Devtools ship in the box** — an [in-page panel](/devtools/panel) rather than a store extension (an [extension variant](/devtools/extension) exists too).
 - If you outgrow LiteVue, the same templates are a short hop from real Vue.

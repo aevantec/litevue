@@ -4,6 +4,7 @@ import { Directive } from './directives';
 import { bindContextMethods, createContext } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick } from './scheduler';
+import { walk } from './walk';
 import { devtools, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
@@ -138,9 +139,16 @@ export const createApp = (initialData?: any) => {
       // append rather than assign: mount() can be called repeatedly (extra
       // roots, dynamically added fragments) and unmount() must tear down
       // every mounted root, not just the last batch
+      // published before any child context is spread off this one, so every
+      // scope inherits it (see Context.walk)
+      ctx.walk ??= walk;
+
       for (const el of roots) {
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
+        // a root without v-scope never gets a stashed context during walk;
+        // seed it here so inserted markup above every scope still resolves one
+        (el as any).__ctx ??= ctx;
         const block = new Block(el, ctx, true);
         // roots with v-scope are registered with their scoped context during
         // walk; only register roots the walk didn't claim

@@ -4,7 +4,7 @@ title: Introduction
 
 # Introduction <Badge type="section" text="Start Here" />
 
-**LiteVue** is a ~8kb distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
+**LiteVue** is a ~9kb distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
 
 It is a maintained fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You, continuing from 0.4.1 with devtools, transitions, a plugin system, a global store, and additional directives — while keeping the original goal of staying as close to standard Vue as the format allows.
 
@@ -83,7 +83,7 @@ Deliberate divergences, all stemming from the absence of a component system:
 
 Dropped because their utility-to-size ratio doesn't justify inclusion for progressive enhancement. **If you need these, use standard Vue** — that's the honest answer, not a workaround:
 
-- `ref()`, `computed()`, `watch()` as standalone APIs (use scope getters and [`$watch`](/magics/watch))
+- `ref()` and `watch()` as standalone APIs (use scope state and [`$watch`](/magics/watch)) — `reactive()`, [`computed()`](/globals/computed) and [`watchEffect()`](/globals/watch-effect) _are_ exported
 - Render functions and JSX — there is no virtual DOM
 - Reactivity for collection types (`Map`, `Set`) — stripped from the build for size
 - `KeepAlive`, `Suspense`, async components
@@ -165,9 +165,9 @@ The core stays small because everything else is opt-in and separately bundled:
 
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
-| Core                              | ~8kb           | reactivity, directives, [store](/globals/store), [magics](/magics/) |
-| [Plugins](/plugins/)              | ~2kb (all six) | intersect, persist, focus, collapse, mask, transition               |
-| [Devtools panel](/devtools/panel) | ~4kb           | dev-only; never load it in production                               |
+| Core                              | ~9kb           | reactivity, directives, [store](/globals/store), [magics](/magics/) |
+| [Plugins](/plugins/)              | ~3kb (all seven) | intersect, persist, focus, collapse, mask, morph, transition       |
+| [Devtools panel](/devtools/panel) | ~5kb           | dev-only; never load it in production                               |
 
 Devtools registration can also be [disabled entirely](/globals/devtools#disabling-in-production) with one line so no scope data is exposed in production builds.
 

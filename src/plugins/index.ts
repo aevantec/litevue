@@ -10,3 +10,5 @@ export {
 export type { PersistStorage } from './persist';
 export { focus } from './focus';
 export { collapse } from './collapse';
+export { morph, morphPlugin } from './morph';
+export type { MorphOptions } from './morph';

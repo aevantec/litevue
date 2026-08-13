@@ -69,8 +69,8 @@ persistStore('cart', { storage: 'session' }); // a different storage
 
 - Writes are batched through the scheduler, so a burst of mutations in one tick produces a single write.
 
-::: tip Getters and methods are skipped
-Methods aren't state, and getter-only properties (like `get count()`) are derived — they can't be assigned back on restore. Both are ignored automatically, including when you name them explicitly in `keys`.
+::: tip Derived values and methods are skipped
+Methods aren't state, and derived values — getter-only properties like `get count()`, plus [`computed()`](/globals/computed) refs — can't be assigned back on restore. All are ignored automatically, including when you name them explicitly in `keys`.
 :::
 
 ## Choosing a storage

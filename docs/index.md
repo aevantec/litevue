@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: LiteVue
-  text: Vue's template syntax in ~8kb
+  text: Vue's template syntax in ~9kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
   image:
     src: /logo.png
@@ -27,7 +27,7 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~8kb gzipped core. Plugins (~2kb for all of them) and devtools (~4kb)
+      ~9kb gzipped core. Plugins (~3kb for all of them) and devtools (~5kb)
       ship as separate opt-in bundles that add zero weight to the core.
   - title: Built-in devtools
     details:

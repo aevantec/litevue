@@ -1,8 +1,15 @@
 name: CI
 
 on:
+  # main-next is included because it is where work is actually integrated.
+  # `pull_request` covers each branch on its own, but nothing tested the result
+  # of merging them together: after a PR lands on main-next, the combined state
+  # went unverified until the promotion PR — and even that can miss, since a
+  # pull_request run needs a mergeable ref and is skipped while the PR has
+  # conflicts. The branch whose entire job is integration was the least tested
+  # thing here.
   push:
-    branches: [main]
+    branches: [main, main-next]
   pull_request:
 
 concurrency:

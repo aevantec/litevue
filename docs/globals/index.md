@@ -10,6 +10,7 @@ The JavaScript API exported by the `litevue` package.
 | -------------------------------------- | ----------------------------------------------------------------- |
 | [createApp()](/globals/create-app)     | create an app: `mount`, `unmount`, `use`, `directive`, `scope`    |
 | [store()](/globals/store)              | register/retrieve global stores backing [`$store`](/magics/store) |
+| [computed()](/globals/computed)        | cached derived state — re-evaluates only when its sources change  |
 | [watchEffect()](/globals/watch-effect) | re-run a function whenever the reactive state it reads changes    |
 | [Devtools API](/globals/devtools)      | the `__LITE_VUE__` registry, its events, and `disableDevtools()`  |
 | `reactive`                             | re-export of `@vue/reactivity` for shared state singletons        |

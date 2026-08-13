@@ -36,7 +36,7 @@ store('cart').add('book');
 ```
 
 - `store(name, value)` registers (and returns) a reactive store; `store(name)` retrieves it.
-- Getters are reactive computed values.
+- Getters are reactive, but **not cached** — they re-run on every read. Wrap expensive derivations in [`computed()`](/globals/computed) instead.
 - `init()` runs once at registration.
 - Registering a store **after** mount is picked up reactively by expressions referencing it.
 - Stores appear in the [devtools panel](/devtools/panel) under the Stores tab.

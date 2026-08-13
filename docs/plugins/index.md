@@ -45,6 +45,7 @@ import {
   focus,
   collapse,
   mask,
+  morph,
   transition,
 } from '@aevantec/litevue/plugins';
 
@@ -69,4 +70,5 @@ That's what lets `persistStore()` reach the same store registry `store()` writes
 | [focus](/plugins/focus)           | `v-focus`, `v-trap` | autofocus and focus trapping      |
 | [collapse](/plugins/collapse)     | `v-collapse`        | animated height expand/collapse   |
 | [mask](/plugins/mask)             | `v-mask`            | input masking                     |
+| [morph](/plugins/morph)           | `$morph`            | patch a live region from new HTML |
 | [transition](/plugins/transition) | `v-transition`      | Vue-style enter/leave transitions |

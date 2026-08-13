@@ -10,7 +10,7 @@ LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained 
 
 |                 | petite-vue             | LiteVue             |
 | --------------- | ---------------------- | ------------------- |
-| npm package     | `petite-vue`           | `litevue`           |
+| npm package     | `petite-vue`           | `@aevantec/litevue` |
 | IIFE/UMD global | `PetiteVue`            | `LiteVue`           |
 | Bundle files    | `dist/petite-vue.*.js` | `dist/litevue.iife.js`, `dist/litevue.umd.js`, `dist/litevue.mjs` (ESM) |
 
@@ -40,3 +40,8 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 ## Everything new is opt-in
 
 The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-extras), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
+
+Two later additions are worth knowing about specifically, because petite-vue has no equivalent and both address things you probably worked around:
+
+- [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings evaluated three times per update, with no memoized option.
+- The [morph plugin](/plugins/morph) updates a live region from new server HTML **in place**. Previously the only option was replacing the markup and re-mounting, which resets scope state and loses focus, caret and scroll — and, because `unmount()` is all-or-nothing, leaves the discarded subtree's effects running.

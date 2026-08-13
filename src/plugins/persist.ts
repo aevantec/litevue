@@ -70,7 +70,18 @@ const persistable = (target: Record<string, any>, keys?: string[]) =>
   (keys ?? Object.keys(target)).filter((k) => {
     if (k[0] === '$') return false;
     const desc = Object.getOwnPropertyDescriptor(target, k);
+    // derived values can't be assigned back on restore: getters without a
+    // setter, and getter-only computed() refs (which the proxy already
+    // unwrapped, so they're only visible on the raw descriptor).
+    //
+    // The reactivity flags are read directly rather than via isRef/isReadonly,
+    // because importing @vue/reactivity here would pull a second copy of it
+    // into the plugins bundle — which must keep the core external.
     if (desc && desc.get && !desc.set) return false;
+    const raw = desc && desc.value;
+    if (raw && raw.__v_isRef === true && raw.__v_isReadonly === true) {
+      return false;
+    }
     return typeof target[k] !== 'function';
   });
 
