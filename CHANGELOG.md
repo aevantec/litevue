@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.3](https://github.com/aevantec/litevue/compare/v0.5.2...v0.5.3) (2026-08-13)
+
+
+### Features
+
+* expose computed() for cached derived state ([a3f029c](https://github.com/aevantec/litevue/commit/a3f029cd70873375731c26935c52bd5df02f8d6c))
+* expose computed() for cached derived state ([5915164](https://github.com/aevantec/litevue/commit/5915164cd8ee9a3f8a5b6811b3ff0b51fecebdd3))
+* **plugins:** add morph for in-place region updates ([0bb6a62](https://github.com/aevantec/litevue/commit/0bb6a625b0867032742f3b58cf116cba509212ff))
+* **plugins:** add morph for in-place region updates ([d235b37](https://github.com/aevantec/litevue/commit/d235b376d7d5229e1822c2d7f7a9d1f24c300f54))
+
+
+### Bug Fixes
+
+* **deps:** pin @vue/shared to track @vue/reactivity ([6ecd63f](https://github.com/aevantec/litevue/commit/6ecd63fb863eaf5c6d3db47b754e9bf12e3232df))
+* **deps:** pin @vue/shared to track @vue/reactivity ([3a270d1](https://github.com/aevantec/litevue/commit/3a270d19b9b504f45ceb5a4eb03f01c19e71479f))
+
 ## [0.5.2](https://github.com/aevantec/litevue/compare/v0.5.1...v0.5.2) (2026-07-31)
 
 
