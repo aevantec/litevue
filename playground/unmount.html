@@ -1,0 +1,34 @@
+<script type="module">
+  import { createApp } from '../src';
+
+  const app = createApp({ n: 0, text: 'start' });
+  app.mount('#a');
+  app.mount('#b');
+  window.app = app;
+</script>
+
+<h3>app.unmount(el)</h3>
+<p>
+  Two regions bound to the same <code>n</code>. Increment from either, then
+  unmount region A: its buttons must go dead and its text must freeze, while B
+  keeps working.
+</p>
+
+<div id="a" v-scope style="border: 1px solid #ccc; padding: 8px; margin: 8px 0">
+  <strong>A</strong> — n = <span id="a-out">{{ n }}</span>
+  <button id="a-inc" @click="n++">A: n++</button>
+  <input id="a-model" v-model="text" placeholder="v-model" />
+  <code id="a-text">{{ text }}</code>
+</div>
+
+<div id="b" v-scope style="border: 1px solid #ccc; padding: 8px; margin: 8px 0">
+  <strong>B</strong> — n = <span id="b-out">{{ n }}</span>
+  <button id="b-inc" @click="n++">B: n++</button>
+</div>
+
+<p>
+  <button id="kill-a" onclick="window.app.unmount('#a')">unmount A</button>
+  <button id="kill-all" onclick="window.app.unmount()">
+    unmount everything
+  </button>
+</p>

@@ -29,6 +29,8 @@ createApp({ count: 0 }).use(myPlugin, { speed: 2 }).use(helpers).mount();
 
 Plugins can register custom directives via `app.directive()` and extend the root scope via `app.scope`. `App` and `Plugin<Options>` types are exported for TypeScript authors.
 
+A directive that registers anything outside `effect()` — a listener, an observer, a timer — must [return a cleanup](/globals/create-app#returning-a-cleanup). `unmount(el)` tears down a region whose elements stay in the document, so whatever you left attached keeps running.
+
 ::: info Manual init required
 Plugins need an app reference to call `use()` on, so use [manual init](/start-here/installation#manual-init) rather than the `init` script attribute.
 :::

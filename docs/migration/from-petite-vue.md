@@ -34,7 +34,7 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 
 - The scoped-context write trap no longer recurses with modern `@vue/reactivity` (petite-vue 0.4.1 breaks on fresh installs).
 - Published TypeScript types actually resolve (petite-vue shipped types referencing a devDependency).
-- `mount()` can be called repeatedly on one app; `unmount()` tears down every batch instead of only the last.
+- `mount()` can be called repeatedly on one app; `unmount()` tears down every batch instead of only the last, and `unmount(el)` tears down a single region.
 - Reserved scope keys grew: `$store`, `$watch`, `$id`, `$root` join `$refs` / `$nextTick` / `$s`. Rename any conflicting data properties.
 
 ## Everything new is opt-in
@@ -44,4 +44,4 @@ The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/g
 Two later additions are worth knowing about specifically, because petite-vue has no equivalent and both address things you probably worked around:
 
 - [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings evaluated three times per update, with no memoized option.
-- The [morph plugin](/plugins/morph) updates a live region from new server HTML **in place**. Previously the only option was replacing the markup and re-mounting, which resets scope state and loses focus, caret and scroll — and, because `unmount()` is all-or-nothing, leaves the discarded subtree's effects running.
+- The [morph plugin](/plugins/morph) updates a live region from new server HTML **in place**. Previously the only option was replacing the markup and re-mounting, which resets scope state and loses focus, caret and scroll.
