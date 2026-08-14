@@ -1,7 +1,7 @@
 <script type="module">
   import { createApp } from '../src';
 
-  const app = createApp({ n: 0, log: '' });
+  const app = createApp({ n: 0, text: 'start' });
   app.mount('#a');
   app.mount('#b');
   window.app = app;
@@ -17,7 +17,8 @@
 <div id="a" v-scope style="border: 1px solid #ccc; padding: 8px; margin: 8px 0">
   <strong>A</strong> — n = <span id="a-out">{{ n }}</span>
   <button id="a-inc" @click="n++">A: n++</button>
-  <input id="a-input" placeholder="type here" />
+  <input id="a-model" v-model="text" placeholder="v-model" />
+  <code id="a-text">{{ text }}</code>
 </div>
 
 <div id="b" v-scope style="border: 1px solid #ccc; padding: 8px; margin: 8px 0">

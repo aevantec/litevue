@@ -194,6 +194,26 @@ describe('app.unmount(el)', () => {
     expect($('#b em').textContent).toBe('2');
   });
 
+  test('v-model stops writing to the scope after unmount', async () => {
+    document.body.innerHTML = `<div id="a" v-scope><input v-model="name"></div>`;
+    const app = createApp({ name: 'ada' });
+    app.mount('#a');
+    await tick();
+
+    const input = $('#a input') as HTMLInputElement;
+    input.value = 'grace';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+    expect((app.scope as any).name).toBe('grace');
+
+    app.unmount('#a');
+    input.value = 'hopper';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+    // the field is inert now — typing must not reach the scope
+    expect((app.scope as any).name).toBe('grace');
+  });
+
   test('unmounting the same region twice is a no-op', async () => {
     document.body.innerHTML = `<div id="a" v-scope><span>{{ n }}</span></div>`;
     const app = createApp({ n: 1 });

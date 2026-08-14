@@ -9,9 +9,17 @@ export const model: Directive<
   const assign = get(`(val) => { ${exp} = val }`);
   const { trim, number = type === 'number', lazy, fill } = modifiers || {};
 
+  // Collect every listener so the directive can take them off again. Without
+  // this, typing into an input inside a region torn down by app.unmount(el)
+  // would still write to the scope — the element stays in the document, so the
+  // listener outlives the binding it belongs to.
+  const off: (() => void)[] = [];
+  const on = (event: string, handler: any) =>
+    off.push(listen(el, event, handler));
+
   if (el.tagName === 'SELECT') {
     const sel = el as HTMLSelectElement;
-    listen(el, 'change', () => {
+    on('change', () => {
       const selectedVal = Array.prototype.filter
         .call(sel.options, (o: HTMLOptionElement) => o.selected)
         .map((o: HTMLOptionElement) =>
@@ -43,7 +51,7 @@ export const model: Directive<
       }
     });
   } else if (type === 'checkbox') {
-    listen(el, 'change', () => {
+    on('change', () => {
       const modelValue = get();
       const checked = (el as HTMLInputElement).checked;
       if (isArray(modelValue)) {
@@ -77,7 +85,7 @@ export const model: Directive<
       oldValue = value;
     });
   } else if (type === 'radio') {
-    listen(el, 'change', () => {
+    on('change', () => {
       assign(getValue(el));
     });
     let oldValue: any;
@@ -109,14 +117,14 @@ export const model: Directive<
       }
     }
 
-    listen(el, 'compositionstart', onCompositionStart);
-    listen(el, 'compositionend', onCompositionEnd);
-    listen(el, lazy ? 'change' : 'input', () => {
+    on('compositionstart', onCompositionStart);
+    on('compositionend', onCompositionEnd);
+    on(lazy ? 'change' : 'input', () => {
       if ((el as any).composing) return;
       write(resolveValue(el.value));
     });
     if (trim) {
-      listen(el, 'change', () => {
+      on('change', () => {
         el.value = el.value.trim();
       });
     }
@@ -143,6 +151,8 @@ export const model: Directive<
       }
     });
   }
+
+  return () => off.forEach((remove) => remove());
 };
 
 const getValue = (el: any) => ('_value' in el ? el._value : el.value);
