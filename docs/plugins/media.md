@@ -78,6 +78,65 @@ You do not need a key per breakpoint — only where the value changes. A map wit
 There is no `max-width` form. For "phones only", give `base` the narrow value and override it at the next breakpoint up — `{ base: 'drawer', md: 'sidebar' }` — which keeps one direction of reasoning across the whole codebase.
 :::
 
+### Any value type
+
+A map's values are returned as-is, so they can be anything — strings, numbers, booleans, arrays, functions, or objects. Nothing is merged or cloned; the matching value comes back by reference.
+
+That means breakpoints can select between **entirely different shapes**, not just different numbers:
+
+```html
+<div
+  v-scope="{ get opts() {
+    return $mq({
+      mobile:  { layout: 'stack', showLabels: false },
+      desktop: { layout: 'grid', columns: 4, gap: 24, showLabels: true }
+    })
+  } }"
+>
+  <div :data-layout="opts.layout">…</div>
+</div>
+```
+
+In TypeScript the result is inferred as a union of the value types, plus `undefined` for the case where nothing matched. A property that exists on only one of the shapes comes back as `T | undefined`, so narrow before using it:
+
+```ts
+const opts = mq({
+  mobile: { layout: 'stack', showLabels: false },
+  desktop: { layout: 'grid', columns: 4 },
+});
+
+opts?.layout; // string — present on both
+opts?.columns; // number | undefined — desktop only, so narrow first
+```
+
+Falsy values are honoured rather than treated as missing, so `0`, `''`, `false` and `null` all survive — including when a fallback is present:
+
+```js
+mq({ base: 1, lg: 0 }, 99); // 0 at lg, not 99
+mq({ base: 'x', lg: '' }, 'fallback'); // '' at lg
+```
+
+#### Leaving a breakpoint unset
+
+Omitting a key is the normal way to say "no special value here" — the next smaller key applies instead. To have a value at one breakpoint and **nothing** elsewhere, give the others `undefined` or simply leave them out:
+
+```js
+mq({ lg: 'wide-only' }); // undefined below lg, 'wide-only' from lg up
+```
+
+::: warning `undefined` is indistinguishable from "no match"
+An explicit `undefined` at the matching breakpoint falls through to the
+fallback, because the resolver treats `undefined` as "no value found":
+
+```js
+mq({ base: 'narrow', lg: undefined }); // undefined at lg — as expected
+mq({ base: 'narrow', lg: undefined }, 'FB'); // 'FB' at lg, not undefined
+```
+
+Use `null` when you need "deliberately nothing" to win over a fallback — it is
+returned as-is, like any other value.
+:::
+
 ### Several values at once
 
 Three or more related values are common — columns, gap, and a variant name that must change together. A getter in `v-scope` stays reactive and updates them as a unit:
