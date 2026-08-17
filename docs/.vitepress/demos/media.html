@@ -1,0 +1,23 @@
+<div
+  v-scope="{ get layout() {
+    return $mqProps({
+      columns: { mobile: 1, tablet: 2, desktop: 4 },
+      variant: { mobile: 'compact', desktop: 'full' }
+    })
+  } }"
+>
+  <p>
+    breakpoint <code>{{ $mqBreakpoint }}</code> · device
+    <code>{{ $mqDevice }}</code> · at least <code>lg</code>:
+    <code>{{ $mqAtLeast('lg') }}</code>
+  </p>
+  <p>
+    columns <code>{{ layout.columns }}</code> · variant
+    <code>{{ layout.variant }}</code>
+  </p>
+  <p>
+    <span v-if="$mqAtLeast('lg')">A sidebar would render here.</span>
+    <span v-else>A drawer button would render here.</span>
+  </p>
+  <p><small>Resize the window — only one branch is ever in the DOM.</small></p>
+</div>

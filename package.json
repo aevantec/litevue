@@ -89,6 +89,16 @@
         "default": "./dist/plugins/mask.umd.js"
       }
     },
+    "./plugins/media": {
+      "import": {
+        "types": "./dist/types/plugins/media/index.d.mts",
+        "default": "./dist/plugins/media.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/media/index.d.ts",
+        "default": "./dist/plugins/media.umd.js"
+      }
+    },
     "./plugins/morph": {
       "import": {
         "types": "./dist/types/plugins/morph/index.d.mts",
@@ -142,6 +152,9 @@
       "plugins/mask": [
         "./dist/types/plugins/mask/index.d.ts"
       ],
+      "plugins/media": [
+        "./dist/types/plugins/media/index.d.ts"
+      ],
       "plugins/morph": [
         "./dist/types/plugins/morph/index.d.ts"
       ],
@@ -176,8 +189,6 @@
     "vue",
     "petite-vue",
     "litevue",
-    "alpine",
-    "alpinejs",
     "progressive-enhancement",
     "reactivity",
     "directives",
