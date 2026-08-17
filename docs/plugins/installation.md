@@ -6,9 +6,9 @@ title: Installing Plugins
 
 Every first-party plugin ships three ways — as part of the bundle, as its own npm subpath, and as its own standalone file for a `<script>` tag. None of them add weight to the [core](/start-here/installation).
 
-## Pick one plugin
+## Installing a single plugin
 
-The narrowest option, and the one to reach for by default.
+The narrowest option, and the recommended default.
 
 ::: code-group
 
@@ -30,7 +30,7 @@ createApp().use(mask).mount();
 
 :::
 
-## Pick several
+## Installing several plugins
 
 ::: code-group
 

@@ -51,5 +51,5 @@ patches it in place instead and none of that is lost.
 :::
 
 Unmounting removes the bindings, not the markup — the elements stay in the
-document and remain perfectly usable, they are simply inert. Mounting the same
+document and remain fully usable; they are merely inert. Mounting the same
 element again re-binds it.
