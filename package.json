@@ -49,6 +49,76 @@
         "default": "./dist/litevue-devtools.umd.js"
       }
     },
+    "./plugins/collapse": {
+      "import": {
+        "types": "./dist/types/plugins/collapse/index.d.mts",
+        "default": "./dist/plugins/collapse.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/collapse/index.d.ts",
+        "default": "./dist/plugins/collapse.umd.js"
+      }
+    },
+    "./plugins/focus": {
+      "import": {
+        "types": "./dist/types/plugins/focus/index.d.mts",
+        "default": "./dist/plugins/focus.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/focus/index.d.ts",
+        "default": "./dist/plugins/focus.umd.js"
+      }
+    },
+    "./plugins/intersect": {
+      "import": {
+        "types": "./dist/types/plugins/intersect/index.d.mts",
+        "default": "./dist/plugins/intersect.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/intersect/index.d.ts",
+        "default": "./dist/plugins/intersect.umd.js"
+      }
+    },
+    "./plugins/mask": {
+      "import": {
+        "types": "./dist/types/plugins/mask/index.d.mts",
+        "default": "./dist/plugins/mask.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/mask/index.d.ts",
+        "default": "./dist/plugins/mask.umd.js"
+      }
+    },
+    "./plugins/morph": {
+      "import": {
+        "types": "./dist/types/plugins/morph/index.d.mts",
+        "default": "./dist/plugins/morph.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/morph/index.d.ts",
+        "default": "./dist/plugins/morph.umd.js"
+      }
+    },
+    "./plugins/persist": {
+      "import": {
+        "types": "./dist/types/plugins/persist/index.d.mts",
+        "default": "./dist/plugins/persist.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/persist/index.d.ts",
+        "default": "./dist/plugins/persist.umd.js"
+      }
+    },
+    "./plugins/transition": {
+      "import": {
+        "types": "./dist/types/plugins/transition/index.d.mts",
+        "default": "./dist/plugins/transition.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/transition/index.d.ts",
+        "default": "./dist/plugins/transition.umd.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "types": "./dist/types/index.d.ts",
@@ -59,12 +129,33 @@
       ],
       "devtools": [
         "./dist/types/devtools-panel.d.ts"
+      ],
+      "plugins/collapse": [
+        "./dist/types/plugins/collapse/index.d.ts"
+      ],
+      "plugins/focus": [
+        "./dist/types/plugins/focus/index.d.ts"
+      ],
+      "plugins/intersect": [
+        "./dist/types/plugins/intersect/index.d.ts"
+      ],
+      "plugins/mask": [
+        "./dist/types/plugins/mask/index.d.ts"
+      ],
+      "plugins/morph": [
+        "./dist/types/plugins/morph/index.d.ts"
+      ],
+      "plugins/persist": [
+        "./dist/types/plugins/persist/index.d.ts"
+      ],
+      "plugins/transition": [
+        "./dist/types/plugins/transition/index.d.ts"
       ]
     }
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && pnpm build:types",
+    "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && node scripts/build-plugins.mjs && pnpm build:types",
     "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
     "lint:package": "publint --strict && attw --pack .",
     "check:bundles": "node scripts/check-bundles.mjs",

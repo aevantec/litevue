@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 const tokens: Record<string, RegExp> = {
   '9': /\d/,

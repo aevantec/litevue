@@ -31,38 +31,58 @@ Plugins can register custom directives via `app.directive()` and extend the root
 
 A directive that registers anything outside `effect()` — a listener, an observer, a timer — must [return a cleanup](/globals/create-app#returning-a-cleanup). `unmount(el)` tears down a region whose elements stay in the document, so whatever you left attached keeps running.
 
-::: info Manual init required
-Plugins need an app reference to call `use()` on, so use [manual init](/start-here/installation#manual-init) rather than the `init` script attribute.
-:::
-
 ## First-party plugins
 
-Shipped in a separate bundle so they add zero weight to the core — import from `litevue/plugins`, or load `dist/litevue-plugins.iife.js` for the `LiteVuePlugins` global:
+Every plugin ships three ways, and none of them add weight to the core.
 
-```js
+## Installing a plugin
+
+::: code-group
+
+```js [npm — one plugin]
 import { createApp } from '@aevantec/litevue';
-import {
-  intersect,
-  persist,
-  focus,
-  collapse,
-  mask,
-  morph,
-  transition,
-} from '@aevantec/litevue/plugins';
+import { mask } from '@aevantec/litevue/plugins/mask';
+
+createApp().use(mask).mount();
+```
+
+```js [npm — several]
+import { createApp } from '@aevantec/litevue';
+import { transition, persist } from '@aevantec/litevue/plugins';
 
 createApp({ open: false }).use(transition).use(persist).mount();
 ```
 
-::: warning Load the core first
-The plugins bundle keeps the core **external** rather than carrying its own copy, so with `<script>` tags it must come after LiteVue:
-
-```html
+```html [CDN — one plugin]
 <script src="https://unpkg.com/@aevantec/litevue"></script>
-<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
+<script src="https://unpkg.com/@aevantec/litevue/dist/plugins/mask.iife.js"></script>
+
+<script>
+  LiteVue.createApp().use(LiteVueMask.mask).mount();
+</script>
 ```
 
-That's what lets `persistStore()` reach the same store registry `store()` writes to — a bundled second copy would give the plugins their own, and persistence would silently do nothing.
+```html [CDN — all of them]
+<script src="https://unpkg.com/@aevantec/litevue"></script>
+<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
+
+<script>
+  LiteVue.createApp().use(LiteVuePlugins.mask).mount();
+</script>
+```
+
+:::
+
+Each plugin has its own subpath (`@aevantec/litevue/plugins/mask`) and its own standalone file (`dist/plugins/mask.iife.js`) exposing a `LiteVue`-prefixed global — `LiteVueMask`, `LiteVuePersist`, `LiteVueMorph`, and so on. The named exports sit on that global, so `persistStore` is `LiteVuePersist.persistStore`.
+
+**Load only what you use.** Individually the plugins are 291–1244 bytes gzipped against 3065 for the whole set, so a page needing just `intersect` ships 291 bytes instead of 3065. Bundler users get the same effect from tree-shaking whichever import style they pick; the subpath is mainly there for `<script>` tags and for keeping intent obvious.
+
+::: warning Load the core first, and mount manually
+Plugin bundles keep the core **external** rather than carrying a copy, so with `<script>` tags LiteVue has to come first — a plugin loaded before it throws `ReferenceError: LiteVue is not defined`.
+
+That externalisation is what lets `persistStore()` reach the same store registry `store()` writes to. A bundled second copy would give the plugin its own registry and persistence would silently do nothing.
+
+It also means the `init` attribute is not usable with plugins: `init` mounts as soon as the core script runs, before your `use()` calls. Use [manual init](/start-here/installation#manual-init) instead.
 :::
 
 | Plugin                            | Directives          | Purpose                           |

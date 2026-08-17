@@ -1,0 +1,33 @@
+<!-- Standalone plugin bundles, loaded the way a <script src> user would.
+     Core first: each plugin reads the LiteVue global at evaluation time. -->
+<script src="/dist/litevue.iife.js"></script>
+<script src="/dist/plugins/mask.iife.js"></script>
+<script src="/dist/plugins/persist.iife.js"></script>
+
+<h3>Standalone plugin bundles</h3>
+<p>
+  Only <code>mask</code> and <code>persist</code> are loaded — not the other
+  five. Each is its own file under <code>/dist/plugins/</code>.
+</p>
+
+<div id="app" v-scope="{ phone: '' }">
+  <p>
+    <input v-mask="(999) 999-9999" v-model="phone" placeholder="phone" />
+    <span>model: <code>{{ phone }}</code></span>
+  </p>
+  <p>
+    cart items: <b>{{ $store.cart.items.length }}</b>
+    <button @click="$store.cart.items.push('thing')">add</button>
+    <small>— persisted, so it survives a reload</small>
+  </p>
+</div>
+
+<script>
+  const { createApp, store } = LiteVue;
+  store('cart', { items: [] });
+
+  createApp().use(LiteVueMask.mask).use(LiteVuePersist.persist).mount('#app');
+
+  // persistStore comes from the same standalone bundle
+  LiteVuePersist.persistStore('cart');
+</script>

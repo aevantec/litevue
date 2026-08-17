@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 /**
  * v-collapse="expression" — expands/collapses the element's height with a
