@@ -1,13 +1,52 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Plugin } from '../src';
+import { createApp, type Plugin } from '../src';
 import {
   collapse,
   focus,
   intersect,
+  mask,
+  morphPlugin,
   persist,
   transition,
 } from '../src/plugins';
 import { mount, tick, sleep } from './utils';
+
+describe('installing every first-party plugin', () => {
+  // Guards the "Installing every plugin" example in
+  // docs/plugins/installation.md — if an export is renamed or a plugin stops
+  // registering what it advertises, the documented snippet breaks silently.
+  test('all seven install and register what the docs claim', async () => {
+    document.body.innerHTML = `<div id="all" v-scope="{ n: 1 }"><span>{{ n }}</span></div>`;
+    const app = createApp()
+      .use(collapse)
+      .use(focus)
+      .use(intersect)
+      .use(mask)
+      .use(morphPlugin)
+      .use(persist)
+      .use(transition);
+
+    // focus registers two directives, the rest one each
+    for (const name of [
+      'collapse',
+      'focus',
+      'trap',
+      'intersect',
+      'mask',
+      'persist',
+      'transition',
+    ]) {
+      expect(app.directive(name), `v-${name}`).toBeTypeOf('function');
+    }
+    // morphPlugin contributes a root-scope helper rather than a directive
+    expect((app.scope as any).$morph).toBeTypeOf('function');
+
+    app.mount('#all');
+    await tick();
+    expect(document.querySelector('#all span')!.textContent).toBe('1');
+    app.unmount();
+  });
+});
 
 describe('plugin system', () => {
   test('function and install styles, options, chaining, dedupe', async () => {

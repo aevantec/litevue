@@ -59,6 +59,71 @@ With a bundler both import styles cost the same — the barrel is side-effect fr
 
 With `<script>` tags the trade is real, because each standalone file carries its own wrapper. One or two plugins are much smaller loaded individually; once you are using most of them the combined bundle wins. Check the actual byte counts against a build rather than guessing — `dist/plugins/` and `dist/litevue-plugins.iife.js` are both in the published package.
 
+## Installing every plugin
+
+There are seven, and each has to be passed to `use()` individually — loading a
+bundle defines the exports, it does not register anything.
+
+::: code-group
+
+```js [npm]
+import { createApp } from '@aevantec/litevue';
+import {
+  collapse,
+  focus,
+  intersect,
+  mask,
+  morphPlugin,
+  persist,
+  transition,
+} from '@aevantec/litevue/plugins';
+
+createApp()
+  .use(collapse)
+  .use(focus)
+  .use(intersect)
+  .use(mask)
+  .use(morphPlugin)
+  .use(persist)
+  .use(transition)
+  .mount();
+```
+
+```html [CDN]
+<script src="https://unpkg.com/@aevantec/litevue"></script>
+<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
+
+<script>
+  const { collapse, focus, intersect, mask, morphPlugin, persist, transition } =
+    LiteVuePlugins;
+
+  LiteVue.createApp()
+    .use(collapse)
+    .use(focus)
+    .use(intersect)
+    .use(mask)
+    .use(morphPlugin)
+    .use(persist)
+    .use(transition)
+    .mount();
+</script>
+```
+
+:::
+
+::: warning Install `morphPlugin`, not `morph`
+The morph module exports two things: `morph(from, to)` is the function that
+patches a region, and `morphPlugin` is the plugin that registers
+[`$morph`](/plugins/morph#in-templates). Only the latter belongs in `use()`.
+
+The same applies to the other non-plugin exports — `persistStore`,
+`registerStorage` and `setDefaultStorage` are called directly, never installed.
+:::
+
+Installing everything is rarely the right default. Each plugin registers
+directives and, in some cases, root-scope helpers whether or not the page uses
+them, so prefer naming the ones you need.
+
 ## What each plugin exposes
 
 The standalone file defines a `LiteVue`-prefixed global holding that plugin's named exports.
