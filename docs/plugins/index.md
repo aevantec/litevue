@@ -33,57 +33,14 @@ A directive that registers anything outside `effect()` — a listener, an observ
 
 ## First-party plugins
 
-Every plugin ships three ways, and none of them add weight to the core.
+Each ships as its own npm subpath and its own standalone file, so a page loads only what it uses — 291 bytes for `intersect` alone against 3065 for the whole set. See **[Installing Plugins](/plugins/installation)** for every method, the global names, sizes and the two load-order rules.
 
-## Installing a plugin
-
-::: code-group
-
-```js [npm — one plugin]
+```js
 import { createApp } from '@aevantec/litevue';
 import { mask } from '@aevantec/litevue/plugins/mask';
 
 createApp().use(mask).mount();
 ```
-
-```js [npm — several]
-import { createApp } from '@aevantec/litevue';
-import { transition, persist } from '@aevantec/litevue/plugins';
-
-createApp({ open: false }).use(transition).use(persist).mount();
-```
-
-```html [CDN — one plugin]
-<script src="https://unpkg.com/@aevantec/litevue"></script>
-<script src="https://unpkg.com/@aevantec/litevue/dist/plugins/mask.iife.js"></script>
-
-<script>
-  LiteVue.createApp().use(LiteVueMask.mask).mount();
-</script>
-```
-
-```html [CDN — all of them]
-<script src="https://unpkg.com/@aevantec/litevue"></script>
-<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
-
-<script>
-  LiteVue.createApp().use(LiteVuePlugins.mask).mount();
-</script>
-```
-
-:::
-
-Each plugin has its own subpath (`@aevantec/litevue/plugins/mask`) and its own standalone file (`dist/plugins/mask.iife.js`) exposing a `LiteVue`-prefixed global — `LiteVueMask`, `LiteVuePersist`, `LiteVueMorph`, and so on. The named exports sit on that global, so `persistStore` is `LiteVuePersist.persistStore`.
-
-**Load only what you use.** Individually the plugins are 291–1244 bytes gzipped against 3065 for the whole set, so a page needing just `intersect` ships 291 bytes instead of 3065. Bundler users get the same effect from tree-shaking whichever import style they pick; the subpath is mainly there for `<script>` tags and for keeping intent obvious.
-
-::: warning Load the core first, and mount manually
-Plugin bundles keep the core **external** rather than carrying a copy, so with `<script>` tags LiteVue has to come first — a plugin loaded before it throws `ReferenceError: LiteVue is not defined`.
-
-That externalisation is what lets `persistStore()` reach the same store registry `store()` writes to. A bundled second copy would give the plugin its own registry and persistence would silently do nothing.
-
-It also means the `init` attribute is not usable with plugins: `init` mounts as soon as the core script runs, before your `use()` calls. Use [manual init](/start-here/installation#manual-init) instead.
-:::
 
 | Plugin                            | Directives          | Purpose                           |
 | --------------------------------- | ------------------- | --------------------------------- |

@@ -143,6 +143,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: 'Overview', link: '/plugins/' },
+          { text: 'Installation', link: '/plugins/installation' },
           { text: 'intersect', link: '/plugins/intersect' },
           { text: 'persist', link: '/plugins/persist' },
           { text: 'focus', link: '/plugins/focus' },
