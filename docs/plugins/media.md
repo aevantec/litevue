@@ -136,8 +136,9 @@ Typical uses are the ones with no element to hang a directive on:
 import { store } from '@aevantec/litevue';
 import { mq } from '@aevantec/litevue/plugins/media';
 
-// a number CSS cannot hand to a third-party library
-new Swiper(el, { slidesPerView: mq({ mobile: 1, tablet: 2, desktop: 4 }) });
+// how much to ask the server for — a decision no stylesheet can reach
+const limit = mq({ mobile: 5, tablet: 10, desktop: 25 });
+const res = await fetch(`/api/activity?limit=${limit}`);
 
 // shared state both markup and scripts can read
 store('ui', {
@@ -148,6 +149,18 @@ store('ui', {
 ```
 
 Reads share one subscription: the plugin creates a single `MediaQueryList` per breakpoint for the whole page, so twenty responsive maps cost the same as one.
+
+::: tip Check whether the library already does this
+Plenty of widgets take their own breakpoint config — Swiper has a `breakpoints`
+option, and most chart libraries have a `responsive` block. Where one exists,
+use it: it is tested against the library's own layout timing, and routing the
+value through `mq` instead means two sources of truth for the same question.
+
+Reach for `mq` when the library offers nothing, when the decision happens
+before the library is constructed — including whether to construct it at all —
+or when the value is not a rendering concern in the first place, like the
+`limit` above.
+:::
 
 ## Container width
 
@@ -240,7 +253,7 @@ default widths and warns in development — either keep the names, or use
 Good reasons:
 
 - **structural divergence** — a sidebar versus a drawer, where only one should exist in the DOM, not one hidden with CSS
-- **values passed to JavaScript** — `slidesPerView` for a carousel; a stylesheet cannot pass a number to a library
+- **values that leave the page** — a request's page size, an analytics property, anything sent to a server, which no stylesheet can reach
 - **skipping expensive setup** — never initialising a map, chart or rich-text editor on a phone
 - **data density** — rendering 3 items instead of 12 in the `v-for` source, rather than hiding rows
 - **`prefers-reduced-motion`** — worth honouring given transitions ship in the box
