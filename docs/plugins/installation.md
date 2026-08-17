@@ -85,11 +85,13 @@ Unpinned URLs resolve to the latest release, which is convenient in development 
 
 jsDelivr serves the same files — swap the host for `https://cdn.jsdelivr.net/npm/`.
 
-## Two rules that will bite you otherwise
+## Load order and initialization
+
+Two constraints apply when loading plugins via `<script>` tags. Neither produces a clear error when violated, so they are worth knowing in advance.
 
 ### Load the core first
 
-Plugin bundles keep the core **external** rather than carrying a copy, so LiteVue has to be loaded before any plugin:
+Plugin bundles keep the core **external** rather than carrying a copy, so LiteVue must be loaded before any plugin:
 
 ```html
 <script src="https://unpkg.com/@aevantec/litevue"></script>
@@ -97,11 +99,11 @@ Plugin bundles keep the core **external** rather than carrying a copy, so LiteVu
 <script src="https://unpkg.com/@aevantec/litevue/dist/plugins/persist.iife.js"></script>
 ```
 
-That externalisation is not incidental. It is what lets `persistStore()` reach the same store registry `store()` writes to — a bundled second copy would give the plugin its own registry, and persistence would silently do nothing at all.
+That externalization is deliberate. It is what allows `persistStore()` to reach the same store registry `store()` writes to; a bundled second copy would give the plugin its own registry, and persistence would fail silently.
 
-### `init` cannot be used with plugins
+### Mount manually — `init` is not compatible with plugins
 
-The [`init` attribute](/start-here/installation#manual-init) mounts as soon as the core script executes, which is before your `use()` calls have run. Mount manually instead:
+The [`init` attribute](/start-here/installation#manual-init) mounts as soon as the core script executes, which is before any `use()` call has run. Mount explicitly instead:
 
 ```html
 <script src="https://unpkg.com/@aevantec/litevue"></script>
