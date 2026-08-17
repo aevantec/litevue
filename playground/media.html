@@ -6,6 +6,9 @@
      which reads the LiteVue global at evaluation time. -->
 <script src="/dist/litevue.iife.js"></script>
 <script src="/dist/plugins/media.iife.js"></script>
+<!-- v-resize is its own plugin: container width shares no code with the
+     breakpoint machinery, so a page can load either without the other -->
+<script src="/dist/plugins/resize.iife.js"></script>
 
 <h3>media — viewport-driven behaviour</h3>
 <p>
@@ -88,6 +91,7 @@
 <script>
   const { createApp, watchEffect } = LiteVue;
   const { media, mq, defaultBreakpoints } = LiteVueMedia;
+  const { resize } = LiteVueResize;
 
   const scales = {
     'default (Tailwind)': { ...defaultBreakpoints },
@@ -119,7 +123,7 @@
     },
   });
 
-  app.use(media).mount('#app');
+  app.use(media).use(resize).mount('#app');
 
   // The same state from a plain script, with no element involved — this is the
   // half that markup-only APIs cannot do.

@@ -103,6 +103,7 @@ const buildScale = () => {
 
   // One MediaQueryList per breakpoint, created once for the whole page — not
   // one per responsive map. Twenty maps share these.
+  //
   // Only `bp` is written here, deliberately. Crossing one of these boundaries
   // always changes which breakpoint is highest, so `bp` alone carries the news;
   // bumping `tick` too would also invalidate unrelated match() readers, and a
@@ -322,25 +323,6 @@ export const resetMedia = () => {
   state.tick = 0;
 };
 
-/**
- * `v-resize="expr"` — container width, which no media query can report and
- * CSS container queries cannot hand to JavaScript. The expression runs with
- * `$width` and `$height` in scope.
- */
-const resizeDirective: Plugin = (app) => {
-  app.directive('resize', ({ el, get, exp }) => {
-    const handler = get(`(($width, $height) => { ${exp} })`);
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const box = entry.contentRect;
-        handler(box.width, box.height);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
-};
-
 export const media: Plugin<MediaOptions> = (app, options) => {
   if (options) mq.configure(options);
 
@@ -359,6 +341,4 @@ export const media: Plugin<MediaOptions> = (app, options) => {
     enumerable: true,
     configurable: true,
   });
-
-  resizeDirective(app);
 };

@@ -374,39 +374,3 @@ describe('environments without matchMedia', () => {
     expect(mq({ base: 'a', lg: 'b' })).toBe('a');
   });
 });
-
-describe('v-resize', () => {
-  test('reports container width and stops observing on teardown', async () => {
-    let observed: Element | null = null;
-    let disconnected = false;
-    let fire: (w: number, h: number) => void = () => {};
-
-    (window as any).ResizeObserver = class {
-      constructor(cb: (entries: any[]) => void) {
-        fire = (w, h) =>
-          cb([{ contentRect: { width: w, height: h } }] as any[]);
-      }
-      observe(el: Element) {
-        observed = el;
-      }
-      disconnect() {
-        disconnected = true;
-      }
-    };
-
-    const { app, root } = mountWith(
-      `<div v-scope="{ w: 0, h: 0 }" v-resize="w = $width; h = $height">
-      <span>{{ w }}x{{ h }}</span>
-    </div>`
-    );
-    await tick();
-    expect(observed).toBe(root);
-
-    fire(640, 480);
-    await tick();
-    expect(root.querySelector('span')!.textContent).toBe('640x480');
-
-    app.unmount(root);
-    expect(disconnected).toBe(true);
-  });
-});

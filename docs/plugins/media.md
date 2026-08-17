@@ -149,17 +149,9 @@ store('ui', {
 
 Reads share one subscription: the plugin creates a single `MediaQueryList` per breakpoint for the whole page, so twenty responsive maps cost the same as one.
 
-## v-resize
+## Container width
 
-Container width, which no media query reports and CSS container queries cannot hand to JavaScript. The expression runs with `$width` and `$height` in scope:
-
-```html
-<div v-scope="{ w: 0 }" v-resize="w = Math.round($width)">
-  <span>{{ w }}px</span>
-</div>
-```
-
-It observes the element it sits on and stops when the region unmounts.
+For an **element's** size rather than the viewport's — a panel in a split view, a card in a reflowing grid — use the [resize](/plugins/resize) plugin and its `v-resize` directive. It is a separate install with no shared code, so neither plugin drags the other in.
 
 ## Custom breakpoints
 

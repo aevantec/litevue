@@ -168,6 +168,7 @@ export default defineConfig({
           { text: 'mask', link: '/plugins/mask' },
           { text: 'media', link: '/plugins/media' },
           { text: 'morph', link: '/plugins/morph' },
+          { text: 'resize', link: '/plugins/resize' },
           { text: 'transition', link: '/plugins/transition' },
         ],
       },

@@ -1,0 +1,24 @@
+<div v-scope="{ w: 0, h: 0, pct: 60 }">
+  <p>
+    <label>
+      container width
+      <input type="range" min="20" max="100" v-model="pct" />
+    </label>
+  </p>
+
+  <div
+    :style="`width: ${pct}%; border: 1px solid currentColor; border-radius: 6px; padding: 12px`"
+    v-resize="w = Math.round($width); h = Math.round($height)"
+  >
+    <code>{{ w }} × {{ h }}</code>
+    <p v-if="w < 260">Narrow: a single column would go here.</p>
+    <p v-else>Wide enough for a two-column layout.</p>
+  </div>
+
+  <p>
+    <small>
+      The window never changes — only this element does, which is why a media
+      query could not drive it.
+    </small>
+  </p>
+</div>
