@@ -63,7 +63,7 @@ createApp().mount();
 
 ## Manual init
 
-Remove the `init` attribute to control mounting yourself — required when you use [plugins](/plugins/):
+Remove the `init` attribute to control mounting yourself — required when you use [plugins](/plugins/), since `init` mounts before your `use()` calls have run:
 
 ```html
 <script src="https://unpkg.com/@aevantec/litevue"></script>
@@ -71,6 +71,10 @@ Remove the `init` attribute to control mounting yourself — required when you u
   LiteVue.createApp().mount();
 </script>
 ```
+
+## Adding plugins
+
+Plugins are installed separately from the core and each one can be loaded on its own, by npm subpath or by a single `<script>` tag. See **[Installing Plugins](/plugins/installation)** for every method, the global names, and the load-order rules.
 
 ::: warning Mount explicitly on pages with user-generated HTML
 The `init` attribute and a bare `createApp().mount()` crawl the entire document. If any part of the page renders user-submitted HTML, pass an explicit target so LiteVue only processes markup you control — see [Security and CSP](/start-here/introduction#security-and-csp).
@@ -80,4 +84,5 @@ The `init` attribute and a bare `createApp().mount()` crawl the entire document.
 
 - Declare state with [v-scope](/directives/v-scope) and [createApp](/globals/create-app)
 - Learn the [templating basics](/essentials/templating)
+- Add capabilities with [plugins](/plugins/installation)
 - Coming from another library? [petite-vue](/migration/from-petite-vue) · [Alpine](/migration/from-alpine)

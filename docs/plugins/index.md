@@ -33,7 +33,7 @@ A directive that registers anything outside `effect()` — a listener, an observ
 
 ## First-party plugins
 
-Each ships as its own npm subpath and its own standalone file, so a page loads only what it uses — 291 bytes for `intersect` alone against 3065 for the whole set. See **[Installing Plugins](/plugins/installation)** for every method, the global names, sizes and the two load-order rules.
+Each ships as its own npm subpath and its own standalone file, so a page loads only what it uses rather than the whole set. See **[Installing Plugins](/plugins/installation)** for every method, the global names and the two load-order rules.
 
 ```js
 import { createApp } from '@aevantec/litevue';

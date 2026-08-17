@@ -57,6 +57,8 @@ createApp({ open: false }).use(transition).use(persist).mount();
 
 With a bundler both import styles cost the same — the barrel is side-effect free, so anything you don't import is tree-shaken. The subpath mainly earns its place with `<script>` tags, and for making intent obvious in a diff.
 
+With `<script>` tags the trade is real, because each standalone file carries its own wrapper. One or two plugins are much smaller loaded individually; once you are using most of them the combined bundle wins. Check the actual byte counts against a build rather than guessing — `dist/plugins/` and `dist/litevue-plugins.iife.js` are both in the published package.
+
 ## What each plugin exposes
 
 The standalone file defines a `LiteVue`-prefixed global holding that plugin's named exports.
@@ -72,23 +74,6 @@ The standalone file defines a `LiteVue`-prefixed global holding that plugin's na
 | [transition](/plugins/transition) | `…/plugins/transition`                 | `LiteVueTransition` | `transition`                                                |
 
 The exports sit **on** the global, so `persistStore` is `LiteVuePersist.persistStore` — not a bare `persistStore`.
-
-## Sizes
-
-Measured gzipped, as shipped:
-
-| Bundle                | Size   |
-| --------------------- | ------ |
-| intersect             | 291 B  |
-| mask                  | 389 B  |
-| collapse              | 468 B  |
-| focus                 | 591 B  |
-| transition            | 666 B  |
-| persist               | 727 B  |
-| morph                 | 1244 B |
-| **all seven combined**| **3065 B** |
-
-A page that needs only `intersect` ships **291 bytes instead of 3065**. Loading all seven as separate files costs roughly 45% more than the combined bundle, because each carries its own wrapper — so if you genuinely use most of them, prefer the combined file.
 
 ## Pin a version in production
 
