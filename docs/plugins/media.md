@@ -6,6 +6,8 @@ title: media
 
 Viewport-driven **behaviour**: values handed to JavaScript, structural branches, and work that should be skipped entirely on small screens. It exposes `$mq` and friends in markup, and the same logic as a plain `mq` object for scripts.
 
+Breakpoints are **mobile-first** throughout — every key is a minimum width and the largest match wins, matching Tailwind and CSS `min-width` queries. See [Mobile-first](#mobile-first-like-tailwind).
+
 ```js
 import { media } from '@aevantec/litevue/plugins';
 createApp().use(media).mount();
@@ -36,8 +38,6 @@ Padding, colours and column widths should be written as media queries in a style
 <div v-show="!$mqMatch('(prefers-reduced-motion: reduce)')">…</div>
 ```
 
-A map is read mobile-first: the highest key that matches wins, and `base` covers everything below your smallest breakpoint.
-
 ```html
 <div v-scope="{ }">
   <!-- 1 on phones, 2 on tablets, 4 from lg up -->
@@ -50,6 +50,33 @@ A map is read mobile-first: the highest key that matches wins, and `base` covers
 ```html
 <span>{{ $mq({ 0: 'a', 900: 'b' }) }}</span>
 ```
+
+### Mobile-first, like Tailwind
+
+Every breakpoint is a **minimum width**, and a map resolves to the **highest key that matches** — the same cascade as Tailwind's `md:` and CSS's `min-width` queries, and the opposite of a `max-width` approach.
+
+Two consequences worth internalising:
+
+- **A key applies at that width _and upward_**, until a larger key overrides it. `{ base: 1, lg: 4 }` gives 1 on a phone, 1 on a tablet, and 4 from 1024px up — `lg` is not "only on large screens".
+- **The smallest case is the default.** `base` matches every viewport, so it is the value you get when nothing else does. Write the phone value first and add larger keys as overrides, rather than starting wide and narrowing.
+
+```html
+<!-- reads as: 1 by default, 2 from md up, 4 from lg up -->
+<span>{{ $mq({ base: 1, md: 2, lg: 4 }) }}</span>
+```
+
+You do not need a key per breakpoint — only where the value changes. A map with a gap simply keeps the last matching value:
+
+```html
+<!-- 8 from base through md, then 24 from lg up -->
+<span>{{ $mq({ base: 8, lg: 24 }) }}</span>
+```
+
+`$mqAtLeast(key)` follows the same rule and is inclusive: at `xl`, `$mqAtLeast('md')` is `true`. When you want mutually exclusive buckets instead, reach for `$mqDevice`.
+
+::: tip Going the other way
+There is no `max-width` form. For "phones only", give `base` the narrow value and override it at the next breakpoint up — `{ base: 'drawer', md: 'sidebar' }` — which keeps one direction of reasoning across the whole codebase.
+:::
 
 ### Several values at once
 
