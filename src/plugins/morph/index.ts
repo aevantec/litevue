@@ -1,5 +1,5 @@
-import type { Context } from '../context';
-import type { Plugin } from '../app';
+import type { Context } from '../../context';
+import type { Plugin } from '../../app';
 
 /**
  * Update a live region in place from new HTML, instead of replacing it.

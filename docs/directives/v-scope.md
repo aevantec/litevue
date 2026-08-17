@@ -14,7 +14,7 @@ With the `init` script attribute (or a bare `createApp().mount()`), every top-le
 
 ## Empty scope
 
-The value can be omitted when the region only uses inherited or root state — the attribute then simply marks the element for processing:
+The value can be omitted when the region only uses inherited or root state — the attribute then only marks the element for processing:
 
 ```html
 <div v-scope>{{ rootStateHere }}</div>

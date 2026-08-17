@@ -40,8 +40,9 @@ features:
       delays DOM removal until the leave animation finishes.
   - title: Plugin system
     details:
-      app.use() with typed plugins. First-party — intersect, persist, focus
-      (+trap), collapse, transition, mask.
+      app.use() with typed plugins. First-party plugins cover intersect,
+      persist, focus (+trap), collapse, transition, mask and morph — each
+      loadable on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML

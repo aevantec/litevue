@@ -31,39 +31,16 @@ Plugins can register custom directives via `app.directive()` and extend the root
 
 A directive that registers anything outside `effect()` — a listener, an observer, a timer — must [return a cleanup](/globals/create-app#returning-a-cleanup). `unmount(el)` tears down a region whose elements stay in the document, so whatever you left attached keeps running.
 
-::: info Manual init required
-Plugins need an app reference to call `use()` on, so use [manual init](/start-here/installation#manual-init) rather than the `init` script attribute.
-:::
-
 ## First-party plugins
 
-Shipped in a separate bundle so they add zero weight to the core — import from `litevue/plugins`, or load `dist/litevue-plugins.iife.js` for the `LiteVuePlugins` global:
+Each ships as its own npm subpath and its own standalone file, so a page loads only what it uses rather than the whole set. See **[Installing Plugins](/plugins/installation)** for every method, the global names and the two load-order rules.
 
 ```js
 import { createApp } from '@aevantec/litevue';
-import {
-  intersect,
-  persist,
-  focus,
-  collapse,
-  mask,
-  morph,
-  transition,
-} from '@aevantec/litevue/plugins';
+import { mask } from '@aevantec/litevue/plugins/mask';
 
-createApp({ open: false }).use(transition).use(persist).mount();
+createApp().use(mask).mount();
 ```
-
-::: warning Load the core first
-The plugins bundle keeps the core **external** rather than carrying its own copy, so with `<script>` tags it must come after LiteVue:
-
-```html
-<script src="https://unpkg.com/@aevantec/litevue"></script>
-<script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
-```
-
-That's what lets `persistStore()` reach the same store registry `store()` writes to — a bundled second copy would give the plugins their own, and persistence would silently do nothing.
-:::
 
 | Plugin                            | Directives          | Purpose                           |
 | --------------------------------- | ------------------- | --------------------------------- |

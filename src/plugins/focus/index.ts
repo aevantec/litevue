@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 const FOCUSABLE =
   'a[href], button, input, textarea, select, details, ' +

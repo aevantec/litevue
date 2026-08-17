@@ -2,7 +2,7 @@
 // plugins bundle once inlined its own copy of the core, which gave it a second
 // `stores` singleton, so persistStore() wrote to a registry that store() never
 // populated and persistence just… didn't happen. Nothing threw.
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 
 const read = (f) =>
   readFileSync(new URL(`../dist/${f}`, import.meta.url), 'utf8');
@@ -19,7 +19,16 @@ const check = (label, ok, detail) => {
   if (!ok) failures.push(`${label}: ${detail}`);
 };
 
-for (const file of ['litevue-plugins.iife.js', 'litevue-plugins.umd.js']) {
+// the combined bundle, plus every standalone plugin build
+const pluginBundles = [
+  'litevue-plugins.iife.js',
+  'litevue-plugins.umd.js',
+  ...readdirSync(new URL('../dist/plugins', import.meta.url))
+    .filter((f) => f.endsWith('.iife.js') || f.endsWith('.umd.js'))
+    .map((f) => `plugins/${f}`),
+];
+
+for (const file of pluginBundles) {
   const code = read(file);
   check(
     file,

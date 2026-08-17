@@ -59,7 +59,10 @@
         }
       ],
       "include-component-in-tag": false,
-      "extra-files": ["docs/start-here/installation.md"]
+      "extra-files": [
+        "docs/start-here/installation.md",
+        "docs/plugins/installation.md"
+      ]
     }
   }
 }

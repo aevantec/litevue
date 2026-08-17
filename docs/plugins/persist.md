@@ -130,5 +130,5 @@ setDefaultStorage('session'); // or a storage object
 Per-usage choices still win over the default. Call it before your `persistStore()` calls and before mounting.
 
 ::: warning Unavailable storage
-If a storage can't be resolved — an unknown modifier, or `localStorage` blocked by browser settings — the scope or store still works normally, it simply isn't persisted (with a dev-mode error explaining why).
+If a storage can't be resolved — an unknown modifier, or `localStorage` blocked by browser settings — the scope or store still works normally; it is merely not persisted (with a dev-mode error explaining why).
 :::

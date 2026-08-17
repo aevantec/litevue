@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 // imported by package name, not by relative path: the plugins bundle keeps the
 // core external, and a bare specifier is what lets it resolve to the *same*
 // module instance the app loaded. `stores` is a module-level singleton, so a
