@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createApp, watchEffect } from '../src';
-import { media, mq, resetMedia } from '../src/plugins';
+import { media, mq, resetMedia, defaultBreakpoints } from '../src/plugins';
 import { tick } from './utils';
 
 /**
@@ -63,6 +63,11 @@ const setQuery = (query: string, value: boolean) => {
  * configured, which produced spurious "unknown breakpoint" warnings.
  */
 let apps: any[] = [];
+// watchEffect stops nothing on its own, so a bare effect outlives its test and
+// re-runs against a later case's scale — which is how a stray "unknown
+// breakpoint" warning turned up in an unrelated test.
+let stops: (() => void)[] = [];
+const watch = (fn: () => void) => void stops.push(watchEffect(fn));
 
 const mountWith = (html: string, options?: any) => {
   document.body.innerHTML = html;
@@ -84,6 +89,8 @@ beforeEach(() => {
 afterEach(() => {
   apps.forEach((app) => app.unmount());
   apps = [];
+  stops.forEach((stop) => stop());
+  stops = [];
   resetMedia();
   document.body.innerHTML = '';
 });
@@ -184,7 +191,7 @@ describe('reactivity', () => {
   test('a watchEffect re-runs when the breakpoint changes', async () => {
     const seen: string[] = [];
     setWidth(320);
-    watchEffect(() => void seen.push(mq.breakpoint));
+    watch(() => void seen.push(mq.breakpoint));
     await tick();
     expect(seen).toEqual(['base']);
 
@@ -196,7 +203,7 @@ describe('reactivity', () => {
   test('an effect reading match() re-runs when that query flips', async () => {
     const q = '(prefers-reduced-motion: reduce)';
     const seen: boolean[] = [];
-    watchEffect(() => void seen.push(mq.match(q)));
+    watch(() => void seen.push(mq.match(q)));
     await tick();
     expect(seen).toEqual([false]);
 
@@ -208,7 +215,7 @@ describe('reactivity', () => {
   test('a resize inside the same breakpoint does not re-run the effect', async () => {
     let runs = 0;
     setWidth(1100);
-    watchEffect(() => {
+    watch(() => {
       mq.breakpoint;
       runs++;
     });
@@ -292,6 +299,59 @@ describe('configuration', () => {
 
     mq.configure({ breakpoints: { narrow: 500, wide: 900 } });
     expect(mq.breakpoint).toBe('narrow');
+  });
+
+  test('defaultBreakpoints can be spread to adjust one key', () => {
+    mq.configure({ breakpoints: { ...defaultBreakpoints, lg: 960 } });
+    setWidth(980);
+    expect(mq.breakpoint).toBe('lg'); // 980 clears the moved lg, not the old 1024
+    // the untouched keys still behave as before
+    setWidth(700);
+    expect(mq.breakpoint).toBe('sm');
+    setWidth(1300);
+    expect(mq.breakpoint).toBe('xl');
+  });
+
+  test('defaultBreakpoints is frozen, so a spread cannot mutate the source', () => {
+    expect(() => {
+      (defaultBreakpoints as any).lg = 1;
+    }).toThrow();
+    expect(defaultBreakpoints.lg).toBe(1024);
+  });
+
+  test('a binding recovers when a later scale defines its key', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    setWidth(1200); // clears the default lg of 1024
+    const { root } = mountWith(
+      `<div v-scope><span>{{ $mqAtLeast('lg') }}</span><b>{{ $mqDevice }}</b></div>`
+    );
+    await tick();
+    expect(root.querySelector('span')!.textContent).toBe('true');
+
+    // 'lg' does not exist here, so atLeast returns false having read nothing
+    mq.configure({ breakpoints: { phone: 480, tablet: 820, laptop: 1180 } });
+    await tick();
+    expect(root.querySelector('span')!.textContent).toBe('false');
+
+    // ...and must recompute once a scale defines it again
+    mq.configure({ breakpoints: { ...defaultBreakpoints, lg: 960 } });
+    await tick();
+    expect(root.querySelector('span')!.textContent).toBe('true');
+    expect(root.querySelector('b')!.textContent).toBe('desktop');
+    warn.mockRestore();
+  });
+
+  test('configure re-runs readers even when the breakpoint name is unchanged', async () => {
+    setWidth(980);
+    const seen: boolean[] = [];
+    watch(() => void seen.push(mq.atLeast('lg')));
+    await tick();
+    expect(seen).toEqual([false]); // 980 < 1024
+
+    // bp stays 'md' either way, but the lg threshold moved below the viewport
+    mq.configure({ breakpoints: { ...defaultBreakpoints, lg: 960 } });
+    await tick();
+    expect(seen).toEqual([false, true]);
   });
 
   test('app.use passes options through', () => {

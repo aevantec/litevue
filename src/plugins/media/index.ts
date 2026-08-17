@@ -28,6 +28,15 @@ const DEFAULT_BREAKPOINTS: Breakpoints = {
   '2xl': 1536,
 };
 
+/**
+ * The scale in use until something calls `configure()`. Exported because
+ * `configure()` replaces rather than merges: adjusting one breakpoint, or
+ * adding one, means spreading this rather than retyping all five.
+ */
+export const defaultBreakpoints: Readonly<Breakpoints> = Object.freeze({
+  ...DEFAULT_BREAKPOINTS,
+});
+
 // `mobile` is the implicit floor every scale has; the other two are named
 // scale entries, so a custom scale that drops them loses the aliases.
 const ALIASES: Record<string, string> = {
@@ -94,11 +103,15 @@ const buildScale = () => {
 
   // One MediaQueryList per breakpoint, created once for the whole page — not
   // one per responsive map. Twenty maps share these.
+  // Only `bp` is written here, deliberately. Crossing one of these boundaries
+  // always changes which breakpoint is highest, so `bp` alone carries the news;
+  // bumping `tick` too would also invalidate unrelated match() readers, and a
+  // resize that stays inside one breakpoint would wake every consumer on the
+  // page for a value that did not move.
   scaleSubs = names.map((name) => {
     const mql = window.matchMedia(`(min-width: ${scale[name]}px)`);
     return subscribe(mql, () => {
       state.bp = currentBp();
-      state.tick++;
     });
   });
 
@@ -114,6 +127,20 @@ const activate = () => {
   if (active) return;
   active = true;
   buildScale();
+};
+
+/**
+ * Entry point for every public read: activates, and takes a dependency on
+ * `tick` so that `configure()` can invalidate all of them.
+ *
+ * Reading `bp` alone is not enough. A key that is absent from the current
+ * scale — `atLeast('lg')` under a phone/tablet/laptop scale — returns false
+ * without touching reactive state at all, so that effect would register no
+ * dependency and could never recover once a later scale defined the key.
+ */
+const trackAll = () => {
+  activate();
+  void state.tick;
 };
 
 /** SSR and jsdom have no matchMedia; every query reads false and bp stays base. */
@@ -156,7 +183,7 @@ const warnOnce = (msg: string) => {
 };
 
 const resolve = <T>(map: ResponsiveMap<T>, fallback?: T): T | undefined => {
-  activate();
+  trackAll();
   if (import.meta.env.DEV && (!map || typeof map !== 'object')) {
     warnOnce(`expected a responsive map object, got ${typeof map}.`);
     return fallback;
@@ -217,7 +244,7 @@ const mqFn = <T>(map: ResponsiveMap<T>, fallback?: T) => resolve(map, fallback);
 export const mq: Mq = Object.defineProperties(mqFn as Mq, {
   props: {
     value: (maps: Record<string, ResponsiveMap>) => {
-      activate();
+      trackAll();
       const out: Record<string, any> = {};
       for (const key of Object.keys(maps)) out[key] = resolve(maps[key]);
       return out;
@@ -227,14 +254,14 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
   // one shape to remember across markup and script
   breakpoint: {
     get() {
-      activate();
+      trackAll();
       return state.bp;
     },
     enumerable: true,
   },
   device: {
     get(): Device {
-      activate();
+      trackAll();
       if (!atLeastPx(aliasPx('tablet'))) return 'mobile';
       return atLeastPx(aliasPx('desktop')) ? 'desktop' : 'tablet';
     },
@@ -242,7 +269,7 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
   },
   atLeast: {
     value: (key: string | number) => {
-      activate();
+      trackAll();
       const px = keyToPx(key);
       if (px === undefined) {
         warnOnce(
@@ -255,8 +282,7 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
   },
   match: {
     value: (query: string) => {
-      activate();
-      void state.tick; // depend on any media change, then read the list directly
+      trackAll();
       return rawMatch(query);
     },
   },
@@ -268,7 +294,13 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
       // on first read, which may well happen before app.use() runs — so this
       // rebuilds rather than assuming it got in first. Before activation
       // there is nothing to rebuild; activate() will pick the new scale up.
-      if (active) buildScale();
+      if (active) {
+        buildScale();
+        // Key names and thresholds have both changed meaning, so every reader
+        // has to recompute — not only the ones watching `bp`, which may not
+        // have moved even though the scale did.
+        state.tick++;
+      }
     },
   },
 });

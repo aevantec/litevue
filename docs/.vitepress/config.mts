@@ -1,4 +1,8 @@
 import { defineConfig } from 'vitepress';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..');
 
 // Served from the root of litevue.dev, so local dev matches production. A host
 // that serves the site under a sub-path — e.g. a GitHub Pages project site —
@@ -8,6 +12,19 @@ const base = process.env.DOCS_BASE ?? '/';
 const hostname = 'https://litevue.dev';
 
 export default defineConfig({
+  // The plugins import the core by package name so the published bundles can
+  // keep it external. Without this alias that specifier self-resolves through
+  // package.json exports to dist/, while <LiveDemo> imports createApp from
+  // src/ — two copies of @vue/reactivity in one page. Each demo then rendered
+  // correct initial values and never updated, because the plugin's state was
+  // reactive under one effect system and the demo's render effects ran under
+  // the other. vite.config.mts and vitest.config.mts already alias it; this is
+  // the third build that needed to.
+  vite: {
+    resolve: {
+      alias: { '@aevantec/litevue': resolve(root, 'src/index.ts') },
+    },
+  },
   title: 'LiteVue',
   description:
     "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",

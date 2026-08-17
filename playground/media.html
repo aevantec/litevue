@@ -58,13 +58,68 @@
   >
     <code id="resize">v-resize: {{ w }} × {{ h }}</code>
   </div>
+
+  <!-- configure() can run after reads have begun: it rebuilds the
+       subscriptions and everything on screen updates in place -->
+  <div class="box">
+    <p>
+      <b>Custom breakpoints.</b> Switch the scale live — note that
+      <code>{{ $mqBreakpoint }}</code> above starts reporting the new key names
+      without a reload.
+    </p>
+    <p>
+      <button id="scale-default" @click="useDefault()">
+        default (Tailwind)
+      </button>
+      <button id="scale-custom" @click="useCustom()">
+        custom: phone/tablet/laptop
+      </button>
+      <button id="scale-tweak" @click="useTweaked()">
+        defaults, but lg = 960
+      </button>
+    </p>
+    <p>
+      active scale: <code id="scale">{{ scaleName }}</code> —
+      <code id="scale-keys">{{ keys }}</code>
+    </p>
+  </div>
 </div>
 
 <script>
   const { createApp, watchEffect } = LiteVue;
-  const { media, mq } = LiteVueMedia;
+  const { media, mq, defaultBreakpoints } = LiteVueMedia;
 
-  createApp().use(media).mount('#app');
+  const scales = {
+    'default (Tailwind)': { ...defaultBreakpoints },
+    'phone / tablet / laptop': { phone: 480, tablet: 820, laptop: 1180 },
+    // configure() replaces rather than merges, so spread the defaults to
+    // change one value and keep the rest
+    'defaults with lg = 960': { ...defaultBreakpoints, lg: 960 },
+  };
+
+  const app = createApp({
+    scaleName: 'default (Tailwind)',
+    get keys() {
+      return Object.entries(scales[this.scaleName])
+        .map(([k, v]) => `${k}:${v}`)
+        .join('  ');
+    },
+    setScale(name) {
+      this.scaleName = name;
+      mq.configure({ breakpoints: scales[name] });
+    },
+    useDefault() {
+      this.setScale('default (Tailwind)');
+    },
+    useCustom() {
+      this.setScale('phone / tablet / laptop');
+    },
+    useTweaked() {
+      this.setScale('defaults with lg = 960');
+    },
+  });
+
+  app.use(media).mount('#app');
 
   // The same state from a plain script, with no element involved — this is the
   // half that markup-only APIs cannot do.

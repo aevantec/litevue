@@ -136,25 +136,85 @@ It observes the element it sits on and stops when the region unmounts.
 
 ## Custom breakpoints
 
-Pass your own scale to match a customised `theme.screens`:
+The default scale matches Tailwind's:
+
+| Key | Min width |
+|---|---|
+| `base` | 0 — everything below `sm` |
+| `sm` | 640px |
+| `md` | 768px |
+| `lg` | 1024px |
+| `xl` | 1280px |
+| `2xl` | 1536px |
+
+### Replacing the scale
+
+Pass your own when installing the plugin:
 
 ```js
 createApp()
   .use(media, {
-    breakpoints: { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536 }
+    breakpoints: { phone: 480, tablet: 820, laptop: 1180 }
   })
   .mount();
 ```
 
-The scale is replaced wholesale rather than merged. From a script — or before any app exists — the same thing:
+Those keys are then what markup uses, and `$mqBreakpoint` reports them:
+
+```html
+<div v-scope>
+  <span>{{ $mqBreakpoint }}</span>          <!-- base | phone | tablet | laptop -->
+  <aside v-if="$mqAtLeast('laptop')">…</aside>
+</div>
+```
+
+From a script — including before any app exists — the same thing:
 
 ```js
 import { mq } from '@aevantec/litevue/plugins/media';
 
-mq.configure({ breakpoints: { narrow: 500, wide: 900 } });
+mq.configure({ breakpoints: { phone: 480, tablet: 820, laptop: 1180 } });
 ```
 
-`mq` activates on its first read rather than on `use()`, so `configure()` is safe to call at any point; a scale that arrives later rebuilds the subscriptions. Keep `md` and `lg` in a custom scale if you rely on `$mqDevice` or the `tablet` / `desktop` aliases, since those are defined in terms of them.
+### Updating the defaults
+
+`configure()` **replaces** the scale rather than merging into it, so that the
+keys in play are always exactly the ones you named — no inherited leftovers to
+reason about. To adjust or extend the defaults instead of starting over, spread
+`defaultBreakpoints`:
+
+```js
+import { mq, defaultBreakpoints } from '@aevantec/litevue/plugins/media';
+
+// one breakpoint moved, the rest untouched
+mq.configure({ breakpoints: { ...defaultBreakpoints, lg: 960 } });
+
+// an extra breakpoint below sm
+mq.configure({ breakpoints: { ...defaultBreakpoints, xs: 420 } });
+```
+
+It works as a `use()` option too:
+
+```js
+import { media, defaultBreakpoints } from '@aevantec/litevue/plugins';
+
+createApp()
+  .use(media, { breakpoints: { ...defaultBreakpoints, xs: 420 } })
+  .mount();
+```
+
+### When you can call it
+
+`mq` activates on its first read rather than on `use()`, so `configure()` is
+safe at any point — a scale that arrives after reads have begun tears down the
+old subscriptions and rebuilds them, and anything already on screen updates.
+
+::: warning Keep `md` and `lg` if you use `$mqDevice`
+The `mobile` / `tablet` / `desktop` aliases and `$mqDevice` are defined in terms
+of `base`, `md` and `lg`. A custom scale without those keys falls back to the
+default widths and warns in development — either keep the names, or use
+`$mqAtLeast` with your own.
+:::
 
 ## When to use this
 
