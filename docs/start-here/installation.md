@@ -25,8 +25,8 @@ No build step required:
 
 For production, pin a version and use a fully resolved URL:
 
-- Global build: `https://unpkg.com/@aevantec/litevue@0.5.2/dist/litevue.iife.js` <!-- x-release-please-version --> — exposes the `LiteVue` global, supports the `init` attribute.
-- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.2/dist/litevue.mjs` <!-- x-release-please-version --> — use with `<script type="module">`.
+- Global build: `https://unpkg.com/@aevantec/litevue@0.5.3/dist/litevue.iife.js` <!-- x-release-please-version --> — exposes the `LiteVue` global, supports the `init` attribute.
+- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.3/dist/litevue.mjs` <!-- x-release-please-version --> — use with `<script type="module">`.
 
 ## From npm
 
