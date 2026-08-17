@@ -144,9 +144,9 @@ The exports sit **on** the global, so `persistStore` is `LiteVuePersist.persistS
 
 Unpinned URLs resolve to the latest release, which is convenient in development and a liability in production. Pin the version and use a fully resolved path:
 
-- Core: `https://unpkg.com/@aevantec/litevue@0.5.3/dist/litevue.iife.js` <!-- x-release-please-version -->
-- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.3/dist/plugins/mask.iife.js` <!-- x-release-please-version -->
-- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.3/dist/litevue-plugins.iife.js` <!-- x-release-please-version -->
+- Core: `https://unpkg.com/@aevantec/litevue@0.5.2/dist/litevue.iife.js` <!-- x-release-please-version -->
+- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.2/dist/plugins/mask.iife.js` <!-- x-release-please-version -->
+- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.2/dist/litevue-plugins.iife.js` <!-- x-release-please-version -->
 
 jsDelivr serves the same files — swap the host for `https://cdn.jsdelivr.net/npm/`.
 

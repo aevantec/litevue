@@ -50,6 +50,12 @@ jobs:
       - name: Check bundle boundaries
         run: pnpm check:bundles
 
+      # Pinned CDN versions in the docs are rewritten by release-please, but
+      # only on marked lines in registered files. Miss either and the URL is
+      # frozen at whatever was typed, which nothing else would notice.
+      - name: Check docs versions
+        run: pnpm check:docs-versions
+
       # Cloudflare deploys the docs; this only checks they still compile
       # (VitePress fails the build on dead links and bad markdown).
       - name: Build docs

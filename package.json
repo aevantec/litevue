@@ -159,6 +159,7 @@
     "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
     "lint:package": "publint --strict && attw --pack .",
     "check:bundles": "node scripts/check-bundles.mjs",
+    "check:docs-versions": "node scripts/check-docs-versions.mjs",
     "prepublishOnly": "pnpm build && publint --strict",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
