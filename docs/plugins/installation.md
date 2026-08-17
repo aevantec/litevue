@@ -73,6 +73,7 @@ import {
   focus,
   intersect,
   mask,
+  media,
   morphPlugin,
   persist,
   transition,
@@ -83,6 +84,7 @@ createApp()
   .use(focus)
   .use(intersect)
   .use(mask)
+  .use(media)
   .use(morphPlugin)
   .use(persist)
   .use(transition)
@@ -94,14 +96,23 @@ createApp()
 <script src="https://unpkg.com/@aevantec/litevue/dist/litevue-plugins.iife.js"></script>
 
 <script>
-  const { collapse, focus, intersect, mask, morphPlugin, persist, transition } =
-    LiteVuePlugins;
+  const {
+    collapse,
+    focus,
+    intersect,
+    mask,
+    media,
+    morphPlugin,
+    persist,
+    transition,
+  } = LiteVuePlugins;
 
   LiteVue.createApp()
     .use(collapse)
     .use(focus)
     .use(intersect)
     .use(mask)
+    .use(media)
     .use(morphPlugin)
     .use(persist)
     .use(transition)
@@ -134,6 +145,7 @@ The standalone file defines a `LiteVue`-prefixed global holding that plugin's na
 | [focus](/plugins/focus)           | `…/plugins/focus`                      | `LiteVueFocus`      | `focus`                                                     |
 | [intersect](/plugins/intersect)   | `…/plugins/intersect`                  | `LiteVueIntersect`  | `intersect`                                                 |
 | [mask](/plugins/mask)             | `…/plugins/mask`                       | `LiteVueMask`       | `mask`                                                      |
+| [media](/plugins/media)           | `…/plugins/media`                      | `LiteVueMedia`      | `media`, `mq`                                               |
 | [morph](/plugins/morph)           | `…/plugins/morph`                      | `LiteVueMorph`      | `morph`, `morphPlugin`                                      |
 | [persist](/plugins/persist)       | `…/plugins/persist`                    | `LiteVuePersist`    | `persist`, `persistStore`, `registerStorage`, `setDefaultStorage` |
 | [transition](/plugins/transition) | `…/plugins/transition`                 | `LiteVueTransition` | `transition`                                                |

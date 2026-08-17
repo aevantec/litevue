@@ -12,3 +12,11 @@ export { focus } from './focus';
 export { collapse } from './collapse';
 export { morph, morphPlugin } from './morph';
 export type { MorphOptions } from './morph';
+export { media, mq, resetMedia } from './media';
+export type {
+  MediaOptions,
+  Breakpoints,
+  ResponsiveMap,
+  Device,
+  Mq,
+} from './media';
