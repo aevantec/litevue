@@ -119,6 +119,16 @@
         "default": "./dist/plugins/persist.umd.js"
       }
     },
+    "./plugins/resize": {
+      "import": {
+        "types": "./dist/types/plugins/resize/index.d.mts",
+        "default": "./dist/plugins/resize.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/resize/index.d.ts",
+        "default": "./dist/plugins/resize.umd.js"
+      }
+    },
     "./plugins/transition": {
       "import": {
         "types": "./dist/types/plugins/transition/index.d.mts",
@@ -160,6 +170,9 @@
       ],
       "plugins/persist": [
         "./dist/types/plugins/persist/index.d.ts"
+      ],
+      "plugins/resize": [
+        "./dist/types/plugins/resize/index.d.ts"
       ],
       "plugins/transition": [
         "./dist/types/plugins/transition/index.d.ts"

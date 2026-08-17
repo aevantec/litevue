@@ -78,6 +78,65 @@ You do not need a key per breakpoint — only where the value changes. A map wit
 There is no `max-width` form. For "phones only", give `base` the narrow value and override it at the next breakpoint up — `{ base: 'drawer', md: 'sidebar' }` — which keeps one direction of reasoning across the whole codebase.
 :::
 
+### Any value type
+
+A map's values are returned as-is, so they can be anything — strings, numbers, booleans, arrays, functions, or objects. Nothing is merged or cloned; the matching value comes back by reference.
+
+That means breakpoints can select between **entirely different shapes**, not just different numbers:
+
+```html
+<div
+  v-scope="{ get opts() {
+    return $mq({
+      mobile:  { layout: 'stack', showLabels: false },
+      desktop: { layout: 'grid', columns: 4, gap: 24, showLabels: true }
+    })
+  } }"
+>
+  <div :data-layout="opts.layout">…</div>
+</div>
+```
+
+In TypeScript the result is inferred as a union of the value types, plus `undefined` for the case where nothing matched. A property that exists on only one of the shapes comes back as `T | undefined`, so narrow before using it:
+
+```ts
+const opts = mq({
+  mobile: { layout: 'stack', showLabels: false },
+  desktop: { layout: 'grid', columns: 4 },
+});
+
+opts?.layout; // string — present on both
+opts?.columns; // number | undefined — desktop only, so narrow first
+```
+
+Falsy values are honoured rather than treated as missing, so `0`, `''`, `false` and `null` all survive — including when a fallback is present:
+
+```js
+mq({ base: 1, lg: 0 }, 99); // 0 at lg, not 99
+mq({ base: 'x', lg: '' }, 'fallback'); // '' at lg
+```
+
+#### Leaving a breakpoint unset
+
+Omitting a key is the normal way to say "no special value here" — the next smaller key applies instead. To have a value at one breakpoint and **nothing** elsewhere, give the others `undefined` or simply leave them out:
+
+```js
+mq({ lg: 'wide-only' }); // undefined below lg, 'wide-only' from lg up
+```
+
+::: warning `undefined` is indistinguishable from "no match"
+An explicit `undefined` at the matching breakpoint falls through to the
+fallback, because the resolver treats `undefined` as "no value found":
+
+```js
+mq({ base: 'narrow', lg: undefined }); // undefined at lg — as expected
+mq({ base: 'narrow', lg: undefined }, 'FB'); // 'FB' at lg, not undefined
+```
+
+Use `null` when you need "deliberately nothing" to win over a fallback — it is
+returned as-is, like any other value.
+:::
+
 ### Several values at once
 
 Three or more related values are common — columns, gap, and a variant name that must change together. A getter in `v-scope` stays reactive and updates them as a unit:
@@ -136,8 +195,9 @@ Typical uses are the ones with no element to hang a directive on:
 import { store } from '@aevantec/litevue';
 import { mq } from '@aevantec/litevue/plugins/media';
 
-// a number CSS cannot hand to a third-party library
-new Swiper(el, { slidesPerView: mq({ mobile: 1, tablet: 2, desktop: 4 }) });
+// how much to ask the server for — a decision no stylesheet can reach
+const limit = mq({ mobile: 5, tablet: 10, desktop: 25 });
+const res = await fetch(`/api/activity?limit=${limit}`);
 
 // shared state both markup and scripts can read
 store('ui', {
@@ -149,17 +209,21 @@ store('ui', {
 
 Reads share one subscription: the plugin creates a single `MediaQueryList` per breakpoint for the whole page, so twenty responsive maps cost the same as one.
 
-## v-resize
+::: tip Check whether the library already does this
+Plenty of widgets take their own breakpoint config — Swiper has a `breakpoints`
+option, and most chart libraries have a `responsive` block. Where one exists,
+use it: it is tested against the library's own layout timing, and routing the
+value through `mq` instead means two sources of truth for the same question.
 
-Container width, which no media query reports and CSS container queries cannot hand to JavaScript. The expression runs with `$width` and `$height` in scope:
+Reach for `mq` when the library offers nothing, when the decision happens
+before the library is constructed — including whether to construct it at all —
+or when the value is not a rendering concern in the first place, like the
+`limit` above.
+:::
 
-```html
-<div v-scope="{ w: 0 }" v-resize="w = Math.round($width)">
-  <span>{{ w }}px</span>
-</div>
-```
+## Container width
 
-It observes the element it sits on and stops when the region unmounts.
+For an **element's** size rather than the viewport's — a panel in a split view, a card in a reflowing grid — use the [resize](/plugins/resize) plugin and its `v-resize` directive. It is a separate install with no shared code, so neither plugin drags the other in.
 
 ## Custom breakpoints
 
@@ -248,7 +312,7 @@ default widths and warns in development — either keep the names, or use
 Good reasons:
 
 - **structural divergence** — a sidebar versus a drawer, where only one should exist in the DOM, not one hidden with CSS
-- **values passed to JavaScript** — `slidesPerView` for a carousel; a stylesheet cannot pass a number to a library
+- **values that leave the page** — a request's page size, an analytics property, anything sent to a server, which no stylesheet can reach
 - **skipping expensive setup** — never initialising a map, chart or rich-text editor on a phone
 - **data density** — rendering 3 items instead of 12 in the `v-for` source, rather than hiding rows
 - **`prefers-reduced-motion`** — worth honouring given transitions ship in the box

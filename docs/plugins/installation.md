@@ -76,6 +76,7 @@ import {
   media,
   morphPlugin,
   persist,
+  resize,
   transition,
 } from '@aevantec/litevue/plugins';
 
@@ -87,6 +88,7 @@ createApp()
   .use(media)
   .use(morphPlugin)
   .use(persist)
+  .use(resize)
   .use(transition)
   .mount();
 ```
@@ -104,6 +106,7 @@ createApp()
     media,
     morphPlugin,
     persist,
+    resize,
     transition,
   } = LiteVuePlugins;
 
@@ -115,6 +118,7 @@ createApp()
     .use(media)
     .use(morphPlugin)
     .use(persist)
+    .use(resize)
     .use(transition)
     .mount();
 </script>
@@ -148,6 +152,7 @@ The standalone file defines a `LiteVue`-prefixed global holding that plugin's na
 | [media](/plugins/media)           | `…/plugins/media`                      | `LiteVueMedia`      | `media`, `mq`                                               |
 | [morph](/plugins/morph)           | `…/plugins/morph`                      | `LiteVueMorph`      | `morph`, `morphPlugin`                                      |
 | [persist](/plugins/persist)       | `…/plugins/persist`                    | `LiteVuePersist`    | `persist`, `persistStore`, `registerStorage`, `setDefaultStorage` |
+| [resize](/plugins/resize)         | `…/plugins/resize`                     | `LiteVueResize`     | `resize`                                                    |
 | [transition](/plugins/transition) | `…/plugins/transition`                 | `LiteVueTransition` | `transition`                                                |
 
 The exports sit **on** the global, so `persistStore` is `LiteVuePersist.persistStore` — not a bare `persistStore`.

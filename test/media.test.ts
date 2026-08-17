@@ -152,6 +152,65 @@ describe('mq() — resolving a responsive map', () => {
   });
 });
 
+describe('value types', () => {
+  test('breakpoints can select between entirely different object shapes', () => {
+    const map = {
+      mobile: { layout: 'stack', showLabels: false },
+      desktop: { layout: 'grid', columns: 4, gap: 24, showLabels: true },
+    };
+    setWidth(400);
+    expect(mq(map)).toEqual({ layout: 'stack', showLabels: false });
+    setWidth(1400);
+    expect(mq(map)).toEqual({
+      layout: 'grid',
+      columns: 4,
+      gap: 24,
+      showLabels: true,
+    });
+  });
+
+  test('values come back by reference, not cloned or merged', () => {
+    const wide = { a: 1 };
+    setWidth(1400);
+    expect(mq({ base: { b: 2 }, lg: wide })).toBe(wide);
+  });
+
+  test('strings, arrays, functions and booleans all pass through', () => {
+    const fn = () => 'hi';
+    setWidth(1400);
+    expect(mq({ base: 'a', lg: 'b' })).toBe('b');
+    expect(mq({ base: [1], lg: [1, 2, 3] })).toEqual([1, 2, 3]);
+    expect(mq({ base: () => 'lo', lg: fn })).toBe(fn);
+    expect(mq({ base: true, lg: false })).toBe(false);
+  });
+
+  test('falsy values are not mistaken for a missing one', () => {
+    setWidth(1400);
+    // the resolver checks against undefined, not truthiness, so a fallback
+    // must not swallow a deliberate 0 / empty string / null / false
+    expect(mq({ base: 1, lg: 0 }, 99)).toBe(0);
+    expect(mq({ base: 'x', lg: '' }, 'fallback')).toBe('');
+    expect(mq({ base: 1, lg: null }, 99)).toBe(null);
+    expect(mq({ base: 1, lg: false }, true)).toBe(false);
+  });
+
+  test('a value at one breakpoint and nothing below it', () => {
+    setWidth(400);
+    expect(mq({ lg: 'wide-only' })).toBeUndefined();
+    setWidth(1400);
+    expect(mq({ lg: 'wide-only' })).toBe('wide-only');
+  });
+
+  test('an explicit undefined defers to the fallback, null does not', () => {
+    setWidth(1400);
+    expect(mq({ base: 'narrow', lg: undefined })).toBeUndefined();
+    // documented sharp edge: undefined reads as "no value found"
+    expect(mq({ base: 'narrow', lg: undefined }, 'FB')).toBe('FB');
+    // null is the way to say "deliberately nothing" and beat a fallback
+    expect(mq({ base: 'narrow', lg: null }, 'FB')).toBe(null);
+  });
+});
+
 describe('mq.breakpoint / device / atLeast / match', () => {
   test('breakpoint reports the current scale key', () => {
     setWidth(320);
@@ -372,41 +431,5 @@ describe('environments without matchMedia', () => {
     expect(mq.atLeast('lg')).toBe(false);
     expect(mq.match('(min-width: 100px)')).toBe(false);
     expect(mq({ base: 'a', lg: 'b' })).toBe('a');
-  });
-});
-
-describe('v-resize', () => {
-  test('reports container width and stops observing on teardown', async () => {
-    let observed: Element | null = null;
-    let disconnected = false;
-    let fire: (w: number, h: number) => void = () => {};
-
-    (window as any).ResizeObserver = class {
-      constructor(cb: (entries: any[]) => void) {
-        fire = (w, h) =>
-          cb([{ contentRect: { width: w, height: h } }] as any[]);
-      }
-      observe(el: Element) {
-        observed = el;
-      }
-      disconnect() {
-        disconnected = true;
-      }
-    };
-
-    const { app, root } = mountWith(
-      `<div v-scope="{ w: 0, h: 0 }" v-resize="w = $width; h = $height">
-      <span>{{ w }}x{{ h }}</span>
-    </div>`
-    );
-    await tick();
-    expect(observed).toBe(root);
-
-    fire(640, 480);
-    await tick();
-    expect(root.querySelector('span')!.textContent).toBe('640x480');
-
-    app.unmount(root);
-    expect(disconnected).toBe(true);
   });
 });

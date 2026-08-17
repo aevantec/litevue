@@ -49,6 +49,7 @@ createApp().use(mask).mount();
 | [focus](/plugins/focus)           | `v-focus`, `v-trap` | autofocus and focus trapping      |
 | [collapse](/plugins/collapse)     | `v-collapse`        | animated height expand/collapse   |
 | [mask](/plugins/mask)             | `v-mask`            | input masking                     |
-| [media](/plugins/media)           | `$mq`, `v-resize`   | viewport-driven behaviour         |
+| [media](/plugins/media)           | `$mq`               | viewport-driven behaviour         |
 | [morph](/plugins/morph)           | `$morph`            | patch a live region from new HTML |
+| [resize](/plugins/resize)         | `v-resize`          | observe an element's own size     |
 | [transition](/plugins/transition) | `v-transition`      | Vue-style enter/leave transitions |
