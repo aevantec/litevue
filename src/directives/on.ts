@@ -1,6 +1,26 @@
 import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
+import { handleError } from '../errors';
+
+/**
+ * Can `exp` stand as a single expression, or is it a statement list?
+ *
+ * Memoised: this compiles a throwaway function to find out, and the answer
+ * only depends on the text. Without the cache a `v-for` over 100 rows paid
+ * 100 identical compiles for the same handler attribute.
+ */
+const expressionCache: Record<string, boolean> = Object.create(null);
+const isExpression = (exp: string) => {
+  const hit = expressionCache[exp];
+  if (hit !== undefined) return hit;
+  try {
+    new Function(`return (${exp})`);
+    return (expressionCache[exp] = true);
+  } catch {
+    return (expressionCache[exp] = false);
+  }
+};
 
 // same as vue 2
 const simplePathRE =
@@ -32,7 +52,7 @@ const modifierGuards: Record<
 const nonKeyModifierRE =
   /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
-export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
+export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
   if (!arg) {
     if (import.meta.env.DEV) {
       console.error(`v-on="obj" syntax is not supported in LiteVue.`);
@@ -40,9 +60,43 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return;
   }
 
-  let handler = simplePathRE.test(exp)
+  // Prefer a form that yields the expression's value, so an async handler's
+  // promise is reachable and its rejection can be reported. Statements like
+  // `a++; b++` are not expressions, so fall back to the block form for those
+  // and accept that their return value is unavailable. Returning a value is
+  // safe either way: addEventListener ignores it.
+  const raw = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
-    : get(`($event => { ${exp} })`);
+    : isExpression(exp)
+      ? get(`($event => (${exp}))`)
+      : get(`($event => { ${exp} })`);
+
+  // An error thrown once the event fires happens long after `get()` returned,
+  // so the evaluator's own try/catch is out of scope by then — it used to
+  // escape into the DOM's listener machinery, where the console showed a
+  // stack with no hint of which handler produced it. A rejected promise from
+  // an async handler was worse: entirely silent.
+  let handler = (...args: any[]) => {
+    try {
+      const result = raw(...args);
+      if (result && typeof result.then === 'function') {
+        result.catch((err: unknown) => fail(err));
+      }
+      return result;
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  function fail(e: unknown) {
+    handleError(e, {
+      phase: 'handler',
+      source: `@${arg}`,
+      expression: exp,
+      el,
+      scope: ctx.scope,
+    });
+  }
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)

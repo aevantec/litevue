@@ -108,6 +108,7 @@ export default defineConfig({
             text: 'Server-Driven HTML',
             link: '/essentials/server-driven-html',
           },
+          { text: 'Error Handling', link: '/essentials/error-handling' },
         ],
       },
       {

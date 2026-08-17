@@ -1,0 +1,74 @@
+<meta charset="utf-8" />
+<!-- imported from source, not /dist: the rich diagnostics are
+     import.meta.env.DEV-only and the built bundle has them stripped -->
+
+<h3>Error diagnostics</h3>
+<p>
+  Open the console. Every failure below reports the directive, the element and
+  the expression — and a mistyped name is matched against what is actually in
+  scope.
+</p>
+
+<div id="app" v-scope="{ counter: 0, userName: 'ada', items: [1, 2, 3] }">
+  <p>
+    <button @click="counter++">counter is {{ counter }}</button>
+  </p>
+
+  <!-- 1. typo: `conter` vs `counter` -->
+  <p>typo in an expression: <span v-text="conter"></span></p>
+
+  <!-- 2. nothing close enough to suggest -->
+  <p>unknown name: <span v-text="zzzzzz"></span></p>
+
+  <!-- 3. throws when the event fires, long after binding -->
+  <p>
+    <button id="throw" @click="missing.deep.value = 1">handler throws</button>
+  </p>
+
+  <!-- 4. async rejection — silent before this change -->
+  <p><button id="reject" @click="failAsync()">async handler rejects</button></p>
+
+  <!-- 5. a directive nobody registered -->
+  <p><span v-nope="x">unknown directive</span></p>
+</div>
+
+<script type="module">
+  import { createApp } from '../src';
+
+  const app = createApp({
+    counter: 0,
+    userName: 'ada',
+    items: [1, 2, 3],
+    failAsync() {
+      return Promise.reject(new Error('the network is down'));
+    },
+  });
+
+  // production apps route this to monitoring; here it just tallies
+  const tally = [];
+  app.onError((err, info) => {
+    tally.push({ phase: info.phase, source: info.source });
+    const el = document.getElementById('tally');
+    if (el) el.textContent = JSON.stringify(tally, null, 1);
+  });
+
+  app.mount('#app');
+</script>
+
+<h4>What onError received</h4>
+<pre id="tally" style="background: #f1f1f4; padding: 10px; border-radius: 6px">
+(nothing yet)</pre>
+
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 46rem;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  code,
+  pre {
+    background: #f1f1f4;
+    border-radius: 3px;
+  }
+</style>

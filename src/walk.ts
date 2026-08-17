@@ -10,6 +10,7 @@ import { ref } from './directives/ref';
 import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
 import { own, setOwner } from './ownership';
+import { describeEl, handleError } from './errors';
 
 const dirRE = /^(?:v-|:|@)/;
 const modifierRE = /\.([\w-]+)/g;
@@ -191,6 +192,9 @@ const processDirective = (
   let dir: Directive;
   let arg: string | undefined;
   let modifiers: Record<string, true> | undefined;
+  // kept before the modifier strip below, so diagnostics quote the attribute
+  // as the author actually wrote it
+  const source = raw;
 
   // modifiers
   raw = raw.replace(modifierRE, (_, m) => {
@@ -212,10 +216,30 @@ const processDirective = (
   }
   if (dir) {
     if (dir === bind && arg === 'ref') dir = ref;
-    applyDirective(el, dir, exp, ctx, arg, modifiers);
+    applyDirective(el, dir, exp, ctx, arg, modifiers, source);
     el.removeAttribute(raw);
   } else if (import.meta.env.DEV) {
-    console.error(`unknown custom directive ${raw}.`);
+    // The structural ones are consumed directly in walk() rather than living
+    // in builtInDirectives, so listing only that map would have told the
+    // reader that v-if and v-for do not exist.
+    const known = [
+      'v-scope',
+      'v-if',
+      'v-for',
+      'v-once',
+      'v-pre',
+      'v-cloak',
+      'v-teleport',
+      'v-name',
+      'ref',
+      ...Object.keys(builtInDirectives).map((d) => 'v-' + d),
+      ...Object.keys(ctx.dirs).map((d) => 'v-' + d),
+    ].sort();
+    console.error(
+      `[litevue] unknown directive ${source} on ${describeEl(el)}.\n` +
+        `  Known directives: ${known.join(', ')}.\n` +
+        `  A directive from a plugin needs app.use(...) before mount().`
+    );
   }
 };
 
@@ -225,22 +249,32 @@ const applyDirective = (
   exp: string,
   ctx: Context,
   arg?: string,
-  modifiers?: Record<string, true>
+  modifiers?: Record<string, true>,
+  source?: string
 ) => {
-  const get = (e = exp) => evaluate(ctx.scope, e, el);
+  const meta = { source, el };
+  const get = (e = exp) => evaluate(ctx.scope, e, el, meta);
   // ctx.effect is passed through unwrapped: directives are applied while the
   // walk cursor still points at this element, so anything they create
   // synchronously is attributed correctly. v-effect is the one exception and
   // restores the cursor itself.
-  const cleanup = dir({
-    el,
-    get,
-    effect: ctx.effect,
-    ctx,
-    exp,
-    arg,
-    modifiers,
-  });
+  let cleanup;
+  try {
+    cleanup = dir({
+      el,
+      get,
+      effect: ctx.effect,
+      ctx,
+      exp,
+      arg,
+      modifiers,
+    });
+  } catch (e) {
+    // a throwing setup used to abort the walk, leaving the rest of the page
+    // unbound with no sign of which directive failed
+    handleError(e, { phase: 'directive', source, el, expression: exp });
+    return;
+  }
   if (cleanup) {
     addCleanup(ctx, cleanup);
   }

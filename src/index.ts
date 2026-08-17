@@ -5,6 +5,7 @@ export { nextTick } from './scheduler';
 export { watchEffect } from './effect';
 export { computed, reactive } from '@vue/reactivity';
 export type { ComputedRef, WritableComputedRef } from '@vue/reactivity';
+export type { ErrorHandler, ErrorInfo, ErrorPhase } from './errors';
 export { devtools, disableDevtools } from './devtools';
 export type { LiteVueDevtools, DevtoolsEvent } from './devtools';
 

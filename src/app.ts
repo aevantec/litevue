@@ -8,6 +8,7 @@ import { walk } from './walk';
 import { devtools, registerComponent, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { addErrorHandler, type ErrorHandler } from './errors';
 import { warn } from './warn';
 
 // DEV: elements this app has already walked, so a second mount of the same
@@ -37,6 +38,16 @@ export interface App {
    * plugin twice is a no-op.
    */
   use<Options>(plugin: Plugin<Options>, options?: Options): App;
+  /**
+   * Register a handler for every runtime error LiteVue catches — a failing
+   * expression, a throwing directive, an event handler that raised or whose
+   * promise rejected. Returns a function that unregisters it.
+   *
+   * Handlers run in production as well as development, which is the point:
+   * this is where an app forwards errors to its monitoring. The rich console
+   * diagnostics are development-only, but the hook is not.
+   */
+  onError(handler: ErrorHandler): () => void;
   mount(el?: string | Element | null): App | void;
   /**
    * Tear down every mounted root, or — given an element or selector — only the
@@ -152,6 +163,10 @@ export const createApp = (initialData?: any) => {
       // against; a nested v-scope shadows it through the prototype chain
       ctx.scope[name] = factory;
       return this;
+    },
+
+    onError(handler: ErrorHandler) {
+      return addErrorHandler(handler);
     },
 
     use(plugin, options) {
