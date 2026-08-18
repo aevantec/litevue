@@ -209,6 +209,16 @@ store('ui', {
 
 Reads share one subscription: the plugin creates a single `MediaQueryList` per breakpoint for the whole page, so twenty responsive maps cost the same as one.
 
+::: tip Keep `match()` queries static
+Each distinct query string gets its own `MediaQueryList`, kept for the life of the page so repeated reads are free. A string built on the fly defeats that — every distinct value creates another one, and none are released:
+
+```js
+mq.match(`(min-width: ${n}px)`); // a new subscription per value of n
+```
+
+Prefer a breakpoint key, or a fixed set of query strings.
+:::
+
 ::: tip Check whether the library already does this
 Plenty of widgets take their own breakpoint config — Swiper has a `breakpoints`
 option, and most chart libraries have a `responsive` block. Where one exists,
@@ -293,6 +303,10 @@ createApp()
   .use(media, { breakpoints: { ...defaultBreakpoints, xs: 420 } })
   .mount();
 ```
+
+### One scale per page
+
+The scale is module state shared by every app on the page, not per-app. Two apps each passing their own `breakpoints` does not give them one each — the second replaces the first, and the first app's markup starts resolving against key names it never declared. Development warns when that happens. Configure it once, or call `mq.configure()` deliberately when replacing it is the intent.
 
 ### When you can call it
 

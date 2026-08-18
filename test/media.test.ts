@@ -433,3 +433,41 @@ describe('environments without matchMedia', () => {
     expect(mq({ base: 'a', lg: 'b' })).toBe('a');
   });
 });
+
+describe('the scale is page-wide', () => {
+  test('a second app installing a different scale warns', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    apps.push(createApp().use(media, { breakpoints: { narrow: 500 } }));
+    apps.push(createApp().use(media, { breakpoints: { wide: 900 } }));
+
+    const printed = warn.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(printed).toContain('a second app installed media');
+    expect(printed).toContain('page-wide');
+    warn.mockRestore();
+  });
+
+  test('installing the same scale twice is silent', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const breakpoints = { narrow: 500, wide: 900 };
+    apps.push(createApp().use(media, { breakpoints }));
+    apps.push(createApp().use(media, { breakpoints: { ...breakpoints } }));
+
+    expect(warn.mock.calls.map((c) => String(c[0])).join('')).not.toContain(
+      'a second app installed media'
+    );
+    warn.mockRestore();
+  });
+
+  test('a deliberate mq.configure() is not warned about', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    apps.push(createApp().use(media, { breakpoints: { narrow: 500 } }));
+    mq.configure({ breakpoints: { wide: 900 } });
+    setWidth(1000);
+
+    expect(mq.breakpoint).toBe('wide');
+    expect(warn.mock.calls.map((c) => String(c[0])).join('')).not.toContain(
+      'a second app installed media'
+    );
+    warn.mockRestore();
+  });
+});
