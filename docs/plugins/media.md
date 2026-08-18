@@ -4,7 +4,7 @@ title: media
 
 # media <Badge type="section" text="Plugin" />
 
-Viewport-driven **behaviour**: values handed to JavaScript, structural branches, and work that should be skipped entirely on small screens. It exposes `$mq` and friends in markup, and the same logic as a plain `mq` object for scripts.
+Viewport-driven **behaviour**: values handed to JavaScript, structural branches, and work that should be skipped entirely on small screens. The same logic is available two ways: `$mq` and its related helpers in markup, and a plain `mq` object in scripts.
 
 Breakpoints are **mobile-first** throughout — every key is a minimum width and the largest match wins, matching Tailwind and CSS `min-width` queries. See [Mobile-first](#mobile-first-like-tailwind).
 
@@ -217,18 +217,6 @@ mq.match(`(min-width: ${n}px)`); // a new subscription per value of n
 ```
 
 Prefer a breakpoint key, or a fixed set of query strings.
-:::
-
-::: tip Check whether the library already does this
-Plenty of widgets take their own breakpoint config — Swiper has a `breakpoints`
-option, and most chart libraries have a `responsive` block. Where one exists,
-use it: it is tested against the library's own layout timing, and routing the
-value through `mq` instead means two sources of truth for the same question.
-
-Reach for `mq` when the library offers nothing, when the decision happens
-before the library is constructed — including whether to construct it at all —
-or when the value is not a rendering concern in the first place, like the
-`limit` above.
 :::
 
 ## Container width
