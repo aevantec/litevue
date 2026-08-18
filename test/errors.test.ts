@@ -246,3 +246,52 @@ describe('every construct reports where it came from', () => {
     expect(root.querySelector('b')!.textContent).toBe('fine');
   });
 });
+
+describe('handler registry lifecycle', () => {
+  test('a full unmount drops that app error handlers', async () => {
+    let calls = 0;
+    document.body.innerHTML = `<div id="a" v-scope="{}"></div>`;
+    const a = createApp();
+    a.onError(() => calls++);
+    a.mount(document.body.querySelector('#a')!);
+    await tick();
+    a.unmount();
+
+    // a separate app fails; the torn-down app must not hear about it
+    document.body.innerHTML = `<div id="b" v-scope="{}"><span v-text="bad"></span></div>`;
+    createApp().mount(document.body.querySelector('#b')!);
+    await tick();
+
+    expect(calls).toBe(0);
+  });
+
+  test('mount/unmount cycles do not multiply reports', async () => {
+    let calls = 0;
+    for (let i = 0; i < 3; i++) {
+      document.body.innerHTML = `<div v-scope="{}"><span v-text="bad"></span></div>`;
+      const app = createApp();
+      app.onError(() => calls++);
+      app.mount(document.body.firstElementChild as HTMLElement);
+      await tick();
+      app.unmount();
+    }
+    // one report per failure, not 1 + 2 + 3
+    expect(calls).toBe(3);
+  });
+
+  test('a per-region unmount(el) keeps the handlers', async () => {
+    let calls = 0;
+    document.body.innerHTML = `<div id="wrap"><div v-scope="{}"></div></div>`;
+    const app = createApp();
+    app.onError(() => calls++);
+    app.mount(document.body.querySelector('#wrap')!);
+    await tick();
+    app.unmount(document.body.querySelector('#wrap')!);
+
+    document.body.innerHTML = `<div id="c" v-scope="{}"><span v-text="bad"></span></div>`;
+    app.mount(document.body.querySelector('#c')!);
+    await tick();
+
+    expect(calls).toBe(1);
+  });
+});

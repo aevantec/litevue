@@ -119,6 +119,9 @@ export const createApp = (initialData?: any) => {
   let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
   const pluginTeardowns: PluginTeardown[] = [];
+  // The error registry is page-global: without these, a torn-down app keeps
+  // receiving other apps' errors and each remount stacks another handler.
+  const ownErrorHandlers: (() => void)[] = [];
 
   const app: App = {
     get scope() {
@@ -166,7 +169,13 @@ export const createApp = (initialData?: any) => {
     },
 
     onError(handler: ErrorHandler) {
-      return addErrorHandler(handler);
+      const off = addErrorHandler(handler);
+      ownErrorHandlers.push(off);
+      return () => {
+        const i = ownErrorHandlers.indexOf(off);
+        if (i > -1) ownErrorHandlers.splice(i, 1);
+        off();
+      };
     },
 
     use(plugin, options) {
@@ -279,6 +288,9 @@ export const createApp = (initialData?: any) => {
           }
         });
         installedPlugins.clear();
+        // after plugin teardowns, so a teardown that throws is still reported
+        // to this app's handlers; unmount(el) keeps them, like plugins
+        ownErrorHandlers.splice(0).forEach((off) => off());
         return;
       }
 

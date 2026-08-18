@@ -112,6 +112,8 @@ stop();
 
 Several handlers may be registered and all of them run. One throwing does not prevent the others, nor hide the original error.
 
+The registry is page-wide rather than per-app, so a handler sees errors from any app on the page. A full `app.unmount()` releases the handlers that app registered — a per-region [`app.unmount(el)`](/globals/create-app#unmount) leaves them in place, since the app is still running.
+
 ::: warning Without a handler, production still logs
 If nothing is registered, a caught error is written to `console.error` so it is never swallowed entirely. Registering a handler takes over that responsibility — if yours discards the error, nothing else will report it.
 :::
