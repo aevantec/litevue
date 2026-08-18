@@ -99,7 +99,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
 
     // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
-      const scope = exp ? evaluate(ctx.scope, exp) : {};
+      // `|| {}` because a throwing v-scope expression returns undefined, and
+      // reading $template off it crashed the whole mount — the one failure
+      // that was not contained to the element that caused it
+      const scope =
+        (exp ? evaluate(ctx.scope, exp, el, { source: 'v-scope', el }) : {}) ||
+        {};
       ctx = createScopedContext(ctx, scope);
       // stashed so code inserting markup into a live tree later (the morph
       // plugin) walks it with the scope it landed in, not the root
@@ -169,7 +174,16 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       if (lastIndex < data.length) {
         segments.push(JSON.stringify(data.slice(lastIndex)));
       }
-      applyDirective(node, text, segments.join('+'), ctx);
+      applyDirective(
+        node,
+        text,
+        segments.join('+'),
+        ctx,
+        undefined,
+        undefined,
+        '{{ }}',
+        data.trim()
+      );
     }
   } else if (type === 11) {
     walkChildren(node as DocumentFragment, ctx);
@@ -250,9 +264,10 @@ const applyDirective = (
   ctx: Context,
   arg?: string,
   modifiers?: Record<string, true>,
-  source?: string
+  source?: string,
+  displayExp?: string
 ) => {
-  const meta = { source, el };
+  const meta = { source, el, expression: displayExp };
   const get = (e = exp) => evaluate(ctx.scope, e, el, meta);
   // ctx.effect is passed through unwrapped: directives are applied while the
   // walk cursor still points at this element, so anything they create

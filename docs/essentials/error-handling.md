@@ -46,6 +46,8 @@ The prose above is compiled out of the production build, so it costs your users 
 | `directive` | a directive's own setup threw |
 | `compile` | the expression could not be parsed into a function at all |
 
+`source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
+
 Two of these are worth calling out.
 
 **Event handlers.** An error thrown once the event fires happens long after the expression was bound, so it used to escape into the browser's listener machinery — a stack trace with no indication of which `@click` caused it. It is now attributed like any other failure.
@@ -66,7 +68,7 @@ The rejection is now reported with the same context as a synchronous throw. Retu
 
 ## Recovering, not crashing
 
-A failure is contained to the thing that failed. A broken expression yields `undefined` and the rest of the page still binds; a directive that throws during setup no longer aborts the walk, so the remaining elements are still processed; and a handler that throws does not stop later events from firing.
+A failure is contained to the thing that failed. A broken expression yields `undefined` and the rest of the page still binds; a directive that throws during setup no longer aborts the walk, so the remaining elements are still processed; a failing `v-scope` falls back to an empty scope rather than taking the mount down with it; and a handler that throws does not stop later events from firing.
 
 That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.
 

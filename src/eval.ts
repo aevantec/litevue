@@ -12,7 +12,15 @@ const mkDispatch = (el: Node) => (event: string, detail?: any) =>
  * it an error could report the expression text but not which directive or
  * element produced it.
  */
-export type EvalMeta = Pick<ErrorInfo, 'source' | 'el'>;
+export type EvalMeta = Pick<ErrorInfo, 'source' | 'el'> & {
+  /**
+   * What to show the reader instead of the compiled text. A `{{ }}`
+   * interpolation is compiled into `$s(...)` concatenations, and reporting
+   * that back was the original complaint: the message quoted framework
+   * internals rather than what the author wrote.
+   */
+  expression?: string;
+};
 
 // the `return(...)` wrapper is ours, not something the author wrote
 const unwrap = (exp: string) => exp.replace(/^return\(([^]*)\)$/, '$1');
@@ -32,7 +40,7 @@ export const execute = (
   } catch (e) {
     handleError(e, {
       phase: 'expression',
-      expression: unwrap(exp),
+      expression: meta?.expression ?? unwrap(exp),
       source: meta?.source,
       el: meta?.el ?? el,
       scope,
@@ -46,7 +54,7 @@ const toFunction = (exp: string, el?: Node, meta?: EvalMeta): Function => {
   } catch (e) {
     handleError(e, {
       phase: 'compile',
-      expression: unwrap(exp),
+      expression: meta?.expression ?? unwrap(exp),
       source: meta?.source,
       el: meta?.el ?? el,
     });

@@ -184,3 +184,65 @@ describe('developer-facing message', () => {
     expect(printed).toContain('app.use');
   });
 });
+
+describe('every construct reports where it came from', () => {
+  const cases: [string, string, string][] = [
+    [
+      'v-if',
+      `<div v-scope="{ counter: 1 }"><b v-if="conter">x</b></div>`,
+      'conter',
+    ],
+    [
+      'v-for',
+      `<div v-scope="{ items: [] }"><b v-for="i in itemz">x</b></div>`,
+      'itemz',
+    ],
+    [
+      'v-effect',
+      `<div v-scope="{ counter: 1 }"><b v-effect="conter++">x</b></div>`,
+      'conter++',
+    ],
+    ['v-scope', `<div v-scope="{ a: nope }"></div>`, '{ a: nope }'],
+  ];
+
+  for (const [source, html, expression] of cases) {
+    test(`${source} names itself and its element`, async () => {
+      mount(html);
+      await tick(4);
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0].info.source).toBe(source);
+      expect(seen[0].info.expression).toBe(expression);
+      expect(seen[0].info.el).toBeTruthy();
+    });
+  }
+
+  test('an interpolation quotes what was written, not the compiled form', async () => {
+    mount(`<div v-scope="{ counter: 1 }">{{ conter }}</div>`);
+    await tick(4);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info.source).toBe('{{ }}');
+    // the compiled text is `$s( conter )`; reporting that was the original
+    // complaint, since it quotes framework internals back at the author
+    expect(seen[0].info.expression).toBe('{{ conter }}');
+    expect(seen[0].info.expression).not.toContain('$s(');
+  });
+
+  test('a throwing v-scope does not take the whole mount down', async () => {
+    // evaluate() returns undefined on failure, and reading $template off it
+    // used to throw a TypeError that escaped the walk entirely
+    document.body.innerHTML = `<div id="root">
+      <div v-scope="{ a: nope }"><i>broken</i></div>
+      <div v-scope="{ msg: 'fine' }"><b v-text="msg"></b></div>
+    </div>`;
+    const root = document.body.firstElementChild as HTMLElement;
+    const app = createApp();
+    app.onError((err, info) => seen.push({ err, info }));
+    expect(() => app.mount(root)).not.toThrow();
+    await tick(4);
+
+    // the sibling region still bound
+    expect(root.querySelector('b')!.textContent).toBe('fine');
+  });
+});

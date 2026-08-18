@@ -14,7 +14,9 @@ export const effect: Directive = ({ el, ctx, exp, effect }) => {
     if (!live) return;
     const previous = setOwner(el);
     try {
-      effect(() => execute(ctx.scope, exp, el));
+      effect(() =>
+        execute(ctx.scope, exp, el, { source: 'v-effect', el })
+      );
     } finally {
       setOwner(previous);
     }

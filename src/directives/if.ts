@@ -74,7 +74,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   branchEffect = ctx.effect(() => {
     for (let i = 0; i < branches.length; i++) {
       const { exp, el } = branches[i];
-      if (!exp || evaluate(ctx.scope, exp)) {
+      if (!exp || evaluate(ctx.scope, exp, el, { source: 'v-if', el })) {
         if (i !== activeBranchIndex) {
           removeActiveBlock();
           block = new Block(el, ctx);
