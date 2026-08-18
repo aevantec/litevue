@@ -4,7 +4,7 @@ title: media
 
 # media <Badge type="section" text="Plugin" />
 
-Viewport-driven **behaviour**: values handed to JavaScript, structural branches, and work that should be skipped entirely on small screens. It exposes `$mq` and friends in markup, and the same logic as a plain `mq` object for scripts.
+Viewport-driven **behaviour**: values handed to JavaScript, structural branches, and work that should be skipped entirely on small screens. The same logic is available two ways: `$mq` and its related helpers in markup, and a plain `mq` object in scripts.
 
 Breakpoints are **mobile-first** throughout — every key is a minimum width and the largest match wins, matching Tailwind and CSS `min-width` queries. See [Mobile-first](#mobile-first-like-tailwind).
 
@@ -209,16 +209,14 @@ store('ui', {
 
 Reads share one subscription: the plugin creates a single `MediaQueryList` per breakpoint for the whole page, so twenty responsive maps cost the same as one.
 
-::: tip Check whether the library already does this
-Plenty of widgets take their own breakpoint config — Swiper has a `breakpoints`
-option, and most chart libraries have a `responsive` block. Where one exists,
-use it: it is tested against the library's own layout timing, and routing the
-value through `mq` instead means two sources of truth for the same question.
+::: tip Keep `match()` queries static
+Each distinct query string gets its own `MediaQueryList`, kept for the life of the page so repeated reads are free. A string built on the fly defeats that — every distinct value creates another one, and none are released:
 
-Reach for `mq` when the library offers nothing, when the decision happens
-before the library is constructed — including whether to construct it at all —
-or when the value is not a rendering concern in the first place, like the
-`limit` above.
+```js
+mq.match(`(min-width: ${n}px)`); // a new subscription per value of n
+```
+
+Prefer a breakpoint key, or a fixed set of query strings.
 :::
 
 ## Container width
@@ -293,6 +291,10 @@ createApp()
   .use(media, { breakpoints: { ...defaultBreakpoints, xs: 420 } })
   .mount();
 ```
+
+### One scale per page
+
+The scale is module state shared by every app on the page, not per-app. Two apps each passing their own `breakpoints` does not give them one each — the second replaces the first, and the first app's markup starts resolving against key names it never declared. Development warns when that happens. Configure it once, or call `mq.configure()` deliberately when replacing it is the intent.
 
 ### When you can call it
 

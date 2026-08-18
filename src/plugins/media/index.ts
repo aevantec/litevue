@@ -60,6 +60,12 @@ const NUMERIC = /^\d+$/;
  */
 const state = reactive({ bp: 'base', tick: 0 });
 
+// The scale is module state, shared by every app on the page. Two apps each
+// passing their own `breakpoints` is therefore not two scales — the second
+// silently rewrites the first, and the first app's markup starts resolving
+// against key names it never declared.
+let installedScale: string | undefined;
+
 let scale: Breakpoints = { ...DEFAULT_BREAKPOINTS };
 // ascending, always starting at the implicit 'base'
 let order: string[] = ['base'];
@@ -318,12 +324,25 @@ export const resetMedia = () => {
   scale = { ...DEFAULT_BREAKPOINTS };
   order = ['base', ...Object.keys(scale).sort((a, b) => scale[a] - scale[b])];
   active = false;
+  installedScale = undefined;
   warned.clear();
   state.bp = 'base';
   state.tick = 0;
 };
 
 export const media: Plugin<MediaOptions> = (app, options) => {
+  if (options?.breakpoints) {
+    const next = JSON.stringify(options.breakpoints);
+    if (import.meta.env.DEV && installedScale && installedScale !== next) {
+      warnOnce(
+        'a second app installed media with a different breakpoint scale. ' +
+          'The scale is page-wide, so this replaces the first one rather than ' +
+          'giving each app its own. Configure it once, or call ' +
+          'mq.configure() deliberately if replacing it is what you want.'
+      );
+    }
+    installedScale = next;
+  }
   if (options) mq.configure(options);
 
   app.scope.$mq = mq;
