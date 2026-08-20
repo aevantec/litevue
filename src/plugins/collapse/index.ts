@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 /**
  * v-collapse="expression" — expands/collapses the element's height with a
@@ -19,6 +19,17 @@ export const collapse: Plugin = (app) => {
     elem.style.overflow = 'hidden';
     let first = true;
     let seq = 0;
+    // pending timers are cancelled on teardown: app.unmount(el) leaves the
+    // element in the document, so a timer firing afterwards would still be
+    // writing styles for a directive that no longer exists
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (fn: () => void, ms?: number) => {
+      const t = setTimeout(() => {
+        timers.delete(t);
+        fn();
+      }, ms);
+      timers.add(t);
+    };
     effect(() => {
       const show = !!get();
       const id = ++seq;
@@ -26,14 +37,14 @@ export const collapse: Plugin = (app) => {
         first = false;
         if (!show) elem.style.height = '0px';
         // enable the transition only after the initial state is applied
-        setTimeout(() => {
+        later(() => {
           elem.style.transition = `height ${duration}ms ease`;
         });
         return;
       }
       if (show) {
         elem.style.height = elem.scrollHeight + 'px';
-        setTimeout(() => {
+        later(() => {
           // release the fixed height so content can resize freely
           if (id === seq) elem.style.height = '';
         }, duration);
@@ -44,5 +55,7 @@ export const collapse: Plugin = (app) => {
         elem.style.height = '0px';
       }
     });
+
+    return () => timers.forEach(clearTimeout);
   });
 };

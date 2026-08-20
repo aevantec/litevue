@@ -112,10 +112,32 @@ jobs:
       - name: Publish to npm
         run: npm publish
 
+      # A new version is not always readable the instant `npm publish` returns.
+      # 0.5.3 published fine and this step 404'd about a second later, failing
+      # the run and skipping the provenance report below — while 0.5.2, same
+      # workflow, passed. So it is a propagation race, not a permissions
+      # problem: retry rather than trust a single immediate read.
+      #
+      # A genuine publish failure still fails the job, just after ~100s.
       - name: Verify it is on the registry
-        run: npm view @aevantec/litevue@${{ needs.release-please.outputs.version }} version
+        run: |
+          version='${{ needs.release-please.outputs.version }}'
+          for attempt in $(seq 1 10); do
+            if npm view "@aevantec/litevue@${version}" version 2>/dev/null; then
+              echo "visible on the registry after ${attempt} attempt(s)"
+              exit 0
+            fi
+            echo "not visible yet — retrying in 10s (${attempt}/10)"
+            sleep 10
+          done
+          echo "::error::${version} did not appear on the registry within 100s"
+          exit 1
 
+      # always(): this reports on a publish that already happened, so it should
+      # still run when the step above gave up waiting. 0.5.3 published without
+      # anyone learning its provenance status, because this was skipped.
       - name: Report provenance status
+        if: always()
         run: |
           version='${{ needs.release-please.outputs.version }}'
           if npm view "@aevantec/litevue@${version}" dist.attestations 2>/dev/null | grep -q provenance; then

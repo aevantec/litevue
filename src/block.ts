@@ -31,7 +31,12 @@ export class Block {
     }
 
     if (isRoot) {
-      this.ctx = parentCtx;
+      // A root gets its own context rather than the app's. Sharing it meant
+      // every root pushed effects and cleanups into one pair of arrays, so
+      // there was no boundary to tear down and unmount had to be
+      // all-or-nothing. createContext keeps the scope and directives and only
+      // gives the block fresh effects/blocks/cleanups.
+      this.ctx = createContext(parentCtx);
     } else {
       // create child context
       this.parentCtx = parentCtx;

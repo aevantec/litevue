@@ -16,15 +16,15 @@ const html = await fetch('/cart').then((r) => r.text());
 morph(document.querySelector('#cart'), html);
 ```
 
-`morph(from, to)` takes a live element and either an HTML string for that element or another element. It returns the live element — the same node you passed in, which is the whole point.
+`morph(from, to)` takes a live element and either an HTML string for that element or another element. It returns the live element — the same node that was passed in, which is the point of the exercise.
 
-## Why not just replace the HTML?
+## Compared with replacing the markup
 
-Because `innerHTML = html` destroys every element in the region, and a lot rides on those nodes:
+`innerHTML = html` destroys every element in the region, and a great deal depends on those nodes:
 
 - **Scope state.** A scope belongs to its element. Replace the element and `v-scope="{ open: true }"` resets — the open accordion closes, the loaded tab unloads.
 - **Browser state you don't control.** Focus and cursor position, text selection, IME composition, scroll offsets of inner containers, `<video>` playback, `<iframe>` contents, `<details open>`, in-flight CSS transitions.
-- **Effects.** LiteVue has no per-region teardown — [`unmount()`](/globals/create-app) is all-or-nothing. So a replaced region's effects stay subscribed and keep writing to detached nodes. Morph never detaches them, so the question doesn't arise.
+- **Effects.** A replaced region's effects have to be torn down with [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) first, or they stay subscribed and keep writing to detached nodes. Morph never detaches them, so the question doesn't arise.
 
 ::: tip This is the counterpart to manual initialization
 [Dynamic content](/essentials/dynamic-content) stays inert until you call `mount(el)` — a deliberate security decision. That handles **new** fragments well and **replacing** live ones badly. Morph is the other half: it updates a region without re-executing anything already alive.
@@ -75,10 +75,10 @@ morph(el, html, {
 Return `null` for elements with no natural identity; they fall back to position.
 
 ::: warning Keys must survive the walk
-The key has to be readable from **both** the live DOM and the incoming HTML — and LiteVue strips every directive attribute from live elements during [walk](/essentials/dynamic-content). So `v-name`, `ref`, `:`… and `@`… cannot be keys, however tempting `v-name` looks. Use a plain HTML attribute.
+The key has to be readable from **both** the live DOM and the incoming HTML — and LiteVue strips every directive attribute from live elements during [walk](/essentials/dynamic-content). So `v-name`, `ref`, `:`… and `@`… cannot serve as keys, despite `v-name` appearing well suited to it. Use a plain HTML attribute.
 :::
 
-### When you don't need keys at all
+### When keys are unnecessary
 
 Positional matching is correct whenever the server never reorders — content edits, attribute changes, appends at the end. Keys earn their place for reordering, removal from the middle, and insertion at the front, where position no longer implies identity.
 
@@ -113,14 +113,14 @@ The plugin registers [`$morph`](/magics/) on the root scope, so simple cases don
 </div>
 ```
 
-## Limits
+## Limitations
 
-Worth knowing before you rely on it:
+Known constraints to weigh before depending on it:
 
 - **A container hosting `v-if` or `v-for` is skipped whole.** The live DOM holds block anchors plus however many clones the data produced; the server still sends the single authoring template. Those shapes can't be reconciled positionally, so the client keeps ownership — including any static siblings in that container.
 - **`v-scope` changes are ignored on live elements.** If the server renders `v-scope="{ count: 0 }"` for an element whose count is already `3`, the live value wins. Reset state explicitly rather than expecting the markup to do it.
 - **Static attributes bound elsewhere can be clobbered.** Morph only knows a `class` is client-owned when the incoming element carries `:class`. If you set a class imperatively from JavaScript, mark the element `data-morph-skip`.
-- **Removed elements don't tear down their effects.** Same all-or-nothing `unmount()` limitation described above — but morph removes far fewer nodes than a replace, so it leaks strictly less.
+- **Removed elements don't tear down their effects.** Morph drops nodes the server no longer sends without unmounting them first, so their effects stay subscribed. It removes far fewer nodes than a replace, so it leaks far less — but not nothing. Tearing those down per node needs teardown at a finer grain than [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) offers today.
 
 ::: warning Morphed-in markup is walked
 New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [security](/start-here/introduction#security-and-csp).

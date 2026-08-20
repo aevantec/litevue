@@ -1,0 +1,160 @@
+<!-- Without this the em dashes and × below arrive as mojibake: the dev server
+     serves these files with no charset, so the browser falls back to latin-1. -->
+<meta charset="utf-8" />
+
+<!-- Loaded the way a <script src> user would: core first, then the plugin,
+     which reads the LiteVue global at evaluation time. -->
+<script src="/dist/litevue.iife.js"></script>
+<script src="/dist/plugins/media.iife.js"></script>
+<!-- v-resize is its own plugin: container width shares no code with the
+     breakpoint machinery, so a page can load either without the other -->
+<script src="/dist/plugins/resize.iife.js"></script>
+
+<h3>media — viewport-driven behaviour</h3>
+<p>
+  <b>Resize the window</b> and watch these update. Everything here is behaviour
+  or a value handed to JavaScript — the cases a stylesheet cannot serve.
+</p>
+
+<div
+  id="app"
+  v-scope="{ get layout() {
+       return $mqProps({
+         columns: { mobile: 1, tablet: 2, desktop: 4 },
+         gap:     { mobile: 8, desktop: 24 },
+         variant: { mobile: 'compact', desktop: 'full' }
+       })
+     } }"
+>
+  <p class="row">
+    breakpoint <code id="bp">{{ $mqBreakpoint }}</code> · device
+    <code id="device">{{ $mqDevice }}</code> · at least lg
+    <code id="atleast">{{ $mqAtLeast('lg') }}</code>
+  </p>
+
+  <p class="row">
+    one map:
+    <code id="single">{{ $mq({ mobile: 1, tablet: 2, desktop: 4 }) }}</code>
+    · several at once:
+    <code id="batch"
+      >{{ layout.columns }} / {{ layout.gap }}px / {{ layout.variant }}</code
+    >
+  </p>
+
+  <p class="row">
+    reduced motion
+    <code id="motion">{{ $mqMatch('(prefers-reduced-motion: reduce)') }}</code>
+    <small>— toggle it in your OS settings, no reload needed</small>
+  </p>
+
+  <!-- structural, not merely hidden: only one of these is ever in the DOM -->
+  <div class="box">
+    <aside v-if="$mqAtLeast('lg')" id="sidebar">a real sidebar</aside>
+    <button v-else id="drawer">☰ open drawer</button>
+  </div>
+
+  <!-- container width, which no media query can report -->
+  <div
+    class="box"
+    v-scope="{ w: 0, h: 0 }"
+    v-resize="w = Math.round($width); h = Math.round($height)"
+  >
+    <code id="resize">v-resize: {{ w }} × {{ h }}</code>
+  </div>
+
+  <!-- configure() can run after reads have begun: it rebuilds the
+       subscriptions and everything on screen updates in place -->
+  <div class="box">
+    <p>
+      <b>Custom breakpoints.</b> Switch the scale live — note that
+      <code>{{ $mqBreakpoint }}</code> above starts reporting the new key names
+      without a reload.
+    </p>
+    <p>
+      <button id="scale-default" @click="useDefault()">
+        default (Tailwind)
+      </button>
+      <button id="scale-custom" @click="useCustom()">
+        custom: phone/tablet/laptop
+      </button>
+      <button id="scale-tweak" @click="useTweaked()">
+        defaults, but lg = 960
+      </button>
+    </p>
+    <p>
+      active scale: <code id="scale">{{ scaleName }}</code> —
+      <code id="scale-keys">{{ keys }}</code>
+    </p>
+  </div>
+</div>
+
+<script>
+  const { createApp, watchEffect } = LiteVue;
+  const { media, mq, defaultBreakpoints } = LiteVueMedia;
+  const { resize } = LiteVueResize;
+
+  const scales = {
+    'default (Tailwind)': { ...defaultBreakpoints },
+    'phone / tablet / laptop': { phone: 480, tablet: 820, laptop: 1180 },
+    // configure() replaces rather than merges, so spread the defaults to
+    // change one value and keep the rest
+    'defaults with lg = 960': { ...defaultBreakpoints, lg: 960 },
+  };
+
+  const app = createApp({
+    scaleName: 'default (Tailwind)',
+    get keys() {
+      return Object.entries(scales[this.scaleName])
+        .map(([k, v]) => `${k}:${v}`)
+        .join('  ');
+    },
+    setScale(name) {
+      this.scaleName = name;
+      mq.configure({ breakpoints: scales[name] });
+    },
+    useDefault() {
+      this.setScale('default (Tailwind)');
+    },
+    useCustom() {
+      this.setScale('phone / tablet / laptop');
+    },
+    useTweaked() {
+      this.setScale('defaults with lg = 960');
+    },
+  });
+
+  app.use(media).use(resize).mount('#app');
+
+  // The same state from a plain script, with no element involved — this is the
+  // half that markup-only APIs cannot do.
+  watchEffect(() => {
+    document.title = `media — ${mq.breakpoint}`;
+    console.log('[script] breakpoint:', mq.breakpoint, '| device:', mq.device);
+  });
+</script>
+
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 46rem;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  code {
+    background: #f1f1f4;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .row {
+    line-height: 2;
+  }
+  .box {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  small {
+    color: #666;
+  }
+</style>

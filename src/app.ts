@@ -26,7 +26,11 @@ export interface App {
    */
   use<Options>(plugin: Plugin<Options>, options?: Options): App;
   mount(el?: string | Element | null): App | void;
-  unmount(): void;
+  /**
+   * Tear down every mounted root, or — given an element or selector — only the
+   * roots at or inside it, leaving the rest of the app running.
+   */
+  unmount(el?: string | Element | null): void;
 }
 
 export type Plugin<Options = any> =
@@ -146,15 +150,17 @@ export const createApp = (initialData?: any) => {
       for (const el of roots) {
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
-        // a root without v-scope never gets a stashed context during walk;
-        // seed it here so inserted markup above every scope still resolves one
-        (el as any).__ctx ??= ctx;
         const block = new Block(el, ctx, true);
+        // a root without v-scope never gets a stashed context during walk;
+        // seed it with the block's own one, so markup inserted there later
+        // (morph) is torn down with the region rather than outliving it
+        (el as any).__ctx ??= block.ctx;
         // roots with v-scope are registered with their scoped context during
-        // walk; only register roots the walk didn't claim
+        // walk; only register roots the walk didn't claim. The cleanup goes on
+        // the block so unmounting this region deregisters only this scope.
         if (!devtools.scopes.has(el)) {
-          ctx.cleanups.push(
-            registerScope(el, ctx.scope, undefined, name || undefined)
+          block.ctx.cleanups.push(
+            registerScope(el, block.ctx.scope, undefined, name || undefined)
           );
         }
         rootBlocks.push(block);
@@ -162,9 +168,48 @@ export const createApp = (initialData?: any) => {
       return this;
     },
 
-    unmount() {
-      rootBlocks.forEach((block) => block.teardown());
-      rootBlocks = [];
+    /**
+     * Tear down mounted regions. With no argument every root goes, as before.
+     * Given an element or selector, only roots at or inside it are torn down —
+     * their effects stop, cleanups run and scopes deregister, while everything
+     * else on the app keeps running.
+     *
+     * Needed because replacing a region's markup otherwise leaves its effects
+     * subscribed, still writing to nodes that are no longer in the document.
+     */
+    unmount(el?: string | Element | null) {
+      if (el == null) {
+        rootBlocks.forEach((block) => block.teardown());
+        rootBlocks = [];
+        return;
+      }
+
+      const target = typeof el === 'string' ? document.querySelector(el) : el;
+      if (!target) {
+        import.meta.env.DEV &&
+          console.warn(`unmount: selector ${el} has no matching element.`);
+        return;
+      }
+
+      const kept: Block[] = [];
+      for (const block of rootBlocks) {
+        const root = block.template as Element;
+        // `contains` covers a wrapper holding several mounted roots, and
+        // reports true for the element itself
+        if (target.contains(root)) {
+          block.teardown();
+        } else {
+          kept.push(block);
+        }
+      }
+
+      if (import.meta.env.DEV && kept.length === rootBlocks.length) {
+        console.warn(
+          `unmount: no mounted region found at or inside the given element. ` +
+            `Pass the same element that was mounted, or one containing it.`
+        );
+      }
+      rootBlocks = kept;
     },
   };
 

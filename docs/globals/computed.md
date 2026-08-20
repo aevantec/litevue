@@ -26,7 +26,7 @@ createApp({ cart, total }).mount();
 
 No `.value` in templates — a scope unwraps refs on read, the same way Vue does.
 
-## Why not just a getter?
+## Compared with a plain getter
 
 A getter on a scope works and stays reactive, but it is **not memoized** — it re-runs on every read:
 

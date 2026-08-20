@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 /**
  * v-intersect="expression" — evaluates the expression when the element

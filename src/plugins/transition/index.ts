@@ -1,4 +1,4 @@
-import type { Plugin } from '../app';
+import type { Plugin } from '../../app';
 
 const toMs = (v: string) =>
   (parseFloat(v) || 0) * (v.includes('ms') ? 1 : 1000);

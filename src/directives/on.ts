@@ -139,8 +139,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     };
   }
 
-  // .window/.document/.outside listen beyond the element, so they need
-  // explicit cleanup — the element's own listeners die with it
+  // .window/.document/.outside listen beyond the element
   const target: EventTarget = modifiers?.window
     ? window
     : modifiers?.document || modifiers?.outside
@@ -148,7 +147,10 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       : el;
   const event = arg;
   target.addEventListener(event, handler, modifiers);
-  if (target !== el) {
-    return () => target.removeEventListener(event, handler, modifiers);
-  }
+  // Element listeners are cleaned up too. They used to be skipped on the
+  // grounds that they die with the element, which was true while unmount()
+  // was all-or-nothing and the DOM went with it — but app.unmount(el) tears
+  // down a region that stays in the document, and a live handler there would
+  // keep mutating state for a region that is supposed to be inert.
+  return () => target.removeEventListener(event, handler, modifiers);
 };
