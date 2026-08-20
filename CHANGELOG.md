@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.4](https://github.com/aevantec/litevue/compare/v0.5.3...v0.5.4) (2026-08-20)
+
+
+### Features
+
+* **plugins:** add media for viewport-driven behaviour ([#54](https://github.com/aevantec/litevue/issues/54)) ([39a3474](https://github.com/aevantec/litevue/commit/39a3474cd4111da9ebe558f044d65c6bb93bc50a))
+* tear down a single region with app.unmount(el) ([#49](https://github.com/aevantec/litevue/issues/49)) ([14bbf2d](https://github.com/aevantec/litevue/commit/14bbf2d3841a851e5645e8b3e4fbaab2231659cc))
+
+
+### Bug Fixes
+
+* **plugins:** warn when a second app replaces the page-wide media scale ([#61](https://github.com/aevantec/litevue/issues/61)) ([c38f76f](https://github.com/aevantec/litevue/commit/c38f76faf1ef0c3754c9cbcdc64b72c8f0acde03))
+
 ## [0.5.3](https://github.com/aevantec/litevue/compare/v0.5.2...v0.5.3) (2026-08-13)
 
 
