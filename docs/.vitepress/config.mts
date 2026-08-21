@@ -92,6 +92,7 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/start-here/introduction' },
           { text: 'Installation', link: '/start-here/installation' },
+          { text: 'Security', link: '/start-here/security' },
         ],
       },
       {
