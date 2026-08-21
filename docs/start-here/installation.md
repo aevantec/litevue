@@ -77,7 +77,7 @@ Remove the `init` attribute to control mounting yourself — required when you u
 Plugins are installed separately from the core and each one can be loaded on its own, by npm subpath or by a single `<script>` tag. See **[Installing Plugins](/plugins/installation)** for every method, the global names, and the load-order rules.
 
 ::: warning Mount explicitly on pages with user-generated HTML
-The `init` attribute and a bare `createApp().mount()` crawl the entire document. If any part of the page renders user-submitted HTML, pass an explicit target so LiteVue only processes markup you control — see [Security and CSP](/start-here/introduction#security-and-csp).
+The `init` attribute and a bare `createApp().mount()` crawl the entire document. If any part of the page renders user-submitted HTML, pass an explicit target so LiteVue only processes markup you control — see [Security](/start-here/security).
 :::
 
 ## Next steps
