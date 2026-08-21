@@ -29,8 +29,9 @@
  * so light mode is given the dark values here. These are the defaults read off
  * the running dark theme, not approximations.
  *
- * Inline `code` in prose is deliberately left alone: dark chips scattered
- * through light-mode paragraphs hurt readability rather than helping.
+ * Inline `code` in prose keeps its light chip — dark chips scattered through
+ * light-mode paragraphs hurt readability rather than helping — but its text
+ * colour is corrected below.
  */
 :root:not(.dark) {
   --vp-code-block-bg: #161618;
@@ -54,6 +55,17 @@
   --vp-code-tab-active-text-color: #dfdfd6;
   /* the brighter brand green, which is what reads correctly on a dark bar */
   --vp-code-tab-active-bar-color: #42d392;
+
+  /* Inline code in prose.
+   *
+   * VitePress colours it with the brand green, which is legible on the dark
+   * chip but not on the light one: #42b883 against the composited chip
+   * (rgb(239, 240, 243)) measures 2.19:1, well under the 4.5:1 WCAG AA needs
+   * at this 14px size. Dark mode is unaffected and already passes at 5.58:1.
+   *
+   * Darkened to the same hue rather than replaced with a neutral, so inline
+   * code still reads as brand: 5.33:1, with headroom above the threshold. */
+  --vp-code-color: #1a7048;
 }
 
 /* live demos: real litevue apps running inside the docs */
