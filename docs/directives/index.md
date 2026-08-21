@@ -6,6 +6,19 @@ title: Directives
 
 Attributes that give elements behavior. Vue users will recognize almost all of them; `v-teleport` and `v-name` are LiteVue additions, and `v-on` / `v-model` carry extra modifiers.
 
+Two of them have a shorthand, and both spellings are equivalent — the examples
+throughout these pages use the shorthand because it is what most code is
+written in, but the full form is always available and is what a directive is
+actually called:
+
+| Full form | Shorthand |
+| --- | --- |
+| `v-bind:class="…"` | `:class="…"` |
+| `v-on:click="…"` | `@click="…"` |
+
+Modifiers attach to either spelling: `v-on:click.prevent` and `@click.prevent`
+do the same thing.
+
 | Directive                            | Purpose                                                                |
 | ------------------------------------ | ---------------------------------------------------------------------- |
 | [v-scope](/directives/v-scope)       | declare a region and its state                                         |

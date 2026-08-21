@@ -15,8 +15,8 @@ LiteVue covers Alpine's feature set with Vue's syntax, at about half the size. T
 | `x-show="open"`            | [`v-show="open"`](/directives/v-show)                                                         |
 | `x-if` (on `<template>`)   | [`v-if`](/directives/v-if) / `v-else-if` / `v-else` (on any element)                          |
 | `x-for` (on `<template>`)  | [`v-for`](/directives/v-for) with keyed reconciliation                                        |
-| `x-bind:class` / `:class`  | [`:class`](/directives/v-bind) (Vue object/array syntax)                                      |
-| `x-on:click` / `@click`    | [`@click`](/directives/v-on)                                                                  |
+| `x-bind:class` / `:class`  | [`v-bind:class`](/directives/v-bind) / `:class` (Vue object/array syntax)                    |
+| `x-on:click` / `@click`    | [`v-on:click`](/directives/v-on) / `@click`                                                   |
 | `x-model`                  | [`v-model`](/directives/v-model) (+ `.lazy` `.number` `.trim` `.debounce` `.fill`)            |
 | `x-text` / `x-html`        | [`v-text`](/directives/v-text) / [`v-html`](/directives/v-html) — plus mustache interpolation |
 | `x-ref="el"` / `$refs.el`  | [`ref="el"`](/directives/ref) / [`$refs.el`](/magics/refs)                                    |
