@@ -192,7 +192,8 @@
     "docs:preview": "vitepress preview docs",
     "format": "prettier --write \"**/*.{ts,mts,js,html,json}\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:size": "node scripts/check-size.mjs"
   },
   "repository": {
     "type": "git",
