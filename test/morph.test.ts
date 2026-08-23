@@ -290,7 +290,10 @@ describe('morph', () => {
     const { root } = await mountApp(
       `<div><ul id="l"><li id="5">by-id</li><li data-id="5">by-data</li></ul></div>`
     );
-    const byId = root.querySelector('#l > #5')!;
+    // `[id="5"]`, not `#5`: a CSS identifier cannot start with a digit, so the
+    // shorthand is an invalid selector that browsers reject and jsdom 30 now
+    // rejects too. The id itself is legal HTML, which is what this asserts.
+    const byId = root.querySelector('#l > [id="5"]')!;
     const byData = root.querySelector('[data-id="5"]')!;
 
     morph(

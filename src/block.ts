@@ -1,7 +1,7 @@
 import { Context, createContext } from './context';
 import { walk } from './walk';
 import { remove } from '@vue/shared';
-import { stop } from '@vue/reactivity';
+import { stopEffect } from './scheduler';
 
 export class Block {
   template: Element | DocumentFragment;
@@ -109,7 +109,7 @@ export class Block {
     this.ctx.blocks.forEach((child) => {
       child.teardown();
     });
-    this.ctx.effects.forEach(stop);
+    this.ctx.effects.forEach(stopEffect);
     this.ctx.cleanups.forEach((fn) => fn());
   }
 }
