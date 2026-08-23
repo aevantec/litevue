@@ -19,12 +19,30 @@ updates:
       dev-dependencies:
         dependency-type: development
         update-types: ['minor', 'patch']
+        exclude-patterns:
+          # @vue/shared is a devDependency whose code ships in the bundle, and
+          # it has to move in lockstep with @vue/reactivity. Batched into this
+          # group it arrived as a routine bump while reactivity stayed behind —
+          # the exact version drift this project has already been bitten by.
+          - '@vue/shared'
     ignore:
       # @vue/reactivity is the only runtime dependency and is pinned to ~3.4.
       # Crossing its major is a breaking change for litevue, so it's a deliberate
       # decision, not a bot PR.
+      #
+      # Minor is ignored too, which is not the usual choice. 3.5 removes
+      # `ReactiveEffect.active`, which src/scheduler.ts uses to skip effects
+      # stopped between queueing and flush; on 3.5 the build fails to compile
+      # and test/unmount.test.ts fails. Moving to 3.5 is real work — see the
+      # "Re-decide @vue/reactivity 3.4 vs 3.5" card — not something to take
+      # from a bot PR.
       - dependency-name: '@vue/reactivity'
-        update-types: ['version-update:semver-major']
+        update-types:
+          ['version-update:semver-major', 'version-update:semver-minor']
+      # Must track @vue/reactivity exactly; never bumped on its own.
+      - dependency-name: '@vue/shared'
+        update-types:
+          ['version-update:semver-major', 'version-update:semver-minor']
 
   - package-ecosystem: github-actions
     directory: /

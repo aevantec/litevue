@@ -61,6 +61,12 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return () => handler();
   }
 
+  // Held at directive scope so teardown can cancel it. A debounce pending when
+  // the region unmounts used to fire afterwards and run its handler against a
+  // scope that is meant to be inert — `app.unmount(el)` leaves the element in
+  // the document, so nothing else stopped it.
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
   if (modifiers) {
     // map modifiers
     if (arg === 'click') {
@@ -76,10 +82,9 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       if (m) {
         const fn = invoke;
         const ms = m[1] ? +m[1] : 250;
-        let t: ReturnType<typeof setTimeout>;
         invoke = (e: Event) => {
-          clearTimeout(t);
-          t = setTimeout(fn, ms, e);
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(fn, ms, e);
         };
         continue;
       }
@@ -152,5 +157,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   // was all-or-nothing and the DOM went with it — but app.unmount(el) tears
   // down a region that stays in the document, and a live handler there would
   // keep mutating state for a region that is supposed to be inert.
-  return () => target.removeEventListener(event, handler, modifiers);
+  return () => {
+    clearTimeout(debounceTimer);
+    target.removeEventListener(event, handler, modifiers);
+  };
 };

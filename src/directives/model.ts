@@ -105,15 +105,18 @@ export const model: Directive<
 
     // .debounce[-ms]: rate-limit assignments from input events
     let write = assign;
+    // cancelled on teardown alongside the listeners below: a pending debounce
+    // would otherwise assign into a scope that has already been torn down
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
     for (const key in modifiers || {}) {
       const m = /^debounce(?:-(\d+))?$/.exec(key);
       if (m) {
         const ms = m[1] ? +m[1] : 250;
-        let t: ReturnType<typeof setTimeout>;
         write = (val: any) => {
-          clearTimeout(t);
-          t = setTimeout(assign, ms, val);
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(assign, ms, val);
         };
+        off.push(() => clearTimeout(debounceTimer));
       }
     }
 
