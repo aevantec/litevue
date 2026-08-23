@@ -33,9 +33,22 @@ export interface App {
   unmount(el?: string | Element | null): void;
 }
 
+/**
+ * A plugin may return a teardown function, which runs when the app is fully
+ * unmounted. Returning nothing is still valid, so existing plugins are
+ * unaffected.
+ *
+ * The shape matches directives, which already return their cleanup. Without
+ * it a plugin could acquire page-wide resources — observers, listeners,
+ * matchMedia subscriptions — and had no way to give them back: the media
+ * plugin held five MediaQueryList subscriptions for the life of the page
+ * whether or not any app was still running.
+ */
+export type PluginTeardown = () => void;
+
 export type Plugin<Options = any> =
-  | ((app: App, options?: Options) => void)
-  | { install(app: App, options?: Options): void };
+  | ((app: App, options?: Options) => PluginTeardown | void)
+  | { install(app: App, options?: Options): PluginTeardown | void };
 
 export const createApp = (initialData?: any) => {
   // root context
@@ -81,6 +94,7 @@ export const createApp = (initialData?: any) => {
 
   let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
+  const pluginTeardowns: PluginTeardown[] = [];
 
   const app: App = {
     get scope() {
@@ -99,7 +113,10 @@ export const createApp = (initialData?: any) => {
     use(plugin, options) {
       if (!installedPlugins.has(plugin)) {
         installedPlugins.add(plugin);
-        (typeof plugin === 'function' ? plugin : plugin.install)(app, options);
+        const teardown = (
+          typeof plugin === 'function' ? plugin : plugin.install
+        )(app, options);
+        if (typeof teardown === 'function') pluginTeardowns.push(teardown);
       }
       return app;
     },
@@ -181,6 +198,22 @@ export const createApp = (initialData?: any) => {
       if (el == null) {
         rootBlocks.forEach((block) => block.teardown());
         rootBlocks = [];
+        // A full unmount ends the app, so its plugins are released with it.
+        // unmount(el) is a per-region teardown and deliberately leaves them:
+        // the app is still running and other regions still need them.
+        //
+        // The install record is cleared too, so use() after this reinstalls
+        // rather than silently doing nothing against a torn-down app.
+        // One plugin throwing must not strand the rest, so each is isolated.
+        pluginTeardowns.splice(0).forEach((fn) => {
+          try {
+            fn();
+          } catch (e) {
+            import.meta.env.DEV &&
+              console.error('[litevue] a plugin teardown threw:', e);
+          }
+        });
+        installedPlugins.clear();
         return;
       }
 
