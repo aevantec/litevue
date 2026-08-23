@@ -11,6 +11,12 @@ import type { LiteVueDevtools } from './devtools';
  * full viewport edge, the way browser devtools do. Only the cross-axis stays
  * resizable when docked — the other one would fight the dock.
  *
+ * `min-height` is 320px rather than 200. Measured against the panel's fixed
+ * chrome — 34px header, 28px tabs, 23px filter — 200px left about five rows of
+ * tree, which is small enough that resizing down produced a panel you could not
+ * actually read. 320 keeps roughly eleven. It matters most docked to the bottom,
+ * where height is the only axis the user controls.
+ *
  * Note this template is a string: comments inside it ship. Explanations belong
  * out here, where they are stripped from the bundle.
  */
@@ -71,7 +77,7 @@ const css = `
   height: 440px;
   max-height: calc(100vh - 24px);
   min-width: 320px;
-  min-height: 200px;
+  min-height: 320px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
