@@ -1,17 +1,19 @@
 {
+  // TypeScript 7 removed `baseUrl` and `moduleResolution: node`, and rejects
+  // non-relative entries in `paths`. The alias below still points the package
+  // name at the source, which is what keeps the plugins resolvable in-repo.
   "compilerOptions": {
-    "baseUrl": ".",
     // the plugins import the core by package name so the published bundles can
     // keep it external; in-repo it has to resolve to the source
     "paths": {
-      "@aevantec/litevue": ["src/index.ts"]
+      "@aevantec/litevue": ["./src/index.ts"]
     },
     "outDir": "dist",
     "declaration": true,
     "sourceMap": false,
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowJs": false,
     "strict": true,
     "noUnusedLocals": true,

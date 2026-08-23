@@ -1,9 +1,8 @@
 import {
   effect as rawEffect,
-  stop,
   type ReactiveEffectRunner,
 } from '@vue/reactivity';
-import { queueJob } from './scheduler';
+import { queueJob, stopEffect } from './scheduler';
 
 /**
  * watchEffect(fn) — run `fn` now, then again whenever any reactive state it
@@ -24,5 +23,5 @@ export const watchEffect = (fn: () => void): (() => void) => {
   // the first run happens here, synchronously; the scheduler only handles
   // subsequent triggers
   runner = rawEffect(fn, { scheduler: () => queueJob(runner) });
-  return () => stop(runner);
+  return () => stopEffect(runner);
 };
