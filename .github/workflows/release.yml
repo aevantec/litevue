@@ -47,6 +47,10 @@ jobs:
           app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
 
+      # Held at v4 on purpose. v5 exists, but this action is the release path
+      # and nothing in CI exercises it — a break only shows up at the moment a
+      # release is being cut. Bump it on its own, deliberately, not alongside
+      # actions that a green CI run actually verifies.
       - uses: googleapis/release-please-action@v4
         id: release
         with:
@@ -69,14 +73,14 @@ jobs:
       # trusted publisher is updated to match.
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-please.outputs.tag }}
 
       # version comes from the packageManager field in package.json
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
