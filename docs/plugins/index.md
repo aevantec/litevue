@@ -29,6 +29,30 @@ createApp({ count: 0 }).use(myPlugin, { speed: 2 }).use(helpers).mount();
 
 Plugins can register custom directives via `app.directive()` and extend the root scope via `app.scope`. `App` and `Plugin<Options>` types are exported for TypeScript authors.
 
+## Releasing what a plugin acquires
+
+A plugin that acquires a page-wide resource — an observer, a listener on `window`, a `matchMedia` subscription, a timer — should return a function that releases it. LiteVue calls that function when the app is fully unmounted:
+
+```js
+const analytics = (app) => {
+  const onHide = () => flush();
+  document.addEventListener('visibilitychange', onHide);
+
+  return () => {
+    document.removeEventListener('visibilitychange', onHide);
+  };
+};
+```
+
+The shape matches directives, which already return their cleanup. Returning nothing remains valid, so a plugin that holds no resources needs no change.
+
+Two details govern when it runs:
+
+- **`app.unmount()` releases plugins; `app.unmount(el)` does not.** The second form tears down one region while the app keeps running, and the remaining regions still need their directives registered.
+- **After a full unmount, `use()` installs again.** The record of what was installed is cleared alongside the teardowns, so re-using a plugin on a torn-down app reinstalls it rather than silently doing nothing.
+
+A teardown that throws is reported and does not prevent the others from running.
+
 A directive that registers anything outside `effect()` — a listener, an observer, a timer — must [return a cleanup](/globals/create-app#returning-a-cleanup). `unmount(el)` tears down a region whose elements stay in the document, so whatever you left attached keeps running.
 
 ## First-party plugins
