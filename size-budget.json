@@ -3,7 +3,7 @@
   "budgets": {
     "dist/litevue.iife.js": 9500,
     "dist/litevue-plugins.iife.js": 4300,
-    "dist/litevue-devtools.iife.js": 5600,
+    "dist/litevue-devtools.iife.js": 6000,
     "dist/plugins/collapse.iife.js": 550,
     "dist/plugins/focus.iife.js": 700,
     "dist/plugins/intersect.iife.js": 350,
@@ -13,5 +13,6 @@
     "dist/plugins/persist.iife.js": 820,
     "dist/plugins/resize.iife.js": 340,
     "dist/plugins/transition.iife.js": 760
-  }
+  },
+  "//devtools": "The devtools ceiling is looser than the others on purpose. This bundle is development-only and never loads in production, so its bytes cost a visitor nothing — and the panel's usability is the entire reason it exists. Raised from 5600 to 6000 when docking landed, to leave room for the panel to keep improving rather than making every UI change a budget negotiation."
 }

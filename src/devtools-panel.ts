@@ -3,6 +3,17 @@
 // separately-bundled panel always sees the same registry instance as the app.
 import type { LiteVueDevtools } from './devtools';
 
+/**
+ * Docked layouts (`.panel.dock-bottom` / `.dock-right`).
+ *
+ * Floating suits a quick look, but the panel is 640px wide and the state tree
+ * is nested, so anything real is read through a keyhole. Docking gives it a
+ * full viewport edge, the way browser devtools do. Only the cross-axis stays
+ * resizable when docked — the other one would fight the dock.
+ *
+ * Note this template is a string: comments inside it ship. Explanations belong
+ * out here, where they are stripped from the bundle.
+ */
 const css = `
 :host {
   all: initial;
@@ -67,6 +78,34 @@ const css = `
   overflow: hidden;
   resize: both;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+.panel.dock-bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  resize: vertical;
+}
+.panel.dock-right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  resize: horizontal;
+}
+.panel.dock-bottom .header,
+.panel.dock-right .header {
+  cursor: default;
 }
 .header {
   display: flex;
@@ -319,6 +358,11 @@ let selectedStore: string | null = null;
 let picking = false;
 let filterText = '';
 let activeTab: 'Elements' | 'Stores' = 'Elements';
+let dockBtn: HTMLElement;
+let dock: Dock = 'float';
+// the floating geometry, kept while docked so undocking restores it
+let floatW = '';
+let floatH = '';
 let elementsTab: HTMLElement;
 let storesTab: HTMLElement;
 
@@ -334,12 +378,15 @@ const THEME_KEY = 'litevue-devtools-theme';
 const UI_KEY = 'litevue-devtools-ui';
 
 // persisted panel chrome: open state, position (right/bottom offsets) and size
+type Dock = 'float' | 'bottom' | 'right';
+
 interface UiState {
   open?: boolean;
   right?: number;
   bottom?: number;
   w?: number;
   h?: number;
+  dock?: Dock;
 }
 
 const loadUi = (): UiState => {
@@ -376,6 +423,37 @@ const themeIcons: Record<ThemeMode, string> = {
   ),
 };
 
+/**
+ * Dock icons: an outlined viewport with the docked region filled, which is the
+ * convention browser devtools use. Floating shows a detached window instead.
+ */
+const dockIcons: Record<Dock, string> = {
+  float: icon(
+    '<rect x="2" y="4" width="14" height="11" rx="1"/>' +
+      '<rect x="9" y="10" width="13" height="10" rx="1" fill="currentColor"/>'
+  ),
+  bottom: icon(
+    '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
+      '<rect x="2" y="14" width="20" height="7" fill="currentColor"/>'
+  ),
+  right: icon(
+    '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
+      '<rect x="14" y="3" width="8" height="18" fill="currentColor"/>'
+  ),
+};
+
+const nextDock: Record<Dock, Dock> = {
+  float: 'bottom',
+  bottom: 'right',
+  right: 'float',
+};
+
+const dockTitles: Record<Dock, string> = {
+  float: 'floating',
+  bottom: 'docked to bottom',
+  right: 'docked to right',
+};
+
 const nextTheme: Record<ThemeMode, ThemeMode> = {
   dark: 'light',
   light: 'system',
@@ -400,6 +478,32 @@ const applyTheme = () => {
 // property paths ("items", "items.0", …) the user has expanded; kept across
 // flush re-renders so the tree doesn't collapse while state changes
 const expandedPaths = new Set<string>();
+
+/**
+ * Docking swaps which edges the panel is pinned to. The floating geometry is
+ * left in the inline style untouched, so undocking returns the panel to
+ * wherever the user last dragged and sized it rather than resetting it.
+ */
+const applyDock = (next: Dock) => {
+  // Remember the floating size before pinning, then clear the inline value on
+  // whichever axis the dock controls. An inline width beats the stylesheet, so
+  // leaving a saved 640px in place left a "docked" panel rendering at 640
+  // instead of spanning the viewport — visible only after a reload, since a
+  // freshly opened panel has no inline size yet.
+  if (dock === 'float') {
+    floatW = panelEl.style.width || floatW;
+    floatH = panelEl.style.height || floatH;
+  }
+  dock = next;
+  panelEl.classList.toggle('dock-bottom', next === 'bottom');
+  panelEl.classList.toggle('dock-right', next === 'right');
+
+  panelEl.style.width = next === 'bottom' ? '' : floatW;
+  panelEl.style.height = next === 'right' ? '' : floatH;
+
+  dockBtn.innerHTML = dockIcons[next];
+  dockBtn.title = 'panel: ' + dockTitles[next];
+};
 
 const h = (tag: string, className: string, text?: string) => {
   const el = document.createElement(tag);
@@ -853,6 +957,8 @@ const build = () => {
   // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {
     if ((e.target as Element).closest('.btn')) return;
+    // a docked panel is pinned to its edges; dragging it would fight the dock
+    if (dock !== 'float') return;
     e.preventDefault();
     const rect = panelEl.getBoundingClientRect();
     const startRight = window.innerWidth - rect.right;
@@ -876,6 +982,16 @@ const build = () => {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   });
+  // Cycles through the dock positions, matching how the theme button works and
+  // how browser devtools present the same control — the icon shows the current
+  // state rather than opening a menu to pick one.
+  dockBtn = h('button', 'btn');
+  dockBtn.onclick = () => {
+    applyDock(nextDock[dock]);
+    saveUi({ dock });
+  };
+  header.appendChild(dockBtn);
+
   themeBtn = h('button', 'btn');
   themeBtn.onclick = () => {
     theme = nextTheme[theme];
@@ -946,8 +1062,9 @@ const build = () => {
   const ui = loadUi();
   if (ui.right != null) panelEl.style.right = ui.right + 'px';
   if (ui.bottom != null) panelEl.style.bottom = ui.bottom + 'px';
-  if (ui.w) panelEl.style.width = ui.w + 'px';
-  if (ui.h) panelEl.style.height = ui.h + 'px';
+  if (ui.w) floatW = panelEl.style.width = ui.w + 'px';
+  if (ui.h) floatH = panelEl.style.height = ui.h + 'px';
+  applyDock(ui.dock || 'float');
   if (ui.open) {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
@@ -960,7 +1077,13 @@ const build = () => {
       clearTimeout(t);
       t = setTimeout(() => {
         if (panelEl.style.display !== 'none' && panelEl.offsetWidth) {
-          saveUi({ w: panelEl.offsetWidth, h: panelEl.offsetHeight });
+          // Docked, only one axis is resizable and the other is the viewport's.
+          // Saving the pinned one would overwrite the floating size, so a later
+          // undock would restore a panel as wide as the screen.
+          saveUi({
+            ...(dock !== 'bottom' && { w: panelEl.offsetWidth }),
+            ...(dock !== 'right' && { h: panelEl.offsetHeight }),
+          });
         }
       }, 300);
     }).observe(panelEl);
