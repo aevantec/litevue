@@ -50,6 +50,12 @@ jobs:
       - name: Check bundle boundaries
         run: pnpm check:bundles
 
+      - name: Check bundle sizes
+        # Size is part of what this library promises. Without a gate it is
+        # measured by hand, and a few hundred bytes of drift goes unnoticed
+        # until a number quoted in the docs is simply wrong.
+        run: pnpm check:size
+
       # Pinned CDN versions in the docs are rewritten by release-please, but
       # only on marked lines in registered files. Miss either and the URL is
       # frozen at whatever was typed, which nothing else would notice.

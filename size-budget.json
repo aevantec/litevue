@@ -1,0 +1,17 @@
+{
+  "//": "Gzipped ceilings for every published bundle, in bytes. Read by scripts/check-size.mjs in CI. Raising a number is a deliberate edit with a reason in the commit message, not silent drift. The core ceiling is set so the documented '~9kb' stays true: past 9500 the claim needs rewording, not just a bigger budget. Headroom is a few percent by design — enough that ordinary work does not trip it, tight enough that a real feature is a conversation.",
+  "budgets": {
+    "dist/litevue.iife.js": 9500,
+    "dist/litevue-plugins.iife.js": 4300,
+    "dist/litevue-devtools.iife.js": 5600,
+    "dist/plugins/collapse.iife.js": 550,
+    "dist/plugins/focus.iife.js": 700,
+    "dist/plugins/intersect.iife.js": 350,
+    "dist/plugins/mask.iife.js": 470,
+    "dist/plugins/media.iife.js": 1350,
+    "dist/plugins/morph.iife.js": 1350,
+    "dist/plugins/persist.iife.js": 820,
+    "dist/plugins/resize.iife.js": 340,
+    "dist/plugins/transition.iife.js": 760
+  }
+}
