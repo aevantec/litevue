@@ -369,6 +369,8 @@ let dock: Dock = 'float';
 // the floating geometry, kept while docked so undocking restores it
 let floatW = '';
 let floatH = '';
+let floatRight = '';
+let floatBottom = '';
 let elementsTab: HTMLElement;
 let storesTab: HTMLElement;
 
@@ -491,19 +493,30 @@ const expandedPaths = new Set<string>();
  * wherever the user last dragged and sized it rather than resetting it.
  */
 const applyDock = (next: Dock) => {
-  // Remember the floating size before pinning, then clear the inline value on
-  // whichever axis the dock controls. An inline width beats the stylesheet, so
-  // leaving a saved 640px in place left a "docked" panel rendering at 640
-  // instead of spanning the viewport — visible only after a reload, since a
-  // freshly opened panel has no inline size yet.
+  // Everything the floating panel controls is written as an inline style, by
+  // dragging (right/bottom) or by the resize grip (width/height). Inline beats
+  // the stylesheet, so those values would survive a dock and hold the panel
+  // away from the edge it is supposed to be pinned to: dragged to the middle
+  // and then docked, it stayed in the middle.
+  //
+  // So the floating geometry is stashed on the way in and cleared, then put
+  // back on the way out. Docking is the panel's state, not a suggestion, and
+  // undocking returns it to exactly where it was left.
   if (dock === 'float') {
     floatW = panelEl.style.width || floatW;
     floatH = panelEl.style.height || floatH;
+    floatRight = panelEl.style.right || floatRight;
+    floatBottom = panelEl.style.bottom || floatBottom;
   }
   dock = next;
+  const docked = next !== 'float';
   panelEl.classList.toggle('dock-bottom', next === 'bottom');
   panelEl.classList.toggle('dock-right', next === 'right');
 
+  // both docks pin to the right and bottom edges, so neither offset may remain
+  panelEl.style.right = docked ? '' : floatRight;
+  panelEl.style.bottom = docked ? '' : floatBottom;
+  // each dock owns one axis and leaves the other resizable
   panelEl.style.width = next === 'bottom' ? '' : floatW;
   panelEl.style.height = next === 'right' ? '' : floatH;
 
@@ -1066,8 +1079,8 @@ const build = () => {
 
   // restore persisted chrome: position, size, open state
   const ui = loadUi();
-  if (ui.right != null) panelEl.style.right = ui.right + 'px';
-  if (ui.bottom != null) panelEl.style.bottom = ui.bottom + 'px';
+  if (ui.right != null) floatRight = panelEl.style.right = ui.right + 'px';
+  if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.w) floatW = panelEl.style.width = ui.w + 'px';
   if (ui.h) floatH = panelEl.style.height = ui.h + 'px';
   applyDock(ui.dock || 'float');
