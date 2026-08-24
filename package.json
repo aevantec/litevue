@@ -226,7 +226,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@vue/shared": "~3.4.0",
+    "@vue/shared": "~3.5.41",
     "jsdom": "^30.0.1",
     "prettier": "^3.4.0",
     "publint": "^0.3.24",

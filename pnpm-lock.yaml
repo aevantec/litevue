@@ -16,8 +16,8 @@ importers:
         specifier: ^0.18.5
         version: 0.18.5
       '@vue/shared':
-        specifier: ~3.4.0
-        version: 3.4.38
+        specifier: ~3.5.41
+        version: 3.5.41
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1
