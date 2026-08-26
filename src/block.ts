@@ -50,14 +50,6 @@ export class Block {
   }
 
   insert(parent: Element, anchor: Node | null = null) {
-    // Registered once, on the first insert: a block detached wholesale — morph
-    // removes subtrees directly — has to leave its parent's block list and
-    // tear down, or it keeps a context, a scope proxy and its effects alive
-    // with nothing in the document to render. Later inserts are moves.
-    if (!this.owned) {
-      this.owned = true;
-      own(() => this.discard(), this.el);
-    }
     if (this.isFragment) {
       if (this.start) {
         // already inserted, moving
@@ -80,6 +72,22 @@ export class Block {
       // teleported roots already live under their target
       parent.insertBefore(this.template, anchor);
     }
+
+    // Registered once, after the nodes are in place: a block detached
+    // wholesale — morph removes subtrees directly — has to leave its parent's
+    // block list and tear down, or it keeps a context, a scope proxy and its
+    // effects alive with nothing in the document to render.
+    //
+    // After, not before, because a fragment block's `el` is its start marker,
+    // and that marker does not exist until this first insert creates it. Owned
+    // any earlier and the disposer would sit on the DocumentFragment, which
+    // insertBefore empties and which never enters the document — so no subtree
+    // walk could ever reach it. Later inserts are moves, and the marker moves
+    // with the block.
+    if (!this.owned) {
+      this.owned = true;
+      own(() => this.discard(), this.el);
+    }
   }
 
   remove() {
@@ -87,18 +95,26 @@ export class Block {
       remove(this.parentCtx.blocks, this);
     }
     const removeNow = () => {
-      if (this.start) {
-        const parent = this.start.parentNode!;
-        let node: Node | null = this.start;
-        let next: Node | null;
-        while (node) {
-          next = node.nextSibling;
-          parent.removeChild(node);
-          if (node === this.end) break;
-          node = next;
+      // The nodes can already be gone. A leave hook defers this call, and in
+      // the meantime the whole region may have been torn out — morph removes
+      // subtrees directly — which left the deferred removal dereferencing a
+      // null parentNode and rejecting into nothing. Tear down either way.
+      const parent = this.start
+        ? this.start.parentNode
+        : this.template.parentNode;
+      if (parent) {
+        if (this.start) {
+          let node: Node | null = this.start;
+          let next: Node | null;
+          while (node) {
+            next = node.nextSibling;
+            parent.removeChild(node);
+            if (node === this.end) break;
+            node = next;
+          }
+        } else {
+          parent.removeChild(this.template);
         }
-      } else {
-        this.template.parentNode!.removeChild(this.template);
       }
       this.teardown();
     };

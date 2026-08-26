@@ -246,6 +246,116 @@ describe('node ownership: nothing accumulates across re-mounts', () => {
   });
 });
 
+describe('node ownership: fragment blocks', () => {
+  test('a <template v-for> block leaves its parent context', async () => {
+    const { ctx } = mount(
+      `<div id="root" v-scope="{ items: [1,2,3] }"><section id="r"><ul>` +
+        `<template v-for="i in items"><li>{{ i }}</li></template>` +
+        `</ul></section></div>`
+    );
+    await tick(6);
+    expect(ctx.blocks.length).toBeGreaterThan(0);
+
+    // a fragment block's `el` is its start marker, which does not exist until
+    // the first insert creates it — owned any earlier and the disposer would
+    // sit on the DocumentFragment, which insertBefore empties and which never
+    // enters the document
+    morph(region(), `<section id="r"><span>gone</span></section>`);
+    await tick(6);
+    expect(ctx.blocks.length).toBe(0);
+  });
+
+  test('a <template v-if> block leaves its parent context', async () => {
+    const { ctx } = mount(
+      `<div id="root" v-scope="{ on: true }"><section id="r">` +
+        `<template v-if="on"><b>a</b><i>b</i></template>` +
+        `</section></div>`
+    );
+    await tick(6);
+    expect(ctx.blocks.length).toBeGreaterThan(0);
+
+    morph(region(), `<section id="r"><span>gone</span></section>`);
+    await tick(6);
+    expect(ctx.blocks.length).toBe(0);
+  });
+});
+
+describe('node ownership: nodes morph mounted', () => {
+  test('a node morph mounted is itself released by the next morph', async () => {
+    const shared = reactive({ x: 0 });
+    let runs = 0;
+    mount(
+      `<div id="root" v-scope><section id="r"><span>start</span></section></div>`,
+      {
+        probe() {
+          shared.x;
+          runs++;
+        },
+      }
+    );
+    await tick(4);
+
+    morph(region(), `<section id="r"><b v-effect="probe()">in</b></section>`);
+    await tick(6);
+    expect(runs).toBeGreaterThan(0);
+
+    morph(region(), `<section id="r"><i>out</i></section>`);
+    await tick(6);
+    const settled = runs;
+
+    shared.x++;
+    await tick(6);
+    expect(runs).toBe(settled);
+  });
+
+  test('the devtools registry does not grow as a scope root is re-morphed', async () => {
+    (window as any).__LITEVUE_DEVTOOLS__ = true;
+    mount(
+      `<div id="root" v-scope><section id="r"><div v-scope="{ a: 1 }"><b>{{ a }}</b></div></section></div>`
+    );
+    await tick(4);
+    const start = devtools.scopes.size;
+
+    for (let i = 0; i < 10; i++) {
+      morph(
+        region(),
+        `<section id="r"><div v-scope="{ a: ${i} }"><b>{{ a }}</b></div></section>`
+      );
+      await tick(3);
+    }
+
+    expect(devtools.scopes.size).toBeLessThanOrEqual(start + 1);
+  });
+});
+
+describe('node ownership: deferred removal', () => {
+  test('a leave hook that resolves after the subtree is gone does not throw', async () => {
+    const { root } = mount(
+      `<div id="root" v-scope="{ ok: true }"><section id="r"><b v-if="ok">x</b></section></div>`
+    );
+    await tick(6);
+
+    // stands in for the transition plugin's unmount mode, which defers
+    // Block.remove()'s DOM work behind a promise
+    const el = root.querySelector('b') as any;
+    let release!: () => void;
+    el.__leave = () => new Promise<void>((resolve) => (release = resolve));
+
+    root.__ctx.scope.ok = false;
+    await tick(4);
+    expect(release).toBeTypeOf('function');
+
+    // the region goes while the leave is still pending, so by the time the
+    // deferred removal runs its nodes have no parent
+    morph(region(), `<section id="r"><span>gone</span></section>`);
+    await tick(4);
+    release();
+    await tick(10);
+
+    expect(root.querySelector('b')).toBeNull();
+  });
+});
+
 describe('node ownership: disposal is exactly once', () => {
   test('a cleanup inside a torn-down block runs exactly once', async () => {
     const calls: string[] = [];
@@ -311,6 +421,26 @@ describe('node ownership: surviving nodes are untouched', () => {
     root.__ctx.scope.items = [1, 2, 3];
     await tick(6);
     expect(root.querySelectorAll('li').length).toBe(3);
+  });
+
+  test('unmounting one app leaves another on the page working', async () => {
+    document.body.innerHTML =
+      `<div id="a" v-scope="{ n: 0 }"><b v-effect="n">A</b></div>` +
+      `<div id="b" v-scope="{ n: 0 }"><b v-effect="n">B</b></div>`;
+    const a = document.querySelector('#a') as HTMLElement;
+    const b = document.querySelector('#b') as any;
+    const appA = createApp().use(morphPlugin).mount(a);
+    createApp().use(morphPlugin).mount(b);
+    await tick(6);
+
+    // the ownership cursor is module-level, so a second app must not be
+    // caught up in the first one's teardown
+    appA.unmount(a);
+    await tick(6);
+
+    b.__ctx.scope.n = 5;
+    await tick(6);
+    expect(b.querySelector('b')).not.toBeNull();
   });
 
   test('a v-if still switches branches after an unrelated sibling is morphed away', async () => {
