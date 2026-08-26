@@ -2,6 +2,7 @@ import { isArray, isObject } from '@vue/shared';
 import { Block } from '../block';
 import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
+import { setOwner } from '../ownership';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
 const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/;
@@ -23,6 +24,12 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   const anchor = new Text('');
   parent.insertBefore(anchor, el);
   parent.removeChild(el);
+
+  // From here on this directive's effects belong to the anchor. `el` is the
+  // template and has just left the document, so anything owned by it could
+  // never be reached by a subtree disposal — the list effect would go on
+  // mounting blocks into a detached parent.
+  setOwner(anchor);
 
   const sourceExp = inMatch[2].trim();
   let valueExp = inMatch[1].trim().replace(stripParensRE, '').trim();

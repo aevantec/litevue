@@ -3,12 +3,13 @@ import {
   reactive,
   ReactiveEffectRunner,
 } from '@vue/reactivity';
-import { hasOwn } from '@vue/shared';
+import { hasOwn, remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
 import { createId, createWatch } from './magics';
-import { queueJob } from './scheduler';
+import { queueJob, stopEffect } from './scheduler';
 import { inOnce } from './walk';
+import { own } from './ownership';
 export interface Context {
   key?: any;
   scope: Record<string, any>;
@@ -26,6 +27,13 @@ export interface Context {
    * reading it here keeps them from importing — and re-bundling — the core.
    */
   walk?: (node: Node, ctx: Context) => ChildNode | null | void;
+  /**
+   * Disposes a node and its subtree. Published on the root context alongside
+   * `walk` and inherited by the spreads above, so a plugin that removes nodes
+   * — morph does, directly — can release what they owned without importing
+   * and re-bundling the core.
+   */
+  dispose?: (node: Node) => void;
 }
 
 export const createContext = (parent?: Context): Context => {
@@ -47,6 +55,14 @@ export const createContext = (parent?: Context): Context => {
         scheduler: () => queueJob(e),
       });
       ctx.effects.push(e);
+      // owned by the node being walked as well, so detaching that node alone
+      // releases the effect. Both halves matter: stopping alone would leave a
+      // dead runner in ctx.effects, so a region morphed on a timer would
+      // accumulate one uncollectable entry per cycle.
+      own(() => {
+        stopEffect(e);
+        remove(ctx.effects, e);
+      });
       return e;
     },
   };

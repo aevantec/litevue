@@ -2,6 +2,7 @@ import { Context, createContext } from './context';
 import { walk } from './walk';
 import { remove } from '@vue/shared';
 import { stopEffect } from './scheduler';
+import { own } from './ownership';
 
 export class Block {
   template: Element | DocumentFragment;
@@ -12,6 +13,7 @@ export class Block {
   isFragment: boolean;
   start?: Text;
   end?: Text;
+  owned = false;
 
   get el() {
     return this.start || (this.template as Element);
@@ -48,6 +50,14 @@ export class Block {
   }
 
   insert(parent: Element, anchor: Node | null = null) {
+    // Registered once, on the first insert: a block detached wholesale — morph
+    // removes subtrees directly — has to leave its parent's block list and
+    // tear down, or it keeps a context, a scope proxy and its effects alive
+    // with nothing in the document to render. Later inserts are moves.
+    if (!this.owned) {
+      this.owned = true;
+      own(() => this.discard(), this.el);
+    }
     if (this.isFragment) {
       if (this.start) {
         // already inserted, moving
@@ -105,11 +115,28 @@ export class Block {
     }
   }
 
+  /**
+   * The bookkeeping half of `remove()`, for a block whose nodes are already
+   * gone. `remove()` cannot be reused there: its `removeChild` calls would
+   * throw on nodes that no longer have this parent.
+   */
+  discard() {
+    if (this.parentCtx) {
+      remove(this.parentCtx.blocks, this);
+    }
+    this.teardown();
+  }
+
   teardown() {
-    this.ctx.blocks.forEach((child) => {
+    // drained rather than iterated: a cleanup, or a nested disposal reached
+    // through one, can splice these same arrays, and forEach would then skip
+    // entries. Draining also makes a second teardown a no-op, which the
+    // per-node disposers rely on — a subtree walk can reach a block through
+    // both its own node and its parent's.
+    this.ctx.blocks.splice(0).forEach((child) => {
       child.teardown();
     });
-    this.ctx.effects.forEach(stopEffect);
-    this.ctx.cleanups.forEach((fn) => fn());
+    this.ctx.effects.splice(0).forEach(stopEffect);
+    this.ctx.cleanups.splice(0).forEach((fn) => fn());
   }
 }

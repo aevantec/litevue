@@ -2,6 +2,9 @@ import { Block } from '../block';
 import { evaluate } from '../eval';
 import { checkAttr } from '../utils';
 import { Context } from '../context';
+import type { ReactiveEffectRunner } from '@vue/reactivity';
+import { own, setOwner } from '../ownership';
+import { stopEffect } from '../scheduler';
 
 interface Branch {
   exp?: string | null;
@@ -43,6 +46,10 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const nextNode = el.nextSibling;
   parent.removeChild(el);
 
+  // as in v-for, `el` is a template that has left the document and cannot own
+  // anything reachable
+  setOwner(anchor);
+
   let block: Block | undefined;
   let activeBranchIndex: number = -1;
 
@@ -58,7 +65,14 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     }
   };
 
-  ctx.effect(() => {
+  // Unlike v-for, this anchor is in the document only while no branch is
+  // rendered — it is pulled out again below as soon as a block is inserted.
+  // So the branch effect is owned twice: by the anchor, and by each block root
+  // as it is mounted. Whichever of the two is in a disposed subtree stops it,
+  // and stopping twice is a no-op.
+  let branchEffect: ReactiveEffectRunner;
+  const stopBranches = () => stopEffect(branchEffect);
+  branchEffect = ctx.effect(() => {
     for (let i = 0; i < branches.length; i++) {
       const { exp, el } = branches[i];
       if (!exp || evaluate(ctx.scope, exp)) {
@@ -66,6 +80,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
           removeActiveBlock();
           block = new Block(el, ctx);
           block.insert(parent, anchor);
+          own(stopBranches, block.el);
           if (block.el.parentNode === parent) {
             parent.removeChild(anchor);
           }
@@ -78,6 +93,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     activeBranchIndex = -1;
     removeActiveBlock();
   });
+  own(stopBranches, anchor);
 
   return nextNode;
 };
