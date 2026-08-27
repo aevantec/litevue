@@ -72,3 +72,31 @@ jobs:
       # and CJS, and the .d.mts tree must match the .d.ts one.
       - name: Validate package
         run: pnpm lint:package
+
+  # A separate job, not another step in `test`, for two reasons: it needs a
+  # browser download the main job has no use for, and running the two in
+  # parallel keeps the slowest path roughly where it was.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Only chromium. These tests cover engine behaviour jsdom cannot model
+      # at all — layout, focus, CSS transitions, IntersectionObserver — rather
+      # than cross-browser differences, so a second engine would double the
+      # runtime to re-prove the same thing.
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: pnpm test:browser

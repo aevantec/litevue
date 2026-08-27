@@ -39,8 +39,9 @@ Common commands:
 
 ```bash
 pnpm dev        # manual test pages at localhost:3000
-pnpm test       # vitest suite (test/)
+pnpm test       # vitest suite in jsdom (test/)
 pnpm test:watch # vitest in watch mode
+pnpm test:browser  # vitest suite in real Chromium (test/browser/)
 pnpm build      # core + devtools + plugins bundles + types
 pnpm docs:dev   # documentation site at localhost:5173
 pnpm format     # prettier
@@ -52,15 +53,30 @@ pnpm format     # prettier
 | --- | --- |
 | `src/` | Library source — core, directives, plugins, devtools |
 | `test/` | Automated tests (vitest + jsdom) — run by `pnpm test` |
+| `test/browser/` | Automated tests in real Chromium — run by `pnpm test:browser` |
 | `playground/` | Manual HTML pages you open in a browser via `pnpm dev` |
 | `docs/` | VitePress documentation site |
 | `examples/` | Standalone usage examples, linked from the docs |
 | `extension/` | Browser devtools extension |
 | `scripts/` | Build and release tooling |
 
-**Automated tests go in `test/`.** `playground/` holds hand-driven pages for the
-behavior jsdom can't reproduce — transitions, focus order, caret position, the
-devtools panel. Nothing there runs in CI; see [playground/README.md](playground/README.md).
+**Automated tests go in `test/`.** Most run under jsdom, which is fast and
+sufficient for reactivity, directives and the store.
+
+**`test/browser/` is for behavior jsdom cannot model at all**: layout, focus,
+CSS transitions, `IntersectionObserver` and `ResizeObserver`. jsdom reports a
+`scrollHeight` of 0, never moves `document.activeElement` on its own, and has no
+CSS engine, so tests covering those paths pass there while a browser fails. Four
+shipped bugs were traced to that gap. These run in headless Chromium via
+Playwright, in their own CI job.
+
+Keep the split honest — a test belongs in `test/browser/` only if it needs a real
+engine. The jsdom suite is an order of magnitude cheaper, and duplicating cases
+into Chromium buys nothing.
+
+`playground/` still holds hand-driven pages for what is judged by eye rather than
+asserted: transition feel, the devtools panel. Nothing there runs in CI; see
+[playground/README.md](playground/README.md).
 
 ## Making a change
 
@@ -76,8 +92,12 @@ devtools panel. Nothing there runs in CI; see [playground/README.md](playground/
    pnpm prettier --check "**/*.{ts,mts,js,html,json}"
    pnpm tsc --noEmit
    pnpm test
+   pnpm test:browser
    pnpm build
    ```
+
+   `pnpm test:browser` needs the Chromium build once per machine:
+   `pnpm exec playwright install chromium`.
 
 5. Open a pull request against `main` and fill in the template.
 
