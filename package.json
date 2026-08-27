@@ -193,6 +193,7 @@
     "format": "prettier --write \"**/*.{ts,mts,js,html,json}\"",
     "test": "vitest run",
     "test:browser": "vitest run --config vitest.browser.config.mts",
+    "coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "check:size": "node scripts/check-size.mjs"
   },
@@ -229,6 +230,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@vitest/browser": "^4.1.11",
     "@vitest/browser-playwright": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.11",
     "@vue/shared": "~3.4.0",
     "jsdom": "^30.0.1",
     "playwright": "^1.62.1",

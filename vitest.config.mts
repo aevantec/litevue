@@ -14,6 +14,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
     include: ['test/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text'],
+      include: ['src/**'],
+      // the panel is a UI surface driven through its shadow DOM in
+      // panel*.test.ts; line coverage of it measures very little
+      exclude: ['src/devtools-panel.ts'],
+    },
     // test/browser holds the cases jsdom cannot model — real focus, layout,
     // CSS transitions, IntersectionObserver. They run under
     // vitest.browser.config.mts instead; running them here would fail for the

@@ -45,6 +45,7 @@ pnpm dev        # manual test pages at localhost:3000
 pnpm test       # vitest suite in jsdom (test/)
 pnpm test:watch # vitest in watch mode
 pnpm test:browser  # vitest suite in real Chromium (test/browser/)
+pnpm coverage      # vitest with a coverage report for src/
 pnpm build      # core + devtools + plugins bundles + types
 pnpm docs:dev   # documentation site at localhost:5173
 pnpm format     # prettier
