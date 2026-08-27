@@ -47,9 +47,22 @@ once more per replacement.
 ::: tip Prefer morph for server-rendered updates
 Replacing markup discards scope state, focus and scroll even when you unmount
 first. If the region is being re-rendered by a server, [`morph`](/plugins/morph)
-patches it in place instead and none of that is lost.
+patches it in place instead and none of that is lost — see
+[Server-Driven HTML](/essentials/server-driven-html) for the whole loop, with
+recipes for htmx, Turbo and Unpoly.
 :::
 
 Unmounting removes the bindings, not the markup — the elements stay in the
-document and remain fully usable; they are merely inert. Mounting the same
-element again re-binds it.
+document and remain fully usable; they are merely inert.
+
+::: warning Mounting the same element again does not re-bind it
+Walking an element consumes its directives: each `v-scope`, `@click` and `:bind`
+is removed from the DOM as it is bound. A second `mount()` therefore walks a
+stripped tree and binds nothing — no error, and a region that looks mounted but
+is inert. LiteVue [warns about this in
+development](/devtools/warnings#mounting-the-same-element-twice).
+
+To bring a region back, insert fresh markup and mount that, or
+[`morph`](/plugins/morph) it from server HTML. Both give the walker directives
+to find.
+:::
