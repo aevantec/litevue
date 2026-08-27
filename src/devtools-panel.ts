@@ -209,11 +209,31 @@ const css = `
   padding: 4px 0;
 }
 .row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 2px 8px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
+}
+.row .label {
+  flex-shrink: 0;
+}
+.row .arrow {
+  cursor: pointer;
+  padding: 3px 4px;
+  margin: -3px -4px;
+  box-sizing: content-box;
+}
+.row .arrow:hover {
+  color: var(--key);
+}
+.row .hit {
+  color: var(--exp);
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .row:hover {
   background: var(--hover);
@@ -229,6 +249,8 @@ const css = `
 }
 .row .exp {
   color: var(--exp);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .prop {
   display: flex;
@@ -487,6 +509,10 @@ const applyTheme = () => {
 // flush re-renders so the tree doesn't collapse while state changes
 const expandedPaths = new Set<string>();
 
+// scope elements the user has collapsed in the Elements tree. Weak, so a
+// scope that unmounts takes its entry with it rather than pinning the element.
+const collapsedScopes = new WeakSet<Element>();
+
 /**
  * Docking swaps which edges the panel is pinned to. The floating geometry is
  * left in the inline style untouched, so undocking returns the panel to
@@ -541,14 +567,56 @@ const tagOf = (el: Element) => {
   return label;
 };
 
-const depthOf = (el: Element) => {
-  let depth = 0;
+/** Nearest ancestor element that is itself a registered scope. */
+const parentScopeOf = (el: Element) => {
   let p = el.parentElement;
   while (p) {
-    if (devtools.scopes.has(p)) depth++;
+    if (devtools.scopes.has(p)) return p;
     p = p.parentElement;
   }
-  return depth;
+  return null;
+};
+
+/**
+ * Finds `term` among a scope's property names and values, returning the path
+ * of the first hit so the tree can say why a scope matched.
+ *
+ * Bounded on purpose. It runs on every keystroke over every mounted scope, and
+ * application state is arbitrary: depth is capped, functions and `$`-prefixed
+ * magics are skipped, and visited objects are remembered so a cycle — a scope
+ * holding a reference back to its own element's context, say — terminates.
+ */
+const findInState = (scope: any, term: string) => {
+  const seen = new Set<any>();
+  const walk = (
+    value: any,
+    path: string,
+    depth: number
+  ): string | undefined => {
+    if (value == null) return;
+    if (typeof value === 'object') {
+      if (depth > 4 || seen.has(value)) return;
+      seen.add(value);
+      for (const key of Object.keys(value)) {
+        if (key[0] === '$') continue;
+        let child: unknown;
+        // a getter can throw, and one bad computed must not break the filter
+        try {
+          child = value[key];
+        } catch {
+          continue;
+        }
+        if (typeof child === 'function') continue;
+        const here = path ? `${path}.${key}` : key;
+        if (key.toLowerCase().includes(term)) return here;
+        const hit = walk(child, here, depth + 1);
+        if (hit) return hit;
+      }
+      return;
+    }
+    return String(value).toLowerCase().includes(term) ? path : undefined;
+  };
+  return walk(scope, '', 0);
 };
 
 const fmt = (v: unknown) => {
@@ -663,12 +731,24 @@ const renderTree = () => {
   treeEl.textContent = '';
 
   if (activeTab === 'Elements') {
-    const roots = [...devtools.scopes.keys()]
-      .filter((el) => nameOf(el).toLowerCase().includes(filterText))
-      .sort((a, b) =>
-        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
-      );
-    if (!roots.length) {
+    const all = [...devtools.scopes.keys()].sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+    );
+
+    // A scope matches on its name or on anything inside its state. `hits`
+    // remembers the property path that matched, so the row can show it —
+    // otherwise the filter would hide every visible reason it survived.
+    const hits = new Map<Element, string | undefined>();
+    for (const el of all) {
+      if (!filterText || nameOf(el).toLowerCase().includes(filterText)) {
+        hits.set(el, undefined);
+      } else {
+        const where = findInState(devtools.scopes.get(el), filterText);
+        if (where) hits.set(el, where);
+      }
+    }
+
+    if (!hits.size) {
       treeEl.appendChild(
         h(
           'div',
@@ -678,12 +758,61 @@ const renderTree = () => {
       );
       return;
     }
-    for (const el of roots) {
+
+    // Ancestors of a hit are kept even when they do not match themselves.
+    // Without them a nested scope renders indented under nothing, which reads
+    // as a broken tree rather than a filtered one.
+    const visible = new Set<Element>();
+    for (const el of hits.keys()) {
+      visible.add(el);
+      for (let p = parentScopeOf(el); p; p = parentScopeOf(p)) visible.add(p);
+    }
+
+    // parentage, child counts and depth in one pass over the visible set,
+    // in document order so a parent is always recorded before its children
+    const parents = new Map<Element, Element | null>();
+    const childCount = new Map<Element, number>();
+    const depth = new Map<Element, number>();
+    for (const el of all) {
+      if (!visible.has(el)) continue;
+      const p = parentScopeOf(el);
+      parents.set(el, p);
+      depth.set(el, p ? (depth.get(p) ?? 0) + 1 : 0);
+      if (p) childCount.set(p, (childCount.get(p) || 0) + 1);
+    }
+
+    const isHidden = (el: Element) => {
+      for (let p = parents.get(el); p; p = parents.get(p) ?? null) {
+        if (collapsedScopes.has(p)) return true;
+      }
+      return false;
+    };
+
+    for (const el of all) {
+      if (!visible.has(el) || isHidden(el)) continue;
       const row = h('div', el === selected ? 'row sel' : 'row');
-      row.style.paddingLeft = 8 + depthOf(el) * 12 + 'px';
+      row.style.paddingLeft = 8 + (depth.get(el) ?? 0) * 12 + 'px';
+
+      // the caret matches the state tree below, and takes the same width when
+      // there is nothing to collapse so sibling names stay aligned
+      const collapsed = collapsedScopes.has(el);
+      if (childCount.get(el)) {
+        const arrow = h('span', collapsed ? 'arrow' : 'arrow open', '▶');
+        arrow.onclick = (e) => {
+          e.stopPropagation();
+          collapsed ? collapsedScopes.delete(el) : collapsedScopes.add(el);
+          renderTree();
+        };
+        row.appendChild(arrow);
+      } else {
+        row.appendChild(h('span', 'spacer'));
+      }
+
       row.appendChild(tagOf(el));
       const exp = devtools.exps.get(el);
       if (exp) row.appendChild(h('span', 'exp', ' ' + exp));
+      const hit = hits.get(el);
+      if (hit) row.appendChild(h('span', 'hit', ' ' + hit));
       row.onclick = () => select(el);
       row.onmouseenter = () => showHighlight(el);
       row.onmouseleave = hideHighlight;
@@ -692,9 +821,16 @@ const renderTree = () => {
     return;
   }
 
-  const storeNames = [
-    ...(devtools.stores ? devtools.stores.keys() : []),
-  ].filter((n) => n.toLowerCase().includes(filterText));
+  const storeHits = new Map<string, string | undefined>();
+  for (const name of devtools.stores ? devtools.stores.keys() : []) {
+    if (!filterText || name.toLowerCase().includes(filterText)) {
+      storeHits.set(name, undefined);
+    } else {
+      const where = findInState(devtools.stores.get(name), filterText);
+      if (where) storeHits.set(name, where);
+    }
+  }
+  const storeNames = [...storeHits.keys()];
   if (!storeNames.length) {
     treeEl.appendChild(
       h(
@@ -711,6 +847,8 @@ const renderTree = () => {
     label.appendChild(h('span', 'punct', '$store.'));
     label.appendChild(h('span', 'name', name));
     row.appendChild(label);
+    const hit = storeHits.get(name);
+    if (hit) row.appendChild(h('span', 'hit', ' ' + hit));
     row.onclick = () => selectStore(name);
     treeEl.appendChild(row);
   }
@@ -1056,7 +1194,7 @@ const build = () => {
   tabs.appendChild(storesTab);
   side.appendChild(tabs);
   const filterInput = h('input', 'filter') as HTMLInputElement;
-  filterInput.placeholder = 'Filter by name';
+  filterInput.placeholder = 'Filter by name or state';
   filterInput.oninput = () => {
     filterText = filterInput.value.trim().toLowerCase();
     renderTree();
