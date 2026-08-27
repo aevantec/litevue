@@ -16,7 +16,9 @@ import { resolve } from 'path';
  */
 export default defineConfig({
   resolve: {
-    alias: { '@aevantec/litevue': resolve(__dirname, 'src/index.ts') },
+    alias: {
+      '@aevantec/litevue': resolve(import.meta.dirname, 'src/index.ts'),
+    },
   },
   test: {
     include: ['test/browser/**/*.test.ts'],
