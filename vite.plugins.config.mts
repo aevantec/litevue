@@ -28,7 +28,7 @@ export default defineConfig({
     },
     emptyOutDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/plugins/index.ts'),
+      entry: resolve(import.meta.dirname, 'src/plugins/index.ts'),
       name: 'LiteVuePlugins',
       formats: ['es', 'umd', 'iife'],
       // .mjs for the esm build so Node reads it as ESM (see vite.config.mts);

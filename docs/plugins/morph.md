@@ -123,5 +123,5 @@ Known constraints to weigh before depending on it:
 - **Removed elements don't tear down their effects.** Morph drops nodes the server no longer sends without unmounting them first, so their effects stay subscribed. It removes far fewer nodes than a replace, so it leaks far less — but not nothing. Tearing those down per node needs teardown at a finer grain than [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) offers today.
 
 ::: warning Morphed-in markup is walked
-New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [security](/start-here/introduction#security-and-csp).
+New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [Security](/start-here/security#morph-and-server-rendered-updates).
 :::

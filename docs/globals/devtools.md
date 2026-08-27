@@ -53,4 +53,4 @@ createApp().mount();
 `import.meta.env.PROD` is Vite's. On webpack, Rollup, or Node it is `undefined`, so the condition is false, `disableDevtools()` never runs, and the registry ships to production — the opposite of what the code appears to say. Use `process.env.NODE_ENV === 'production'` there, and verify against a real production build rather than trusting the guard.
 :::
 
-When disabled: no `window.__LITE_VUE__`, no scope registration. `disableDevtools()` also clears anything already registered, so calling it late is safe.
+When disabled: no `window.__LITE_VUE__`, no scope registration, and **no events** — including `flush`. `disableDevtools()` also clears anything already registered, so calling it late is safe, and a listener subscribed afterwards still receives nothing.

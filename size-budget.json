@@ -1,0 +1,18 @@
+{
+  "//": "Gzipped ceilings for every published bundle, in bytes. Read by scripts/check-size.mjs in CI. Raising a number is a deliberate edit with a reason in the commit message, not silent drift. The core ceiling is set so the documented '~9kb' stays true: 9600 bytes is 9.4KB, which still rounds to 9; past 9700 the claim needs rewording, not just a bigger budget. Headroom is a few percent by design — enough that ordinary work does not trip it, tight enough that a real feature is a conversation.",
+  "budgets": {
+    "dist/litevue.iife.js": 9600,
+    "dist/litevue-plugins.iife.js": 4300,
+    "dist/litevue-devtools.iife.js": 6500,
+    "dist/plugins/collapse.iife.js": 550,
+    "dist/plugins/focus.iife.js": 700,
+    "dist/plugins/intersect.iife.js": 350,
+    "dist/plugins/mask.iife.js": 470,
+    "dist/plugins/media.iife.js": 1350,
+    "dist/plugins/morph.iife.js": 1350,
+    "dist/plugins/persist.iife.js": 820,
+    "dist/plugins/resize.iife.js": 340,
+    "dist/plugins/transition.iife.js": 760
+  },
+  "//devtools": "The devtools ceiling is looser than the others on purpose. This bundle is development-only and never loads in production, so its bytes cost a visitor nothing — and the panel's usability is the entire reason it exists. Raised from 5600 to 6000 when docking landed, and from 6000 to 6500 when state search and a collapsible scope tree landed, to leave room for the panel to keep improving rather than making every UI change a budget negotiation."
+}

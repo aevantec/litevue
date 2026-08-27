@@ -316,11 +316,22 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
  * Test seam. Drops every subscription and returns to the default scale, so a
  * suite can swap its matchMedia stub between cases.
  */
-export const resetMedia = () => {
+/**
+ * Drops every live subscription. `activate()` rebuilds them on the next read,
+ * so this is safe even while something on the page still holds `mq` — the
+ * scale itself is deliberately left alone, since a page that configured one
+ * still wants it.
+ */
+const releaseSubscriptions = () => {
   scaleSubs.forEach((s) => s.off());
   querySubs.forEach((s) => s.off());
   scaleSubs = [];
   querySubs.clear();
+  active = false;
+};
+
+export const resetMedia = () => {
+  releaseSubscriptions();
   scale = { ...DEFAULT_BREAKPOINTS };
   order = ['base', ...Object.keys(scale).sort((a, b) => scale[a] - scale[b])];
   active = false;
@@ -360,4 +371,10 @@ export const media: Plugin<MediaOptions> = (app, options) => {
     enumerable: true,
     configurable: true,
   });
+
+  // Returned so the app can give the subscriptions back. Without this the five
+  // MediaQueryList listeners lived for the page whether or not any app was
+  // still running; a full app.unmount() now frees them, and the next read
+  // rebuilds them lazily.
+  return releaseSubscriptions;
 };

@@ -164,6 +164,9 @@ const patchNode = (
 
 const replaceNode = (from: Node, to: Node, ctx: Context | undefined) => {
   const fresh = to.cloneNode(true);
+  // the outgoing node is detached here just as surely as by removeChild, so
+  // it has to give up what it owned first
+  ctx?.dispose?.(from);
   from.parentNode!.replaceChild(fresh, from);
   mountNew(fresh, ctx);
 };
@@ -256,6 +259,9 @@ const patchChildren = (
   // of the key map, which would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
+    // release what the subtree owned before detaching it: removeChild alone
+    // leaves its effects live and still reacting to state
+    ctx?.dispose?.(oldChild);
     from.removeChild(oldChild);
     oldChild = next;
   }

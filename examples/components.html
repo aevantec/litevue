@@ -1,0 +1,297 @@
+<meta charset="utf-8" />
+
+<script type="module">
+  import { createApp } from '../src';
+
+  // A component is a function returning a scope object. Props are whatever the
+  // expression passes, so they are ordinary arguments.
+  function StarRating(product) {
+    return {
+      $template: '#star-rating',
+      product,
+      hovered: 0,
+      get shown() {
+        return this.hovered || product.rating;
+      },
+      rate(n) {
+        product.rating = n;
+      },
+    };
+  }
+
+  // Components compose: this one is used from inside StockBadge's template.
+  function QuantityPicker(product) {
+    return {
+      $template: '#quantity-picker',
+      product,
+      get max() {
+        return product.stock;
+      },
+      step(by) {
+        product.qty = Math.min(this.max, Math.max(0, product.qty + by));
+      },
+    };
+  }
+
+  // A plugin contributing a component. Before app.component() a plugin had to
+  // write to app.scope directly; this is the sanctioned way.
+  const badges = (app) => {
+    app.component('StockBadge', (product) => ({
+      $template: '#stock-badge',
+      product,
+      get level() {
+        if (product.stock === 0) return 'out';
+        return product.stock < 5 ? 'low' : 'ok';
+      },
+      get label() {
+        return { out: 'Out of stock', low: 'Only a few left', ok: 'In stock' }[
+          this.level
+        ];
+      },
+    }));
+  };
+
+  const products = [
+    { id: 1, name: 'Filter coffee', price: 12.5, stock: 12, rating: 4, qty: 1 },
+    { id: 2, name: 'Espresso blend', price: 15, stock: 3, rating: 5, qty: 1 },
+    { id: 3, name: 'Decaf', price: 11, stock: 0, rating: 2, qty: 0 },
+  ];
+
+  const app = createApp({
+    products,
+    // Root data. Note the name: a component may not take a name that is
+    // already here — see "resolution order" at the bottom of the page.
+    currency: (n) => `£${n.toFixed(2)}`,
+    get total() {
+      // this.products, not the outer `products`: the scope is reactive, so
+      // reading the raw array here would compute the right number once and
+      // never recompute
+      return this.products.reduce((sum, p) => sum + p.price * p.qty, 0);
+    },
+  })
+    // Registration is chainable, like directive() and use().
+    .component('StarRating', StarRating)
+    .component('QuantityPicker', QuantityPicker)
+    .use(badges);
+
+  app.mount();
+
+  // Retrieval by name: undefined for something never registered, and for root
+  // scope data — the registry only answers for components.
+  console.log('StarRating   →', typeof app.component('StarRating'));
+  console.log(
+    'currency     →',
+    app.component('currency'),
+    '(root data, not a component)'
+  );
+  console.log('NotAThing    →', app.component('NotAThing'));
+
+  // Refused: "currency" already exists on the root scope, so registering would
+  // replace the user's function. This logs a development warning and leaves
+  // the original in place.
+  app.component('currency', () => ({}));
+
+  // Registration after mount() reaches regions mounted afterwards.
+  app.component('Note', (text) => ({ $template: '#note', text }));
+  const note = document.createElement('div');
+  note.setAttribute(
+    'v-scope',
+    "Note('Registered after mount(), then mounted.')"
+  );
+  document.querySelector('#late').appendChild(note);
+  app.mount(note);
+</script>
+
+<template id="star-rating">
+  <span class="stars" @mouseleave="hovered = 0">
+    <button
+      v-for="n in 5"
+      :key="n"
+      class="star"
+      :class="{ on: n <= shown }"
+      @mouseenter="hovered = n"
+      @click="rate(n)"
+      :aria-label="`Rate ${n} out of 5`"
+    >
+      ★
+    </button>
+    <span class="muted">{{ product.rating }}/5</span>
+  </span>
+</template>
+
+<template id="stock-badge">
+  <span class="badge" :class="level">{{ label }}</span>
+  <span v-if="level !== 'out'" v-scope="QuantityPicker(product)"></span>
+</template>
+
+<template id="quantity-picker">
+  <span class="qty">
+    <button @click="step(-1)" :disabled="product.qty === 0">−</button>
+    <span class="count">{{ product.qty }}</span>
+    <button @click="step(1)" :disabled="product.qty >= max">+</button>
+  </span>
+</template>
+
+<template id="note">
+  <p class="note">{{ text }}</p>
+</template>
+
+<div v-scope>
+  <h1>app.component()</h1>
+  <p class="muted">
+    Components registered by name, one of them contributed by a plugin. Each row
+    holds its own state; the totals below are derived.
+  </p>
+
+  <ul class="products">
+    <li v-for="p in products" :key="p.id">
+      <div class="row">
+        <strong>{{ p.name }}</strong>
+        <span class="price">{{ currency(p.price) }}</span>
+      </div>
+      <div class="row">
+        <span v-scope="StarRating(p)"></span>
+        <span v-scope="StockBadge(p)"></span>
+      </div>
+    </li>
+  </ul>
+
+  <p class="total">Total <strong>{{ currency(total) }}</strong></p>
+
+  <div id="late"></div>
+
+  <h2>Resolution order</h2>
+  <p class="muted">
+    A component is mirrored onto the root scope, so ordinary scope rules apply
+    and your data wins. <code>currency</code> is root data, and the attempt to
+    register a component over it was refused — check the console.
+  </p>
+  <div v-scope="{ currency: 'shadowed locally' }">
+    <p><code>currency</code> here is <strong>{{ currency }}</strong></p>
+  </div>
+</div>
+
+<style>
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    color: #1c1c1e;
+    max-width: 42rem;
+    margin: 2.5rem auto;
+    padding: 0 1.25rem;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+  }
+  h2 {
+    font-size: 1.05rem;
+    margin-top: 2.5rem;
+  }
+  .muted {
+    color: #6b6b70;
+    font-size: 0.9rem;
+  }
+  code {
+    font-family: Menlo, Consolas, monospace;
+    background: #f2f2f4;
+    padding: 0.05em 0.35em;
+    border-radius: 4px;
+  }
+  .products {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+  }
+  .products li {
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.6rem;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .row + .row {
+    margin-top: 0.5rem;
+  }
+  .price {
+    font-variant-numeric: tabular-nums;
+  }
+  .stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+  .star {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 0 0.05rem;
+    color: #d4d4d8;
+  }
+  .star.on {
+    color: #f5a623;
+  }
+  .stars .muted {
+    margin-left: 0.4rem;
+    font-size: 0.8rem;
+  }
+  .badge {
+    font-size: 0.78rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    border: 1px solid transparent;
+  }
+  .badge.ok {
+    background: #e7f6ec;
+    color: #1a7f42;
+  }
+  .badge.low {
+    background: #fdf1dc;
+    color: #92621a;
+  }
+  .badge.out {
+    background: #f4f4f5;
+    color: #71717a;
+  }
+  .qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: 0.6rem;
+  }
+  .qty button {
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 1px solid #d4d4d8;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .qty button:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .count {
+    min-width: 1.2rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .total {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .note {
+    background: #f7f7f8;
+    border-left: 3px solid #d4d4d8;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+  }
+</style>

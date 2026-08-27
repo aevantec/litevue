@@ -44,9 +44,15 @@ check(
   'does not read the core off the LiteVue global'
 );
 
+// Matched by pattern, not an exact string. Quote style and spacing around
+// `from` are a minifier detail that changes between bundler majors — vite 8
+// emits `from"pkg"` where vite 5 emitted `from 'pkg'` — and an exact match
+// reports a correct bundle as broken.
+const IMPORTS_CORE = new RegExp(`from\\s*["']${PKG.replace('/', '\\/')}["']`);
+
 check(
   'litevue-plugins.mjs',
-  read('litevue-plugins.mjs').includes(`from '${PKG}'`),
+  IMPORTS_CORE.test(read('litevue-plugins.mjs')),
   `does not import the core from "${PKG}"`
 );
 

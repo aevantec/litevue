@@ -20,6 +20,7 @@ app.mount(); // whole document, or app.mount('#region') / app.mount(el)
 | `mount(target?)`        | Mounts `v-scope` regions under the target (selector, element, or the whole document). Repeatable — later calls initialize [dynamic content](/essentials/dynamic-content) into the same app. |
 | `unmount(target?)`      | Tears down mounted regions: effects, listeners, devtools registrations. With no argument every batch goes; given a selector or element, only the roots at or inside it — see [Dynamic content](/essentials/dynamic-content#tearing-a-region-down). |
 | `use(plugin, options?)` | Installs a [plugin](/plugins/). Chainable; installing the same plugin twice is a no-op.                                                                                                     |
+| `component(name, fn?)`  | Registers or retrieves a [component](/essentials/components#registering-by-name) — a function returning a scope object. Chainable; a name already on the root scope is not overwritten. |
 | `directive(name, fn?)`  | Registers or retrieves a custom directive.                                                                                                                                                  |
 | `scope`                 | The reactive root scope — plugins attach `$`-prefixed helpers here.                                                                                                                         |
 

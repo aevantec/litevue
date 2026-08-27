@@ -44,6 +44,10 @@ export const transition: Plugin = (app) => {
     const cls = (phase: string) => `${name}-${phase}`;
     let seq = 0;
     let first = true;
+    // The completion timer outlived the region: unmounting mid-transition left
+    // it pending, and it then stripped classes and ran `done` for a directive
+    // that no longer exists. `collapse` already tracks its timers this way.
+    let endTimer: ReturnType<typeof setTimeout> | undefined;
 
     const clear = () => {
       elem.classList.remove(
@@ -64,7 +68,8 @@ export const transition: Plugin = (app) => {
       void elem.offsetWidth;
       elem.classList.remove(cls(phase + '-from'));
       elem.classList.add(cls(phase + '-to'));
-      setTimeout(() => {
+      clearTimeout(endTimer);
+      endTimer = setTimeout(() => {
         if (id === seq) {
           clear();
           if (done) done();
@@ -75,10 +80,15 @@ export const transition: Plugin = (app) => {
     if (!exp) {
       // unmount mode: the element's lifetime is controlled by v-if/v-for.
       // enter runs a microtask later, once the block has been inserted
-      Promise.resolve().then(() => run('enter'));
+      let live = true;
+      Promise.resolve().then(() => {
+        if (live) run('enter');
+      });
       (elem as any).__leave = () =>
         new Promise<void>((resolve) => run('leave', resolve));
       return () => {
+        live = false;
+        clearTimeout(endTimer);
         delete (elem as any).__leave;
       };
     }
@@ -100,5 +110,9 @@ export const transition: Plugin = (app) => {
         });
       }
     });
+
+    // the expression form returned nothing, so a transition still running when
+    // the region unmounted kept its timer
+    return () => clearTimeout(endTimer);
   });
 };

@@ -19,11 +19,14 @@ const FOCUSABLE =
  */
 export const focus: Plugin = (app) => {
   app.directive('focus', ({ el, get, effect, modifiers }) => {
+    let live = true;
     effect(() => {
       const on = !!get();
       // wait a tick so v-if/v-show updates land in the DOM first
       Promise.resolve().then(() => {
-        if (on) {
+        // the element can be torn down inside that tick, and focusing a
+        // detached node blurs whatever the user was actually typing in
+        if (live && on) {
           (el as HTMLElement).focus();
           if (modifiers?.select && (el as HTMLInputElement).select) {
             (el as HTMLInputElement).select();
@@ -31,6 +34,9 @@ export const focus: Plugin = (app) => {
         }
       });
     });
+    return () => {
+      live = false;
+    };
   });
 
   app.directive('trap', ({ el, get, effect }) => {

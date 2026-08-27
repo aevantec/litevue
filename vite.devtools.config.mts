@@ -16,7 +16,7 @@ export default defineConfig({
     },
     emptyOutDir: false,
     lib: {
-      entry: resolve(__dirname, 'src/devtools-panel.ts'),
+      entry: resolve(import.meta.dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',
       // iife for <script> tags, es so npm consumers can
       // `import '@aevantec/litevue/devtools'` from a bundler, umd for `require`

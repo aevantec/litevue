@@ -4,7 +4,26 @@ title: v-on
 
 # v-on <Badge type="section" text="Directive" />
 
-Attaches an event listener. Shorthand: `@`.
+Attaches an event listener.
+
+## Syntax
+
+`v-on:` is the full form and `@` is its shorthand. They compile to the same
+thing, and modifiers attach to either:
+
+```html
+<!-- these pairs are identical -->
+<button v-on:click="save()">Save</button>
+<button @click="save()">Save</button>
+
+<form v-on:submit.prevent="send()">…</form>
+<form @submit.prevent="send()">…</form>
+
+<input v-on:keyup.enter="search()" />
+<input @keyup.enter="search()" />
+```
+
+The examples below use the shorthand, which is the more common spelling.
 
 <<< ../.vitepress/demos/v-on.html{html}
 

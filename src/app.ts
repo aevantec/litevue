@@ -8,6 +8,12 @@ import { walk } from './walk';
 import { devtools, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { warn } from './warn';
+
+// DEV: elements this app has already walked, so a second mount of the same
+// element can say why nothing happened. Weak, and never read in production.
+const mountedRoots = new WeakSet<Element>();
+import { disposeSubtree } from './ownership';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
@@ -19,6 +25,16 @@ export interface App {
    */
   scope: Record<string, any>;
   directive(name: string, def?: Directive): any;
+  /**
+   * Register a component — a function returning a scope object, used from
+   * `v-scope="Name()"` — or retrieve one by name.
+   *
+   * Components have always been plain functions reachable from an expression;
+   * this gives them a named home, so a plugin can contribute one without
+   * reaching into `app.scope`, and so a name can be looked up rather than
+   * guessed at.
+   */
+  component(name: string, factory?: ComponentFactory): any;
   /**
    * Install a plugin. A plugin is a function (or object with an install
    * method) that receives the app and optional options. Installing the same
@@ -33,9 +49,29 @@ export interface App {
   unmount(el?: string | Element | null): void;
 }
 
+/**
+ * A plugin may return a teardown function, which runs when the app is fully
+ * unmounted. Returning nothing is still valid, so existing plugins are
+ * unaffected.
+ *
+ * The shape matches directives, which already return their cleanup. Without
+ * it a plugin could acquire page-wide resources — observers, listeners,
+ * matchMedia subscriptions — and had no way to give them back: the media
+ * plugin held five MediaQueryList subscriptions for the life of the page
+ * whether or not any app was still running.
+ */
+export type PluginTeardown = () => void;
+
+/**
+ * A component factory. Called from an expression — `v-scope="Counter({ n: 1 })"`
+ * — and returns the scope object for that region. Props are whatever the
+ * expression passes.
+ */
+export type ComponentFactory = (...props: any[]) => Record<string, any>;
+
 export type Plugin<Options = any> =
-  | ((app: App, options?: Options) => void)
-  | { install(app: App, options?: Options): void };
+  | ((app: App, options?: Options) => PluginTeardown | void)
+  | { install(app: App, options?: Options): PluginTeardown | void };
 
 export const createApp = (initialData?: any) => {
   // root context
@@ -79,8 +115,10 @@ export const createApp = (initialData?: any) => {
     enumerable: false,
   });
 
+  const components: Record<string, ComponentFactory> = Object.create(null);
   let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
+  const pluginTeardowns: PluginTeardown[] = [];
 
   const app: App = {
     get scope() {
@@ -96,10 +134,45 @@ export const createApp = (initialData?: any) => {
       }
     },
 
+    component(name: string, factory?: ComponentFactory) {
+      if (!factory) return components[name];
+
+      if (import.meta.env.DEV) {
+        if (name in components) {
+          warn(
+            `component "${name}" is already registered and has been ` +
+              `replaced. Registering twice is usually two modules claiming ` +
+              `the same name.`
+          );
+        } else if (name in ctx.scope) {
+          // The root scope is the user's, and a component quietly taking a
+          // name they are already using would replace their data with a
+          // function. Refusing is the safe direction: the expression keeps
+          // resolving to what they put there.
+          warn(
+            `component "${name}" was not registered: the root scope already ` +
+              `has a "${name}", and overwriting it would replace your data ` +
+              `with the component. Rename one of them.`
+          );
+        }
+      }
+      if (!(name in components) && name in ctx.scope) return this;
+
+      components[name] = factory;
+      // mirrored onto the root scope because that is what expressions resolve
+      // against; a nested v-scope declaring the same name shadows it through
+      // the prototype chain, as any other root value would be shadowed
+      ctx.scope[name] = factory;
+      return this;
+    },
+
     use(plugin, options) {
       if (!installedPlugins.has(plugin)) {
         installedPlugins.add(plugin);
-        (typeof plugin === 'function' ? plugin : plugin.install)(app, options);
+        const teardown = (
+          typeof plugin === 'function' ? plugin : plugin.install
+        )(app, options);
+        if (typeof teardown === 'function') pluginTeardowns.push(teardown);
       }
       return app;
     },
@@ -146,8 +219,26 @@ export const createApp = (initialData?: any) => {
       // published before any child context is spread off this one, so every
       // scope inherits it (see Context.walk)
       ctx.walk ??= walk;
+      ctx.dispose ??= disposeSubtree;
 
       for (const el of roots) {
+        if (import.meta.env.DEV) {
+          // Walking an element consumes its directives — every v-scope, @click
+          // and :bind is removed from the DOM as it is bound. Mounting the
+          // same element again therefore walks a stripped tree and binds
+          // nothing: no error, no effects, an inert region that looks mounted.
+          // The DOM is the template here, so bringing a region back means
+          // inserting fresh markup and mounting that.
+          if (mountedRoots.has(el)) {
+            warn(
+              `mount() was called again on an element that has already been ` +
+                `mounted, so its directives were consumed by the first walk ` +
+                `and nothing was bound this time. To re-activate a region, ` +
+                `insert fresh markup and mount that instead.`
+            );
+          }
+          mountedRoots.add(el);
+        }
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);
@@ -181,6 +272,22 @@ export const createApp = (initialData?: any) => {
       if (el == null) {
         rootBlocks.forEach((block) => block.teardown());
         rootBlocks = [];
+        // A full unmount ends the app, so its plugins are released with it.
+        // unmount(el) is a per-region teardown and deliberately leaves them:
+        // the app is still running and other regions still need them.
+        //
+        // The install record is cleared too, so use() after this reinstalls
+        // rather than silently doing nothing against a torn-down app.
+        // One plugin throwing must not strand the rest, so each is isolated.
+        pluginTeardowns.splice(0).forEach((fn) => {
+          try {
+            fn();
+          } catch (e) {
+            import.meta.env.DEV &&
+              console.error('[litevue] a plugin teardown threw:', e);
+          }
+        });
+        installedPlugins.clear();
         return;
       }
 

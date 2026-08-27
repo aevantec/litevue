@@ -23,8 +23,9 @@ you in the advisory unless you'd rather stay anonymous.
   attacker-controlled HTML will be evaluated as code. Sanitize before it reaches
   the DOM.
 - Expression evaluation uses `new Function()`, so a CSP without `'unsafe-eval'`
-  blocks it. See the
-  [security and CSP notes](https://litevue.dev/start-here/introduction).
+  blocks it. A nonce or hash does not substitute — those authorise script
+  elements, not runtime compilation. See the
+  [security page](https://litevue.dev/start-here/security).
 
 Reports of the above will be closed as working-as-documented. In scope: escaping
 the intended scope of an expression, prototype pollution, bypassing the devtools

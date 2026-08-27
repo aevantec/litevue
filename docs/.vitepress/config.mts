@@ -92,6 +92,7 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/start-here/introduction' },
           { text: 'Installation', link: '/start-here/installation' },
+          { text: 'Security', link: '/start-here/security' },
         ],
       },
       {
@@ -103,6 +104,10 @@ export default defineConfig({
           { text: 'Components', link: '/essentials/components' },
           { text: 'Lifecycle', link: '/essentials/lifecycle' },
           { text: 'Dynamic Content', link: '/essentials/dynamic-content' },
+          {
+            text: 'Server-Driven HTML',
+            link: '/essentials/server-driven-html',
+          },
         ],
       },
       {
@@ -178,6 +183,7 @@ export default defineConfig({
           { text: 'Overview', link: '/devtools/' },
           { text: 'Inspector Panel', link: '/devtools/panel' },
           { text: 'Browser Extension', link: '/devtools/extension' },
+          { text: 'Development Warnings', link: '/devtools/warnings' },
         ],
       },
       {

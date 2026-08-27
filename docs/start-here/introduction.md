@@ -124,40 +124,13 @@ One design difference worth calling out: Alpine automatically initializes markup
 ## Security and CSP
 
 ::: danger Read this before deploying
-LiteVue evaluates JavaScript expressions found in your markup. Two consequences follow, and both matter.
+LiteVue evaluates JavaScript expressions found in your markup, and two consequences decide whether it can be used at all.
+
+- **Never mount over untrusted HTML.** An attacker who can inject a `v-scope` or `@click` attribute into a region you mount can execute code. Mount an explicit target rather than the whole document.
+- **A strict CSP must allow `script-src 'unsafe-eval'`**, because expressions are compiled with `new Function()`. A nonce or hash does not substitute. If your policy cannot allow it, use standard Vue with pre-compiled templates instead — no CSP build is planned.
+
+Both are covered in full, along with `v-html`, morph, devtools and third-party plugins, on the [Security](/start-here/security) page.
 :::
-
-### Never mount over untrusted HTML
-
-If LiteVue is mounted on a region containing **non-sanitized HTML from user data**, an attacker who can inject a `v-scope` or `@click` attribute can execute JavaScript — an XSS vector.
-
-Mitigations, in order of preference:
-
-1. **Mount explicitly.** Pass a target so LiteVue only walks regions you control:
-
-   ```js
-   createApp().mount('#app-controlled-by-me');
-   ```
-
-   Avoid the bare `init` attribute or `createApp().mount()` on pages that render user-submitted HTML, since those crawl the whole document.
-
-2. **Sanitize user HTML**, stripping `v-*`, `@*`, and `:*` attributes before rendering.
-
-3. **Keep dynamic content inert.** LiteVue never auto-initializes injected markup — [dynamic content](/essentials/dynamic-content) only becomes live when you explicitly call `app.mount(el)` on it. Don't call it on markup you didn't produce.
-
-Note that [`v-html`](/directives/v-html) carries the usual `innerHTML` risks independently of the above.
-
-### Content Security Policy
-
-LiteVue compiles expressions with `new Function()`. Under a strict CSP this requires **`script-src 'unsafe-eval'`**:
-
-```
-Content-Security-Policy: script-src 'self' 'unsafe-eval';
-```
-
-If your policy cannot allow `unsafe-eval`, LiteVue is the wrong tool — and there is no CSP build planned, because shipping an expression parser would defeat the point of the size budget. **Use standard Vue with pre-compiled templates instead**, which needs no runtime evaluation.
-
-This is the single most common reason a team can't adopt litevue. Check your CSP before you build on it.
 
 ## Size and what's optional
 
@@ -166,7 +139,7 @@ The core stays small because everything else is opt-in and separately bundled:
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
 | Core                              | ~9kb           | reactivity, directives, [store](/globals/store), [magics](/magics/) |
-| [Plugins](/plugins/)              | ~3kb (all seven) | intersect, persist, focus, collapse, mask, morph, transition       |
+| [Plugins](/plugins/)              | ~4kb (all nine) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [Devtools panel](/devtools/panel) | ~5kb           | dev-only; never load it in production                               |
 
 Devtools registration can also be [disabled entirely](/globals/devtools#disabling-in-production) with one line so no scope data is exposed in production builds.
