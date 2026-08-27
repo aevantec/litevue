@@ -18,7 +18,9 @@ export default defineConfig(({ command }) => ({
   // it external (see vite.plugins.config.mts); the playground pages load source
   // directly, so point it back at src
   resolve: {
-    alias: { '@aevantec/litevue': resolve(__dirname, 'src/index.ts') },
+    alias: {
+      '@aevantec/litevue': resolve(import.meta.dirname, 'src/index.ts'),
+    },
   },
   build: {
     target: 'esnext',
@@ -31,7 +33,7 @@ export default defineConfig(({ command }) => ({
       },
     },
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(import.meta.dirname, 'src/index.ts'),
       name: 'LiteVue',
       formats: ['es', 'umd', 'iife'],
       // The package is "type": "commonjs", so .js is CJS to Node — correct for

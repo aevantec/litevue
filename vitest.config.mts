@@ -6,7 +6,9 @@ export default defineConfig({
   // it external (see vite.plugins.config.mts); in-repo that has to point back
   // at the source rather than at dist
   resolve: {
-    alias: { '@aevantec/litevue': resolve(__dirname, 'src/index.ts') },
+    alias: {
+      '@aevantec/litevue': resolve(import.meta.dirname, 'src/index.ts'),
+    },
   },
   test: {
     environment: 'jsdom',
