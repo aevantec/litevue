@@ -1,5 +1,5 @@
 export { createApp } from './app';
-export type { App, Plugin } from './app';
+export type { App, ComponentFactory, Plugin } from './app';
 export { store } from './store';
 export { nextTick } from './scheduler';
 export { watchEffect } from './effect';
