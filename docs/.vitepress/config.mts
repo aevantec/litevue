@@ -104,6 +104,10 @@ export default defineConfig({
           { text: 'Components', link: '/essentials/components' },
           { text: 'Lifecycle', link: '/essentials/lifecycle' },
           { text: 'Dynamic Content', link: '/essentials/dynamic-content' },
+          {
+            text: 'Server-Driven HTML',
+            link: '/essentials/server-driven-html',
+          },
         ],
       },
       {
