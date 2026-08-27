@@ -4,7 +4,7 @@ title: Inspector Panel
 
 # Inspector Panel <Badge type="section" text="Devtools" />
 
-A standalone in-page inspector ships as a separate bundle (~5kb gzipped) — zero weight added to the core. Load it **after** the library, and **only during development**.
+A standalone in-page inspector ships as a separate bundle (~6kb<!-- size:dist/litevue-devtools.iife.js --> gzipped) — zero weight added to the core. Load it **after** the library, and **only during development**.
 
 ## With a script tag
 
