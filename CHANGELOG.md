@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.5](https://github.com/aevantec/litevue/compare/v0.5.4...v0.5.5) (2026-08-27)
+
+
+### Features
+
+* **devtools:** dock the panel to a viewport edge ([#71](https://github.com/aevantec/litevue/issues/71)) ([30ee6f0](https://github.com/aevantec/litevue/commit/30ee6f0924b4c42b8b03319a99b11a7fe3b63836))
+* **devtools:** search within state, and collapse the scope tree ([#77](https://github.com/aevantec/litevue/issues/77)) ([b98572c](https://github.com/aevantec/litevue/commit/b98572c3117e98b877b6799edb6eb7b40e0f30bb))
+* let a plugin return a teardown, and release media's subscriptions ([#67](https://github.com/aevantec/litevue/issues/67)) ([b9fc5d6](https://github.com/aevantec/litevue/commit/b9fc5d60371373ff3d44a934b3e6c2f57c11772e))
+* register components by name with app.component() ([#79](https://github.com/aevantec/litevue/issues/79)) ([dd48a4c](https://github.com/aevantec/litevue/commit/dd48a4c4d046d4913223a8a66429642f4a72c99b))
+* warn in development about mistakes that otherwise fail silently ([#78](https://github.com/aevantec/litevue/issues/78)) ([84f7f21](https://github.com/aevantec/litevue/commit/84f7f21235c42511de64aa7ca1ce3653c6a4e4ae))
+
+
+### Bug Fixes
+
+* cancel pending timers when a region is torn down ([#66](https://github.com/aevantec/litevue/issues/66)) ([e2ad921](https://github.com/aevantec/litevue/commit/e2ad9215d9f5d615ca684215c205927e63410388))
+* **devtools:** keep the dragged position out of the docked layouts ([#72](https://github.com/aevantec/litevue/issues/72)) ([ff63c52](https://github.com/aevantec/litevue/commit/ff63c52630333be1d5612c5de7adc69c7479fd4f))
+* **devtools:** stop flush events after disableDevtools() ([#81](https://github.com/aevantec/litevue/issues/81)) ([91763f9](https://github.com/aevantec/litevue/commit/91763f92309e6d37035fdc328f81e76b9a8bcda6))
+* release effects and cleanups when a node is detached on its own ([#75](https://github.com/aevantec/litevue/issues/75)) ([6d2df87](https://github.com/aevantec/litevue/commit/6d2df87ac9b19e085a54fb7a0c071775a137590a))
+
 ## [0.5.4](https://github.com/aevantec/litevue/compare/v0.5.3...v0.5.4) (2026-08-20)
 
 
