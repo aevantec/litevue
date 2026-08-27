@@ -64,6 +64,11 @@ registered later is available to any region mounted after it. Calling
 This is what a plugin should use to contribute a component, rather than writing
 to `app.scope` directly.
 
+A worked example — components with props and templates, one contributed by a
+plugin, composed inside another component's template — is in the repo at
+[`examples/components.html`](https://github.com/aevantec/litevue/blob/main/examples/components.html).
+Run it with `pnpm dev`.
+
 ### Resolution order
 
 A registered component is reachable from expressions because it is mirrored onto
