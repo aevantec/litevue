@@ -80,8 +80,9 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
 
 ## Making a change
 
-1. Branch from `main` using a descriptive prefix: `feat/…`, `fix/…`, `docs/…`,
-   `chore/…`.
+1. Branch from `main-next` using a descriptive prefix: `feat/…`, `fix/…`,
+   `docs/…`, `chore/…`. `main-next` is where work is integrated; `main` tracks
+   what is released.
 2. Write the code, and **add a test in `test/`**. Bug fixes should include a test
    that fails before your fix.
 3. Update the docs in `docs/` in the same PR if you changed anything user-facing.
@@ -99,10 +100,20 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    `pnpm test:browser` needs the Chromium build once per machine:
    `pnpm exec playwright install chromium`.
 
-5. Open a pull request against `main` and fill in the template.
+5. Open a pull request against `main-next` and fill in the template. Your branch
+   must be up to date with `main-next` before it can merge.
 
-PRs are **squash-merged**, so the PR title becomes the commit on `main` — it must
-follow the commit convention below.
+Pull requests to `main-next` are **squash-merged**, so the PR title becomes the
+single commit that lands there — it must follow the commit convention below.
+
+Releases reach `main` through a promotion pull request from `main-next`, which is
+merged with a **merge commit** rather than squashed, so the individual commits
+survive for release-please to read. That PR is opened by a maintainer; you do not
+need to raise one.
+
+The only changes that go straight to `main` are urgent fixes to a released
+version. Those still need to be brought back to `main-next` afterwards, so raise
+one only when waiting for the next promotion is genuinely not an option.
 
 ## Commit convention
 
@@ -146,7 +157,8 @@ feat(core)!: drop @vue:mounted alias in favor of @mounted
 ```
 
 The PR title matters most: on a squash merge it's the only message that ends up in
-history, and it's what determines the next version number. CI checks it and will
+history, and it's what determines the next version number once the release reaches
+`main`. CI checks it and will
 tell you what's wrong if it doesn't parse — subjects start with a lowercase letter,
 and the scope, if you use one, comes from the list above.
 

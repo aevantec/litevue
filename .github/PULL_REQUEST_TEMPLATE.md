@@ -1,5 +1,5 @@
 <!--
-  The PR title becomes the commit message on main (we squash-merge), so it must
+  The PR title becomes the commit message on main-next (we squash-merge), so it must
   follow Conventional Commits:
 
     feat(plugins): add v-clipboard plugin
