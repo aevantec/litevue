@@ -3,6 +3,7 @@ import { Block } from '../block';
 import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
 import { setOwner } from '../ownership';
+import { warnOnce } from '../warn';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
 const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/;
@@ -123,10 +124,58 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     return block;
   };
 
+  // DEV: the previous source, kept only to tell a reorder from an append. A
+  // keyless list reconciles by position, which is correct for both appending
+  // and truncating and wrong the moment an item moves.
+  let prevItems: any[] | undefined;
+
   ctx.effect(() => {
     const source = evaluate(ctx.scope, sourceExp);
     const prevKeyToIndexMap = keyToIndexMap;
     [childCtxs, keyToIndexMap] = createChildContexts(source);
+
+    if (import.meta.env.DEV) {
+      // A collision is free to detect: the map is keyed, so a repeated key
+      // means fewer entries than contexts. Naming the offender costs a pass,
+      // and only runs once a collision is already known to exist.
+      if (keyToIndexMap.size !== childCtxs.length) {
+        const counts = new Map<any, number>();
+        let dup: any;
+        for (const child of childCtxs) {
+          const n = (counts.get(child.key) || 0) + 1;
+          counts.set(child.key, n);
+          if (n > 1 && dup === undefined) dup = child.key;
+        }
+        warnOnce(
+          `for-dup-key:${exp}`,
+          `v-for="${exp}" produced a duplicate :key ${JSON.stringify(dup)}. ` +
+            `Keys must be unique among siblings — with a repeat, one item's ` +
+            `element and its scope state are silently dropped. Key by ` +
+            `something stable and unique, such as a record id.`
+        );
+      }
+
+      if (!keyExp && isArray(source)) {
+        const items = [...source];
+        if (prevItems) {
+          const moved = items.some((item, i) => {
+            const was = prevItems!.indexOf(item);
+            return was > -1 && was !== i;
+          });
+          if (moved) {
+            warnOnce(
+              `for-no-key:${exp}`,
+              `v-for="${exp}" has no :key and its items were reordered. ` +
+                `Without a key the list reconciles by position, so elements ` +
+                `are reused for different items — losing focus, cursor ` +
+                `position, scroll offset and any state held on those nodes. ` +
+                `Add :key with a value that identifies the item.`
+            );
+          }
+        }
+        prevItems = items;
+      }
+    }
     if (!mounted) {
       blocks = childCtxs.map((s) => mountBlock(s, anchor));
       mounted = true;
