@@ -26,6 +26,16 @@ export interface App {
   scope: Record<string, any>;
   directive(name: string, def?: Directive): any;
   /**
+   * Register a component — a function returning a scope object, used from
+   * `v-scope="Name()"` — or retrieve one by name.
+   *
+   * Components have always been plain functions reachable from an expression;
+   * this gives them a named home, so a plugin can contribute one without
+   * reaching into `app.scope`, and so a name can be looked up rather than
+   * guessed at.
+   */
+  component(name: string, factory?: ComponentFactory): any;
+  /**
    * Install a plugin. A plugin is a function (or object with an install
    * method) that receives the app and optional options. Installing the same
    * plugin twice is a no-op.
@@ -51,6 +61,13 @@ export interface App {
  * whether or not any app was still running.
  */
 export type PluginTeardown = () => void;
+
+/**
+ * A component factory. Called from an expression — `v-scope="Counter({ n: 1 })"`
+ * — and returns the scope object for that region. Props are whatever the
+ * expression passes.
+ */
+export type ComponentFactory = (...props: any[]) => Record<string, any>;
 
 export type Plugin<Options = any> =
   | ((app: App, options?: Options) => PluginTeardown | void)
@@ -98,6 +115,7 @@ export const createApp = (initialData?: any) => {
     enumerable: false,
   });
 
+  const components: Record<string, ComponentFactory> = Object.create(null);
   let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
   const pluginTeardowns: PluginTeardown[] = [];
@@ -114,6 +132,38 @@ export const createApp = (initialData?: any) => {
       } else {
         return ctx.dirs[name];
       }
+    },
+
+    component(name: string, factory?: ComponentFactory) {
+      if (!factory) return components[name];
+
+      if (import.meta.env.DEV) {
+        if (name in components) {
+          warn(
+            `component "${name}" is already registered and has been ` +
+              `replaced. Registering twice is usually two modules claiming ` +
+              `the same name.`
+          );
+        } else if (name in ctx.scope) {
+          // The root scope is the user's, and a component quietly taking a
+          // name they are already using would replace their data with a
+          // function. Refusing is the safe direction: the expression keeps
+          // resolving to what they put there.
+          warn(
+            `component "${name}" was not registered: the root scope already ` +
+              `has a "${name}", and overwriting it would replace your data ` +
+              `with the component. Rename one of them.`
+          );
+        }
+      }
+      if (!(name in components) && name in ctx.scope) return this;
+
+      components[name] = factory;
+      // mirrored onto the root scope because that is what expressions resolve
+      // against; a nested v-scope declaring the same name shadows it through
+      // the prototype chain, as any other root value would be shadowed
+      ctx.scope[name] = factory;
+      return this;
     },
 
     use(plugin, options) {
