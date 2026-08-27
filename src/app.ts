@@ -8,6 +8,7 @@ import { walk } from './walk';
 import { devtools, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { teardownSubtree, trackCleanup } from './teardown';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
@@ -163,6 +164,7 @@ export const createApp = (initialData?: any) => {
       // published before any child context is spread off this one, so every
       // scope inherits it (see Context.walk)
       ctx.walk ??= walk;
+      ctx.teardown ??= teardownSubtree;
 
       for (const el of roots) {
         // read v-name before walk strips it from the element
@@ -176,7 +178,9 @@ export const createApp = (initialData?: any) => {
         // walk; only register roots the walk didn't claim. The cleanup goes on
         // the block so unmounting this region deregisters only this scope.
         if (!devtools.scopes.has(el)) {
-          block.ctx.cleanups.push(
+          trackCleanup(
+            block.ctx,
+            el,
             registerScope(el, block.ctx.scope, undefined, name || undefined)
           );
         }

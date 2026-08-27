@@ -12,6 +12,7 @@ export class Block {
   isFragment: boolean;
   start?: Text;
   end?: Text;
+  private tornDown = false;
 
   get el() {
     return this.start || (this.template as Element);
@@ -106,10 +107,18 @@ export class Block {
   }
 
   teardown() {
-    this.ctx.blocks.forEach((child) => {
+    if (this.tornDown) return;
+    this.tornDown = true;
+    if (this.parentCtx) remove(this.parentCtx.blocks, this);
+    [...this.ctx.blocks].forEach((child) => {
       child.teardown();
     });
-    this.ctx.effects.forEach(stopEffect);
-    this.ctx.cleanups.forEach((fn) => fn());
+    this.ctx.blocks.length = 0;
+    this.ctx.effects.splice(0).forEach(stopEffect);
+    // Cleanups remove themselves from this array, so drain a snapshot rather
+    // than mutating the array being iterated and accidentally skipping every
+    // other entry.
+    [...this.ctx.cleanups].forEach((fn) => fn());
+    this.ctx.cleanups.length = 0;
   }
 }

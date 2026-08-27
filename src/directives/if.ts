@@ -2,6 +2,7 @@ import { Block } from '../block';
 import { evaluate } from '../eval';
 import { checkAttr } from '../utils';
 import { Context } from '../context';
+import { trackEffect } from '../teardown';
 
 interface Branch {
   exp?: string | null;
@@ -58,7 +59,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     }
   };
 
-  ctx.effect(() => {
+  const runner = ctx.effect(() => {
     for (let i = 0; i < branches.length; i++) {
       const { exp, el } = branches[i];
       if (!exp || evaluate(ctx.scope, exp)) {
@@ -78,6 +79,10 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     activeBranchIndex = -1;
     removeActiveBlock();
   });
+  // The anchor is detached while a branch is active, so the stable owner is
+  // the containing element. Morphing that container away must stop the branch
+  // controller as well as tearing down its currently rendered Block.
+  trackEffect(ctx, parent, runner);
 
   return nextNode;
 };

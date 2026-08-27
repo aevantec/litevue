@@ -26,6 +26,8 @@ export interface Context {
    * reading it here keeps them from importing — and re-bundling — the core.
    */
   walk?: (node: Node, ctx: Context) => ChildNode | null | void;
+  /** Release effects/listeners owned by a DOM subtree without removing it. */
+  teardown?: (node: Node, ctx: Context) => void;
 }
 
 export const createContext = (parent?: Context): Context => {

@@ -61,6 +61,138 @@ describe('morph', () => {
     app.unmount();
   });
 
+  test('tears down window listeners owned by removed nodes', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ hits: 0 }"><section id="r">
+        <span @morph-probe.window="hits++"></span>
+      </section><b>{{ hits }}</b></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+
+    window.dispatchEvent(new Event('morph-probe'));
+    await tick();
+    expect(scope.hits).toBe(1);
+
+    morph(root.querySelector('#r')!, `<section id="r"></section>`);
+    window.dispatchEvent(new Event('morph-probe'));
+    await tick();
+
+    expect(scope.hits).toBe(1);
+    app.unmount();
+  });
+
+  test('tears down resources before replacing a node with another tag', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ hits: 0 }"><section id="r">
+        <span @replace-probe.window="hits++">old</span>
+      </section></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    const old = root.querySelector('span')!;
+
+    morph(old, `<em>new</em>`);
+    window.dispatchEvent(new Event('replace-probe'));
+    await tick();
+
+    expect(old.isConnected).toBe(false);
+    expect(root.querySelector('em')!.textContent).toBe('new');
+    expect(scope.hits).toBe(0);
+    app.unmount();
+  });
+
+  test('stops effects and element listeners in a discarded subtree', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ n: 1 }"><section id="r">
+        <button @click="n++"><span>{{ n }}</span></button>
+      </section></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    const button = root.querySelector('button') as HTMLButtonElement;
+    const detachedText = button.querySelector('span')!;
+    expect(detachedText.textContent).toBe('1');
+
+    morph(root.querySelector('#r')!, `<section id="r"></section>`);
+    button.click();
+    scope.n = 3;
+    await tick();
+
+    expect(scope.n).toBe(3);
+    expect(detachedText.textContent).toBe('1');
+    app.unmount();
+  });
+
+  test('tears down nested blocks when their containing node is removed', async () => {
+    const mounted: string[] = [];
+    const unmounted: string[] = [];
+    (window as any).morphMounted = mounted;
+    (window as any).morphUnmounted = unmounted;
+    const { app, root } = await mountApp(
+      `<div v-scope="{ show: true }"><section id="r">
+        <div><p v-if="show" @mounted="morphMounted.push('p')"
+          @unmounted="morphUnmounted.push('p')">live</p></div>
+      </section></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    expect(mounted).toEqual(['p']);
+
+    morph(root.querySelector('#r')!, `<section id="r"></section>`);
+    scope.show = false;
+    await tick();
+    scope.show = true;
+    await tick();
+
+    expect(unmounted).toEqual(['p']);
+    expect(mounted).toEqual(['p']);
+    app.unmount();
+    delete (window as any).morphMounted;
+    delete (window as any).morphUnmounted;
+  });
+
+  test('does not run a deferred mounted handler after removal', async () => {
+    const mounted: string[] = [];
+    (window as any).lateMorphMounted = mounted;
+    document.body.innerHTML = `<div v-scope><section id="r">
+      <span @mounted="lateMorphMounted.push('span')"></span>
+    </section></div>`;
+    const root = document.body.firstElementChild as HTMLElement;
+    const app = createApp().use(morphPlugin);
+    app.mount(root);
+
+    // Morph before @mounted's nextTick callback has a chance to run.
+    morph(root.querySelector('#r')!, `<section id="r"></section>`);
+    await tick();
+
+    expect(mounted).toEqual([]);
+    app.unmount();
+    delete (window as any).lateMorphMounted;
+  });
+
+  test('repeated insertion and removal does not grow context resources', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ n: 0 }"><section id="r"></section></div>`
+    );
+    const ctx = (root as any).__ctx;
+    const baseline = {
+      cleanups: ctx.cleanups.length,
+      effects: ctx.effects.length,
+      blocks: ctx.blocks.length,
+    };
+
+    for (let i = 0; i < 20; i++) {
+      morph(
+        root.querySelector('#r')!,
+        `<section id="r"><button @click.window="n++">{{ n }}</button></section>`
+      );
+      await tick();
+      morph(root.querySelector('#r')!, `<section id="r"></section>`);
+    }
+
+    expect(ctx.cleanups.length).toBe(baseline.cleanups);
+    expect(ctx.effects.length).toBe(baseline.effects);
+    expect(ctx.blocks.length).toBe(baseline.blocks);
+    app.unmount();
+  });
+
   test('live state wins over the incoming v-scope expression', async () => {
     const { root } = await mountApp(
       `<div><section id="s" v-scope="{ count: 0 }"><span>{{ count }}</span>

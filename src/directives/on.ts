@@ -55,8 +55,15 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     );
   }
   if (arg === 'mounted' || arg === 'vue:mounted') {
-    nextTick(handler);
-    return;
+    // A node may be synchronously unmounted or morphed away before this tick.
+    // Do not run mount work against a binding that has already been released.
+    let active = true;
+    nextTick(() => {
+      if (active) handler();
+    });
+    return () => {
+      active = false;
+    };
   } else if (arg === 'unmounted' || arg === 'vue:unmounted') {
     return () => handler();
   }

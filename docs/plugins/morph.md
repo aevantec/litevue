@@ -24,7 +24,7 @@ morph(document.querySelector('#cart'), html);
 
 - **Scope state.** A scope belongs to its element. Replace the element and `v-scope="{ open: true }"` resets — the open accordion closes, the loaded tab unloads.
 - **Browser state you don't control.** Focus and cursor position, text selection, IME composition, scroll offsets of inner containers, `<video>` playback, `<iframe>` contents, `<details open>`, in-flight CSS transitions.
-- **Effects.** A replaced region's effects have to be torn down with [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) first, or they stay subscribed and keep writing to detached nodes. Morph never detaches them, so the question doesn't arise.
+- **Effects and listeners.** A replaced region has to be torn down with [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) first, or its effects and global listeners stay live against detached nodes. Morph preserves resources belonging to reused nodes and releases those belonging to nodes it removes or replaces.
 
 ::: tip This is the counterpart to manual initialization
 [Dynamic content](/essentials/dynamic-content) stays inert until you call `mount(el)` — a deliberate security decision. That handles **new** fragments well and **replacing** live ones badly. Morph is the other half: it updates a region without re-executing anything already alive.
@@ -120,8 +120,6 @@ Known constraints to weigh before depending on it:
 - **A container hosting `v-if` or `v-for` is skipped whole.** The live DOM holds block anchors plus however many clones the data produced; the server still sends the single authoring template. Those shapes can't be reconciled positionally, so the client keeps ownership — including any static siblings in that container.
 - **`v-scope` changes are ignored on live elements.** If the server renders `v-scope="{ count: 0 }"` for an element whose count is already `3`, the live value wins. Reset state explicitly rather than expecting the markup to do it.
 - **Static attributes bound elsewhere can be clobbered.** Morph only knows a `class` is client-owned when the incoming element carries `:class`. If you set a class imperatively from JavaScript, mark the element `data-morph-skip`.
-- **Removed elements don't tear down their effects.** Morph drops nodes the server no longer sends without unmounting them first, so their effects stay subscribed. It removes far fewer nodes than a replace, so it leaks far less — but not nothing. Tearing those down per node needs teardown at a finer grain than [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) offers today.
-
 ::: warning Morphed-in markup is walked
 New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [Security](/start-here/security#morph-and-server-rendered-updates).
 :::

@@ -9,6 +9,8 @@ import { checkAttr } from './utils';
 import { ref } from './directives/ref';
 import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
+import { trackCleanup, trackEffect } from './teardown';
+import type { ReactiveEffectRunner } from '@vue/reactivity';
 
 const dirRE = /^(?:v-|:|@)/;
 const modifierRE = /\.([\w-]+)/g;
@@ -59,7 +61,7 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
         // original position
         (el as any).__teleported = true;
         target.appendChild(el);
-        ctx.cleanups.push(() => el.remove());
+        trackCleanup(ctx, el, () => el.remove());
       } else if (import.meta.env.DEV) {
         console.error(`v-teleport target "${exp}" not found.`);
       }
@@ -73,7 +75,9 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
       // (the morph plugin) can walk it with the scope it landed in, instead of
       // guessing or falling back to the root
       (el as any).__ctx = ctx;
-      ctx.cleanups.push(
+      trackCleanup(
+        ctx,
+        el,
         registerScope(el, ctx.scope, exp || undefined, name || undefined)
       );
       if (scope.$template) {
@@ -194,17 +198,25 @@ const applyDirective = (
   modifiers?: Record<string, true>
 ) => {
   const get = (e = exp) => evaluate(ctx.scope, e, el);
+  // Directives receive a node-aware effect factory. Effects still belong to
+  // the context for a normal unmount, but can now also be stopped when morph
+  // discards just this node.
+  const effect = ((fn: () => any) => {
+    const runner = ctx.effect(fn);
+    trackEffect(ctx, el, runner as ReactiveEffectRunner);
+    return runner;
+  }) as Context['effect'];
   const cleanup = dir({
     el,
     get,
-    effect: ctx.effect,
+    effect,
     ctx,
     exp,
     arg,
     modifiers,
   });
   if (cleanup) {
-    ctx.cleanups.push(cleanup);
+    trackCleanup(ctx, el, cleanup);
   }
 };
 

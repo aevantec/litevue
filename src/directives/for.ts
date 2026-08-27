@@ -2,6 +2,7 @@ import { isArray, isObject } from '@vue/shared';
 import { Block } from '../block';
 import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
+import { trackEffect } from '../teardown';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
 const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/;
@@ -116,7 +117,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     return block;
   };
 
-  ctx.effect(() => {
+  const runner = ctx.effect(() => {
     const source = evaluate(ctx.scope, sourceExp);
     const prevKeyToIndexMap = keyToIndexMap;
     [childCtxs, keyToIndexMap] = createChildContexts(source);
@@ -162,6 +163,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       blocks = nextBlocks;
     }
   });
+  trackEffect(ctx, parent, runner);
 
   return nextNode;
 };

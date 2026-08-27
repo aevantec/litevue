@@ -7,9 +7,9 @@ import type { Plugin } from '../../app';
  * Replacing markup (`el.innerHTML = html`, then re-mounting) destroys every
  * element in the region, which means every scope, its state, and the browser
  * state riding on those nodes — focus, cursor position, text selection, scroll
- * offsets, media playback, `<details open>`. LiteVue also has no per-region
- * teardown, so the discarded subtree's effects stay subscribed and keep writing
- * to detached nodes.
+ * offsets, media playback, `<details open>`. A raw replacement also needs an
+ * explicit region unmount first or the discarded subtree's effects and global
+ * listeners stay live against detached nodes.
  *
  * Morphing patches the differences onto the existing tree, so unchanged
  * elements are never touched and none of that is lost.
@@ -164,6 +164,7 @@ const patchNode = (
 
 const replaceNode = (from: Node, to: Node, ctx: Context | undefined) => {
   const fresh = to.cloneNode(true);
+  ctx?.teardown?.(from, ctx);
   from.parentNode!.replaceChild(fresh, from);
   mountNew(fresh, ctx);
 };
@@ -256,6 +257,7 @@ const patchChildren = (
   // of the key map, which would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
+    ctx?.teardown?.(oldChild, ctx);
     from.removeChild(oldChild);
     oldChild = next;
   }

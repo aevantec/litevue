@@ -123,4 +123,18 @@ describe('pending timers are cancelled on teardown', () => {
     app.unmount();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  test('v-transition does not create its enter timer after teardown', async () => {
+    document.body.innerHTML = `<div v-scope="{ s: true }">
+      <b v-if="s" v-transition>x</b>
+    </div>`;
+    const root = document.body.firstElementChild as HTMLElement;
+    const app = createApp().use(transition);
+    app.mount(root);
+
+    // Teardown wins the race with the transition plugin's enter microtask.
+    app.unmount();
+    await Promise.resolve();
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
