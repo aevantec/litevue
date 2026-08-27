@@ -80,10 +80,14 @@ export const transition: Plugin = (app) => {
     if (!exp) {
       // unmount mode: the element's lifetime is controlled by v-if/v-for.
       // enter runs a microtask later, once the block has been inserted
-      Promise.resolve().then(() => run('enter'));
+      let live = true;
+      Promise.resolve().then(() => {
+        if (live) run('enter');
+      });
       (elem as any).__leave = () =>
         new Promise<void>((resolve) => run('leave', resolve));
       return () => {
+        live = false;
         clearTimeout(endTimer);
         delete (elem as any).__leave;
       };

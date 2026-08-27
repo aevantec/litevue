@@ -9,7 +9,12 @@ export const effect: Directive = ({ el, ctx, exp, effect }) => {
   // cursor has moved on, and the effect would be owned by nothing and survive
   // its element's removal. Every other directive is applied while the cursor
   // still points at its element.
+  // A node can be torn down before this tick: morph mounts a subtree and
+  // removes it again in the same frame. Creating the effect then would attach
+  // it to a node no disposal will ever visit, so it would run forever.
+  let live = true;
   nextTick(() => {
+    if (!live) return;
     const previous = setOwner(el);
     try {
       effect(() => execute(ctx.scope, exp, el));
@@ -17,4 +22,7 @@ export const effect: Directive = ({ el, ctx, exp, effect }) => {
       setOwner(previous);
     }
   });
+  return () => {
+    live = false;
+  };
 };

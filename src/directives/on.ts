@@ -55,8 +55,15 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     );
   }
   if (arg === 'mounted' || arg === 'vue:mounted') {
-    nextTick(handler);
-    return;
+    // same race as v-effect: the element may be torn down before this tick,
+    // and mount work has no business running against a detached node
+    let live = true;
+    nextTick(() => {
+      if (live) handler();
+    });
+    return () => {
+      live = false;
+    };
   } else if (arg === 'unmounted' || arg === 'vue:unmounted') {
     return () => handler();
   }

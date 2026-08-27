@@ -356,6 +356,54 @@ describe('node ownership: deferred removal', () => {
   });
 });
 
+describe('node ownership: work deferred past teardown', () => {
+  test('a v-effect whose node went before its tick is never created', async () => {
+    const shared = reactive({ x: 0 });
+    let runs = 0;
+    mount(
+      `<div id="root" v-scope><section id="r"><span>start</span></section></div>`,
+      {
+        probe() {
+          shared.x;
+          runs++;
+        },
+      }
+    );
+    await tick(4);
+
+    // in and out again inside one frame, before the nextTick that would
+    // create the effect — an effect made then would belong to a node no
+    // disposal will ever visit, and would run for the life of the page
+    morph(region(), `<section id="r"><b v-effect="probe()">in</b></section>`);
+    morph(region(), `<section id="r"><i>out</i></section>`);
+    await tick(8);
+    const settled = runs;
+
+    shared.x++;
+    await tick(8);
+    expect(runs).toBe(settled);
+  });
+
+  test('an @mounted handler does not fire on a node already torn down', async () => {
+    let fired = 0;
+    mount(
+      `<div id="root" v-scope><section id="r"><span>start</span></section></div>`,
+      {
+        hit() {
+          fired++;
+        },
+      }
+    );
+    await tick(4);
+
+    morph(region(), `<section id="r"><b @mounted="hit()">in</b></section>`);
+    morph(region(), `<section id="r"><i>out</i></section>`);
+    await tick(8);
+
+    expect(fired).toBe(0);
+  });
+});
+
 describe('node ownership: disposal is exactly once', () => {
   test('a cleanup inside a torn-down block runs exactly once', async () => {
     const calls: string[] = [];
