@@ -27,7 +27,7 @@ export default defineConfig({
   },
   title: 'LiteVue',
   description:
-    "Vue's template syntax at ~8kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
+    "Vue's template syntax at ~9kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   base,
   // Cloudflare already 307s /foo.html to /foo, so emitting .html links meant
   // every internal link and every sitemap entry pointed at a redirect rather

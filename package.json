@@ -186,6 +186,7 @@
     "lint:package": "publint --strict && attw --pack .",
     "check:bundles": "node scripts/check-bundles.mjs",
     "check:docs-versions": "node scripts/check-docs-versions.mjs",
+    "check:docs-sizes": "node scripts/check-docs-sizes.mjs",
     "prepublishOnly": "pnpm build && publint --strict",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
