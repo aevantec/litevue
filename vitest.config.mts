@@ -12,5 +12,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
     include: ['test/**/*.test.ts'],
+    // test/browser holds the cases jsdom cannot model — real focus, layout,
+    // CSS transitions, IntersectionObserver. They run under
+    // vitest.browser.config.mts instead; running them here would fail for the
+    // reasons they exist.
+    exclude: ['test/browser/**'],
   },
 });
