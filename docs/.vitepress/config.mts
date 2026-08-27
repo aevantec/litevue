@@ -179,6 +179,7 @@ export default defineConfig({
           { text: 'Overview', link: '/devtools/' },
           { text: 'Inspector Panel', link: '/devtools/panel' },
           { text: 'Browser Extension', link: '/devtools/extension' },
+          { text: 'Development Warnings', link: '/devtools/warnings' },
         ],
       },
       {

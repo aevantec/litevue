@@ -8,6 +8,11 @@ import { walk } from './walk';
 import { devtools, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { warn } from './warn';
+
+// DEV: elements this app has already walked, so a second mount of the same
+// element can say why nothing happened. Weak, and never read in production.
+const mountedRoots = new WeakSet<Element>();
 import { disposeSubtree } from './ownership';
 
 const escapeRegex = (str: string) =>
@@ -167,6 +172,23 @@ export const createApp = (initialData?: any) => {
       ctx.dispose ??= disposeSubtree;
 
       for (const el of roots) {
+        if (import.meta.env.DEV) {
+          // Walking an element consumes its directives — every v-scope, @click
+          // and :bind is removed from the DOM as it is bound. Mounting the
+          // same element again therefore walks a stripped tree and binds
+          // nothing: no error, no effects, an inert region that looks mounted.
+          // The DOM is the template here, so bringing a region back means
+          // inserting fresh markup and mounting that.
+          if (mountedRoots.has(el)) {
+            warn(
+              `mount() was called again on an element that has already been ` +
+                `mounted, so its directives were consumed by the first walk ` +
+                `and nothing was bound this time. To re-activate a region, ` +
+                `insert fresh markup and mount that instead.`
+            );
+          }
+          mountedRoots.add(el);
+        }
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);

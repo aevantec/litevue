@@ -11,6 +11,7 @@ LiteVue ships inspection tooling in the box, built on the public [Devtools API](
 | [Inspector Panel](/devtools/panel)       | in-page panel: scope/store tabs, live state tree editing, pick mode, themes |
 | [Browser Extension](/devtools/extension) | Chrome/Firefox devtools tab reading the same registry                       |
 | [Devtools API](/globals/devtools)        | `__LITE_VUE__` console access, registry events, production kill-switch      |
+| [Development Warnings](/devtools/warnings) | console warnings for mistakes that otherwise fail silently                |
 
 ## Quick setup
 
