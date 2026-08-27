@@ -8,6 +8,7 @@ import { walk } from './walk';
 import { devtools, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { disposeSubtree } from './ownership';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
@@ -163,6 +164,7 @@ export const createApp = (initialData?: any) => {
       // published before any child context is spread off this one, so every
       // scope inherits it (see Context.walk)
       ctx.walk ??= walk;
+      ctx.dispose ??= disposeSubtree;
 
       for (const el of roots) {
         // read v-name before walk strips it from the element

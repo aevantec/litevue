@@ -9,13 +9,49 @@ import { checkAttr } from './utils';
 import { ref } from './directives/ref';
 import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
+import { own, setOwner } from './ownership';
 
 const dirRE = /^(?:v-|:|@)/;
 const modifierRE = /\.([\w-]+)/g;
 
 export let inOnce = false;
 
+/**
+ * Registers a cleanup on both owners: the context, which tears down whole
+ * regions, and the node being walked, so a subtree detached on its own is
+ * released too. Dropping it from the context when the node goes keeps a
+ * repeatedly re-mounted region from accumulating one spent entry per cycle.
+ *
+ * The list doubles as the record of what has already run. Disposing a subtree
+ * can reach the same cleanup twice — once through the block root that owns it,
+ * whose teardown drains this list, and again through the node it was
+ * registered on — and a cleanup that runs twice removes a listener a later
+ * re-mount installed.
+ */
+const addCleanup = (ctx: Context, cleanup: () => void) => {
+  ctx.cleanups.push(cleanup);
+  own(() => {
+    const i = ctx.cleanups.indexOf(cleanup);
+    if (i > -1) {
+      ctx.cleanups.splice(i, 1);
+      cleanup();
+    }
+  });
+};
+
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
+  // The node being walked owns whatever it acquires, so a subtree removed on
+  // its own can be disposed. Restored on the way out so a nested walk does not
+  // leave the cursor pointing at a child.
+  const previousOwner = setOwner(node);
+  try {
+    return walkNode(node, ctx);
+  } finally {
+    setOwner(previousOwner);
+  }
+};
+
+const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
   const type = node.nodeType;
   if (type === 1) {
     // Element
@@ -73,7 +109,12 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
       // (the morph plugin) can walk it with the scope it landed in, instead of
       // guessing or falling back to the root
       (el as any).__ctx = ctx;
-      ctx.cleanups.push(
+      // through addCleanup, not ctx.cleanups directly: the devtools registry
+      // is a strong Map keyed by Element, so a scope root that is morphed away
+      // without deregistering keeps both the detached element and its scope
+      // object alive for the life of the page
+      addCleanup(
+        ctx,
         registerScope(el, ctx.scope, exp || undefined, name || undefined)
       );
       if (scope.$template) {
@@ -194,6 +235,10 @@ const applyDirective = (
   modifiers?: Record<string, true>
 ) => {
   const get = (e = exp) => evaluate(ctx.scope, e, el);
+  // ctx.effect is passed through unwrapped: directives are applied while the
+  // walk cursor still points at this element, so anything they create
+  // synchronously is attributed correctly. v-effect is the one exception and
+  // restores the cursor itself.
   const cleanup = dir({
     el,
     get,
@@ -204,7 +249,7 @@ const applyDirective = (
     modifiers,
   });
   if (cleanup) {
-    ctx.cleanups.push(cleanup);
+    addCleanup(ctx, cleanup);
   }
 };
 

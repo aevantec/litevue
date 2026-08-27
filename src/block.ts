@@ -2,6 +2,7 @@ import { Context, createContext } from './context';
 import { walk } from './walk';
 import { remove } from '@vue/shared';
 import { stopEffect } from './scheduler';
+import { own } from './ownership';
 
 export class Block {
   template: Element | DocumentFragment;
@@ -12,6 +13,7 @@ export class Block {
   isFragment: boolean;
   start?: Text;
   end?: Text;
+  owned = false;
 
   get el() {
     return this.start || (this.template as Element);
@@ -70,6 +72,22 @@ export class Block {
       // teleported roots already live under their target
       parent.insertBefore(this.template, anchor);
     }
+
+    // Registered once, after the nodes are in place: a block detached
+    // wholesale — morph removes subtrees directly — has to leave its parent's
+    // block list and tear down, or it keeps a context, a scope proxy and its
+    // effects alive with nothing in the document to render.
+    //
+    // After, not before, because a fragment block's `el` is its start marker,
+    // and that marker does not exist until this first insert creates it. Owned
+    // any earlier and the disposer would sit on the DocumentFragment, which
+    // insertBefore empties and which never enters the document — so no subtree
+    // walk could ever reach it. Later inserts are moves, and the marker moves
+    // with the block.
+    if (!this.owned) {
+      this.owned = true;
+      own(() => this.discard(), this.el);
+    }
   }
 
   remove() {
@@ -77,18 +95,26 @@ export class Block {
       remove(this.parentCtx.blocks, this);
     }
     const removeNow = () => {
-      if (this.start) {
-        const parent = this.start.parentNode!;
-        let node: Node | null = this.start;
-        let next: Node | null;
-        while (node) {
-          next = node.nextSibling;
-          parent.removeChild(node);
-          if (node === this.end) break;
-          node = next;
+      // The nodes can already be gone. A leave hook defers this call, and in
+      // the meantime the whole region may have been torn out — morph removes
+      // subtrees directly — which left the deferred removal dereferencing a
+      // null parentNode and rejecting into nothing. Tear down either way.
+      const parent = this.start
+        ? this.start.parentNode
+        : this.template.parentNode;
+      if (parent) {
+        if (this.start) {
+          let node: Node | null = this.start;
+          let next: Node | null;
+          while (node) {
+            next = node.nextSibling;
+            parent.removeChild(node);
+            if (node === this.end) break;
+            node = next;
+          }
+        } else {
+          parent.removeChild(this.template);
         }
-      } else {
-        this.template.parentNode!.removeChild(this.template);
       }
       this.teardown();
     };
@@ -105,11 +131,28 @@ export class Block {
     }
   }
 
+  /**
+   * The bookkeeping half of `remove()`, for a block whose nodes are already
+   * gone. `remove()` cannot be reused there: its `removeChild` calls would
+   * throw on nodes that no longer have this parent.
+   */
+  discard() {
+    if (this.parentCtx) {
+      remove(this.parentCtx.blocks, this);
+    }
+    this.teardown();
+  }
+
   teardown() {
-    this.ctx.blocks.forEach((child) => {
+    // drained rather than iterated: a cleanup, or a nested disposal reached
+    // through one, can splice these same arrays, and forEach would then skip
+    // entries. Draining also makes a second teardown a no-op, which the
+    // per-node disposers rely on — a subtree walk can reach a block through
+    // both its own node and its parent's.
+    this.ctx.blocks.splice(0).forEach((child) => {
       child.teardown();
     });
-    this.ctx.effects.forEach(stopEffect);
-    this.ctx.cleanups.forEach((fn) => fn());
+    this.ctx.effects.splice(0).forEach(stopEffect);
+    this.ctx.cleanups.splice(0).forEach((fn) => fn());
   }
 }
