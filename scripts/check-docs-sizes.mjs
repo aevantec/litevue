@@ -13,6 +13,11 @@
 //
 // and this asserts the number still rounds to the real gzipped size. The
 // marker is invisible once rendered, and several may sit on one line.
+//
+// An unmarked size also fails. That is the half that matters: validating only
+// what already carries a marker leaves the original hole open, since a new
+// `~7kb` written anywhere would pass in silence. Anything that is genuinely
+// not about a bundle here goes in IGNORED, with its reason.
 import { gzipSync } from 'zlib';
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, relative, resolve, dirname } from 'path';
@@ -42,7 +47,19 @@ const UNMARKABLE = [
   },
 ];
 
-const files = ['README.md'];
+// Any ~Nkb that is not about a bundle in this repository. Listing it is the
+// only way to stay quiet about it, so the list stays short and reviewable.
+const IGNORED = [
+  {
+    contains: 'runtime + compiler build is',
+    why: "Vue's bundle, not ours",
+  },
+];
+
+// every ~Nkb, marked or not
+const ANY_CLAIM = /~\d+kb/g;
+
+const files = ['README.md', '.github/PULL_REQUEST_TEMPLATE.md'];
 (function walk(dir) {
   for (const entry of readdirSync(dir)) {
     if (entry === 'dist' || entry === 'cache' || entry === 'node_modules') {
@@ -73,8 +90,20 @@ for (const file of files) {
   read(file)
     .split('\n')
     .forEach((line, i) => {
+      const where = `${file}:${i + 1}`;
+      const marked = [...line.matchAll(CLAIM)].length;
+      const total = [...line.matchAll(ANY_CLAIM)].length;
+      const excused =
+        UNMARKABLE.some((u) => u.file === file && line.includes(u.contains)) ||
+        IGNORED.some((g) => line.includes(g.contains));
+      if (total > marked && !excused) {
+        failures.push(
+          `${where} quotes a size with no size: marker, so nothing checks it. ` +
+            `Add \`<!-- size:<bundle> -->\` after it, or list it in IGNORED ` +
+            `with a reason if it is not about a bundle here.`
+        );
+      }
       for (const [, claimed, bundle] of line.matchAll(CLAIM)) {
-        const where = `${file}:${i + 1}`;
         const bytes = gzipped(bundle);
         if (bytes == null) {
           failures.push(
