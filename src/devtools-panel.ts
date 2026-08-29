@@ -72,9 +72,9 @@ const css = `
 .panel {
   display: flex;
   flex-direction: column;
-  width: 640px;
+  width: 760px;
   max-width: calc(100vw - 24px);
-  height: 440px;
+  height: 450px;
   max-height: calc(100vh - 24px);
   min-width: 320px;
   min-height: 320px;
@@ -715,8 +715,28 @@ const switchTab = (tab: 'Elements' | 'Stores') => {
   renderTree();
 };
 
+// `Cart({ id: 1 })` → `Cart`. Deliberately refuses a dotted or bracketed
+// callee: the component registry is flat, so only a bare identifier can name
+// one, and anything else would be guessing.
+const CALLEE = /^\s*([A-Za-z_$][\w$]*)\s*\(/;
+
+/** The registered component a scope expression instantiates, if it is one. */
+const componentOf = (el: Element) => {
+  const callee = CALLEE.exec(devtools.exps.get(el) || '')?.[1];
+  return callee && devtools.components?.has(callee) ? callee : undefined;
+};
+
+/**
+ * v-name wins, because it is what the author asked to be called. Then the
+ * component, which says more than an id and far more than a tag. A guard for
+ * `components` keeps a newer panel working against a core built before the
+ * registry existed, as the stores tab already does.
+ */
 const nameOf = (el: Element) =>
-  devtools.names.get(el) || el.id || el.tagName.toLowerCase();
+  devtools.names.get(el) ||
+  componentOf(el) ||
+  el.id ||
+  el.tagName.toLowerCase();
 
 const renderTabs = () => {
   const storeCount = devtools.stores ? devtools.stores.size : 0;

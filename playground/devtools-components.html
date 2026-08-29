@@ -1,0 +1,27 @@
+<meta charset="utf-8" />
+
+<script type="module">
+  import { createApp } from '../src';
+
+  createApp({ year: 2026 })
+    .component('Cart', (id) => ({ id, items: ['a', 'b'], open: false }))
+    .component('StarRating', (n) => ({ rating: n, hovered: 0 }))
+    .mount();
+</script>
+
+<h1>Component names in devtools</h1>
+
+<div v-scope="Cart(1)">
+  <p>cart {{ id }} — {{ items.length }} items</p>
+  <div v-scope="StarRating(4)"><p>rated {{ rating }}/5</p></div>
+</div>
+
+<div v-name="checkout" v-scope="Cart(2)">
+  <p>v-name wins: this is “checkout”, not “Cart”</p>
+</div>
+
+<div id="plain-id" v-scope="{ n: 1 }">
+  <p>no component, has an id → “plain-id”</p>
+</div>
+
+<div v-scope="{ m: 2 }"><p>no component, no id → tag name</p></div>
