@@ -72,9 +72,9 @@ const css = `
 .panel {
   display: flex;
   flex-direction: column;
-  width: 640px;
+  width: 760px;
   max-width: calc(100vw - 24px);
-  height: 440px;
+  height: 450px;
   max-height: calc(100vh - 24px);
   min-width: 320px;
   min-height: 320px;

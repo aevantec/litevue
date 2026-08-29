@@ -27,6 +27,10 @@ export default defineConfig({
       provider: playwright(),
       headless: true,
       screenshotFailures: false,
+      // a desktop viewport, not the 414px default: these tests measure layout,
+      // and several of them — the panel's opening size especially — are
+      // clamped to something else entirely on a narrow one
+      viewport: { width: 1280, height: 800 },
       instances: [{ browser: 'chromium' }],
     },
   },
