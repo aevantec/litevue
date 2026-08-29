@@ -53,7 +53,7 @@ The panel picks up apps and stores through registry events, so import order isn'
 
 A `⚡ LiteVue` pill appears bottom-right and expands into the panel:
 
-- **Elements / Stores** tabs with live counts — scopes labeled as tags (`v-name` → id → tag name, e.g. `<cart>`)
+- **Elements / Stores** tabs with live counts — scopes labeled as tags, named by [`v-name`](/directives/v-name), then the [component](/essentials/components#registering-by-name) the scope came from, then the id, then the tag: `v-scope="Cart()"` reads as `<Cart>`
 - a name **filter** (case-insensitive; Escape clears)
 - a state view separating own from inherited state; arrays and objects render as an **expandable tree**; every primitive leaf edits inline with type coercion, booleans get checkboxes, and derived values — getter-only props and [`computed()`](/globals/computed) — are read-only
 - an **add-key row** and per-row ✕ delete for top-level keys

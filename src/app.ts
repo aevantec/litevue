@@ -5,7 +5,7 @@ import { bindContextMethods, createContext } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick } from './scheduler';
 import { walk } from './walk';
-import { devtools, registerScope } from './devtools';
+import { devtools, registerComponent, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
 import { warn } from './warn';
@@ -159,6 +159,7 @@ export const createApp = (initialData?: any) => {
       if (!(name in components) && name in ctx.scope) return this;
 
       components[name] = factory;
+      registerComponent(name);
       // mirrored onto the root scope because that is what expressions resolve
       // against; a nested v-scope declaring the same name shadows it through
       // the prototype chain, as any other root value would be shadowed

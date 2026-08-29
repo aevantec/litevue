@@ -2,6 +2,10 @@
 
 <script type="module">
   import { createApp } from '../src';
+  // Loads the inspector, which labels each region by the component that
+  // produced it: the Elements tree reads <StarRating> and <StockBadge> rather
+  // than <span>. Dev-only — this import never belongs in a production build.
+  import '../src/devtools-panel';
 
   // A component is a function returning a scope object. Props are whatever the
   // expression passes, so they are ordinary arguments.
@@ -141,6 +145,11 @@
   <p class="muted">
     Components registered by name, one of them contributed by a plugin. Each row
     holds its own state; the totals below are derived.
+  </p>
+  <p class="muted">
+    The inspector is loaded on this page — open the
+    <strong>&#9889; LiteVue</strong> pill and the Elements tree names each
+    region after its component.
   </p>
 
   <ul class="products">
