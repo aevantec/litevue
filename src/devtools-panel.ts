@@ -579,6 +579,26 @@ const collapsedScopes = new WeakSet<Element>();
  * left in the inline style untouched, so undocking returns the panel to
  * wherever the user last dragged and sized it rather than resetting it.
  */
+/**
+ * Pulls a floating panel back inside the viewport.
+ *
+ * Called when the panel is shown rather than when its position is restored: a
+ * hidden element measures zero, so a clamp at restore time would compute its
+ * bound from a width of nothing. This matters for anyone carrying a position
+ * saved before the drag was bounded, and for a window smaller than it was on
+ * the last visit — in both cases the header is off screen too, so there is no
+ * dragging it back.
+ */
+const keepOnScreen = () => {
+  if (dock !== 'float') return;
+  const right = parseInt(panelEl.style.right) || 0;
+  const bottom = parseInt(panelEl.style.bottom) || 0;
+  floatRight = panelEl.style.right =
+    clamp(right, 0, window.innerWidth - panelEl.offsetWidth) + 'px';
+  floatBottom = panelEl.style.bottom =
+    clamp(bottom, 0, window.innerHeight - panelEl.offsetHeight) + 'px';
+};
+
 const applyDock = (next: Dock) => {
   // Everything the floating panel controls is written as an inline style, by
   // dragging (right/bottom) or by the resize grip (width/height). Inline beats
@@ -1189,6 +1209,7 @@ const build = () => {
   pillEl.onclick = () => {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
+    keepOnScreen();
     saveUi({ open: true });
     scheduleRender();
   };
@@ -1211,10 +1232,23 @@ const build = () => {
     const startX = e.clientX;
     const startY = e.clientY;
     const move = (ev: MouseEvent) => {
+      // The panel is positioned by right/bottom offsets, so clamping those at
+      // zero only holds the right and bottom edges — the left and top were
+      // free to leave the screen entirely, taking the panel with them and
+      // giving no way to drag it back. The upper bound is what puts the
+      // opposite edge at zero.
       panelEl.style.right =
-        Math.max(0, startRight - (ev.clientX - startX)) + 'px';
+        clamp(
+          startRight - (ev.clientX - startX),
+          0,
+          window.innerWidth - panelEl.offsetWidth
+        ) + 'px';
       panelEl.style.bottom =
-        Math.max(0, startBottom - (ev.clientY - startY)) + 'px';
+        clamp(
+          startBottom - (ev.clientY - startY),
+          0,
+          window.innerHeight - panelEl.offsetHeight
+        ) + 'px';
     };
     const up = () => {
       document.removeEventListener('mousemove', move);
@@ -1347,20 +1381,23 @@ const build = () => {
 
   // restore persisted chrome: position, size, open state
   const ui = loadUi();
-  if (ui.right != null) floatRight = panelEl.style.right = ui.right + 'px';
-  if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.w) floatW = panelEl.style.width = ui.w + 'px';
   if (ui.h) floatH = panelEl.style.height = ui.h + 'px';
+  if (ui.right != null) floatRight = panelEl.style.right = ui.right + 'px';
+  if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.bh) bottomH = ui.bh + 'px';
   if (ui.rw) rightW = ui.rw + 'px';
   // after the sizes, so it hands each mode the one it was last left at
   applyDock(ui.dock || 'float');
+  // the host has to be in the document before the panel is shown: keepOnScreen
+  // measures it, and a detached element measures zero
+  document.body.appendChild(host);
   if (ui.open) {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
+    keepOnScreen();
     scheduleRender();
   }
-  document.body.appendChild(host);
 
   devtools.on('scope:mount', scheduleRender);
   devtools.on('scope:unmount', (el: Element) => {
