@@ -7,15 +7,13 @@ const FOCUSABLE =
 /**
  * Focus utilities.
  *
- * v-focus="expression" — focuses the element whenever the expression
- * becomes truthy (including on mount, making it an autofocus).
- * Modifiers:
- * - .select  also select the element's text (inputs/textareas)
+ * v-focus="expression" — focuses the element while the expression is truthy,
+ * on mount included, making it an autofocus.
+ * - .select  also select the text (inputs/textareas)
  *
- * v-trap="expression" — while the expression is truthy, contains Tab /
- * Shift+Tab focus cycling within the element (for accessible modals).
- * Focus moves to the first focusable child on activation and returns to
- * the previously focused element on release or unmount.
+ * v-trap="expression" — cycles Tab / Shift+Tab within the element while truthy,
+ * for accessible modals. Focus enters the first focusable child and returns to
+ * the previous element on release or unmount.
  */
 export const focus: Plugin = (app) => {
   app.directive('focus', ({ el, get, effect, modifiers }) => {
@@ -24,8 +22,8 @@ export const focus: Plugin = (app) => {
       const on = !!get();
       // wait a tick so v-if/v-show updates land in the DOM first
       Promise.resolve().then(() => {
-        // the element can be torn down inside that tick, and focusing a
-        // detached node blurs whatever the user was actually typing in
+        // the element can be torn down within that tick, and focusing a
+        // detached node blurs whatever the user was typing in
         if (live && on) {
           (el as HTMLElement).focus();
           if (modifiers?.select && (el as HTMLInputElement).select) {

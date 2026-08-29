@@ -3,13 +3,9 @@ import { createApp } from '../src';
 import { transition } from '../src/plugins';
 
 /**
- * Work scheduled with setTimeout has to be cancelled when the region that
- * scheduled it goes away. `app.unmount(el)` leaves the element in the
- * document, so a timer that survives does not merely waste a tick — it writes
- * into a scope that is meant to be inert.
- *
- * `collapse` already does this correctly by holding its timers in a Set; these
- * cases are the ones that did not.
+ * A setTimeout must be cancelled when the region that scheduled it goes away.
+ * `app.unmount(el)` leaves the element in the document, so a surviving timer
+ * writes into a scope meant to be inert. These are the cases that did not.
  */
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {

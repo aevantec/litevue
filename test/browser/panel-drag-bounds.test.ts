@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 /**
- * The panel is positioned by right/bottom offsets, so the clamp that keeps it
- * on screen is not symmetric by default: pinning those offsets at zero holds
- * the right and bottom edges, and does nothing about the other two.
+ * The panel is positioned by right/bottom offsets, so the clamp is not
+ * symmetric: a zero floor holds those two edges and nothing else.
  */
 
 const flush = () => new Promise((r) => setTimeout(r, 0));

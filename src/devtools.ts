@@ -110,14 +110,10 @@ export const registerComponent = (name: string) => {
 };
 
 export const emitFlush = () => {
-  // The size check stays first: this runs on every scheduler flush, and with
-  // nothing subscribed — the normal case — it costs one property read.
-  //
-  // The disabled check is what the other three events get for free by
-  // returning early at their source. `flush` has no source to gate, so
-  // without this it kept firing for anyone who subscribed after
-  // disableDevtools(), which clears existing listeners but does not stop new
-  // ones being added. The kill switch is meant to be total.
+  // Size check first: this runs on every flush, and with nothing subscribed
+  // it costs one property read. The disabled check is what the other events
+  // get free by returning early at their source; `flush` has no such source,
+  // so without it a listener added after disableDevtools() would still fire.
   if (listeners.flush.size && !isDisabled()) {
     emit('flush');
   }

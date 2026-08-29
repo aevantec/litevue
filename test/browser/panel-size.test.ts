@@ -1,10 +1,9 @@
 import { afterEach, expect, test } from 'vitest';
 
 /**
- * The panel's opening size is a CSS default with no other test over it, so it
- * can be changed by accident. Measured in a real engine because it depends on
- * `max-width: calc(100vw - 24px)` resolving against an actual viewport —
- * under a hidden or zero-sized one every value collapses to the minimums.
+ * The panel's opening size is a CSS default nothing else covers. Measured in a
+ * real engine because `max-width: calc(100vw - 24px)` needs a real viewport —
+ * under a zero-sized one every value collapses to the minimums.
  */
 
 const flush = () => new Promise((r) => setTimeout(r, 0));

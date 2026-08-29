@@ -119,6 +119,27 @@ The only changes that go straight to `main` are urgent fixes to a released
 version. Those still need to be brought back to `main-next` afterwards, so raise
 one only when waiting for the next promotion is genuinely not an option.
 
+## Comments
+
+Comments explain **why**, not what — the code already says what it does. Keep
+them short: one to three lines is the norm, and a block that runs past about six
+is a sign the explanation has turned into a narrative.
+
+Write the reason a decision was made, the constraint that forced it, or the
+failure it prevents. Leave out the history of how it was discovered, the
+alternatives that were rejected, and restatements of the line below.
+
+```ts
+// Skip effects stopped between queueing and flushing: `stop()` only
+// clears tracking, so a queued runner would still fire one last write
+// into markup that is meant to be inert.
+if (stopped.has(job)) continue;
+```
+
+Two exceptions earn more room: a file header introducing a non-obvious module,
+and a public API doc comment carrying usage examples. Both should still be
+tight, and neither should recount how the code came to be that way.
+
 ## Commit convention
 
 We use [Conventional Commits](https://www.conventionalcommits.org/). This isn't

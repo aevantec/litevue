@@ -23,19 +23,14 @@ const durationOf = (el: Element) => {
 };
 
 /**
- * v-transition:name="expression" — an animated v-show. Toggles the element
- * with Vue-style transition classes: name-enter-from / name-enter-active /
- * name-enter-to on show, and name-leave-from / name-leave-active /
- * name-leave-to before hiding. The element is only hidden after the leave
- * transition finishes (duration is read from computed styles).
+ * v-transition:name="expression" — an animated v-show, using Vue-style
+ * classes: name-enter-from/-active/-to on show, name-leave-* before hiding.
+ * The element hides only once the leave transition finishes, its duration read
+ * from computed styles. The name defaults to "v", and the initial state does
+ * not animate unless `.appear` is present.
  *
- * The name defaults to "v". The initial state applies without animating
- * unless the .appear modifier is present. Use it instead of v-show.
- *
- * With no expression (`v-transition:fade` on a v-if/v-for element) it
- * switches to unmount mode: the enter transition runs when the element is
- * inserted, and a leave hook is registered so the core delays removal until
- * the leave transition finishes.
+ * With no expression, on a v-if/v-for element, it switches to unmount mode:
+ * enter runs on insertion, and a leave hook makes the core delay removal.
  */
 export const transition: Plugin = (app) => {
   app.directive('transition', ({ el, get, effect, arg, modifiers, exp }) => {
@@ -44,9 +39,8 @@ export const transition: Plugin = (app) => {
     const cls = (phase: string) => `${name}-${phase}`;
     let seq = 0;
     let first = true;
-    // The completion timer outlived the region: unmounting mid-transition left
-    // it pending, and it then stripped classes and ran `done` for a directive
-    // that no longer exists. `collapse` already tracks its timers this way.
+    // Tracked so teardown can cancel it: unmounting mid-transition left this
+    // pending, stripping classes and running `done` for a dead directive.
     let endTimer: ReturnType<typeof setTimeout> | undefined;
 
     const clear = () => {

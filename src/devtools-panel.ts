@@ -1,35 +1,24 @@
-// In-page devtools inspector panel. Built as a standalone bundle — it talks
-// to the registry via window.__LITE_VUE__ only, never by module import, so a
-// separately-bundled panel always sees the same registry instance as the app.
+// In-page devtools inspector panel. A standalone bundle: it reaches the
+// registry through window.__LITE_VUE__ only, never by module import, so it
+// always sees the same instance as the app.
 import type { LiteVueDevtools } from './devtools';
 
 /**
- * Docked layouts (`.panel.dock-bottom` / `.dock-right`).
+ * Panel stylesheet. Note the template below is a *string* — comments inside it
+ * ship verbatim, so explanations belong out here where terser strips them.
  *
- * Floating suits a quick look, but the panel is 640px wide and the state tree
- * is nested, so anything real is read through a keyhole. Docking gives it a
- * full viewport edge, the way browser devtools do. Only the cross-axis stays
- * resizable when docked — the other one would fight the dock.
+ * Docked layouts (`.dock-bottom` / `.dock-right`) give the tree a full viewport
+ * edge, as browser devtools do; only the cross-axis stays resizable, since the
+ * other would fight the dock.
  *
- * `min-height` is 320px rather than 200. Measured against the panel's fixed
- * chrome — 34px header, 28px tabs, 23px filter — 200px left about five rows of
- * tree, which is small enough that resizing down produced a panel you could not
- * actually read. 320 keeps roughly eleven. It matters most docked to the bottom,
- * where height is the only axis the user controls.
+ * `min-height` is 320px, not 200: against the fixed chrome (34px header, 28px
+ * tabs, 23px filter) 200 left about five rows of tree, too few to read. 320
+ * keeps roughly eleven.
  *
- * Note this template is a string: comments inside it ship. Explanations belong
- * out here, where they are stripped from the bundle.
+ * Sizing uses an explicit `.grip` rather than CSS `resize`, whose handle is
+ * always bottom-right — the wrong corner once docked, where dragging down would
+ * grow the panel upward. Each mode gets a handle on the edge that moves.
  */
-// The panel sizes itself with an explicit .grip rather than the native CSS
-// `resize` property. That grip sits at the element's bottom-right, which is
-// the wrong corner once docked: a bottom-docked panel is pinned to the
-// viewport floor, so the grip lands in the screen corner and dragging it down
-// makes the panel grow upward. Each mode gets a handle on the edge that
-// actually moves — top for dock-bottom, left for dock-right, corner when
-// floating.
-//
-// Comments are not written inside the literal below: it is a string, so they
-// would ship in the bundle verbatim.
 const css = `
 :host {
   all: initial;
@@ -433,18 +422,14 @@ let floatW = '';
 let floatH = '';
 let floatRight = '';
 let floatBottom = '';
-// Each mode keeps its own size. Deriving the docked one from the floating
-// geometry looks tidy and is wrong in use: a bottom dock dragged to 300px tall
-// would be back to the floating height the next time it was docked.
+// Each mode keeps its own size: deriving the docked one from the floating
+// geometry would reset a bottom dock sized to 300px on the next dock.
 let bottomH = '';
 let rightW = '';
 
-// Bounds for every mode. A panel narrower than this cannot show a scope tree
-// beside a state pane, and one taller than the viewport cannot be dragged back.
-// These mirror the min-width / min-height in the stylesheet. Two sources of
-// truth would disagree the moment either moved: CSS clamps what is rendered,
-// this clamps what is stored, and a stored value the layout will not honour
-// comes back wrong on the next load.
+// Bounds for every mode, mirroring min-width / min-height in the stylesheet.
+// CSS clamps what is rendered, this clamps what is stored; if they drift, a
+// stored value the layout will not honour comes back wrong on the next load.
 const MIN_W = 320;
 const MIN_H = 320;
 const maxW = () => window.innerWidth - 24;
@@ -514,10 +499,8 @@ const themeIcons: Record<ThemeMode, string> = {
   ),
 };
 
-/**
- * Dock icons: an outlined viewport with the docked region filled, which is the
- * convention browser devtools use. Floating shows a detached window instead.
- */
+/** Dock icons: an outlined viewport with the docked region filled, per browser
+ *  devtools convention. Floating shows a detached window. */
 const dockIcons: Record<Dock, string> = {
   float: icon(
     '<rect x="2" y="4" width="14" height="11" rx="1"/>' +
@@ -566,28 +549,21 @@ const applyTheme = () => {
   themeBtn.innerHTML = themeIcons[theme];
   themeBtn.title = 'theme: ' + theme;
 };
-// property paths ("items", "items.0", …) the user has expanded; kept across
-// flush re-renders so the tree doesn't collapse while state changes
+// property paths ("items", "items.0", …) the user expanded; kept across flush
+// re-renders so the tree doesn't collapse while state changes
 const expandedPaths = new Set<string>();
 
-// scope elements the user has collapsed in the Elements tree. Weak, so a
-// scope that unmounts takes its entry with it rather than pinning the element.
+// scopes collapsed in the Elements tree. Weak, so unmounting takes the entry
+// with it rather than pinning the element.
 const collapsedScopes = new WeakSet<Element>();
 
 /**
- * Docking swaps which edges the panel is pinned to. The floating geometry is
- * left in the inline style untouched, so undocking returns the panel to
- * wherever the user last dragged and sized it rather than resetting it.
- */
-/**
  * Pulls a floating panel back inside the viewport.
  *
- * Called when the panel is shown rather than when its position is restored: a
- * hidden element measures zero, so a clamp at restore time would compute its
- * bound from a width of nothing. This matters for anyone carrying a position
- * saved before the drag was bounded, and for a window smaller than it was on
- * the last visit — in both cases the header is off screen too, so there is no
- * dragging it back.
+ * Called on show, not on restore: a hidden element measures zero, so clamping
+ * at restore time would bound against a width of nothing. Covers a position
+ * saved before the drag was bounded, and a window smaller than last visit —
+ * in both, the header is off screen too, so dragging it back is impossible.
  */
 const keepOnScreen = () => {
   if (dock !== 'float') return;
@@ -600,15 +576,10 @@ const keepOnScreen = () => {
 };
 
 const applyDock = (next: Dock) => {
-  // Everything the floating panel controls is written as an inline style, by
-  // dragging (right/bottom) or by the resize grip (width/height). Inline beats
-  // the stylesheet, so those values would survive a dock and hold the panel
-  // away from the edge it is supposed to be pinned to: dragged to the middle
-  // and then docked, it stayed in the middle.
-  //
-  // So the floating geometry is stashed on the way in and cleared, then put
-  // back on the way out. Docking is the panel's state, not a suggestion, and
-  // undocking returns it to exactly where it was left.
+  // Dragging and the grip write inline styles, which beat the stylesheet — so
+  // left in place they would hold a docked panel away from its edge. The
+  // floating geometry is stashed and cleared on the way in, restored on the
+  // way out, so undocking returns the panel exactly where it was left.
   if (dock === 'float') {
     floatW = panelEl.style.width || floatW;
     floatH = panelEl.style.height || floatH;
@@ -645,8 +616,7 @@ const h = (tag: string, className: string, text?: string) => {
   return el;
 };
 
-// html-tag-style label for a scope root, e.g. <cart>. The name comes from
-// v-name, then the element id, then the tag name.
+// html-tag-style label for a scope root, e.g. <cart>. See nameOf for source.
 const tagOf = (el: Element) => {
   const label = h('span', 'label');
   label.appendChild(h('span', 'punct', '<'));
@@ -666,13 +636,12 @@ const parentScopeOf = (el: Element) => {
 };
 
 /**
- * Finds `term` among a scope's property names and values, returning the path
- * of the first hit so the tree can say why a scope matched.
+ * Finds `term` among a scope's property names and values, returning the first
+ * hit's path so the tree can show why a scope matched.
  *
- * Bounded on purpose. It runs on every keystroke over every mounted scope, and
- * application state is arbitrary: depth is capped, functions and `$`-prefixed
- * magics are skipped, and visited objects are remembered so a cycle — a scope
- * holding a reference back to its own element's context, say — terminates.
+ * Bounded on purpose: it runs on every keystroke over every mounted scope and
+ * state is arbitrary. Depth is capped, functions and `$` magics are skipped,
+ * and visited objects are remembered so cycles terminate.
  */
 const findInState = (scope: any, term: string) => {
   const seen = new Set<any>();
@@ -735,13 +704,10 @@ const descriptorOf = (o: any, key: string): PropertyDescriptor | undefined => {
 };
 
 /**
- * True for values the panel must not offer an editor for: accessors with no
- * setter, and getter-only `computed()` refs.
- *
- * A computed sits in the scope as a readonly ref — reading it through the
- * reactive proxy already unwrapped it, so it can only be recognized from the
- * raw descriptor. The reactivity flags are read directly rather than importing
- * isRef/isReadonly, to keep @vue/reactivity out of this standalone bundle.
+ * True for values with no editor: setter-less accessors and getter-only
+ * `computed()` refs. A computed is only recognizable from the raw descriptor,
+ * since reading through the proxy has already unwrapped it. The reactivity
+ * flags are read directly to keep @vue/reactivity out of this bundle.
  */
 const isReadOnly = (desc?: PropertyDescriptor) => {
   if (!desc) return false;
@@ -803,9 +769,8 @@ const switchTab = (tab: 'Elements' | 'Stores') => {
   renderTree();
 };
 
-// `Cart({ id: 1 })` → `Cart`. Deliberately refuses a dotted or bracketed
-// callee: the component registry is flat, so only a bare identifier can name
-// one, and anything else would be guessing.
+// `Cart({ id: 1 })` → `Cart`. Refuses dotted or bracketed callees: the
+// registry is flat, so only a bare identifier can name one.
 const CALLEE = /^\s*([A-Za-z_$][\w$]*)\s*\(/;
 
 /** The registered component a scope expression instantiates, if it is one. */
@@ -815,10 +780,9 @@ const componentOf = (el: Element) => {
 };
 
 /**
- * v-name wins, because it is what the author asked to be called. Then the
- * component, which says more than an id and far more than a tag. A guard for
- * `components` keeps a newer panel working against a core built before the
- * registry existed, as the stores tab already does.
+ * v-name wins — it is what the author asked to be called — then the component,
+ * then id, then tag. The `components` guard keeps a newer panel working against
+ * a core built before the registry existed, as the stores tab already does.
  */
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
@@ -843,9 +807,8 @@ const renderTree = () => {
       a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
     );
 
-    // A scope matches on its name or on anything inside its state. `hits`
-    // remembers the property path that matched, so the row can show it —
-    // otherwise the filter would hide every visible reason it survived.
+    // A scope matches on its name or its state. `hits` keeps the matching
+    // path so the row can show why it survived the filter.
     const hits = new Map<Element, string | undefined>();
     for (const el of all) {
       if (!filterText || nameOf(el).toLowerCase().includes(filterText)) {
@@ -867,9 +830,8 @@ const renderTree = () => {
       return;
     }
 
-    // Ancestors of a hit are kept even when they do not match themselves.
-    // Without them a nested scope renders indented under nothing, which reads
-    // as a broken tree rather than a filtered one.
+    // Ancestors of a hit are kept even when they don't match: without them a
+    // nested scope renders indented under nothing, reading as a broken tree.
     const visible = new Set<Element>();
     for (const el of hits.keys()) {
       visible.add(el);
@@ -901,8 +863,8 @@ const renderTree = () => {
       const row = h('div', el === selected ? 'row sel' : 'row');
       row.style.paddingLeft = 8 + (depth.get(el) ?? 0) * 12 + 'px';
 
-      // the caret matches the state tree below, and takes the same width when
-      // there is nothing to collapse so sibling names stay aligned
+      // caret matches the state tree below, and holds its width when there is
+      // nothing to collapse so sibling names stay aligned
       const collapsed = collapsedScopes.has(el);
       if (childCount.get(el)) {
         const arrow = h('span', collapsed ? 'arrow' : 'arrow open', '▶');
@@ -987,9 +949,8 @@ const renderState = () => {
   stateEl.appendChild(buildAdder(scope));
 };
 
-// "+ key / value" row for adding new state. Note: on nested v-scope proxies
-// an unknown key falls through to the owning parent scope, matching the
-// framework's write semantics.
+// "+ key / value" row for adding state. On nested v-scope proxies an unknown
+// key falls through to the parent scope, matching the framework's writes.
 const buildAdder = (scope: Record<string, any>) => {
   const row = h('div', 'prop adder');
   row.appendChild(h('span', 'spacer'));
@@ -1075,8 +1036,8 @@ const addNode = (
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (isReadOnly(desc)) {
-    // a getter without a setter, or a computed() — writes go nowhere, so
-    // don't offer an input that would silently discard them
+    // getter without a setter, or a computed(): an input here would silently
+    // discard writes
     row.appendChild(h('span', 'preview', fmt(v)));
   } else if (typeof v === 'boolean') {
     row.appendChild(h('span', 'bool', String(v)));
@@ -1185,8 +1146,8 @@ let renderQueued = false;
 const scheduleRender = () => {
   if (renderQueued) return;
   renderQueued = true;
-  // setTimeout over requestAnimationFrame: rAF stalls in hidden tabs,
-  // freezing the panel state shown when the tab becomes visible again
+  // setTimeout over rAF: rAF stalls in hidden tabs, freezing the state shown
+  // when the tab becomes visible again
   setTimeout(() => {
     renderQueued = false;
     if (panelEl.style.display === 'none') return;
@@ -1232,11 +1193,9 @@ const build = () => {
     const startX = e.clientX;
     const startY = e.clientY;
     const move = (ev: MouseEvent) => {
-      // The panel is positioned by right/bottom offsets, so clamping those at
-      // zero only holds the right and bottom edges — the left and top were
-      // free to leave the screen entirely, taking the panel with them and
-      // giving no way to drag it back. The upper bound is what puts the
-      // opposite edge at zero.
+      // Positioned by right/bottom offsets, so a zero floor only holds those
+      // two edges and the left and top could leave the screen with no way
+      // back. The upper bound is what puts the opposite edge at zero.
       panelEl.style.right =
         clamp(
           startRight - (ev.clientX - startX),
@@ -1261,9 +1220,8 @@ const build = () => {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   });
-  // The resize handle. Which edge it sits on is CSS; which axes it drives is
-  // the dock, so a bottom dock cannot be made narrower and a right dock cannot
-  // be made shorter — those dimensions belong to the viewport.
+  // The resize handle. CSS decides which edge it sits on; the dock decides
+  // which axes it drives, since the other belongs to the viewport.
   const grip = h('div', 'grip');
   grip.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -1275,9 +1233,8 @@ const build = () => {
     const startH = rect.height;
 
     const move = (ev: MouseEvent) => {
-      // the handle is on the far side from the anchored edge when docked, so
-      // the drag reads backwards there: pulling the top edge up, or the left
-      // edge left, makes the panel bigger
+      // docked, the handle sits opposite the anchored edge, so the drag reads
+      // backwards: pulling up or left makes the panel bigger
       if (dock !== 'right') {
         const dy =
           dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
@@ -1302,9 +1259,8 @@ const build = () => {
     document.addEventListener('mouseup', up);
   });
 
-  // Cycles through the dock positions, matching how the theme button works and
-  // how browser devtools present the same control — the icon shows the current
-  // state rather than opening a menu to pick one.
+  // Cycles through dock positions like the theme button: the icon shows the
+  // current state rather than opening a menu.
   dockBtn = h('button', 'btn');
   dockBtn.onclick = () => {
     applyDock(nextDock[dock]);
@@ -1389,8 +1345,8 @@ const build = () => {
   if (ui.rw) rightW = ui.rw + 'px';
   // after the sizes, so it hands each mode the one it was last left at
   applyDock(ui.dock || 'float');
-  // the host has to be in the document before the panel is shown: keepOnScreen
-  // measures it, and a detached element measures zero
+  // host must be in the document before showing: keepOnScreen measures it,
+  // and a detached element measures zero
   document.body.appendChild(host);
   if (ui.open) {
     pillEl.style.display = 'none';

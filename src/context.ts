@@ -21,17 +21,14 @@ export interface Context {
   delimiters: [string, string];
   delimitersRE: RegExp;
   /**
-   * The framework walker, published on the root context by `mount()` and
-   * inherited by every child context through the spreads below. Plugins that
-   * insert markup into a live tree (morph) need it to bind that markup, and
-   * reading it here keeps them from importing — and re-bundling — the core.
+   * The framework walker, published by `mount()` and inherited by every child
+   * context. Plugins that insert markup into a live tree (morph) bind it with
+   * this instead of importing — and re-bundling — the core.
    */
   walk?: (node: Node, ctx: Context) => ChildNode | null | void;
   /**
-   * Disposes a node and its subtree. Published on the root context alongside
-   * `walk` and inherited by the spreads above, so a plugin that removes nodes
-   * — morph does, directly — can release what they owned without importing
-   * and re-bundling the core.
+   * Disposes a node and its subtree. Published alongside `walk`, so a plugin
+   * that removes nodes directly can release what they owned.
    */
   dispose?: (node: Node) => void;
 }
@@ -55,10 +52,9 @@ export const createContext = (parent?: Context): Context => {
         scheduler: () => queueJob(e),
       });
       ctx.effects.push(e);
-      // owned by the node being walked as well, so detaching that node alone
-      // releases the effect. Both halves matter: stopping alone would leave a
-      // dead runner in ctx.effects, so a region morphed on a timer would
-      // accumulate one uncollectable entry per cycle.
+      // Also owned by the walked node, so detaching it alone releases the
+      // effect. Both halves matter: stopping without removing would leave a
+      // dead runner in ctx.effects, one per morph cycle.
       own(() => {
         stopEffect(e);
         remove(ctx.effects, e);
@@ -77,12 +73,10 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   const reactiveProxy = reactive(
     new Proxy(mergedScope, {
       set(target, key, val, receiver) {
-        // when setting a property that doesn't exist on current scope,
-        // do not create it on the current scope and fallback to parent scope.
-        // use hasOwn instead of target.hasOwnProperty: looking up
-        // hasOwnProperty on the target walks its prototype chain into the
-        // parent reactive proxy, whose instrumented hasOwnProperty
-        // (@vue/reactivity >= 3.2.46) recurses infinitely on this proxy
+        // Writes to a property this scope does not own fall through to the
+        // parent rather than shadowing it. `hasOwn`, not
+        // `target.hasOwnProperty`: that lookup walks into the parent reactive
+        // proxy, whose instrumented version (>= 3.2.46) recurses forever.
         if (receiver === reactiveProxy && !hasOwn(target, key)) {
           return Reflect.set(parentScope, key, val);
         }
@@ -95,8 +89,8 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
     ...ctx,
     scope: reactiveProxy,
   };
-  // per-scope magics — defined on the raw merged scope (not through the
-  // proxy) so the set trap can't fall them through to the parent scope
+  // per-scope magics — set on the raw scope, not the proxy, so the set trap
+  // cannot fall them through to the parent
   mergedScope.$watch = createWatch(scopedCtx);
   mergedScope.$id = createId();
   bindContextMethods(reactiveProxy);

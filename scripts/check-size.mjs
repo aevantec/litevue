@@ -1,12 +1,9 @@
 // Enforces the gzipped ceilings in size-budget.json.
 //
-// Size is part of what this library promises, and until now it was measured by
-// hand and quoted in several places. A bundle can grow by a few hundred bytes
-// without anyone noticing until the number in the docs is wrong — which is how
-// "~3kb (all seven)" survived two plugins being added.
-//
-// Budgets sit above current usage with deliberate headroom, so ordinary work
-// does not trip them; a failure means something grew enough to be worth a look.
+// Size is part of what this library promises, and it used to be measured by
+// hand — which is how "~3kb (all seven)" survived two plugins being added.
+// Budgets sit above current usage with deliberate headroom, so a failure means
+// something grew enough to be worth a look.
 import { readFileSync } from 'fs';
 import { gzipSync } from 'zlib';
 

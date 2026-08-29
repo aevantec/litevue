@@ -26,10 +26,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   parent.insertBefore(anchor, el);
   parent.removeChild(el);
 
-  // From here on this directive's effects belong to the anchor. `el` is the
-  // template and has just left the document, so anything owned by it could
-  // never be reached by a subtree disposal — the list effect would go on
-  // mounting blocks into a detached parent.
+  // From here the directive's effects belong to the anchor: `el` has left the
+  // document, so a subtree disposal could never reach anything it owns and the
+  // list effect would keep mounting blocks into a detached parent.
   setOwner(anchor);
 
   const sourceExp = inMatch[2].trim();
@@ -124,9 +123,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     return block;
   };
 
-  // DEV: the previous source, kept only to tell a reorder from an append. A
-  // keyless list reconciles by position, which is correct for both appending
-  // and truncating and wrong the moment an item moves.
+  // DEV: previous source, kept only to tell a reorder from an append. A
+  // keyless list reconciles by position — right for append and truncate,
+  // wrong the moment an item moves.
   let prevItems: any[] | undefined;
 
   ctx.effect(() => {
@@ -135,9 +134,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     [childCtxs, keyToIndexMap] = createChildContexts(source);
 
     if (import.meta.env.DEV) {
-      // A collision is free to detect: the map is keyed, so a repeated key
-      // means fewer entries than contexts. Naming the offender costs a pass,
-      // and only runs once a collision is already known to exist.
+      // Detection is free — a repeated key means fewer map entries than
+      // contexts. Naming the offender costs a pass, and only runs once one
+      // is known to exist.
       if (keyToIndexMap.size !== childCtxs.length) {
         const counts = new Map<any, number>();
         let dup: any;

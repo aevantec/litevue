@@ -14,9 +14,8 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 // at build time, and the module is a singleton across this file
 localStorage.setItem('litevue-devtools-ui', JSON.stringify({ open: true }));
 
-// the devtools scope registry is a strong Map keyed by Element, so a booted
-// app has to be unmounted or its scopes stay registered and the next test
-// sees them too
+// the scope registry is a strong Map keyed by Element, so an app left mounted
+// leaks its scopes into the next test
 const booted: { unmount: () => void }[] = [];
 const containers: Element[] = [];
 

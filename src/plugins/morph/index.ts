@@ -4,15 +4,10 @@ import type { Plugin } from '../../app';
 /**
  * Update a live region in place from new HTML, instead of replacing it.
  *
- * Replacing markup (`el.innerHTML = html`, then re-mounting) destroys every
- * element in the region, which means every scope, its state, and the browser
- * state riding on those nodes — focus, cursor position, text selection, scroll
- * offsets, media playback, `<details open>`. LiteVue also has no per-region
- * teardown, so the discarded subtree's effects stay subscribed and keep writing
- * to detached nodes.
- *
- * Morphing patches the differences onto the existing tree, so unchanged
- * elements are never touched and none of that is lost.
+ * Replacing markup destroys every element in the region — and with it every
+ * scope, its state, and the browser state riding on those nodes: focus, caret,
+ * selection, scroll, media playback, `<details open>`. Morphing patches only
+ * the differences, so unchanged elements are never touched.
  */
 
 export interface MorphOptions {
@@ -26,14 +21,9 @@ export interface MorphOptions {
   skip?: (from: Element, to: Element) => boolean;
   /**
    * Return true to keep an element the incoming HTML no longer contains.
-   *
-   * `skip` cannot express this: it is consulted only when an element is
-   * matched against a counterpart, so it never sees one the server has simply
-   * stopped sending. That is the case a client-only widget hits — a chart, an
-   * editor, a map, a player the server does not know about — and until now it
-   * died on the first morph.
-   *
-   * `data-morph-preserve` on the element does the same thing declaratively.
+   * `skip` cannot express this — it is only consulted for a matched pair, so
+   * it never sees one the server stopped sending, which is exactly the case a
+   * client-only widget hits. `data-morph-preserve` does the same declaratively.
    */
   preserve?: (el: Element) => boolean;
   /**
@@ -48,10 +38,9 @@ export interface MorphOptions {
 }
 
 /**
- * Kept deliberately as a `data-` attribute rather than `v-preserve`. An
- * unrecognised `v-` attribute makes the walker log an unknown-directive error,
- * and registering one as a directive would have the walker strip it — leaving
- * nothing for the next morph to find. It also matches `data-morph-skip`.
+ * A `data-` attribute rather than `v-preserve`: an unrecognised `v-` attribute
+ * logs an unknown-directive error, and registering one would have the walker
+ * strip it, leaving nothing for the next morph. Matches `data-morph-skip`.
  */
 const preserved = (node: Node, opts: MorphOptions) =>
   node.nodeType === 1 &&
@@ -62,12 +51,10 @@ const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
 
 /**
- * Attributes tried, in order, when no `key` option is given. All three exist to
- * express identity, so none of them repeat among siblings the way `name` does
- * on a radio group — which is why `name` isn't here.
- *
- * The attribute is part of the key, so an `id` of "5" and a `data-id` of "5" on
- * two siblings stay distinct.
+ * Attributes tried in order when no `key` option is given. All three express
+ * identity, so none repeat among siblings the way `name` does on a radio group
+ * — hence its absence. The attribute name is part of the key, so `id="5"` and
+ * `data-id="5"` stay distinct.
  */
 const KEY_ATTRS = ['id', 'data-key', 'data-id'];
 
@@ -80,9 +67,9 @@ const defaultKey = (el: Element) => {
 };
 
 /**
- * The nearest stashed context, walking up from a live node. Elements carrying
- * `v-scope` record theirs during walk, so inserted markup is bound with the
- * scope it actually landed in rather than the root.
+ * The nearest stashed context, walking up from a live node. `v-scope` elements
+ * record theirs during walk, so inserted markup binds with the scope it landed
+ * in rather than the root.
  */
 const nearestCtx = (node: Node | null): Context | undefined => {
   for (let el = node as any; el; el = el.parentElement) {
@@ -91,10 +78,9 @@ const nearestCtx = (node: Node | null): Context | undefined => {
 };
 
 /**
- * Attributes the client owns on this element, derived from the *incoming*
- * markup: it still carries the directives that the live DOM had stripped, so
- * `:class` in the new HTML means the live `class` is bound and must not be
- * overwritten by the server's static value.
+ * Attributes the client owns, read from the *incoming* markup — it still
+ * carries the directives the live DOM had stripped. `:class` there means the
+ * live `class` is bound and must survive the server's static value.
  */
 const boundAttrs = (to: Element) => {
   const owned = new Set<string>();
@@ -111,11 +97,9 @@ const boundAttrs = (to: Element) => {
 };
 
 /**
- * `v-for` and `v-if` render into Blocks: the live DOM holds text anchors plus
- * however many clones the data produced, while the server still sends the
- * single authoring template. Those two shapes cannot be reconciled positionally
- * — matching them up would patch a clone against the template and then delete
- * the rest as "no longer sent".
+ * `v-for` and `v-if` render into Blocks: the live DOM holds anchors plus the
+ * clones the data produced, while the server still sends one template. Matched
+ * positionally, the rest would be deleted as "no longer sent".
  */
 const isBlockRoot = (el: Element) =>
   el.hasAttribute('v-for') ||
@@ -145,9 +129,8 @@ const patchAttrs = (from: Element, to: Element) => {
   const owned = boundAttrs(to);
 
   for (const { name, value } of [...to.attributes]) {
-    // directive attributes were stripped from the live element during walk;
-    // re-adding them would leave inert markup behind at best, and double-bind
-    // if the region is ever walked again
+    // directives were stripped from the live element during walk; re-adding
+    // them leaves inert markup, or double-binds on a later walk
     if (dirRE.test(name) || owned.has(name)) continue;
     if (from.getAttribute(name) !== value) from.setAttribute(name, value);
   }
@@ -159,8 +142,8 @@ const patchAttrs = (from: Element, to: Element) => {
 };
 
 /**
- * Text nodes still holding `{{ }}` in the incoming markup are rendered by a
- * text directive on the live side, so the live value is authoritative.
+ * Incoming text still holding `{{ }}` is rendered by a text directive on the
+ * live side, so the live value wins.
  */
 const isInterpolation = (data: string, ctx?: Context) =>
   data.includes(ctx ? ctx.delimiters[0] : '{{');
@@ -203,8 +186,7 @@ const replaceNode = (
   if (preserved(from, opts)) return;
   const fresh = to.cloneNode(true);
   if (opts.beforeNodeAdded?.(fresh) === false) return;
-  // the outgoing node is detached here just as surely as by removeChild, so
-  // it has to give up what it owned first
+  // replaceChild detaches as surely as removeChild, so release first
   ctx?.dispose?.(from);
   from.parentNode!.replaceChild(fresh, from);
   opts.afterNodeRemoved?.(from);
@@ -212,9 +194,9 @@ const replaceNode = (
 };
 
 /**
- * Bind markup that was never walked, using the scope it was inserted into.
- * The walker comes off the context rather than a static import, so this plugin
- * doesn't pull a second copy of the core into the plugins bundle.
+ * Bind never-walked markup with the scope it was inserted into. The walker
+ * comes off the context, not an import, so this plugin doesn't pull a second
+ * copy of the core into the plugins bundle.
  */
 const mountNew = (node: Node, ctx: Context | undefined) => {
   const target = ctx || nearestCtx(node.parentNode);
@@ -236,8 +218,8 @@ const patchChildren = (
     if (n.nodeType === 1) {
       const k = key(n as Element);
       if (k == null) continue;
-      // a repeated key silently costs the earlier element its node — and with
-      // it any scope state — so say so rather than losing it quietly
+      // a repeated key costs the earlier element its node, and its scope
+      // state with it — say so rather than losing it quietly
       if (import.meta.env.DEV && keyed.has(k)) {
         console.warn(
           `[morph] duplicate key ${JSON.stringify(k)} among siblings; ` +
@@ -277,9 +259,8 @@ const patchChildren = (
         keyed.delete(wantKey);
         patchNode(match, newChild, ctx, opts);
       } else {
-        // a key with no live counterpart is genuinely new. Patching it over
-        // whatever sits at this position would hand one row's identity — and
-        // scope — to another.
+        // a key with no live counterpart is genuinely new; patching it over
+        // this position would hand one row's identity, and scope, to another
         insert(newChild);
       }
     } else if (oldChild && keyOf(oldChild) == null) {
@@ -288,21 +269,21 @@ const patchChildren = (
       patchNode(oldChild, newChild, ctx, opts);
       oldChild = nextOld;
     } else {
-      // never consume a keyed live node for an unkeyed slot; it belongs to a
+      // never consume a keyed live node for an unkeyed slot: it belongs to a
       // later position and would lose its scope here
       insert(newChild);
     }
     newChild = nextNew;
   }
 
-  // whatever the server no longer sends. Every reused node was moved ahead of
-  // this cursor, so the remainder is genuinely unmatched — no separate sweep
-  // of the key map, which would delete nodes that were matched positionally.
+  // Whatever the server no longer sends. Every reused node was moved ahead of
+  // this cursor, so the remainder is genuinely unmatched — sweeping the key
+  // map instead would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
     if (!preserved(oldChild, opts)) {
-      // release what the subtree owned before detaching it: removeChild alone
-      // leaves its effects live and still reacting to state
+      // release what the subtree owned first: removeChild alone leaves its
+      // effects live and still reacting
       ctx?.dispose?.(oldChild);
       from.removeChild(oldChild);
       opts.afterNodeRemoved?.(oldChild);
@@ -322,8 +303,8 @@ export const morph = (
 ): Element => {
   let target: Element | null;
   if (typeof to === 'string') {
-    // parsed inside a <template> so table rows, <li>, <option> and friends
-    // survive; a fragment with one element is treated as the outer target
+    // parsed in a <template> so table rows, <li> and <option> survive; a
+    // single-element fragment is the outer target
     const holder = document.createElement('template');
     holder.innerHTML = to.trim();
     const content = holder.content;
@@ -347,12 +328,9 @@ export const morph = (
 };
 
 /**
- * Moving a node with insertBefore blurs it, so a reorder would drop the user's
- * focus even though the element itself survived. Re-focus afterwards and put
- * the caret back where it was.
- *
- * (jsdom does not blur on move, so this is only observable in a real browser —
- * see playground/morph.html.)
+ * `insertBefore` blurs the node it moves, so a reorder drops focus even though
+ * the element survived. Re-focus afterwards and restore the caret. Only
+ * observable in a real browser — jsdom does not blur on move.
  */
 const captureFocus = () => {
   const active = document.activeElement as HTMLElement | null;
@@ -378,7 +356,7 @@ const captureFocus = () => {
 };
 
 /**
- * Registers `$morph` so templates can update a region from a fetch response
+ * Registers `$morph`, so a template can update a region from a fetch response
  * without dropping into JavaScript.
  */
 export const morphPlugin: Plugin = (app) => {

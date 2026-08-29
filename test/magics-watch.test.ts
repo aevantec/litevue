@@ -72,14 +72,10 @@ describe('$watch', () => {
   });
 
   test('reads inside the callback do not become dependencies', async () => {
-    // Counting the getter, not the callback: without pauseTracking the reads
-    // inside the callback subscribe the watcher to `other`, so a write to it
-    // re-runs the whole effect. The callback would still stay silent — the
-    // watched value has not changed — which is why asserting on the callback
-    // alone would pass either way.
-    //
-    // Both functions are written inline so they close over the v-scope that
-    // owns `n` and `other`, rather than the root scope.
+    // Counts the getter, not the callback: without pauseTracking a write to
+    // `other` re-runs the effect while the callback stays silent, so asserting
+    // on the callback alone passes either way. Both functions are inline so
+    // they close over the v-scope owning `n` and `other`.
     const reads = vi.fn();
     const { root } = await mount(
       `<div
