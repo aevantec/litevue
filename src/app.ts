@@ -27,12 +27,8 @@ export interface App {
   directive(name: string, def?: Directive): any;
   /**
    * Register a component — a function returning a scope object, used from
-   * `v-scope="Name()"` — or retrieve one by name.
-   *
-   * Components have always been plain functions reachable from an expression;
-   * this gives them a named home, so a plugin can contribute one without
-   * reaching into `app.scope`, and so a name can be looked up rather than
-   * guessed at.
+   * `v-scope="Name()"` — or retrieve one by name. Gives components a named
+   * home, so a plugin can contribute one without reaching into `app.scope`.
    */
   component(name: string, factory?: ComponentFactory): any;
   /**
@@ -50,22 +46,16 @@ export interface App {
 }
 
 /**
- * A plugin may return a teardown function, which runs when the app is fully
- * unmounted. Returning nothing is still valid, so existing plugins are
- * unaffected.
- *
- * The shape matches directives, which already return their cleanup. Without
- * it a plugin could acquire page-wide resources — observers, listeners,
- * matchMedia subscriptions — and had no way to give them back: the media
- * plugin held five MediaQueryList subscriptions for the life of the page
- * whether or not any app was still running.
+ * A plugin may return a teardown function, run on full unmount; returning
+ * nothing stays valid. Mirrors directives, which already return their cleanup.
+ * Without it, page-wide resources — observers, listeners, matchMedia — could
+ * never be given back.
  */
 export type PluginTeardown = () => void;
 
 /**
- * A component factory. Called from an expression — `v-scope="Counter({ n: 1 })"`
- * — and returns the scope object for that region. Props are whatever the
- * expression passes.
+ * A component factory. Called from an expression —
+ * `v-scope="Counter({ n: 1 })"` — returning that region's scope object.
  */
 export type ComponentFactory = (...props: any[]) => Record<string, any>;
 
@@ -76,8 +66,7 @@ export type Plugin<Options = any> =
 export const createApp = (initialData?: any) => {
   // root context
   const ctx = createContext();
-  // setup-function style: createApp(() => ({ count: 0, inc() {...} })) —
-  // the function runs once and its returned object becomes the root scope
+  // setup-function style: the function runs once and returns the root scope
   if (typeof initialData === 'function') {
     initialData = initialData();
     if (
@@ -145,10 +134,9 @@ export const createApp = (initialData?: any) => {
               `the same name.`
           );
         } else if (name in ctx.scope) {
-          // The root scope is the user's, and a component quietly taking a
-          // name they are already using would replace their data with a
-          // function. Refusing is the safe direction: the expression keeps
-          // resolving to what they put there.
+          // Refusing is the safe direction: the root scope is the user's,
+          // and claiming a name in it would replace their data with a
+          // function.
           warn(
             `component "${name}" was not registered: the root scope already ` +
               `has a "${name}", and overwriting it would replace your data ` +
@@ -160,9 +148,8 @@ export const createApp = (initialData?: any) => {
 
       components[name] = factory;
       registerComponent(name);
-      // mirrored onto the root scope because that is what expressions resolve
-      // against; a nested v-scope declaring the same name shadows it through
-      // the prototype chain, as any other root value would be shadowed
+      // mirrored onto the root scope, which is what expressions resolve
+      // against; a nested v-scope shadows it through the prototype chain
       ctx.scope[name] = factory;
       return this;
     },
@@ -214,9 +201,6 @@ export const createApp = (initialData?: any) => {
         );
       }
 
-      // append rather than assign: mount() can be called repeatedly (extra
-      // roots, dynamically added fragments) and unmount() must tear down
-      // every mounted root, not just the last batch
       // published before any child context is spread off this one, so every
       // scope inherits it (see Context.walk)
       ctx.walk ??= walk;
@@ -224,12 +208,9 @@ export const createApp = (initialData?: any) => {
 
       for (const el of roots) {
         if (import.meta.env.DEV) {
-          // Walking an element consumes its directives — every v-scope, @click
-          // and :bind is removed from the DOM as it is bound. Mounting the
-          // same element again therefore walks a stripped tree and binds
-          // nothing: no error, no effects, an inert region that looks mounted.
-          // The DOM is the template here, so bringing a region back means
-          // inserting fresh markup and mounting that.
+          // Walking consumes directives — each one is removed as it binds.
+          // A second mount therefore walks a stripped tree and binds nothing:
+          // an inert region that looks mounted.
           if (mountedRoots.has(el)) {
             warn(
               `mount() was called again on an element that has already been ` +
@@ -243,43 +224,37 @@ export const createApp = (initialData?: any) => {
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);
-        // a root without v-scope never gets a stashed context during walk;
-        // seed it with the block's own one, so markup inserted there later
-        // (morph) is torn down with the region rather than outliving it
+        // a root without v-scope gets no stashed context during walk; seed
+        // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
-        // roots with v-scope are registered with their scoped context during
-        // walk; only register roots the walk didn't claim. The cleanup goes on
-        // the block so unmounting this region deregisters only this scope.
+        // roots with v-scope register during walk; only claim the rest. The
+        // cleanup sits on the block so unmount(el) deregisters just this one.
         if (!devtools.scopes.has(el)) {
           block.ctx.cleanups.push(
             registerScope(el, block.ctx.scope, undefined, name || undefined)
           );
         }
+        // appended, not assigned: mount() may be called repeatedly, and
+        // unmount() must reach every root, not just the last batch
         rootBlocks.push(block);
       }
       return this;
     },
 
     /**
-     * Tear down mounted regions. With no argument every root goes, as before.
-     * Given an element or selector, only roots at or inside it are torn down —
-     * their effects stop, cleanups run and scopes deregister, while everything
-     * else on the app keeps running.
-     *
-     * Needed because replacing a region's markup otherwise leaves its effects
-     * subscribed, still writing to nodes that are no longer in the document.
+     * Tear down mounted regions: every root, or only those at or inside `el`.
+     * Effects stop, cleanups run and scopes deregister; the rest of the app
+     * keeps running. Without it, replacing a region's markup leaves its
+     * effects writing to detached nodes.
      */
     unmount(el?: string | Element | null) {
       if (el == null) {
         rootBlocks.forEach((block) => block.teardown());
         rootBlocks = [];
-        // A full unmount ends the app, so its plugins are released with it.
-        // unmount(el) is a per-region teardown and deliberately leaves them:
-        // the app is still running and other regions still need them.
-        //
-        // The install record is cleared too, so use() after this reinstalls
-        // rather than silently doing nothing against a torn-down app.
-        // One plugin throwing must not strand the rest, so each is isolated.
+        // A full unmount ends the app, so plugins go with it; unmount(el)
+        // deliberately leaves them, since other regions still need them. The
+        // install record is cleared so a later use() reinstalls rather than
+        // no-opping. Each teardown is isolated so one throw strands nothing.
         pluginTeardowns.splice(0).forEach((fn) => {
           try {
             fn();

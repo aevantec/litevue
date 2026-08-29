@@ -1,16 +1,12 @@
 // Keeps every pinned version in the docs tied to the released one.
 //
 // release-please rewrites a version only on lines carrying an
-// `x-release-please-version` marker, and only in files listed under
-// `extra-files` in release-please-config.json. Miss either and the URL is
-// frozen at whatever was typed — which is how a page ends up advertising a
-// version that has not been current for months. Nothing else notices, because
-// a stale-but-valid URL still resolves.
+// `x-release-please-version` marker, in files listed under `extra-files`. Miss
+// either and the URL freezes at whatever was typed — and nothing notices,
+// because a stale URL still resolves.
 //
-// So this asserts three things about every `@x.y.z` in the docs:
-//   1. the line carries the marker
-//   2. the file is registered in extra-files
-//   3. the version matches package.json
+// So every `@x.y.z` in the docs must: carry the marker, sit in a file
+// registered in extra-files, and match package.json.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

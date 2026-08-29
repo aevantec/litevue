@@ -1,16 +1,14 @@
-// Guards the bundle boundaries. These failures are silent at runtime — the
-// plugins bundle once inlined its own copy of the core, which gave it a second
-// `stores` singleton, so persistStore() wrote to a registry that store() never
-// populated and persistence just… didn't happen. Nothing threw.
+// Guards the bundle boundaries. These failures are silent at runtime: the
+// plugins bundle once inlined the core, giving it a second `stores` singleton,
+// so persistStore() wrote to a registry store() never populated. Nothing threw.
 import { readFileSync, readdirSync } from 'fs';
 
 const read = (f) =>
   readFileSync(new URL(`../dist/${f}`, import.meta.url), 'utf8');
 
-// A reactivity-internal marker that survives minification, and that plugin
-// source has no legitimate reason to contain. Not __v_isRef/__v_isReadonly:
-// persist.ts reads those flags directly to spot a computed() without importing
-// @vue/reactivity, so matching on them reports every build as inlined.
+// A reactivity-internal marker that survives minification and has no business
+// in plugin source. Not __v_isRef/__v_isReadonly: persist.ts reads those to
+// spot a computed(), so matching them would flag every build as inlined.
 const REACTIVITY = /__v_raw/;
 const PKG = '@aevantec/litevue';
 

@@ -1,10 +1,9 @@
 import { expect, test } from 'vitest';
 
 /**
- * Its own file on purpose: the panel module restores its position once, when
- * it is first imported, so this has to be the first import in the file. Sharing
- * a file with the drag tests would leave the module already restored and the
- * assertion meaningless.
+ * Its own file on purpose: the panel restores its position once, on first
+ * import. Sharing a file with the drag tests would leave the module already
+ * restored and the assertion vacuous.
  */
 
 // set before the import, which is when the panel reads it

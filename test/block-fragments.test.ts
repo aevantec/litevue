@@ -2,10 +2,9 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { mount, tick } from './utils';
 
 /**
- * A Block built from a <template> is a *fragment*: it has no single root
- * element, so it tracks its span with `start` and `end` text markers and
- * walks between them to move or remove itself. Those two loops were reached
- * only incidentally, and never by a test that moves or removes a fragment.
+ * A Block built from a <template> is a *fragment*: with no single root, it
+ * tracks its span with `start`/`end` markers and walks between them to move or
+ * remove itself. Those loops were only ever reached incidentally.
  */
 
 afterEach(() => {

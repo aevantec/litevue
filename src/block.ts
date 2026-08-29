@@ -33,11 +33,9 @@ export class Block {
     }
 
     if (isRoot) {
-      // A root gets its own context rather than the app's. Sharing it meant
-      // every root pushed effects and cleanups into one pair of arrays, so
-      // there was no boundary to tear down and unmount had to be
-      // all-or-nothing. createContext keeps the scope and directives and only
-      // gives the block fresh effects/blocks/cleanups.
+      // A root gets its own context, not the app's: sharing put every root's
+      // effects in one pair of arrays, leaving no boundary to tear down.
+      // createContext keeps scope and dirs, forks effects/blocks/cleanups.
       this.ctx = createContext(parentCtx);
     } else {
       // create child context
@@ -73,17 +71,14 @@ export class Block {
       parent.insertBefore(this.template, anchor);
     }
 
-    // Registered once, after the nodes are in place: a block detached
-    // wholesale — morph removes subtrees directly — has to leave its parent's
-    // block list and tear down, or it keeps a context, a scope proxy and its
-    // effects alive with nothing in the document to render.
+    // Registered once, and only after insertion. A block detached wholesale
+    // (morph removes subtrees directly) must leave its parent's block list and
+    // tear down, or its context, scope proxy and effects outlive the document.
     //
-    // After, not before, because a fragment block's `el` is its start marker,
-    // and that marker does not exist until this first insert creates it. Owned
-    // any earlier and the disposer would sit on the DocumentFragment, which
-    // insertBefore empties and which never enters the document — so no subtree
-    // walk could ever reach it. Later inserts are moves, and the marker moves
-    // with the block.
+    // After, because a fragment's `el` is the start marker this insert
+    // creates. Earlier, the disposer would sit on the DocumentFragment —
+    // emptied by insertBefore, never in the document, unreachable by any
+    // subtree walk. Later inserts are moves; the marker moves too.
     if (!this.owned) {
       this.owned = true;
       own(() => this.discard(), this.el);
@@ -95,10 +90,9 @@ export class Block {
       remove(this.parentCtx.blocks, this);
     }
     const removeNow = () => {
-      // The nodes can already be gone. A leave hook defers this call, and in
-      // the meantime the whole region may have been torn out — morph removes
-      // subtrees directly — which left the deferred removal dereferencing a
-      // null parentNode and rejecting into nothing. Tear down either way.
+      // The nodes can already be gone: a leave hook defers this call, and
+      // the region may be torn out meanwhile, which used to dereference a
+      // null parentNode and reject into nothing. Tear down either way.
       const parent = this.start
         ? this.start.parentNode
         : this.template.parentNode;
@@ -118,9 +112,8 @@ export class Block {
       }
       this.teardown();
     };
-    // a leave hook on the root element (set by the transition plugin's
-    // unmount mode) defers removal until the leave animation finishes;
-    // effects stay live during the animation and teardown runs after
+    // a leave hook (transition plugin, unmount mode) defers removal until the
+    // animation finishes; effects stay live until then
     const leave = this.isFragment
       ? undefined
       : ((this.template as any).__leave as (() => Promise<void>) | undefined);
@@ -133,8 +126,7 @@ export class Block {
 
   /**
    * The bookkeeping half of `remove()`, for a block whose nodes are already
-   * gone. `remove()` cannot be reused there: its `removeChild` calls would
-   * throw on nodes that no longer have this parent.
+   * gone — `remove()`'s `removeChild` calls would throw on them.
    */
   discard() {
     if (this.parentCtx) {
@@ -144,11 +136,9 @@ export class Block {
   }
 
   teardown() {
-    // drained rather than iterated: a cleanup, or a nested disposal reached
-    // through one, can splice these same arrays, and forEach would then skip
-    // entries. Draining also makes a second teardown a no-op, which the
-    // per-node disposers rely on — a subtree walk can reach a block through
-    // both its own node and its parent's.
+    // Drained, not iterated: a cleanup can splice these same arrays and
+    // forEach would skip entries. Draining also makes a second teardown a
+    // no-op, which the per-node disposers rely on.
     this.ctx.blocks.splice(0).forEach((child) => {
       child.teardown();
     });

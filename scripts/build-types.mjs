@@ -1,20 +1,17 @@
 // Produces the ESM-flavored declaration tree.
 //
-// `tsc` emits a single set of .d.ts files. Because package.json declares
-// "type": "commonjs", TypeScript reads those as CJS declarations — correct for
-// the `require` condition, wrong for `import`, where it makes the types
-// "masquerade as CJS" and breaks default-import interop for consumers on
-// node16/nodenext resolution.
+// `tsc` emits one set of .d.ts files, which TypeScript reads as CJS because
+// package.json declares "type": "commonjs" — right for `require`, wrong for
+// `import`, where the types masquerade as CJS and break default-import interop
+// under node16/nodenext.
 //
-// So we mirror dist/types/**/*.d.ts to *.d.mts. ESM resolution has no
-// extension inference and no directory-index lookup, so every relative
-// specifier is rewritten to an explicit .mjs path:
+// So dist/types/**/*.d.ts is mirrored to *.d.mts. ESM resolution has no
+// extension inference and no directory-index lookup, so relative specifiers
+// are rewritten to explicit .mjs paths; bare ones are left alone:
 //
 //   from './app'          ->  from './app.mjs'
 //   from '.'              ->  from './index.mjs'
 //   from './directives'   ->  from './directives/index.mjs'
-//
-// Bare specifiers (@vue/reactivity) are left alone.
 
 import { readdirSync, statSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname, resolve, relative, sep } from 'path';

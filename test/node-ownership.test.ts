@@ -5,12 +5,9 @@ import { devtools } from '../src/devtools';
 import { tick } from './utils';
 
 /**
- * A Context spans everything between one `v-scope` and the next, which is the
- * right teardown boundary for `app.unmount(el)` but the wrong one for a node
- * detached on its own. morph does exactly that, so without per-node ownership
- * a morphed-away subtree keeps its effects live and still reacting.
- *
- * Each test here failed before node ownership landed.
+ * A Context spans one `v-scope` to the next — the right boundary for
+ * `app.unmount(el)`, the wrong one for a node detached on its own, as morph
+ * does. Each test here failed before per-node ownership landed.
  */
 
 afterEach(() => {
@@ -256,10 +253,9 @@ describe('node ownership: fragment blocks', () => {
     await tick(6);
     expect(ctx.blocks.length).toBeGreaterThan(0);
 
-    // a fragment block's `el` is its start marker, which does not exist until
-    // the first insert creates it — owned any earlier and the disposer would
-    // sit on the DocumentFragment, which insertBefore empties and which never
-    // enters the document
+    // a fragment's `el` is the start marker the first insert creates; owned
+    // earlier, the disposer would sit on the DocumentFragment, which
+    // insertBefore empties and which never enters the document
     morph(region(), `<section id="r"><span>gone</span></section>`);
     await tick(6);
     expect(ctx.blocks.length).toBe(0);
@@ -371,9 +367,8 @@ describe('node ownership: work deferred past teardown', () => {
     );
     await tick(4);
 
-    // in and out again inside one frame, before the nextTick that would
-    // create the effect — an effect made then would belong to a node no
-    // disposal will ever visit, and would run for the life of the page
+    // in and out within one frame, before the nextTick that creates the
+    // effect — one made then would belong to a node no disposal ever visits
     morph(region(), `<section id="r"><b v-effect="probe()">in</b></section>`);
     morph(region(), `<section id="r"><i>out</i></section>`);
     await tick(8);

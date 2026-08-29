@@ -1,23 +1,16 @@
-// Keeps every documented bundle size tied to the bundle it describes.
+// Keeps every documented bundle size tied to the bundle it describes. The
+// panel was advertised as "~5kb" at 6.1kb for two releases; check-size.mjs
+// compares bundles to budgets, not to prose, and check-docs-versions.mjs only
+// reads pinned URLs.
 //
-// The devtools panel was advertised as "~5kb" while the bundle had grown to
-// 6.1kb, drifting across two releases without anything noticing. Neither
-// existing gate covers this: check-size.mjs compares a bundle against its
-// budget, not against prose, and check-docs-versions.mjs only looks at pinned
-// URLs. A number in a sentence is exactly the kind of claim that rots quietly,
-// because nothing breaks when it does.
-//
-// So each claim carries a marker naming the bundle it is about:
+// Each claim carries a marker naming its bundle — invisible once rendered, and
+// several may share a line:
 //
 //   ~9kb<!-- size:dist/litevue.iife.js --> gzipped core
 //
-// and this asserts the number still rounds to the real gzipped size. The
-// marker is invisible once rendered, and several may sit on one line.
-//
-// An unmarked size also fails. That is the half that matters: validating only
-// what already carries a marker leaves the original hole open, since a new
-// `~7kb` written anywhere would pass in silence. Anything that is genuinely
-// not about a bundle here goes in IGNORED, with its reason.
+// An unmarked size fails too. That is the half that matters: checking only
+// marked claims would let a new `~7kb` pass anywhere. Genuine non-bundle sizes
+// go in IGNORED, with a reason.
 import { gzipSync } from 'zlib';
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { join, relative, resolve, dirname } from 'path';

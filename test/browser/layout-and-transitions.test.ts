@@ -4,10 +4,9 @@ import { transition, collapse } from '../../src/plugins';
 import { tick, sleep } from '../utils';
 
 /**
- * jsdom has no layout and no CSS engine: `scrollHeight` is always 0 and
- * `getComputedStyle(el).transitionDuration` is always "", so the transition
- * plugin measured every animation as 0ms and collapse animated to nothing.
- * Both read as passing.
+ * jsdom has no layout and no CSS engine: `scrollHeight` is 0 and
+ * `transitionDuration` is "", so transitions measured 0ms and collapse
+ * animated to nothing — both reading as passing.
  */
 
 const styleTag = (css: string) => {
