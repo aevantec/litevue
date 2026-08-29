@@ -24,7 +24,39 @@ export interface MorphOptions {
   key?: (el: Element) => string | null | undefined;
   /** Return true to leave a subtree completely untouched. */
   skip?: (from: Element, to: Element) => boolean;
+  /**
+   * Return true to keep an element the incoming HTML no longer contains.
+   *
+   * `skip` cannot express this: it is consulted only when an element is
+   * matched against a counterpart, so it never sees one the server has simply
+   * stopped sending. That is the case a client-only widget hits — a chart, an
+   * editor, a map, a player the server does not know about — and until now it
+   * died on the first morph.
+   *
+   * `data-morph-preserve` on the element does the same thing declaratively.
+   */
+  preserve?: (el: Element) => boolean;
+  /**
+   * Called before a node is inserted. Return `false` to leave it out.
+   */
+  beforeNodeAdded?: (node: Node) => boolean | void;
+  /**
+   * Called after a node has been removed, once its effects and listeners are
+   * released — so what arrives here is inert, not a live subtree.
+   */
+  afterNodeRemoved?: (node: Node) => void;
 }
+
+/**
+ * Kept deliberately as a `data-` attribute rather than `v-preserve`. An
+ * unrecognised `v-` attribute makes the walker log an unknown-directive error,
+ * and registering one as a directive would have the walker strip it — leaving
+ * nothing for the next morph to find. It also matches `data-morph-skip`.
+ */
+const preserved = (node: Node, opts: MorphOptions) =>
+  node.nodeType === 1 &&
+  ((node as Element).hasAttribute('data-morph-preserve') ||
+    !!opts.preserve?.(node as Element));
 
 const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
@@ -139,7 +171,7 @@ const patchNode = (
   ctx: Context | undefined,
   opts: MorphOptions
 ): void => {
-  if (from.nodeType !== to.nodeType) return replaceNode(from, to, ctx);
+  if (from.nodeType !== to.nodeType) return replaceNode(from, to, ctx, opts);
 
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
@@ -153,7 +185,7 @@ const patchNode = (
   const a = from as Element;
   const b = to as Element;
   // a different tag can't be patched into place
-  if (a.tagName !== b.tagName) return replaceNode(from, to, ctx);
+  if (a.tagName !== b.tagName) return replaceNode(from, to, ctx, opts);
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
 
   patchAttrs(a, b);
@@ -162,12 +194,20 @@ const patchNode = (
   }
 };
 
-const replaceNode = (from: Node, to: Node, ctx: Context | undefined) => {
+const replaceNode = (
+  from: Node,
+  to: Node,
+  ctx: Context | undefined,
+  opts: MorphOptions
+) => {
+  if (preserved(from, opts)) return;
   const fresh = to.cloneNode(true);
+  if (opts.beforeNodeAdded?.(fresh) === false) return;
   // the outgoing node is detached here just as surely as by removeChild, so
   // it has to give up what it owned first
   ctx?.dispose?.(from);
   from.parentNode!.replaceChild(fresh, from);
+  opts.afterNodeRemoved?.(from);
   mountNew(fresh, ctx);
 };
 
@@ -216,6 +256,7 @@ const patchChildren = (
 
   const insert = (node: Node) => {
     const fresh = node.cloneNode(true);
+    if (opts.beforeNodeAdded?.(fresh) === false) return;
     from.insertBefore(fresh, oldChild);
     mountNew(fresh, ctx);
   };
@@ -259,10 +300,13 @@ const patchChildren = (
   // of the key map, which would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
-    // release what the subtree owned before detaching it: removeChild alone
-    // leaves its effects live and still reacting to state
-    ctx?.dispose?.(oldChild);
-    from.removeChild(oldChild);
+    if (!preserved(oldChild, opts)) {
+      // release what the subtree owned before detaching it: removeChild alone
+      // leaves its effects live and still reacting to state
+      ctx?.dispose?.(oldChild);
+      from.removeChild(oldChild);
+      opts.afterNodeRemoved?.(oldChild);
+    }
     oldChild = next;
   }
 };

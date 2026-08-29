@@ -96,6 +96,87 @@ Or decide per element:
 morph(el, html, { skip: (from, to) => from.classList.contains('live') });
 ```
 
+`skip` keeps a matched element's *contents* intact. It does not keep the element
+itself: it is consulted only when an element has a counterpart in the incoming
+HTML, so it never sees one the server has simply stopped sending. For that, use
+`preserve`.
+
+## Preserving a node the server does not send
+
+A chart, an editor, a map, a media player — anything the client created and the
+server does not know about — is absent from every re-render. Without help, the
+first morph removes it.
+
+```html
+<div id="chart" data-morph-preserve>…initialised by a charting library…</div>
+```
+
+The element is kept whatever the incoming HTML says: not removed when it is
+missing, and not replaced when the tag at that position differs. Everything
+around it still updates.
+
+The programmatic form takes the element and returns whether to keep it:
+
+```js
+morph(el, html, { preserve: (el) => el.id === 'chart' });
+```
+
+### `skip` and `preserve` protect different things
+
+They are orthogonal, and a client-owned widget usually wants both.
+
+| | `data-morph-skip` | `data-morph-preserve` |
+| --- | --- | --- |
+| Protects | the element's **contents** | the element's **existence** |
+| Element is in the incoming HTML | attributes and children left alone | **attributes and children are patched** |
+| Element is absent from it | removed | kept |
+| Tag at that position differs | **replaced** | kept |
+
+So `preserve` alone keeps your chart's element, but lets the server rewrite what
+is inside it on any update that does include it. And `skip` alone keeps the
+contents, but the element is still removed when the server stops sending it, and
+still replaced if the tag changes.
+
+```html
+<!-- a widget the client owns entirely -->
+<div id="chart" data-morph-skip data-morph-preserve></div>
+```
+
+Together: never removed, never replaced, never patched.
+
+::: tip Why not `v-preserve`
+An unrecognised `v-` attribute makes the walker report an unknown directive, and
+registering one as a real directive would have the walker strip it — leaving
+nothing for the next morph to find. `data-morph-preserve` sits alongside
+`data-morph-skip` and the walker never touches either.
+:::
+
+## Lifecycle hooks
+
+For anything the two attributes cannot express, morph reports what it is about
+to do:
+
+```js
+morph(el, html, {
+  beforeNodeAdded(node) {
+    // return false to leave it out
+    return !(node instanceof Element && node.matches('.ad-slot'));
+  },
+  afterNodeRemoved(node) {
+    teardownWidget(node);
+  },
+});
+```
+
+`beforeNodeAdded` runs for every node morph is about to insert, including one
+replacing an element whose tag changed. Returning `false` skips that insertion
+and nothing else.
+
+`afterNodeRemoved` runs once the node is out of the document **and its LiteVue
+effects, listeners and scopes have been released**. What it hands you is inert,
+so a hook that keeps the node for a while is holding markup rather than a live
+subtree. Preserved nodes are never announced, because they were never removed.
+
 ## In templates
 
 The plugin registers [`$morph`](/magics/) on the root scope, so simple cases don't need a `<script>`:
