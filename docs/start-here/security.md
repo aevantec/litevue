@@ -9,8 +9,20 @@ LiteVue evaluates JavaScript expressions it finds in your markup. `v-scope`, `@c
 That design is inherited from petite-vue and is not a defect. It is what allows a server-rendered page to become interactive without a build step. It also means **the markup LiteVue walks is part of your trusted codebase**, exactly like a `<script>` tag, and has to be treated that way.
 
 ::: danger Read this before deploying
-Two of the constraints below decide whether LiteVue can be used at all: the CSP requirement, and the rule about untrusted HTML. Check both before building on it.
+Two of the constraints below decide whether LiteVue can be used at all: the CSP requirement, and the rule about untrusted HTML. They are the first two sections; check both before building on it.
 :::
+
+## Content Security Policy
+
+Expressions are compiled with `new Function()`, so a strict CSP must allow dynamic evaluation:
+
+```
+Content-Security-Policy: script-src 'self' 'unsafe-eval';
+```
+
+**A nonce or a hash does not help.** Those authorise specific `<script>` elements; `'unsafe-eval'` governs runtime compilation, which is a separate capability. There is no way to keep the policy strict and still evaluate expressions at runtime.
+
+If your policy cannot allow `'unsafe-eval'`, LiteVue is the wrong tool, and no CSP build is planned — shipping an expression parser would defeat the size budget that is the reason to choose it. Use standard Vue with pre-compiled templates, which needs no runtime evaluation.
 
 ## Never mount over untrusted HTML
 
@@ -42,18 +54,6 @@ Mitigations, most effective first:
 ::: tip Why there is no automatic initialisation
 Other libraries watch the DOM and activate anything inserted later. LiteVue deliberately does not, because that turns every HTML injection anywhere on the page into code execution. The explicit `app.mount(el)` call is the trust boundary, and it is the reason a `MutationObserver` mode is not built in.
 :::
-
-## Content Security Policy
-
-Expressions are compiled with `new Function()`, so a strict CSP must allow dynamic evaluation:
-
-```
-Content-Security-Policy: script-src 'self' 'unsafe-eval';
-```
-
-**A nonce or a hash does not help.** Those authorise specific `<script>` elements; `'unsafe-eval'` governs runtime compilation, which is a separate capability. There is no way to keep the policy strict and still evaluate expressions at runtime.
-
-If your policy cannot allow `'unsafe-eval'`, LiteVue is the wrong tool, and no CSP build is planned — shipping an expression parser would defeat the size budget that is the reason to choose it. Use standard Vue with pre-compiled templates, which needs no runtime evaluation.
 
 ## `v-html`
 
