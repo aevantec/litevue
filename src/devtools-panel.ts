@@ -20,6 +20,16 @@ import type { LiteVueDevtools } from './devtools';
  * Note this template is a string: comments inside it ship. Explanations belong
  * out here, where they are stripped from the bundle.
  */
+// The panel sizes itself with an explicit .grip rather than the native CSS
+// `resize` property. That grip sits at the element's bottom-right, which is
+// the wrong corner once docked: a bottom-docked panel is pinned to the
+// viewport floor, so the grip lands in the screen corner and dragging it down
+// makes the panel grow upward. Each mode gets a handle on the edge that
+// actually moves — top for dock-bottom, left for dock-right, corner when
+// floating.
+//
+// Comments are not written inside the literal below: it is a string, so they
+// would ship in the bundle verbatim.
 const css = `
 :host {
   all: initial;
@@ -82,7 +92,6 @@ const css = `
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  resize: both;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
 .panel.dock-bottom {
@@ -95,7 +104,6 @@ const css = `
   border-left: 0;
   border-right: 0;
   border-bottom: 0;
-  resize: vertical;
 }
 .panel.dock-right {
   top: 0;
@@ -107,11 +115,43 @@ const css = `
   border-top: 0;
   border-right: 0;
   border-bottom: 0;
-  resize: horizontal;
 }
 .panel.dock-bottom .header,
 .panel.dock-right .header {
   cursor: default;
+}
+.grip {
+  position: absolute;
+  z-index: 1;
+  touch-action: none;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--border) 50%);
+}
+.panel.dock-bottom .grip {
+  top: 0;
+  left: 0;
+  width: auto;
+  height: 5px;
+  cursor: ns-resize;
+  background: none;
+}
+.panel.dock-right .grip {
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: auto;
+  cursor: ew-resize;
+  background: none;
+}
+.panel.dock-bottom .grip:hover,
+.panel.dock-bottom .grip.active,
+.panel.dock-right .grip:hover,
+.panel.dock-right .grip.active {
+  background: var(--accent);
 }
 .header {
   display: flex;
@@ -393,6 +433,24 @@ let floatW = '';
 let floatH = '';
 let floatRight = '';
 let floatBottom = '';
+// Each mode keeps its own size. Deriving the docked one from the floating
+// geometry looks tidy and is wrong in use: a bottom dock dragged to 300px tall
+// would be back to the floating height the next time it was docked.
+let bottomH = '';
+let rightW = '';
+
+// Bounds for every mode. A panel narrower than this cannot show a scope tree
+// beside a state pane, and one taller than the viewport cannot be dragged back.
+// These mirror the min-width / min-height in the stylesheet. Two sources of
+// truth would disagree the moment either moved: CSS clamps what is rendered,
+// this clamps what is stored, and a stored value the layout will not honour
+// comes back wrong on the next load.
+const MIN_W = 320;
+const MIN_H = 320;
+const maxW = () => window.innerWidth - 24;
+const maxH = () => window.innerHeight - 24;
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(Math.max(v, lo), Math.max(lo, hi));
 let elementsTab: HTMLElement;
 let storesTab: HTMLElement;
 
@@ -416,6 +474,9 @@ interface UiState {
   bottom?: number;
   w?: number;
   h?: number;
+  /** dock-bottom height and dock-right width, remembered separately */
+  bh?: number;
+  rw?: number;
   dock?: Dock;
 }
 
@@ -533,6 +594,10 @@ const applyDock = (next: Dock) => {
     floatH = panelEl.style.height || floatH;
     floatRight = panelEl.style.right || floatRight;
     floatBottom = panelEl.style.bottom || floatBottom;
+  } else if (dock === 'bottom') {
+    bottomH = panelEl.style.height || bottomH;
+  } else {
+    rightW = panelEl.style.width || rightW;
   }
   dock = next;
   const docked = next !== 'float';
@@ -542,9 +607,12 @@ const applyDock = (next: Dock) => {
   // both docks pin to the right and bottom edges, so neither offset may remain
   panelEl.style.right = docked ? '' : floatRight;
   panelEl.style.bottom = docked ? '' : floatBottom;
-  // each dock owns one axis and leaves the other resizable
-  panelEl.style.width = next === 'bottom' ? '' : floatW;
-  panelEl.style.height = next === 'right' ? '' : floatH;
+  // each dock owns one axis and leaves the other resizable, at whatever size
+  // that mode was last left
+  panelEl.style.width =
+    next === 'bottom' ? '' : next === 'right' ? rightW : floatW;
+  panelEl.style.height =
+    next === 'right' ? '' : next === 'bottom' ? bottomH : floatH;
 
   dockBtn.innerHTML = dockIcons[next];
   dockBtn.title = 'panel: ' + dockTitles[next];
@@ -1159,6 +1227,47 @@ const build = () => {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   });
+  // The resize handle. Which edge it sits on is CSS; which axes it drives is
+  // the dock, so a bottom dock cannot be made narrower and a right dock cannot
+  // be made shorter — those dimensions belong to the viewport.
+  const grip = h('div', 'grip');
+  grip.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    grip.classList.add('active');
+    const rect = panelEl.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = rect.width;
+    const startH = rect.height;
+
+    const move = (ev: MouseEvent) => {
+      // the handle is on the far side from the anchored edge when docked, so
+      // the drag reads backwards there: pulling the top edge up, or the left
+      // edge left, makes the panel bigger
+      if (dock !== 'right') {
+        const dy =
+          dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
+        panelEl.style.height = clamp(startH + dy, MIN_H, maxH()) + 'px';
+      }
+      if (dock !== 'bottom') {
+        const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
+        panelEl.style.width = clamp(startW + dx, MIN_W, maxW()) + 'px';
+      }
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      grip.classList.remove('active');
+      const w = parseInt(panelEl.style.width);
+      const hgt = parseInt(panelEl.style.height);
+      if (dock === 'float') saveUi({ w, h: hgt });
+      else if (dock === 'bottom') saveUi({ bh: hgt });
+      else saveUi({ rw: w });
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  });
+
   // Cycles through the dock positions, matching how the theme button works and
   // how browser devtools present the same control — the icon shows the current
   // state rather than opening a menu to pick one.
@@ -1233,6 +1342,7 @@ const build = () => {
   body.appendChild(side);
   body.appendChild(stateEl);
   panelEl.appendChild(body);
+  panelEl.appendChild(grip);
   shadow.appendChild(panelEl);
 
   // restore persisted chrome: position, size, open state
@@ -1241,31 +1351,15 @@ const build = () => {
   if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.w) floatW = panelEl.style.width = ui.w + 'px';
   if (ui.h) floatH = panelEl.style.height = ui.h + 'px';
+  if (ui.bh) bottomH = ui.bh + 'px';
+  if (ui.rw) rightW = ui.rw + 'px';
+  // after the sizes, so it hands each mode the one it was last left at
   applyDock(ui.dock || 'float');
   if (ui.open) {
     pillEl.style.display = 'none';
     panelEl.style.display = 'flex';
     scheduleRender();
   }
-  // persist the native CSS resize grip's result (jsdom has no ResizeObserver)
-  if (typeof ResizeObserver !== 'undefined') {
-    let t: ReturnType<typeof setTimeout>;
-    new ResizeObserver(() => {
-      clearTimeout(t);
-      t = setTimeout(() => {
-        if (panelEl.style.display !== 'none' && panelEl.offsetWidth) {
-          // Docked, only one axis is resizable and the other is the viewport's.
-          // Saving the pinned one would overwrite the floating size, so a later
-          // undock would restore a panel as wide as the screen.
-          saveUi({
-            ...(dock !== 'bottom' && { w: panelEl.offsetWidth }),
-            ...(dock !== 'right' && { h: panelEl.offsetHeight }),
-          });
-        }
-      }, 300);
-    }).observe(panelEl);
-  }
-
   document.body.appendChild(host);
 
   devtools.on('scope:mount', scheduleRender);
