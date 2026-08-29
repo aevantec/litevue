@@ -10,7 +10,8 @@ stays `LiteVue`.
 - Vue-compatible syntax: `{{ }}`, `v-if`/`v-for` (keyed), `v-model`, `v-show`, …
 - **Built-in devtools** — in-page inspector panel + browser extension, one line to disable in production
 - **Transitions** that work with `v-show` *and* `v-if` (deferred unmount)
-- **Plugin system** with first-party plugins: intersect, persist, focus (+trap), collapse, transition, mask, morph
+- **Plugin system** with nine first-party plugins: intersect, persist, focus (+trap), collapse, transition, mask, morph, media, resize
+- **Components** registered by name with `app.component()`, usable from `v-scope`
 - **Global store** (`store()` / `$store`) and magic properties (`$dispatch`, `$watch`, `$id`, `$root`, …)
 - **Cached derived state** with `computed()`, alongside `reactive()` and `watchEffect()`
 - Extra event modifiers: `.outside`, `.window`, `.debounce`, `.throttle`, animation-event filters
