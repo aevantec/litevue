@@ -59,6 +59,7 @@ A `⚡ LiteVue` pill appears bottom-right and expands into the panel:
 - an **add-key row** and per-row ✕ delete for top-level keys
 - hover-to-highlight, plus a **pick mode** — click any element on the page to select its scope
 - dark / light / system **themes**; the selected scope is exposed as `window.$scope`
-- the panel **drags** by its header, **resizes** via the native grip, and remembers its open state, position and size
+- the panel **drags** by its header and **resizes** by a handle whose edge follows the mode: a corner when floating, the top edge docked to the bottom, the left edge docked to the right. Each mode keeps its own size, and both dimensions are bounded — no smaller than 320&nbsp;×&nbsp;320, no larger than the viewport
+- open state, position, size and dock are remembered between reloads
 
 Everything the panel shows comes from the public [Devtools API](/globals/devtools) — and one line [disables it all in production](/globals/devtools#disabling-in-production).
