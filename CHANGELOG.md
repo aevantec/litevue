@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.6](https://github.com/aevantec/litevue/compare/v0.5.5...v0.5.6) (2026-08-30)
+
+
+### Features
+
+* **devtools:** name a scope after the component that produced it ([#88](https://github.com/aevantec/litevue/issues/88)) ([ac74753](https://github.com/aevantec/litevue/commit/ac747534585326d0122006b32c83d7573050e48b))
+* **devtools:** resize the panel from a handle on the edge that moves ([#91](https://github.com/aevantec/litevue/issues/91)) ([8eeb3f1](https://github.com/aevantec/litevue/commit/8eeb3f1b9343111692dc7776d7c162272f061fb4))
+* **plugins:** preserve nodes and report morph's lifecycle ([#90](https://github.com/aevantec/litevue/issues/90)) ([cede331](https://github.com/aevantec/litevue/commit/cede331da63f3d7caa9425b02aab00161ebbe0e3))
+
+
+### Bug Fixes
+
+* **devtools:** keep the floating panel inside the viewport ([#93](https://github.com/aevantec/litevue/issues/93)) ([8cb1fc7](https://github.com/aevantec/litevue/commit/8cb1fc78a793bdf892c1e0c63e657cc28c60ac92))
+
 ## [0.5.5](https://github.com/aevantec/litevue/compare/v0.5.4...v0.5.5) (2026-08-27)
 
 
