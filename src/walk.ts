@@ -17,16 +17,14 @@ const modifierRE = /\.([\w-]+)/g;
 export let inOnce = false;
 
 /**
- * Registers a cleanup on both owners: the context, which tears down whole
- * regions, and the node being walked, so a subtree detached on its own is
- * released too. Dropping it from the context when the node goes keeps a
- * repeatedly re-mounted region from accumulating one spent entry per cycle.
+ * Registers a cleanup on both owners: the context, for whole-region teardown,
+ * and the walked node, for a subtree detached on its own. Dropping the entry
+ * when the node goes keeps a re-mounted region from accumulating spent ones.
  *
- * The list doubles as the record of what has already run. Disposing a subtree
- * can reach the same cleanup twice — once through the block root that owns it,
- * whose teardown drains this list, and again through the node it was
- * registered on — and a cleanup that runs twice removes a listener a later
- * re-mount installed.
+ * The `indexOf` guard also makes this run-once. A subtree can reach the same
+ * cleanup twice — via the block root, whose teardown drains `ctx.cleanups`,
+ * and via the node — and a second run would remove a listener the next mount
+ * installed.
  */
 const addCleanup = (ctx: Context, cleanup: () => void) => {
   ctx.cleanups.push(cleanup);
@@ -40,9 +38,8 @@ const addCleanup = (ctx: Context, cleanup: () => void) => {
 };
 
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
-  // The node being walked owns whatever it acquires, so a subtree removed on
-  // its own can be disposed. Restored on the way out so a nested walk does not
-  // leave the cursor pointing at a child.
+  // Own what this node acquires, so a subtree removed on its own can be
+  // disposed. Restored on exit so a nested walk leaves the cursor intact.
   const previousOwner = setOwner(node);
   try {
     return walkNode(node, ctx);
@@ -74,16 +71,14 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       return _for(el, exp, ctx);
     }
 
-    // v-name: devtools label for scopes on elements that shouldn't rely on
-    // an id. Read after the v-if/v-for early returns so the attribute stays
-    // in their templates, and stripped from every element so it never falls
-    // through to directive processing.
+    // v-name: devtools label for scopes without an id. Read after the
+    // v-if/v-for early returns so it survives in their templates, and stripped
+    // everywhere so it never reaches directive processing.
     const name = checkAttr(el, 'v-name');
 
-    // v-teleport: move the element under a different parent (literal CSS
-    // selector) while it keeps rendering with its original scope. Processed
-    // after the v-if/v-for early returns so it composes with them, and
-    // removed from the target when the owning block unmounts.
+    // v-teleport: reparent the element (literal CSS selector) while it keeps
+    // its original scope. After the v-if/v-for early returns so it composes
+    // with them; removed from the target when the owning block unmounts.
     let teleportNext: ChildNode | null | undefined;
     if ((exp = checkAttr(el, 'v-teleport'))) {
       const target = document.querySelector(exp);
@@ -105,14 +100,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
       const scope = exp ? evaluate(ctx.scope, exp) : {};
       ctx = createScopedContext(ctx, scope);
-      // stash the context so code that inserts markup into a live tree later
-      // (the morph plugin) can walk it with the scope it landed in, instead of
-      // guessing or falling back to the root
+      // stashed so code inserting markup into a live tree later (the morph
+      // plugin) walks it with the scope it landed in, not the root
       (el as any).__ctx = ctx;
-      // through addCleanup, not ctx.cleanups directly: the devtools registry
-      // is a strong Map keyed by Element, so a scope root that is morphed away
-      // without deregistering keeps both the detached element and its scope
-      // object alive for the life of the page
+      // via addCleanup, not ctx.cleanups: the devtools registry is a strong
+      // Map keyed by Element, so a scope root morphed away without
+      // deregistering leaks the element and its scope for the page's life
       addCleanup(
         ctx,
         registerScope(el, ctx.scope, exp || undefined, name || undefined)

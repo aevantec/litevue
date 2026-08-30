@@ -2,10 +2,9 @@ import { reactive } from '@aevantec/litevue';
 import type { Plugin } from '../../app';
 
 /**
- * Viewport-driven behaviour — the cases CSS genuinely cannot serve: values
- * handed to JavaScript, structural branches, skipping expensive init on small
- * screens. Appearance still belongs in a stylesheet, which applies before
- * first paint; this runs after it.
+ * Viewport-driven behaviour for the cases CSS cannot serve: values handed to
+ * JavaScript, structural branches, skipping expensive init on small screens.
+ * Appearance still belongs in a stylesheet, which applies before first paint.
  */
 
 export type Breakpoints = Record<string, number>;
@@ -29,16 +28,16 @@ const DEFAULT_BREAKPOINTS: Breakpoints = {
 };
 
 /**
- * The scale in use until something calls `configure()`. Exported because
- * `configure()` replaces rather than merges: adjusting one breakpoint, or
- * adding one, means spreading this rather than retyping all five.
+ * The scale in use until `configure()` runs. Exported because `configure()`
+ * replaces rather than merges, so adjusting one breakpoint means spreading
+ * this rather than retyping all five.
  */
 export const defaultBreakpoints: Readonly<Breakpoints> = Object.freeze({
   ...DEFAULT_BREAKPOINTS,
 });
 
-// `mobile` is the implicit floor every scale has; the other two are named
-// scale entries, so a custom scale that drops them loses the aliases.
+// `mobile` is the implicit floor; the other two are named scale entries, so a
+// custom scale that drops them loses those aliases.
 const ALIASES: Record<string, string> = {
   mobile: 'base',
   tablet: 'md',
@@ -50,20 +49,16 @@ const NUMERIC = /^\d+$/;
 /**
  * Two reactive primitives, deliberately:
  *
- * - `bp` is a single string, so the common case — named keys, `atLeast`,
- *   `device` — costs every consumer exactly one dependency no matter how many
- *   responsive maps the page declares.
- * - `tick` covers arbitrary `match()` queries. Their results are read straight
- *   off the MediaQueryList rather than mirrored into reactive state, because
- *   registering a query lazily inside a running effect would write to a
- *   dependency that effect had just read, and re-run it for nothing.
+ * - `bp`, one string, so named keys / `atLeast` / `device` cost each consumer
+ *   a single dependency however many responsive maps the page declares.
+ * - `tick`, for arbitrary `match()` queries. Their results are read off the
+ *   MediaQueryList rather than mirrored, since registering a query inside a
+ *   running effect would write a dependency it just read and re-run it.
  */
 const state = reactive({ bp: 'base', tick: 0 });
 
-// The scale is module state, shared by every app on the page. Two apps each
-// passing their own `breakpoints` is therefore not two scales — the second
-// silently rewrites the first, and the first app's markup starts resolving
-// against key names it never declared.
+// Module state, shared by every app on the page: two apps passing their own
+// `breakpoints` is not two scales — the second rewrites the first.
 let installedScale: string | undefined;
 
 let scale: Breakpoints = { ...DEFAULT_BREAKPOINTS };
@@ -107,14 +102,11 @@ const buildScale = () => {
 
   if (!supported()) return;
 
-  // One MediaQueryList per breakpoint, created once for the whole page — not
-  // one per responsive map. Twenty maps share these.
+  // One MediaQueryList per breakpoint for the whole page, not one per map.
   //
-  // Only `bp` is written here, deliberately. Crossing one of these boundaries
-  // always changes which breakpoint is highest, so `bp` alone carries the news;
-  // bumping `tick` too would also invalidate unrelated match() readers, and a
-  // resize that stays inside one breakpoint would wake every consumer on the
-  // page for a value that did not move.
+  // Only `bp` is written: crossing a boundary always changes which breakpoint
+  // is highest, so `bp` carries the news on its own. Bumping `tick` too would
+  // wake unrelated match() readers for a value that did not move.
   scaleSubs = names.map((name) => {
     const mql = window.matchMedia(`(min-width: ${scale[name]}px)`);
     return subscribe(mql, () => {
@@ -126,9 +118,8 @@ const buildScale = () => {
 };
 
 /**
- * Started by the first read rather than by `app.use()`, so `mq` works in a
- * plain module with no app mounted. Without this the standalone API would
- * report a frozen 'base' and there would be little point exporting it.
+ * Started by the first read, not by `app.use()`, so `mq` works in a plain
+ * module with no app mounted — otherwise it would report a frozen 'base'.
  */
 const activate = () => {
   if (active) return;
@@ -137,13 +128,10 @@ const activate = () => {
 };
 
 /**
- * Entry point for every public read: activates, and takes a dependency on
- * `tick` so that `configure()` can invalidate all of them.
- *
- * Reading `bp` alone is not enough. A key that is absent from the current
- * scale — `atLeast('lg')` under a phone/tablet/laptop scale — returns false
- * without touching reactive state at all, so that effect would register no
- * dependency and could never recover once a later scale defined the key.
+ * Entry point for every public read: activates, and depends on `tick` so
+ * `configure()` can invalidate all of them. `bp` alone is not enough — a key
+ * absent from the current scale returns false without touching reactive state,
+ * so that effect could never recover once a later scale defined the key.
  */
 const trackAll = () => {
   activate();
@@ -174,8 +162,8 @@ const keyToPx = (key: string | number): number | undefined => {
 
 const atLeastPx = (px: number): boolean => {
   if (px <= 0) return true;
-  // A threshold that is part of the scale resolves through the shared `bp`
-  // string; only off-scale numbers need a query of their own.
+  // thresholds on the scale resolve through the shared `bp` string; only
+  // off-scale numbers need their own query
   const i = order.findIndex((n) => n !== 'base' && scale[n] === px);
   if (i !== -1) return order.indexOf(state.bp) >= i;
   void state.tick; // depend on any media change, then read the list directly
@@ -297,15 +285,13 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
     value: ({ breakpoints }: MediaOptions) => {
       if (!breakpoints) return;
       scale = { ...breakpoints };
-      // The scale can change after the subscription is live — `mq` activates
-      // on first read, which may well happen before app.use() runs — so this
-      // rebuilds rather than assuming it got in first. Before activation
-      // there is nothing to rebuild; activate() will pick the new scale up.
+      // `mq` activates on first read, which can precede app.use(), so
+      // rebuild rather than assume this got in first. Before activation
+      // there is nothing to rebuild; activate() picks the new scale up.
       if (active) {
         buildScale();
-        // Key names and thresholds have both changed meaning, so every reader
-        // has to recompute — not only the ones watching `bp`, which may not
-        // have moved even though the scale did.
+        // names and thresholds both changed meaning, so every reader must
+        // recompute — not just those watching `bp`, which may not have moved
         state.tick++;
       }
     },
@@ -313,14 +299,9 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
 });
 
 /**
- * Test seam. Drops every subscription and returns to the default scale, so a
- * suite can swap its matchMedia stub between cases.
- */
-/**
- * Drops every live subscription. `activate()` rebuilds them on the next read,
- * so this is safe even while something on the page still holds `mq` — the
- * scale itself is deliberately left alone, since a page that configured one
- * still wants it.
+ * Drops every live subscription; `activate()` rebuilds them on the next read,
+ * so this is safe while something still holds `mq`. The scale is deliberately
+ * left alone — a page that configured one still wants it.
  */
 const releaseSubscriptions = () => {
   scaleSubs.forEach((s) => s.off());
@@ -372,9 +353,7 @@ export const media: Plugin<MediaOptions> = (app, options) => {
     configurable: true,
   });
 
-  // Returned so the app can give the subscriptions back. Without this the five
-  // MediaQueryList listeners lived for the page whether or not any app was
-  // still running; a full app.unmount() now frees them, and the next read
-  // rebuilds them lazily.
+  // Returned so app.unmount() can give the subscriptions back; without it the
+  // MediaQueryList listeners outlive every app. The next read rebuilds them.
   return releaseSubscriptions;
 };

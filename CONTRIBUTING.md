@@ -9,7 +9,7 @@ a pull request, and how releases work.
 
 Before proposing a feature, it helps to know what `litevue` is trying to be:
 
-- **Small.** The core is ~8kb gzipped. Bundle size is a feature, not an
+- **Small.** The core is ~9kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
   afterthought — a change that grows it needs to earn the bytes.
 - **Vue-aligned.** Syntax and semantics should match standard Vue wherever
   possible, so code can graduate to full Vue with minimal friction.
@@ -118,6 +118,27 @@ need to raise one.
 The only changes that go straight to `main` are urgent fixes to a released
 version. Those still need to be brought back to `main-next` afterwards, so raise
 one only when waiting for the next promotion is genuinely not an option.
+
+## Comments
+
+Comments explain **why**, not what — the code already says what it does. Keep
+them short: one to three lines is the norm, and a block that runs past about six
+is a sign the explanation has turned into a narrative.
+
+Write the reason a decision was made, the constraint that forced it, or the
+failure it prevents. Leave out the history of how it was discovered, the
+alternatives that were rejected, and restatements of the line below.
+
+```ts
+// Skip effects stopped between queueing and flushing: `stop()` only
+// clears tracking, so a queued runner would still fire one last write
+// into markup that is meant to be inert.
+if (stopped.has(job)) continue;
+```
+
+Two exceptions earn more room: a file header introducing a non-obvious module,
+and a public API doc comment carrying usage examples. Both should still be
+tight, and neither should recount how the code came to be that way.
 
 ## Commit convention
 

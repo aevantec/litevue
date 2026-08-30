@@ -14,10 +14,9 @@ export const ref: Directive = ({
     const ref = get();
     if (import.meta.env.DEV) {
       const existing = $refs[ref];
-      // A second element claiming the name replaces the first, so $refs points
-      // at whichever mounted last. The common cause is a ref inside v-for,
-      // where every row claims the same name — refs do not collect into a
-      // list here the way they do in Vue.
+      // A second claimant replaces the first, so $refs holds whichever
+      // mounted last. Usually a ref inside v-for: refs do not collect into a
+      // list here as they do in Vue.
       if (existing && existing !== el && existing.isConnected) {
         warnOnce(
           `ref-dup:${ref}`,

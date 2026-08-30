@@ -1,8 +1,8 @@
 import type { Plugin } from '../../app';
-// imported by package name, not by relative path: the plugins bundle keeps the
-// core external, and a bare specifier is what lets it resolve to the *same*
-// module instance the app loaded. `stores` is a module-level singleton, so a
-// second copy would give this bundle its own registry.
+// imported by package name, not relative path: the plugins bundle keeps the
+// core external, and only a bare specifier resolves to the *same* module the
+// app loaded. `stores` is a singleton, so a second copy means a second
+// registry.
 import { store as getStore, watchEffect } from '@aevantec/litevue';
 
 const PREFIX = 'litevue:';
@@ -36,15 +36,12 @@ const resolve = (
 };
 
 /**
- * Register a custom storage under a name, so it can be selected by name from
- * anywhere — including as a directive modifier:
+ * Register a custom storage under a name, selectable anywhere — including as a
+ * directive modifier. Any object with getItem/setItem works.
  *
  *   registerStorage('memory', myMemoryStorage);
  *   persistStore('scratch', { storage: 'memory' });
  *   <div v-persist.memory="scratch">…</div>
- *
- * Any object with getItem/setItem works — sessionStorage, an IndexedDB
- * shim, an in-memory map, a server-backed store.
  */
 export const registerStorage = (name: string, storage: PersistStorage) => {
   registry[name] = storage;
@@ -61,22 +58,18 @@ export const setDefaultStorage = (storage: PersistStorage | string) => {
 };
 
 /**
- * Which own properties of `target` can round-trip through storage.
- * Methods are behavior, not state; getter-only properties are derived and
- * would throw on restore. An explicit list is filtered too, so naming a
- * getter is a no-op rather than a crash.
+ * Which own properties of `target` can round-trip through storage. Methods are
+ * behavior, not state; getter-only properties are derived and would throw on
+ * restore. An explicit list is filtered too, so naming a getter is a no-op.
  */
 const persistable = (target: Record<string, any>, keys?: string[]) =>
   (keys ?? Object.keys(target)).filter((k) => {
     if (k[0] === '$') return false;
     const desc = Object.getOwnPropertyDescriptor(target, k);
-    // derived values can't be assigned back on restore: getters without a
-    // setter, and getter-only computed() refs (which the proxy already
-    // unwrapped, so they're only visible on the raw descriptor).
-    //
-    // The reactivity flags are read directly rather than via isRef/isReadonly,
-    // because importing @vue/reactivity here would pull a second copy of it
-    // into the plugins bundle — which must keep the core external.
+    // Derived values can't be assigned back on restore: setter-less getters,
+    // and computed() refs, visible only on the raw descriptor since the proxy
+    // already unwrapped them. Flags are read directly rather than via
+    // isRef/isReadonly, which would pull @vue/reactivity into this bundle.
     if (desc && desc.get && !desc.set) return false;
     const raw = desc && desc.value;
     if (raw && raw.__v_isRef === true && raw.__v_isReadonly === true) {
@@ -117,21 +110,17 @@ const sync = <T>(
 };
 
 /**
- * v-persist="storage-key" — syncs the element's scope to storage. Saved
- * values are restored on mount, and every change (including nested objects
- * and arrays) is written back automatically.
+ * v-persist="storage-key" — syncs the element's scope to storage: restored on
+ * mount, written back on every change, nested values included.
  *
- * The attribute value is used verbatim as the storage key (it is not
- * evaluated as an expression); it falls back to the element id.
+ * The attribute value is the storage key verbatim, not an expression, and
+ * falls back to the element id. An argument narrows which properties are
+ * stored; a modifier picks the storage (`local` default, `session`, or any
+ * name given to registerStorage()).
  *
- * An argument narrows what is stored to specific properties:
  *   v-persist:draft="composer"           — only `draft`
  *   v-persist:draft,recipient="composer" — only those two
- *
- * A modifier picks the storage — `local` (default), `session`, or any name
- * passed to registerStorage():
- *   v-persist.session="wizard"
- *   v-persist:draft.session="composer"
+ *   v-persist:draft.session="composer"   — and into sessionStorage
  */
 export const persist: Plugin = (app) => {
   app.directive('persist', ({ ctx, el, exp, arg, modifiers, effect }) => {
@@ -166,9 +155,9 @@ export const persist: Plugin = (app) => {
 };
 
 /**
- * persistStore('cart') — the JS-side counterpart for global stores, which
- * have no element to hang a directive on. Restores immediately and saves on
- * every change; returns a function that stops persisting.
+ * persistStore('cart') — the JS-side counterpart for global stores, which have
+ * no element to hang a directive on. Restores immediately, saves on change,
+ * and returns a stop function.
  *
  *   persistStore('cart')                              // the whole store
  *   persistStore('cart', { keys: ['items'] })         // only these properties
@@ -203,8 +192,8 @@ export const persistStore = (
     );
   }
 
-  // watchEffect batches through the scheduler, so a burst of mutations in
-  // one tick writes once, and it hands back the stop function
+  // watchEffect batches through the scheduler, so a burst of mutations in one
+  // tick writes once
   return sync(
     target,
     PREFIX + (options.key ?? name),

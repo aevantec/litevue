@@ -14,10 +14,9 @@ const mount = async (html: string, data?: any) => {
 };
 
 /**
- * The docs teach `v-bind:` / `v-on:` alongside the `:` / `@` shorthand, and
- * every example in them is shorthand. Nothing else in the suite exercises the
- * full spelling, so a parsing change could break what the reference pages
- * promise without a single test noticing.
+ * The docs teach `v-bind:` / `v-on:` beside the `:` / `@` shorthand, but every
+ * example uses shorthand — so nothing else in the suite would catch a parsing
+ * change that broke the full spelling.
  */
 describe('full directive syntax', () => {
   test('v-bind:attr equals :attr', async () => {

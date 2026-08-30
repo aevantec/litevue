@@ -1,11 +1,9 @@
-// Builds one bundle per plugin, on top of the combined `litevue-plugins.*`
-// build. A page that only wants `intersect` should not pay for morph and
-// persist: individually they are 307–1279 bytes gzipped against 3065 for the
-// whole set.
+// Builds one bundle per plugin alongside the combined `litevue-plugins.*`, so
+// a page wanting only `intersect` doesn't pay for morph and persist: 307–1279
+// bytes gzipped each, against 3065 for the set.
 //
-// Each plugin gets its own vite invocation because rollup refuses multiple
-// entry points when the output format is iife or umd — the very formats a
-// <script src> user needs.
+// One vite invocation per plugin, because rollup refuses multiple entry points
+// for iife and umd — the formats a <script src> user needs.
 import { build } from 'vite';
 import { readdirSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';

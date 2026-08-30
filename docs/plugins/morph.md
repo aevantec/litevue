@@ -96,6 +96,87 @@ Or decide per element:
 morph(el, html, { skip: (from, to) => from.classList.contains('live') });
 ```
 
+`skip` keeps a matched element's *contents* intact. It does not keep the element
+itself: it is consulted only when an element has a counterpart in the incoming
+HTML, so it never sees one the server has simply stopped sending. For that, use
+`preserve`.
+
+## Preserving a node the server does not send
+
+A chart, an editor, a map, a media player — anything the client created and the
+server does not know about — is absent from every re-render. Without help, the
+first morph removes it.
+
+```html
+<div id="chart" data-morph-preserve>…initialised by a charting library…</div>
+```
+
+The element is kept whatever the incoming HTML says: not removed when it is
+missing, and not replaced when the tag at that position differs. Everything
+around it still updates.
+
+The programmatic form takes the element and returns whether to keep it:
+
+```js
+morph(el, html, { preserve: (el) => el.id === 'chart' });
+```
+
+### `skip` and `preserve` protect different things
+
+They are orthogonal, and a client-owned widget usually wants both.
+
+| | `data-morph-skip` | `data-morph-preserve` |
+| --- | --- | --- |
+| Protects | the element's **contents** | the element's **existence** |
+| Element is in the incoming HTML | attributes and children left alone | **attributes and children are patched** |
+| Element is absent from it | removed | kept |
+| Tag at that position differs | **replaced** | kept |
+
+So `preserve` alone keeps your chart's element, but lets the server rewrite what
+is inside it on any update that does include it. And `skip` alone keeps the
+contents, but the element is still removed when the server stops sending it, and
+still replaced if the tag changes.
+
+```html
+<!-- a widget the client owns entirely -->
+<div id="chart" data-morph-skip data-morph-preserve></div>
+```
+
+Together: never removed, never replaced, never patched.
+
+::: tip Why not `v-preserve`
+An unrecognised `v-` attribute makes the walker report an unknown directive, and
+registering one as a real directive would have the walker strip it — leaving
+nothing for the next morph to find. `data-morph-preserve` sits alongside
+`data-morph-skip` and the walker never touches either.
+:::
+
+## Lifecycle hooks
+
+For anything the two attributes cannot express, morph reports what it is about
+to do:
+
+```js
+morph(el, html, {
+  beforeNodeAdded(node) {
+    // return false to leave it out
+    return !(node instanceof Element && node.matches('.ad-slot'));
+  },
+  afterNodeRemoved(node) {
+    teardownWidget(node);
+  },
+});
+```
+
+`beforeNodeAdded` runs for every node morph is about to insert, including one
+replacing an element whose tag changed. Returning `false` skips that insertion
+and nothing else.
+
+`afterNodeRemoved` runs once the node is out of the document **and its LiteVue
+effects, listeners and scopes have been released**. What it hands you is inert,
+so a hook that keeps the node for a while is holding markup rather than a live
+subtree. Preserved nodes are never announced, because they were never removed.
+
 ## In templates
 
 The plugin registers [`$morph`](/magics/) on the root scope, so simple cases don't need a `<script>`:
@@ -120,7 +201,7 @@ Known constraints to weigh before depending on it:
 - **A container hosting `v-if` or `v-for` is skipped whole.** The live DOM holds block anchors plus however many clones the data produced; the server still sends the single authoring template. Those shapes can't be reconciled positionally, so the client keeps ownership — including any static siblings in that container.
 - **`v-scope` changes are ignored on live elements.** If the server renders `v-scope="{ count: 0 }"` for an element whose count is already `3`, the live value wins. Reset state explicitly rather than expecting the markup to do it.
 - **Static attributes bound elsewhere can be clobbered.** Morph only knows a `class` is client-owned when the incoming element carries `:class`. If you set a class imperatively from JavaScript, mark the element `data-morph-skip`.
-- **Removed elements don't tear down their effects.** Morph drops nodes the server no longer sends without unmounting them first, so their effects stay subscribed. It removes far fewer nodes than a replace, so it leaks far less — but not nothing. Tearing those down per node needs teardown at a finer grain than [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) offers today.
+- **A removed element's `v-scope` is gone with it.** Effects, listeners and scopes are released as the node is detached, so nothing is left subscribed — but the state that scope held is not recoverable, and markup the server sends again arrives as a fresh scope at its initial values. Keep anything that must outlive a re-render in a [store](/globals/store) rather than in the region.
 
 ::: warning Morphed-in markup is walked
 New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [Security](/start-here/security#morph-and-server-rendered-updates).

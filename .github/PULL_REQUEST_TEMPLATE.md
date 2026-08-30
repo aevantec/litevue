@@ -10,21 +10,29 @@
   Scopes: core | directives | events | devtools | plugins | store | types | docs | extension
 -->
 
-## What does this change?
+## What's Changed?
 
-<!-- A sentence or two. Link the issue it closes: "Closes #123". -->
+<!--
+  One bullet per change, in plain language. Each should read on its own to
+  someone who has not seen the diff. Say what it does, not how it is built —
+  "stops flush events after disableDevtools()", not "adds a guard to emitFlush".
+  Numbers earn their place: sizes, counts, before and after.
+-->
 
-## Why?
+-
 
-<!-- The problem being solved, or the behavior that was wrong. -->
+## Type of Change
 
-## Checklist
+<!--
+  Feature     — new capability that did not exist
+  Enhancement — worked before, works better now (refactors and performance too)
+  Bug         — something was wrong and is now right
+  Chore       — tooling, CI, dependencies, docs-only, tests-only
 
-- [ ] The PR title follows [Conventional Commits](https://www.conventionalcommits.org/)
-- [ ] Tests added or updated in `test/` (bug fixes include a test that fails without the fix)
-- [ ] `pnpm test`, `pnpm tsc --noEmit`, and `pnpm build` pass locally
-- [ ] Docs in `docs/` updated for any user-facing change
-- [ ] I've checked the effect on bundle size (the core is ~8kb gzipped — say so if this moves it)
+  List more than one when the PR genuinely does more than one thing.
+-->
+
+- **Feature** —
 
 ## Breaking change?
 
@@ -36,4 +44,12 @@
   If yes, describe what breaks and what users need to do:
 
   BREAKING CHANGE: @vue:mounted no longer fires. Use @mounted instead.
+-->
+
+<!--
+  Before opening:
+    pnpm test · pnpm test:browser · pnpm tsc --noEmit · pnpm build
+    docs/ updated for anything user-facing
+    a bug fix has a test that fails without it
+    say so if this moves a bundle's size
 -->

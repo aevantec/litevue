@@ -25,6 +25,12 @@ export interface LiteVueDevtools {
    */
   stores: Map<string, Record<string, any>>;
   /**
+   * Names registered with app.component(). Inspection UIs use this to label a
+   * scope by the component that produced it — `v-scope="Cart()"` reads as
+   * `<Cart>` rather than by tag or id.
+   */
+  components: Set<string>;
+  /**
    * Find the scope governing a node by walking up the DOM to the nearest
    * registered scope root. Usable from the console: __LITE_VUE__.getScope($0)
    */
@@ -50,6 +56,7 @@ const scopes = new Map<Element, Record<string, any>>();
 const exps = new Map<Element, string>();
 const names = new Map<Element, string>();
 const storeMap = new Map<string, Record<string, any>>();
+const componentNames = new Set<string>();
 
 let disabled = false;
 
@@ -98,15 +105,15 @@ export const registerStore = (name: string, store: Record<string, any>) => {
   emit('store:register', name, store);
 };
 
+export const registerComponent = (name: string) => {
+  if (!isDisabled()) componentNames.add(name);
+};
+
 export const emitFlush = () => {
-  // The size check stays first: this runs on every scheduler flush, and with
-  // nothing subscribed — the normal case — it costs one property read.
-  //
-  // The disabled check is what the other three events get for free by
-  // returning early at their source. `flush` has no source to gate, so
-  // without this it kept firing for anyone who subscribed after
-  // disableDevtools(), which clears existing listeners but does not stop new
-  // ones being added. The kill switch is meant to be total.
+  // Size check first: this runs on every flush, and with nothing subscribed
+  // it costs one property read. The disabled check is what the other events
+  // get free by returning early at their source; `flush` has no such source,
+  // so without it a listener added after disableDevtools() would still fire.
   if (listeners.flush.size && !isDisabled()) {
     emit('flush');
   }
@@ -117,6 +124,7 @@ export const devtools: LiteVueDevtools = {
   exps,
   names,
   stores: storeMap,
+  components: componentNames,
   getScopeByName(name) {
     for (const [el, n] of names) {
       if (n === name) return scopes.get(el);
@@ -152,6 +160,7 @@ export const disableDevtools = () => {
   exps.clear();
   names.clear();
   storeMap.clear();
+  componentNames.clear();
   for (const event in listeners) {
     listeners[event as DevtoolsEvent].clear();
   }

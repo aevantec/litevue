@@ -62,6 +62,13 @@ jobs:
       - name: Check docs versions
         run: pnpm check:docs-versions
 
+      # Sizes quoted in prose drift the way pinned versions do, and nothing
+      # else notices: check:size compares a bundle to its budget, not to what
+      # the docs claim. The devtools panel was advertised as ~5kb while the
+      # bundle had grown to 6.1kb.
+      - name: Check docs sizes
+        run: pnpm check:docs-sizes
+
       # Cloudflare deploys the docs; this only checks they still compile
       # (VitePress fails the build on dead links and bad markdown).
       - name: Build docs

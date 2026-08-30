@@ -5,9 +5,9 @@ export const checkAttr = (el: Element, name: string): string | null => {
 };
 
 /**
- * Adds a listener and hands back a remover. Callers are expected to use it:
- * `app.unmount(el)` tears down a region whose elements stay in the document, so
- * a listener left behind would keep driving markup that is meant to be inert.
+ * Adds a listener and returns a remover. Callers are expected to use it:
+ * `app.unmount(el)` leaves elements in the document, so a listener left behind
+ * would keep driving markup meant to be inert.
  */
 export const listen = (
   el: Element,

@@ -46,8 +46,8 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const nextNode = el.nextSibling;
   parent.removeChild(el);
 
-  // as in v-for, `el` is a template that has left the document and cannot own
-  // anything reachable
+  // as in v-for, `el` is a template outside the document and can own nothing
+  // a subtree disposal could reach
   setOwner(anchor);
 
   let block: Block | undefined;
@@ -55,8 +55,8 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
 
   const removeActiveBlock = () => {
     if (block) {
-      // teleported roots don't live under parent — for those the anchor
-      // was never removed, so the position is already preserved
+      // teleported roots don't live under parent; their anchor was never
+      // removed, so the position is already preserved
       if (block.el.parentNode === parent) {
         parent.insertBefore(anchor, block.el);
       }
@@ -65,11 +65,10 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     }
   };
 
-  // Unlike v-for, this anchor is in the document only while no branch is
-  // rendered — it is pulled out again below as soon as a block is inserted.
-  // So the branch effect is owned twice: by the anchor, and by each block root
-  // as it is mounted. Whichever of the two is in a disposed subtree stops it,
-  // and stopping twice is a no-op.
+  // Unlike v-for, this anchor is only in the document while no branch is
+  // rendered. So the effect is owned twice — by the anchor and by each block
+  // root — and whichever lands in a disposed subtree stops it. Stopping twice
+  // is a no-op.
   let branchEffect: ReactiveEffectRunner;
   const stopBranches = () => stopEffect(branchEffect);
   branchEffect = ctx.effect(() => {

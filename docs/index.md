@@ -27,7 +27,7 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~9kb gzipped core. Plugins (~4kb for all nine) and devtools (~5kb)
+      ~9kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~4kb<!-- size:dist/litevue-plugins.iife.js --> for all nine) and devtools (~6kb<!-- size:dist/litevue-devtools.iife.js -->)
       ship as separate opt-in bundles that add zero weight to the core.
   - title: Built-in devtools
     details:
@@ -40,9 +40,9 @@ features:
       delays DOM removal until the leave animation finishes.
   - title: Plugin system
     details:
-      app.use() with typed plugins. First-party plugins cover intersect,
-      persist, focus (+trap), collapse, transition, mask and morph — each
-      loadable on its own.
+      app.use() with typed plugins. Nine first-party plugins cover
+      intersect, persist, focus (+trap), collapse, transition, mask, morph,
+      media and resize — each loadable on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML

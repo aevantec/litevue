@@ -1,24 +1,19 @@
 /**
  * Per-node disposal.
  *
- * Effects and cleanups are owned by a Context, and a Context spans everything
- * between one `v-scope` and the next. That is the right boundary for
- * `app.unmount(el)`, which tears down whole regions, but it is the wrong one
- * for a node removed on its own: morph detaches nodes directly, so a node
- * leaves the DOM while its effects stay in an array that is still alive and
- * still reacting.
- *
- * This records what each node acquired while it was walked, so a removed
- * subtree can be disposed precisely without giving every node a Context.
+ * A Context spans one `v-scope` to the next — the right boundary for
+ * `app.unmount(el)`, too coarse for a node removed on its own. Morph detaches
+ * nodes directly, leaving their effects live. Tracking what each node acquired
+ * lets a detached subtree be disposed without a Context per node.
  */
 type Disposer = () => void;
 
 const owned = new WeakMap<Node, Disposer[]>();
 
 /**
- * The node currently being walked. Module-level for the same reason `inOnce`
- * is: walking is synchronous and depth-first, so a cursor is enough and avoids
- * threading an owner through every directive signature.
+ * The node currently being walked. A module-level cursor suffices because the
+ * walk is synchronous and depth-first, and it keeps `owner` out of every
+ * directive signature.
  */
 let owner: Node | undefined;
 
@@ -30,11 +25,9 @@ export const setOwner = (node: Node | undefined) => {
 
 /**
  * Registers a disposer against `node`, defaulting to the node being walked.
- *
- * The explicit form exists because a directive may outlive the element it was
- * written on: `v-if` and `v-for` both detach that element and render from an
- * anchor, so their own effects have to be owned by a node that stays in the
- * tree, not by the template they removed.
+ * Pass `node` explicitly for a directive that outlives its element: `v-if` and
+ * `v-for` detach the template and render from an anchor, so they must own to
+ * the anchor.
  */
 export const own = (dispose: Disposer, node = owner) => {
   if (!node) return;
@@ -44,8 +37,8 @@ export const own = (dispose: Disposer, node = owner) => {
 };
 
 /**
- * Disposes `node` and everything under it. Safe to call on a node that never
- * acquired anything, and safe to call twice — the record is dropped as it runs.
+ * Disposes `node` and its subtree. Safe on an unowned node, and idempotent —
+ * the record is dropped as it runs.
  */
 export const disposeSubtree = (node: Node) => {
   const list = owned.get(node);

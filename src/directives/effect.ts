@@ -4,14 +4,11 @@ import { nextTick } from '../scheduler';
 import { setOwner } from '../ownership';
 
 export const effect: Directive = ({ el, ctx, exp, effect }) => {
-  // The only directive that creates its effect after the walk has finished, so
-  // it is the only one that has to restore ownership by hand — by nextTick the
-  // cursor has moved on, and the effect would be owned by nothing and survive
-  // its element's removal. Every other directive is applied while the cursor
-  // still points at its element.
-  // A node can be torn down before this tick: morph mounts a subtree and
-  // removes it again in the same frame. Creating the effect then would attach
-  // it to a node no disposal will ever visit, so it would run forever.
+  // The only directive whose effect is created after the walk, so it must
+  // restore ownership by hand: by nextTick the cursor has moved on, and an
+  // unowned effect would survive its element. The `live` flag covers the other
+  // race — morph can mount and remove a subtree within one frame, and an
+  // effect created after that would never be disposed.
   let live = true;
   nextTick(() => {
     if (!live) return;

@@ -9,10 +9,8 @@ export const model: Directive<
   const assign = get(`(val) => { ${exp} = val }`);
   const { trim, number = type === 'number', lazy, fill } = modifiers || {};
 
-  // Collect every listener so the directive can take them off again. Without
-  // this, typing into an input inside a region torn down by app.unmount(el)
-  // would still write to the scope — the element stays in the document, so the
-  // listener outlives the binding it belongs to.
+  // Collected so teardown can remove them: app.unmount(el) leaves elements in
+  // the document, so a surviving listener would still write to a dead scope.
   const off: (() => void)[] = [];
   const on = (event: string, handler: any) =>
     off.push(listen(el, event, handler));
@@ -105,8 +103,8 @@ export const model: Directive<
 
     // .debounce[-ms]: rate-limit assignments from input events
     let write = assign;
-    // cancelled on teardown alongside the listeners below: a pending debounce
-    // would otherwise assign into a scope that has already been torn down
+    // cancelled on teardown with the listeners: a pending debounce would
+    // otherwise assign into a torn-down scope
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
     for (const key in modifiers || {}) {
       const m = /^debounce(?:-(\d+))?$/.exec(key);

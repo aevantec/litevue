@@ -3,12 +3,11 @@ import { createApp, store } from '../src';
 import { mount, tick } from './utils';
 
 /**
- * Each of these fails silently without a warning: the page renders, nothing
- * throws, and the symptom shows up later as lost input or a blank value.
+ * Each of these fails silently: the page renders, nothing throws, and the
+ * symptom surfaces later as lost input or a blank value.
  *
- * `warnOnce` keys are module-global and persist for the process, so every test
- * here uses its own expression, ref name or store name rather than resetting
- * shared state.
+ * `warnOnce` keys are module-global for the process, so every test uses its
+ * own expression, ref or store name rather than resetting shared state.
  */
 
 afterEach(() => {

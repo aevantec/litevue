@@ -4,9 +4,8 @@ import type { Context } from './context';
 let uid = 0;
 
 /**
- * $id('name') — unique ids for accessibility attributes. Stable within a
- * scope (repeated calls with the same name return the same id, so
- * label/input pairs match), unique across scopes.
+ * $id('name') — unique ids for accessibility attributes. Stable within a scope
+ * so label/input pairs match, unique across scopes.
  */
 export const createId = () => {
   const memo: Record<string, string> = Object.create(null);
@@ -14,9 +13,9 @@ export const createId = () => {
 };
 
 /**
- * $watch(source, callback) — watches a dot-path string or getter function
- * and calls back with (value, oldValue) on change. Tied to the owning
- * scope's effect list, so it stops when the scope unmounts.
+ * $watch(source, callback) — watches a dot-path string or getter and calls
+ * back with (value, oldValue). Tied to the owning scope's effects, so it stops
+ * when the scope unmounts.
  */
 export const createWatch =
   (ctx: Context) =>

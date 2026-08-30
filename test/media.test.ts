@@ -57,15 +57,13 @@ const setQuery = (query: string, value: boolean) => {
 };
 
 /**
- * Mounted apps have to be torn down between cases, not just wiped from the
- * DOM. Their effects stay subscribed to the shared breakpoint state, so a
- * later setWidth() re-runs them — against whatever scale that later test
- * configured, which produced spurious "unknown breakpoint" warnings.
+ * Apps must be torn down between cases, not just wiped from the DOM: their
+ * effects stay subscribed to the shared breakpoint state, so a later
+ * setWidth() re-runs them against that test's scale.
  */
 let apps: any[] = [];
 // watchEffect stops nothing on its own, so a bare effect outlives its test and
-// re-runs against a later case's scale — which is how a stray "unknown
-// breakpoint" warning turned up in an unrelated test.
+// re-runs against a later case's scale
 let stops: (() => void)[] = [];
 const watch = (fn: () => void) => void stops.push(watchEffect(fn));
 

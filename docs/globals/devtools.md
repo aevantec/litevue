@@ -17,6 +17,7 @@ __LITE_VUE__.getScope($0).count = 42;
 
 __LITE_VUE__.scopes; // Map<Element, scope>
 __LITE_VUE__.stores; // Map<name, store>
+__LITE_VUE__.components; // Set<name> registered with app.component()
 __LITE_VUE__.getScopeByName('cart'); // by v-name
 ```
 
