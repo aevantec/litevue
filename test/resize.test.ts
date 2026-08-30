@@ -80,3 +80,48 @@ describe('v-resize', () => {
     expect(root.querySelector('span')!.textContent).toBe('123');
   });
 });
+
+describe('v-resize.window', () => {
+  test('fires immediately with the viewport, then on every resize', async () => {
+    installResizeObserver();
+    (window as any).innerWidth = 1024;
+    (window as any).innerHeight = 768;
+    const { root } = mount(
+      `<div v-scope="{ w: 0, h: 0 }"><div v-resize.window="w = $width; h = $height"></div></div>`
+    );
+    await tick();
+    // fires on mount, not only on the first resize: a layout that branches on
+    // width would otherwise render once against nothing
+    expect((root as any).__ctx.scope.w).toBe(1024);
+    expect((root as any).__ctx.scope.h).toBe(768);
+
+    (window as any).innerWidth = 480;
+    (window as any).innerHeight = 900;
+    window.dispatchEvent(new Event('resize'));
+    await tick();
+    expect((root as any).__ctx.scope.w).toBe(480);
+    expect((root as any).__ctx.scope.h).toBe(900);
+  });
+
+  test('does not observe the element', async () => {
+    installResizeObserver();
+    mount(`<div v-scope><div v-resize.window="0"></div></div>`);
+    await tick();
+    expect(observed).toEqual([]);
+  });
+
+  test('stops listening when the region unmounts', async () => {
+    installResizeObserver();
+    (window as any).innerWidth = 800;
+    const { app, root } = mount(
+      `<div v-scope="{ n: 0 }"><div v-resize.window="n++"></div></div>`
+    );
+    await tick();
+    const settled = (root as any).__ctx.scope.n;
+    app.unmount();
+    (window as any).innerWidth = 300;
+    window.dispatchEvent(new Event('resize'));
+    await tick();
+    expect((root as any).__ctx.scope.n).toBe(settled);
+  });
+});
