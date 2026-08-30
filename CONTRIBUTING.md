@@ -9,7 +9,7 @@ a pull request, and how releases work.
 
 Before proposing a feature, it helps to know what `litevue` is trying to be:
 
-- **Small.** The core is ~8kb gzipped. Bundle size is a feature, not an
+- **Small.** The core is ~9kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
   afterthought — a change that grows it needs to earn the bytes.
 - **Vue-aligned.** Syntax and semantics should match standard Vue wherever
   possible, so code can graduate to full Vue with minimal friction.

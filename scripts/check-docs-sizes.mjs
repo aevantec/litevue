@@ -52,7 +52,11 @@ const IGNORED = [
 // every ~Nkb, marked or not
 const ANY_CLAIM = /~\d+kb/g;
 
-const files = ['README.md', '.github/PULL_REQUEST_TEMPLATE.md'];
+const files = [
+  'README.md',
+  'CONTRIBUTING.md',
+  '.github/PULL_REQUEST_TEMPLATE.md',
+];
 (function walk(dir) {
   for (const entry of readdirSync(dir)) {
     if (entry === 'dist' || entry === 'cache' || entry === 'node_modules') {
