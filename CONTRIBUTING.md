@@ -96,10 +96,30 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    ```bash
    pnpm prettier --check "**/*.{ts,mts,js,html,json}"
    pnpm tsc --noEmit
+   pnpm lint
    pnpm test
    pnpm test:browser
    pnpm build
    ```
+
+   `pnpm lint` runs [oxlint](https://oxc.rs/docs/guide/usage/linter). It covers
+   the ground between prettier and `tsc` — dead code, unusable regex escapes, a
+   variable a guard depends on that is never assigned — and finishes in about a
+   second. Warnings fail the build, so fix them rather than leaving them.
+   Rules live in `.oxlintrc.json`. It runs oxlint's default `correctness`
+   category, with two rules deliberately off:
+
+   - **`no-unused-expressions`** — `cond && doThing()` is the house idiom here,
+     used throughout source and tests. Thirty hits, all intentional.
+   - **`unicorn/no-useless-spread`** — a false positive on *live* DOM
+     collections. `walk.ts` and morph's `patchAttrs` iterate `el.attributes`
+     while calling `removeAttribute`, so the spread is exactly what stops the
+     iteration skipping entries. Following the rule's advice would introduce
+     real bugs.
+
+   The style categories were tried and rejected: they flag `__ctx`, `__leave`
+   and `__LITEVUE_DEVTOOLS__`, which are deliberate internal markers, and
+   sequential `await`s in tests, which are ordering rather than an oversight.
 
    `pnpm test:browser` needs the Chromium build once per machine:
    `pnpm exec playwright install chromium`.

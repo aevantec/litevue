@@ -680,7 +680,7 @@ const fmt = (v: unknown) => {
   let s: string;
   try {
     s = v === undefined ? 'undefined' : (JSON.stringify(v) ?? String(v));
-  } catch (e) {
+  } catch {
     s = String(v);
   }
   return s.length > 60 ? s.slice(0, 60) + '…' : s;

@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "no-unused-expressions": "off",
+    "unicorn/no-useless-spread": "off"
+  }
+}

@@ -14,7 +14,7 @@ describe('v-scope', () => {
   });
 
   test('writes to inherited props fall through to the owning parent', async () => {
-    const { $, $$ } = await mount(
+    const { $ } = await mount(
       `<div v-scope="{ outer: 'a' }">
         <div v-scope="{}">
           <button @click="outer = 'changed'"></button>
@@ -28,7 +28,7 @@ describe('v-scope', () => {
   });
 
   test('own props shadow the parent without touching it', async () => {
-    const { $$, $ } = await mount(
+    const { $ } = await mount(
       `<div v-scope="{ msg: 'parent' }">
         <em>{{ msg }}</em>
         <div v-scope="{ msg: 'child' }">
@@ -57,7 +57,7 @@ describe('v-scope', () => {
   });
 
   test('function components via v-scope', async () => {
-    const { $$, $ } = await mount(
+    const { $ } = await mount(
       `<div v-scope>
         <div v-scope="Counter({ start: 3 })">
           <span>{{ count }}</span>
