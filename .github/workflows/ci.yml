@@ -39,6 +39,12 @@ jobs:
       - name: Type check
         run: pnpm tsc --noEmit
 
+      # Catches the class that sits between prettier and tsc: dead code,
+      # unusable regex escapes, and variables a guard depends on that are
+      # never assigned. Rust-based, so the whole tree lints in about a second.
+      - name: Lint
+        run: pnpm lint
+
       - name: Test
         run: pnpm test
 

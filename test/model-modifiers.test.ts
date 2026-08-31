@@ -33,3 +33,29 @@ describe('v-model modifiers', () => {
     expect(($('#kept') as HTMLInputElement).value).toBe('existing');
   });
 });
+
+describe('radio v-model', () => {
+  test('clearing the model unchecks the radio', async () => {
+    // Regression: the radio branch never recorded `oldValue`, so it stayed
+    // undefined and `value !== oldValue` was false once the model was cleared
+    // — the sync was skipped and the radio stayed checked. The checkbox branch
+    // above it always had the write. Found by oxlint's no-unassigned-vars.
+    const { root, $$ } = await mount(
+      `<div v-scope="{ picked: 'a' }">
+        <input type="radio" value="a" v-model="picked" />
+        <input type="radio" value="b" v-model="picked" />
+      </div>`
+    );
+    const [a, b] = $$('input') as HTMLInputElement[];
+    expect(a.checked).toBe(true);
+
+    (root as any).__ctx.scope.picked = 'b';
+    await tick();
+    expect(a.checked).toBe(false);
+    expect(b.checked).toBe(true);
+
+    (root as any).__ctx.scope.picked = undefined;
+    await tick();
+    expect(b.checked).toBe(false);
+  });
+});

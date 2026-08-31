@@ -16,7 +16,7 @@ const mountedRoots = new WeakSet<Element>();
 import { disposeSubtree } from './ownership';
 
 const escapeRegex = (str: string) =>
-  str.replace(/[-.*+?^${}()|[\]\/\\]/g, '\\$&');
+  str.replace(/[-.*+?^${}()|[\]/\\]/g, '\\$&');
 
 export interface App {
   /**

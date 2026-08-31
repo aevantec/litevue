@@ -6,7 +6,7 @@
   },
   "description": "Lightweight subset of Vue optimized for progressive enhancement. A fork of petite-vue with devtools.",
   "type": "commonjs",
-  "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import — both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",
+  "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import \u2014 both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",
   "sideEffects": [
     "./dist/litevue.*",
     "./dist/litevue-devtools.*"
@@ -183,6 +183,7 @@
     "dev": "vite",
     "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && node scripts/build-plugins.mjs && pnpm build:types",
     "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
+    "lint": "oxlint --deny-warnings src test scripts",
     "lint:package": "publint --strict && attw --pack .",
     "check:bundles": "node scripts/check-bundles.mjs",
     "check:docs-versions": "node scripts/check-docs-versions.mjs",
@@ -234,6 +235,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/shared": "~3.4.0",
     "jsdom": "^30.0.1",
+    "oxlint": "^1.80.0",
     "playwright": "^1.62.1",
     "prettier": "^3.4.0",
     "publint": "^0.3.24",

@@ -92,6 +92,7 @@ export const model: Directive<
       if (value !== oldValue) {
         (el as HTMLInputElement).checked = looseEqual(value, getValue(el));
       }
+      oldValue = value;
     });
   } else {
     // text-like

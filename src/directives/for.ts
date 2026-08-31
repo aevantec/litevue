@@ -6,7 +6,7 @@ import { setOwner } from '../ownership';
 import { warnOnce } from '../warn';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
-const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/;
+const forIteratorRE = /,([^,}\]]*)(?:,([^,}\]]*))?$/;
 const stripParensRE = /^\(|\)$/g;
 const destructureRE = /^[{[]\s*((?:[\w_$]+\s*,?\s*)+)[\]}]$/;
 
