@@ -68,31 +68,28 @@ export const model: Directive<
       }
     });
 
-    let oldValue: any;
+    // No skip-if-unchanged guard here or on the radio below. The browser
+    // retoggles these natively, so the DOM can diverge from the model without
+    // the model moving; and the effect only runs when something it read
+    // changed, so the write a guard would save is rare and already a no-op.
     effect(() => {
       const value = get();
       if (isArray(value)) {
         (el as HTMLInputElement).checked =
           looseIndexOf(value, getValue(el)) > -1;
-      } else if (value !== oldValue) {
+      } else {
         (el as HTMLInputElement).checked = looseEqual(
           value,
           getCheckboxValue(el as HTMLInputElement, true)
         );
       }
-      oldValue = value;
     });
   } else if (type === 'radio') {
     on('change', () => {
       assign(getValue(el));
     });
-    let oldValue: any;
     effect(() => {
-      const value = get();
-      if (value !== oldValue) {
-        (el as HTMLInputElement).checked = looseEqual(value, getValue(el));
-      }
-      oldValue = value;
+      (el as HTMLInputElement).checked = looseEqual(get(), getValue(el));
     });
   } else {
     // text-like
