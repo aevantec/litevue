@@ -249,10 +249,16 @@ const applyDirective = (
 const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = document.querySelector(template);
-    if (import.meta.env.DEV && !templateEl) {
-      console.error(
-        `template selector ${template} has no matching <template> element.`
-      );
+    // Returning matters in production, where the warning above is stripped:
+    // without it a missing selector reaches `.content` and throws with no
+    // diagnostic at all.
+    if (!templateEl) {
+      if (import.meta.env.DEV) {
+        console.error(
+          `template selector ${template} has no matching <template> element.`
+        );
+      }
+      return;
     }
     el.appendChild((templateEl as HTMLTemplateElement).content.cloneNode(true));
     return;
