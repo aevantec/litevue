@@ -52,10 +52,13 @@ const IGNORED = [
 // every ~Nkb, marked or not
 const ANY_CLAIM = /~\d+kb/g;
 
+// Not only docs/: any file that quotes a bundle size can rot. CONTRIBUTING
+// drifted to ~8kb once already, and the issue template after it.
 const files = [
   'README.md',
   'CONTRIBUTING.md',
   '.github/PULL_REQUEST_TEMPLATE.md',
+  '.github/ISSUE_TEMPLATE/feature_request.yml',
 ];
 (function walk(dir) {
   for (const entry of readdirSync(dir)) {
