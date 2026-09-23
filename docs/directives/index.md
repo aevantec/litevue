@@ -4,38 +4,83 @@ title: Directives
 
 # Directives <Badge type="section" text="Directive" />
 
-Attributes that give elements behavior. Vue users will recognize almost all of them; `v-teleport` and `v-name` are LiteVue additions, and `v-on` / `v-model` carry extra modifiers.
+Attributes that give markup behavior. They follow Vue's syntax; the ones marked
+**LiteVue** are additions.
 
-Two of them have a shorthand, and both spellings are equivalent — the examples
-throughout these pages use the shorthand because it is what most code is
-written in, but the full form is always available and is what a directive is
-actually called:
+```html
+<div v-scope="{ open: false }">
+  <button @click="open = !open" :aria-expanded="open">Menu</button>
+  <ul v-show="open">…</ul>
+</div>
+```
+
+## Shorthands
 
 | Full form | Shorthand |
 | --- | --- |
 | `v-bind:class="…"` | `:class="…"` |
 | `v-on:click="…"` | `@click="…"` |
 
-Modifiers attach to either spelling: `v-on:click.prevent` and `@click.prevent`
-do the same thing.
+Both spellings are identical, and modifiers attach to either:
+`v-on:click.prevent` and `@click.prevent` do the same thing.
 
-| Directive                            | Purpose                                                                |
-| ------------------------------------ | ---------------------------------------------------------------------- |
-| [v-scope](/directives/v-scope)       | declare a region and its state                                         |
-| [v-bind](/directives/v-bind) (`:`)   | bind attributes, class, style                                          |
-| [v-on](/directives/v-on) (`@`)       | events — with `.outside`, `.window`, `.debounce`, animation filters, … |
-| [v-model](/directives/v-model)       | two-way form binding — with `.debounce`, `.fill`, …                    |
-| [v-if](/directives/v-if)             | conditional mount/unmount (+ `v-else-if` / `v-else`)                   |
-| [v-for](/directives/v-for)           | keyed list rendering                                                   |
-| [v-show](/directives/v-show)         | toggle visibility via `display`                                        |
-| [v-text](/directives/v-text)         | set `textContent`                                                      |
-| [v-html](/directives/v-html)         | set `innerHTML`                                                        |
-| [v-effect](/directives/v-effect)     | reactive inline statements                                             |
-| [v-teleport](/directives/v-teleport) | render under a different parent                                        |
-| [v-pre](/directives/v-pre)           | skip compilation                                                       |
-| [v-once](/directives/v-once)         | render once, never update                                              |
-| [v-cloak](/directives/v-cloak)       | hide until mounted                                                     |
-| [ref](/directives/ref)               | register the element on `$refs`                                        |
-| [v-name](/directives/v-name)         | name a scope for devtools                                              |
+## By task
 
-Plugins register additional directives — `v-transition`, `v-intersect`, `v-persist`, `v-focus`, `v-trap`, `v-collapse`, `v-mask` — see [Plugins](/plugins/).
+### State
+
+| Directive | Purpose |
+| --- | --- |
+| [v-scope](/directives/v-scope) | Declare a region and its state |
+| [ref](/directives/ref) | Register an element on `$refs` |
+
+### Rendering
+
+| Directive | Purpose |
+| --- | --- |
+| [v-if](/directives/v-if) · `v-else-if` · `v-else` | Render only while a condition holds |
+| [v-show](/directives/v-show) | Toggle visibility, keeping the element mounted |
+| [v-for](/directives/v-for) | Repeat per item, with keyed reordering |
+| [v-text](/directives/v-text) | Set text content |
+| [v-html](/directives/v-html) | Set inner HTML |
+| [v-teleport](/directives/v-teleport) | Render under a different parent — **LiteVue** |
+
+### Binding and events
+
+| Directive | Purpose |
+| --- | --- |
+| [v-bind](/directives/v-bind) · `:` | Bind attributes, properties, class and style |
+| [v-on](/directives/v-on) · `@` | Listen to events — with `.outside`, `.window`, `.debounce` and more |
+| [v-model](/directives/v-model) | Two-way form binding — with `.debounce` and `.fill` |
+| [v-effect](/directives/v-effect) | Re-run a statement when its state changes |
+
+### Compilation
+
+| Directive | Purpose |
+| --- | --- |
+| [v-cloak](/directives/v-cloak) | Hide markup until mounted |
+| [v-once](/directives/v-once) | Render once, never update |
+| [v-pre](/directives/v-pre) | Skip compilation |
+| [v-name](/directives/v-name) | Name a scope for the devtools — **LiteVue** |
+
+## Processing order
+
+When several directives share an element they run in this order, which matters
+for what each one can see:
+
+1. `v-pre` — nothing else runs
+2. `v-if`
+3. `v-for`
+4. `v-scope`, then `ref`
+5. The element's children
+6. Bindings and other directives, in attribute order
+7. `v-model`, so it sees any `:value` binding
+8. `v-on` listeners
+
+So `v-if` beside `v-for` cannot read the loop variable, while `v-scope` beside
+`v-for` creates state per row.
+
+## From plugins
+
+[Plugins](/plugins/) add `v-transition`, `v-intersect`, `v-persist`, `v-focus`,
+`v-trap`, `v-collapse`, `v-mask` and `v-resize`. Register your own with
+[`app.directive()`](/globals/create-app#custom-directives).

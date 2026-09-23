@@ -4,21 +4,46 @@ title: intersect
 
 # intersect <Badge type="section" text="Plugin" />
 
-`v-intersect="expression"` runs the expression when the element enters the viewport — lazy loading, scroll-triggered reveals, analytics.
+Run an expression when an element enters or leaves the viewport.
 
 ```js
 import { intersect } from '@aevantec/litevue/plugins';
 createApp({ seen: false }).use(intersect).mount();
 ```
 
+## Syntax
+
+| Form | Meaning |
+| --- | --- |
+| `v-intersect="expression"` | Run each time any part of the element enters the viewport |
+
+### Modifiers
+
+| Modifier | Meaning |
+| --- | --- |
+| `.once` | Stop observing after the first run |
+| `.leave` | Run when the element leaves the viewport instead |
+| `.full` | Only when the whole element is visible |
+
+## Examples
+
 <<< ../.vitepress/demos/intersect.html{html}
 
 <LiveDemo src="intersect" plugins="intersect" />
 
-## Modifiers
+### Lazy loading and infinite scroll
 
-- **`.once`** — stop observing after the first trigger.
-- **`.leave`** — trigger when the element _exits_ the viewport instead.
-- **`.full`** — require full visibility (threshold 1).
+```html
+<img v-intersect.once="$el.src = $el.dataset.src" data-src="/photo.jpg" />
+<div v-intersect="loadMore()"></div>
+```
 
-The observer disconnects automatically when the element unmounts.
+## Behavior
+
+- Backed by one `IntersectionObserver` per element, relative to the viewport.
+- The observer disconnects when the element unmounts.
+- Modifiers combine: `.once.full` runs once, the first time the element is fully visible.
+
+## Related
+
+[resize](/plugins/resize) · [v-effect](/directives/v-effect) · [Installation](/plugins/installation)

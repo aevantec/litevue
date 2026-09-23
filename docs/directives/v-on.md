@@ -4,67 +4,95 @@ title: v-on
 
 # v-on <Badge type="section" text="Directive" />
 
-Attaches an event listener.
+Listen to a DOM event and run an expression or method.
+
+```html
+<button @click="count++">Add</button>
+```
 
 ## Syntax
 
-`v-on:` is the full form and `@` is its shorthand. They compile to the same
-thing, and modifiers attach to either:
+| Form | Meaning |
+| --- | --- |
+| `v-on:event="handler"` | Listen for `event` on the element |
+| `@event="handler"` | Shorthand for the above |
+| `@event.modifier="handler"` | Modifiers chain after the event name, in either form |
 
-```html
-<!-- these pairs are identical -->
-<button v-on:click="save()">Save</button>
-<button @click="save()">Save</button>
+The handler can be:
 
-<form v-on:submit.prevent="send()">…</form>
-<form @submit.prevent="send()">…</form>
+| Handler | Example | Receives the event as |
+| --- | --- | --- |
+| Method name | `@click="save"` | The first argument |
+| Expression | `@click="count++"` | `$event` |
+| Call | `@click="select(item, $event)"` | Whatever you pass |
+| Statements | `@click="a++; b++"` | `$event` |
 
-<input v-on:keyup.enter="search()" />
-<input @keyup.enter="search()" />
-```
+### Event modifiers
 
-The examples below use the shorthand, which is the more common spelling.
+| Modifier | Meaning |
+| --- | --- |
+| `.prevent` | Call `event.preventDefault()` |
+| `.stop` | Call `event.stopPropagation()` |
+| `.self` | Only when the event started on this element, not a child |
+| `.once` | Remove the listener after the first call |
+| `.capture` | Listen in the capture phase |
+| `.passive` | Mark the listener passive |
+
+### Key and mouse modifiers
+
+| Modifier | Meaning |
+| --- | --- |
+| `.enter`, `.escape`, `.tab`, `.arrow-down`, … | Only for that key — any `event.key`, in kebab-case |
+| `.ctrl`, `.shift`, `.alt`, `.meta` | Only while that key is held |
+| `.exact` | Only when no other system key is held |
+| `.left`, `.middle`, `.right` | Only for that mouse button; `@click.right` listens for `contextmenu` |
+
+### LiteVue modifiers
+
+| Modifier | Meaning |
+| --- | --- |
+| `.window` / `.document` | Listen on `window` or `document` instead of the element |
+| `.outside` | Only for events that start outside the element |
+| `.debounce` / `.debounce-<ms>` | Run once input pauses; default 250ms |
+| `.throttle` / `.throttle-<ms>` | Run at most once per interval; default 250ms |
+| `.prop-<name>` | On `transitionend` and similar, only for that CSS property |
+| `.name-<name>` | On `animationend` and similar, only for that animation |
+
+## Examples
 
 <<< ../.vitepress/demos/v-on.html{html}
 
 <LiveDemo src="v-on" />
 
-The event object is available as `$event`; method references receive it as their argument.
-
-## Standard modifiers
-
-`.stop`, `.prevent`, `.self`, `.exact`, key filters (`.enter`, `.escape`, …), mouse buttons (`.left`, `.middle`, `.right`), system keys (`.ctrl`, `.shift`, `.alt`, `.meta`), and the listener options `.once`, `.capture`, `.passive`.
-
-## LiteVue extras
-
-### `.window` / `.document`
-
-Attach the listener to `window` or `document` instead of the element — cleaned up automatically when the element unmounts:
+### Forms and keys
 
 ```html
-<div @scroll.window.throttle-100="onScroll"></div>
-<div @keydown.escape.document="close"></div>
+<form @submit.prevent="send()">…</form>
+<input @keyup.enter="search()" @keydown.escape="query = ''" />
+<button @click.ctrl.exact="selectOne(item)">…</button>
 ```
 
-### `.outside`
+### Dropdowns and global shortcuts
 
-Fire only for events originating outside the element — dropdowns and modals in one attribute:
+`.outside` closes a menu on any click elsewhere. `.window` and `.document` are
+removed automatically when the element unmounts.
 
 ```html
 <div v-show="open" @click.outside="open = false">…</div>
+<div @keydown.escape.document="close()"></div>
+<div @scroll.window.throttle-100="onScroll"></div>
 ```
 
-### `.debounce[-ms]` / `.throttle[-ms]`
+### Rate limiting
 
-Rate-limit the handler (default 250ms). Guards like `.prevent` still run synchronously — only your callback is delayed:
+Only the handler is delayed. Guards such as `.prevent` still act on the event
+immediately.
 
 ```html
-<input @input.debounce-300="search" />
+<input @input.debounce-300="search($event.target.value)" />
 ```
 
-### Animation event filters
-
-`.prop-<propertyName>` on transition events and `.name-<animationName>` on animation events, for sequencing multi-step animations without boilerplate:
+### Sequencing animations
 
 ```html
 <div
@@ -73,6 +101,24 @@ Rate-limit the handler (default 250ms). Guards like `.prevent` still run synchro
 ></div>
 ```
 
-## Lifecycle events
+### Async handlers
 
-`@mounted` and `@unmounted` are special — see [Lifecycle](/essentials/lifecycle).
+Return the promise and a rejection is reported to
+[`app.onError()`](/essentials/error-handling#app-onerror):
+
+```html
+<button @click="save()">Save</button>
+```
+
+## Behavior
+
+- Key modifiers have no aliases. Write `.escape`, not `.esc`, and `.arrow-up`, not `.up`. The space bar cannot be written as a modifier; use `@keyup="$event.key === ' ' && toggle()"`.
+- `.left` and `.right` are mouse buttons. On a keyboard event they filter nothing, so `@keydown.left` runs for every key — write `@keydown.arrow-left`.
+- `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
+- Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
+- A handler that throws is reported and does not stop later events.
+- The object form `v-on="{ click: handler }"` is not supported.
+
+## Related
+
+[Lifecycle](/essentials/lifecycle) · [v-model](/directives/v-model) · [$dispatch](/magics/dispatch) · [Error handling](/essentials/error-handling)

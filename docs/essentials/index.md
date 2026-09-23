@@ -14,3 +14,4 @@ The core concepts behind every LiteVue page: where state lives, how templates re
 | [Lifecycle](/essentials/lifecycle)                   | `@mounted` / `@unmounted` element hooks                                          |
 | [Dynamic Content](/essentials/dynamic-content)       | Initializing injected markup with `app.mount(el)` — and why it's opt-in          |
 | [Server-Driven HTML](/essentials/server-driven-html) | The server renders, the client keeps state — with htmx, Turbo and Unpoly recipes |
+| [Error Handling](/essentials/error-handling)         | What LiteVue catches, how it reports it, and `app.onError()` for monitoring      |

@@ -149,7 +149,7 @@ The standalone file defines a `LiteVue`-prefixed global holding that plugin's na
 | [focus](/plugins/focus)           | `…/plugins/focus`                      | `LiteVueFocus`      | `focus`                                                     |
 | [intersect](/plugins/intersect)   | `…/plugins/intersect`                  | `LiteVueIntersect`  | `intersect`                                                 |
 | [mask](/plugins/mask)             | `…/plugins/mask`                       | `LiteVueMask`       | `mask`                                                      |
-| [media](/plugins/media)           | `…/plugins/media`                      | `LiteVueMedia`      | `media`, `mq`                                               |
+| [media](/plugins/media)           | `…/plugins/media`                      | `LiteVueMedia`      | `media`, `mq`, `defaultBreakpoints`, `resetMedia`           |
 | [morph](/plugins/morph)           | `…/plugins/morph`                      | `LiteVueMorph`      | `morph`, `morphPlugin`                                      |
 | [persist](/plugins/persist)       | `…/plugins/persist`                    | `LiteVuePersist`    | `persist`, `persistStore`, `registerStorage`, `setDefaultStorage` |
 | [resize](/plugins/resize)         | `…/plugins/resize`                     | `LiteVueResize`     | `resize`                                                    |
@@ -218,4 +218,4 @@ import { persist, type PersistStorage } from '@aevantec/litevue/plugins/persist'
 
 ## Writing your own
 
-See [Plugins](/plugins/) for the authoring API, and [`app.directive()`](/globals/create-app#custom-directives) for the directive contract — including [when a cleanup is required](/globals/create-app#returning-a-cleanup).
+See [Writing a plugin](/plugins/authoring) for the authoring API, and [`app.directive()`](/globals/create-app#custom-directives) for the directive contract — including [when a cleanup is required](/globals/create-app#returning-a-cleanup).

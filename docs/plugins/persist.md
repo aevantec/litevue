@@ -4,43 +4,77 @@ title: persist
 
 # persist <Badge type="section" text="Plugin" />
 
-`v-persist="storage-key"` syncs the element's scope to storage: saved values restore on mount, and every change — deep ones included — writes back automatically. It writes to `localStorage` unless you [choose another storage](#choosing-a-storage).
+Save a scope or store to storage, and restore it on the next page load.
 
 ```js
 import { persist } from '@aevantec/litevue/plugins';
 createApp().use(persist).mount();
 ```
 
+```html
+<div v-scope="{ theme: 'light' }" v-persist="prefs">…</div>
+```
+
+## Syntax
+
+| Form | Meaning |
+| --- | --- |
+| `v-persist="key"` | Persist the scope's state under `key` |
+| `v-persist:prop="key"` | Persist only `prop` |
+| `v-persist:a,b="key"` | Persist only `a` and `b` |
+
+The value is a literal key, not an expression, stored as `litevue:<key>`. With
+no value, the element's `id` is used.
+
+### Modifiers
+
+| Modifier | Meaning |
+| --- | --- |
+| `.local` | `localStorage` — the default |
+| `.session` | `sessionStorage` |
+| `.<name>` | A storage registered with `registerStorage(name, …)` |
+
+## Signature
+
+For stores and custom storage, from `@aevantec/litevue/plugins`:
+
+```ts
+persistStore(name: string, options?: {
+  key?: string;       // storage key; defaults to the store name
+  keys?: string[];    // only these properties
+  storage?: string | PersistStorage;
+}): () => void        // returns a function that stops persisting
+
+registerStorage(name: string, storage: PersistStorage): void
+setDefaultStorage(storage: string | PersistStorage): void
+
+interface PersistStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+```
+
+## Examples
+
 <<< ../.vitepress/demos/persist.html{html}
 
 <LiveDemo src="persist" plugins="persist" />
 
-- The attribute value is the **literal** storage key (stored as `litevue:<key>`); it falls back to the element's id.
-- By default all non-`$`, non-function own properties of the scope are persisted.
-- Deep mutations re-save automatically (the snapshot is taken inside a reactive effect).
+### Selected properties
 
-## Persisting specific properties
-
-Pass an argument to narrow what gets stored — useful when a scope mixes durable state with scratch state that shouldn't outlive the page:
+Keep durable state and leave scratch state out:
 
 ```html
-<!-- only `draft` is written to storage -->
-<div v-scope="{ draft: '', preview: false }" v-persist:draft="composer">…</div>
-
-<!-- several properties, comma-separated -->
-<div
-  v-scope="{ draft: '', to: '', sending: false }"
-  v-persist:draft,to="composer"
->
+<div v-scope="{ draft: '', to: '', sending: false }" v-persist:draft,to="composer">
   …
 </div>
 ```
 
-Properties left out are neither saved nor restored — they start from whatever the scope declares.
+Properties left out are neither saved nor restored.
 
-## Persisting a store
+### Persisting a store
 
-Global [stores](/globals/store) have no element to hang a directive on, so the plugin also exports `persistStore()` for JS:
+Stores have no element, so use `persistStore()` after registering the store:
 
 ```js
 import { store } from '@aevantec/litevue';
@@ -49,86 +83,56 @@ import { persistStore } from '@aevantec/litevue/plugins';
 store('cart', { items: [], coupon: '' });
 
 persistStore('cart'); // restores now, saves on every change
+persistStore('cart', { keys: ['items'] }); // only some properties
+persistStore('cart', { key: 'v2:cart' }); // a custom storage key
 ```
 
-Options mirror the directive:
+### Choosing a storage
 
-```js
-persistStore('cart', { keys: ['items'] }); // only these properties
-persistStore('cart', { key: 'v2:cart' }); // custom storage key
-persistStore('cart', { storage: 'session' }); // a different storage
-```
-
-- Call it **after** registering the store; values are restored immediately, so an `init()` that seeds defaults runs first and is then overwritten by anything saved.
-- It returns a function that **stops persisting**:
-
-  ```js
-  const stopPersisting = persistStore('cart');
-  stopPersisting();
-  ```
-
-- Writes are batched through the scheduler, so a burst of mutations in one tick produces a single write.
-
-::: tip Derived values and methods are skipped
-Methods aren't state, and derived values — getter-only properties like `get count()`, plus [`computed()`](/globals/computed) refs — can't be assigned back on restore. All are ignored automatically, including when you name them explicitly in `keys`.
-:::
-
-## Choosing a storage
-
-Persistence writes to `localStorage` by default. Pick a different one per usage — a **modifier** on the directive, a **`storage` option** for stores — so different data can live in different places:
-
-```js
-// data A survives browser restarts, data B lasts for the tab only
-persistStore('preferences'); // localStorage
-persistStore('wizard', { storage: 'session' }); // sessionStorage
-```
+Different data can live in different places — a modifier on the directive, a
+`storage` option for a store:
 
 ```html
 <div v-scope="{ theme: 'dark' }" v-persist="prefs">…</div>
 <div v-scope="{ step: 1 }" v-persist.session="wizard">…</div>
-
-<!-- modifiers combine with a property argument -->
-<div v-scope="{ draft: '', sending: false }" v-persist:draft.session="composer">
-  …
-</div>
+<div v-scope="{ draft: '' }" v-persist:draft.session="composer">…</div>
 ```
 
-Built-in names are `local` and `session`.
-
-### Custom storages
-
-Anything with `getItem` and `setItem` qualifies — an in-memory map, an IndexedDB shim, a server-backed store. Pass it directly:
-
 ```js
-persistStore('scratch', { storage: myStorage });
+persistStore('preferences'); // localStorage
+persistStore('wizard', { storage: 'session' }); // sessionStorage
 ```
 
-…or register it under a name, which also makes it available as a directive modifier:
+### Custom storage
+
+Anything with `getItem` and `setItem` works — an in-memory map, an IndexedDB
+shim, a server-backed store. Pass it directly, or register it by name to use it
+as a modifier too:
 
 ```js
-import { registerStorage } from '@aevantec/litevue/plugins';
+import { registerStorage, setDefaultStorage } from '@aevantec/litevue/plugins';
 
 registerStorage('vault', myStorage);
-
 persistStore('secrets', { storage: 'vault' });
+
+// move every persisted value to sessionStorage at once
+setDefaultStorage('session');
 ```
 
 ```html
 <div v-scope="{ token: '' }" v-persist.vault="secrets">…</div>
 ```
 
-### Switching the default
+## Behavior
 
-To move everything at once — say, an app that should never write to disk:
+- By default every own property that is not a function and does not start with `$` is persisted.
+- Nested changes save too. A burst of changes in one tick is written once.
+- Methods, getter-only properties and [`computed()`](/globals/computed) values are skipped, even when listed in `keys` — they cannot be assigned back.
+- `persistStore()` restores immediately, so values an `init()` seeded are replaced by anything already saved.
+- A per-use storage beats the default. Call `setDefaultStorage()` before `persistStore()` and before mounting.
+- If a storage cannot be used — an unknown modifier, or `localStorage` blocked by the browser — the state still works, it is just not saved, and a development error explains why.
+- Stored values are plain JSON in the browser. Do not persist secrets to `localStorage`.
 
-```js
-import { setDefaultStorage } from '@aevantec/litevue/plugins';
+## Related
 
-setDefaultStorage('session'); // or a storage object
-```
-
-Per-usage choices still win over the default. Call it before your `persistStore()` calls and before mounting.
-
-::: warning Unavailable storage
-If a storage can't be resolved — an unknown modifier, or `localStorage` blocked by browser settings — the scope or store still works normally; it is merely not persisted (with a dev-mode error explaining why).
-:::
+[store()](/globals/store) · [watchEffect()](/globals/watch-effect) · [Installation](/plugins/installation)

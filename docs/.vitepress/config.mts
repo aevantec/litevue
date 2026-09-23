@@ -156,8 +156,10 @@ export default defineConfig({
           { text: 'Overview', link: '/globals/' },
           { text: 'createApp()', link: '/globals/create-app' },
           { text: 'store()', link: '/globals/store' },
+          { text: 'reactive()', link: '/globals/reactive' },
           { text: 'computed()', link: '/globals/computed' },
           { text: 'watchEffect()', link: '/globals/watch-effect' },
+          { text: 'nextTick()', link: '/globals/next-tick' },
           { text: 'Devtools API', link: '/globals/devtools' },
         ],
       },
@@ -167,6 +169,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/plugins/' },
           { text: 'Installation', link: '/plugins/installation' },
+          { text: 'Writing a plugin', link: '/plugins/authoring' },
           { text: 'intersect', link: '/plugins/intersect' },
           { text: 'persist', link: '/plugins/persist' },
           { text: 'focus', link: '/plugins/focus' },

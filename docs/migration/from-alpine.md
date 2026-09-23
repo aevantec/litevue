@@ -29,14 +29,22 @@ LiteVue covers Alpine's feature set with Vue's syntax, at about half the size. T
 
 ## Event modifiers
 
-`.outside`, `.window`, `.document`, `.debounce`, `.throttle`, `.once`, `.self`, `.prevent`, `.stop`, `.passive`, `.capture` and key filters all exist with the same names:
+`.outside`, `.window`, `.document`, `.debounce`, `.throttle`, `.once`, `.self`, `.prevent`, `.stop`, `.passive` and `.capture` exist with the same names:
 
 ```html
 <div v-show="open" @click.outside="open = false">…</div>
 <div @scroll.window.throttle-100="onScroll"></div>
 ```
 
-LiteVue adds [animation-event filters](/directives/v-on#animation-event-filters) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
+Three differences to change as you migrate:
+
+| Alpine | LiteVue | Why |
+| --- | --- | --- |
+| `.debounce.500ms`, `.throttle.750ms` | `.debounce-500`, `.throttle-750` | The Alpine form is silently ignored and the 250ms default applies |
+| `.esc`, `.space`, `.up`, `.down` | `.escape`, `.arrow-up`, `.arrow-down` | Key modifiers match `event.key` with no aliases; for the space bar use `$event.key === ' '` |
+| `@keydown.left`, `@keydown.right` | `@keydown.arrow-left`, `@keydown.arrow-right` | `.left` and `.right` are mouse buttons here — on a key event they filter nothing, so the handler runs for every key |
+
+LiteVue adds [animation-event filters](/directives/v-on#sequencing-animations) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
 
 ## Globals and magics
 
@@ -45,7 +53,8 @@ LiteVue adds [animation-event filters](/directives/v-on#animation-event-filters)
 | `Alpine.store('cart', {...})` / `$store.cart`                        | [`store('cart', {...})`](/globals/store) / [`$store.cart`](/magics/store) |
 | `Alpine.data('dropdown', ...)`                                       | plain functions as [components](/essentials/components)                   |
 | `Alpine.initTree(el)`                                                | [`app.mount(el)`](/essentials/dynamic-content)                            |
-| `$el` `$refs` `$watch` `$dispatch` `$nextTick` `$data` `$root` `$id` | same names — see [Magics](/magics/el)                                     |
+| `$el` `$refs` `$dispatch` `$nextTick` `$data` `$root` `$id`         | same names — see [Magics](/magics/)                                       |
+| `$watch`                                                             | [`$watch`](/magics/watch) — shallow: watch `() => items.length`, not `'items'`, to see a push |
 
 ## Plugins
 
