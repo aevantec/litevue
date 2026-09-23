@@ -88,7 +88,7 @@ Dropped because their utility-to-size ratio doesn't justify inclusion for progre
 
 - `ref()` and `watch()` as standalone APIs (use scope state and [`$watch`](/magics/watch)) — `reactive()`, [`computed()`](/globals/computed) and [`watchEffect()`](/globals/watch-effect) _are_ exported
 - Render functions and JSX — there is no virtual DOM
-- `Map`, `Set`, `WeakMap` and `WeakSet` in reactive state — their support is stripped from the build for size, and one reachable from a scope throws when read. Use plain objects and arrays
+- Reactivity for `Map`, `Set`, `WeakMap` and `WeakSet` — left out of the build for size. They work in state but are not tracked; [assign a new one](/globals/reactive#behavior) to update the page
 - `KeepAlive`, `Suspense`, async components
 - Single-file components, scoped styles, and everything else requiring a build step
 - `v-for` deep destructuring, `v-on="object"`, dynamic arguments (`:[name]`), `v-is` / `<component :is>`

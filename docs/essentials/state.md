@@ -91,9 +91,9 @@ JavaScript.
 
 ## What state can hold
 
-Plain objects, arrays, strings, numbers, booleans, `null` and dates. `Map`,
-`Set`, `WeakMap` and `WeakSet` are not supported and throw in the production
-build — see [reactive()](/globals/reactive#behavior).
+Plain objects, arrays, strings, numbers, booleans, `null` and dates. A `Map` or
+`Set` works but is not tracked: changing its contents does not update the page,
+while assigning a new one does — see [reactive()](/globals/reactive#behavior).
 
 ## Next
 
