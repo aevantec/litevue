@@ -58,14 +58,14 @@ These work the way you'd expect coming from Vue, including modifiers and shortha
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Mustache text bindings                                                                         | configurable via [custom delimiters](/essentials/templating#custom-delimiters) |
 | [`v-bind`](/directives/v-bind)                                                                 | `:` shorthand, `class` / `style` special handling                              |
-| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and all standard modifiers                                       |
+| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and standard modifiers — key aliases differ, see below          |
 | [`v-model`](/directives/v-model)                                                               | all input types, non-string `:value` bindings                                  |
 | [`v-if`](/directives/v-if) / `v-else` / `v-else-if`                                            |                                                                                |
 | [`v-for`](/directives/v-for)                                                                   | with keyed reconciliation                                                      |
 | [`v-show`](/directives/v-show), [`v-text`](/directives/v-text), [`v-html`](/directives/v-html) |                                                                                |
 | [`v-pre`](/directives/v-pre), [`v-once`](/directives/v-once), [`v-cloak`](/directives/v-cloak) |                                                                                |
 | [`ref`](/directives/ref) template refs                                                         | exposed as [`$refs`](/magics/refs)                                             |
-| `reactive()`, `nextTick()`                                                                     | re-exported from `@vue/reactivity`                                             |
+| [`reactive()`](/globals/reactive), [`nextTick()`](/globals/next-tick)                          | re-exported from `@vue/reactivity`                                             |
 
 ## What behaves differently
 
@@ -78,6 +78,9 @@ Deliberate divergences, all stemming from the absence of a component system:
 | [Components](/essentials/components) | plain functions returning scope objects                                                         |
 | Custom directives                    | a different, simpler interface — see [`app.directive()`](/globals/create-app#custom-directives) |
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
+| [Key modifiers](/directives/v-on#key-and-mouse-modifiers) | match `event.key` in kebab-case, with no aliases: `.escape` not `.esc`, `.arrow-up` not `.up`; no `.space` |
+| [`ref`](/directives/ref) in `v-for` | one element — the last row — rather than an array                                              |
+| [`$watch`](/magics/watch)            | no `immediate` or `deep` options, no stop handle, and a path compares by identity               |
 
 ## What's not supported
 
@@ -88,7 +91,7 @@ Dropped because their utility-to-size ratio doesn't justify inclusion for progre
 - `Map`, `Set`, `WeakMap` and `WeakSet` in reactive state — their support is stripped from the build for size, and one reachable from a scope throws when read. Use plain objects and arrays
 - `KeepAlive`, `Suspense`, async components
 - Single-file components, scoped styles, and everything else requiring a build step
-- `v-for` deep destructuring, `v-on="object"`, `v-is` / `<component :is>`
+- `v-for` deep destructuring, `v-on="object"`, dynamic arguments (`:[name]`), `v-is` / `<component :is>`
 - Server-side rendering and platform-agnostic rendering — LiteVue is coupled to the DOM by design
 
 ::: tip Partially covered

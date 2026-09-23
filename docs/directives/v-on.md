@@ -113,6 +113,7 @@ Return the promise and a rejection is reported to
 ## Behavior
 
 - Key modifiers have no aliases. Write `.escape`, not `.esc`, and `.arrow-up`, not `.up`. The space bar cannot be written as a modifier; use `@keyup="$event.key === ' ' && toggle()"`.
+- `.left` and `.right` are mouse buttons. On a keyboard event they filter nothing, so `@keydown.left` runs for every key — write `@keydown.arrow-left`.
 - `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
 - Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
 - A handler that throws is reported and does not stop later events.
