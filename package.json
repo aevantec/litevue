@@ -22,6 +22,7 @@
     ".": {
       "import": {
         "types": "./dist/types/index.d.mts",
+        "development": "./dist/litevue.dev.mjs",
         "default": "./dist/litevue.mjs"
       },
       "require": {
@@ -32,6 +33,7 @@
     "./plugins": {
       "import": {
         "types": "./dist/types/plugins/index.d.mts",
+        "development": "./dist/litevue-plugins.dev.mjs",
         "default": "./dist/litevue-plugins.mjs"
       },
       "require": {
@@ -92,6 +94,7 @@
     "./plugins/media": {
       "import": {
         "types": "./dist/types/plugins/media/index.d.mts",
+        "development": "./dist/plugins/media.dev.mjs",
         "default": "./dist/plugins/media.mjs"
       },
       "require": {
@@ -102,6 +105,7 @@
     "./plugins/morph": {
       "import": {
         "types": "./dist/types/plugins/morph/index.d.mts",
+        "development": "./dist/plugins/morph.dev.mjs",
         "default": "./dist/plugins/morph.mjs"
       },
       "require": {
@@ -112,6 +116,7 @@
     "./plugins/persist": {
       "import": {
         "types": "./dist/types/plugins/persist/index.d.mts",
+        "development": "./dist/plugins/persist.dev.mjs",
         "default": "./dist/plugins/persist.mjs"
       },
       "require": {
@@ -181,7 +186,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && node scripts/build-plugins.mjs && pnpm build:types",
+    "build": "vite build && vite build --mode dev-bundle && vite build --config vite.devtools.config.mts && vite build --config vite.plugins.config.mts && vite build --config vite.plugins.config.mts --mode dev-bundle && node scripts/build-plugins.mjs && pnpm build:types",
     "build:types": "tsc --emitDeclarationOnly && mv dist/src dist/types && node scripts/build-types.mjs",
     "lint": "oxlint --deny-warnings src test scripts",
     "lint:package": "publint --strict && attw --pack .",

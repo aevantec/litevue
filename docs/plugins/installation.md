@@ -167,6 +167,20 @@ Unpinned URLs resolve to the latest release, which is convenient in development 
 
 jsDelivr serves the same files — swap the host for `https://cdn.jsdelivr.net/npm/`.
 
+## Development builds
+
+The plugins with development checks — media, morph and persist — ship `.dev`
+files beside their production ones, as does the combined bundle. From npm the
+`development` export condition picks them automatically, exactly as for the
+core. From a CDN, swap the file name while you develop:
+
+- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/plugins/media.dev.iife.js` <!-- x-release-please-version -->
+- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue-plugins.dev.iife.js` <!-- x-release-please-version -->
+
+Pair a `.dev` plugin with the core's `.dev` file, and switch both back before
+you deploy — see [Development builds](/start-here/installation#development-builds).
+The other plugins have no development checks, so they have no `.dev` file.
+
 ## Load order and initialization
 
 Two constraints apply when loading plugins via `<script>` tags. Neither produces a clear error when violated, so they are worth knowing in advance.

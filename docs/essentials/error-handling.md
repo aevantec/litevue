@@ -33,8 +33,8 @@ An unknown directive reports the ones that exist, which usually means a plugin w
   A directive from a plugin needs app.use(...) before mount().
 ```
 
-::: tip These messages are development-only
-The prose above is compiled out of the production build, so it costs your users nothing. `onError` below still runs in production — that part is deliberate.
+::: tip These messages come from the development build
+They appear while you develop — automatically from npm with Vite or webpack 5, or from the `.dev` file on a CDN; see [Development builds](/start-here/installation#development-builds). The production files leave the prose out, so it costs your users nothing. `onError` below runs in both — that part is deliberate.
 :::
 
 ## What gets caught

@@ -5,7 +5,7 @@
 // One vite invocation per plugin, because rollup refuses multiple entry points
 // for iife and umd — the formats a <script src> user needs.
 import { build } from 'vite';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, readFileSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -23,14 +23,22 @@ const globalName = (name) =>
 
 const PKG = '@aevantec/litevue';
 
-for (const name of plugins) {
-  await build({
+// A plugin with development checks also gets .dev files, found from the
+// source so a new warning cannot ship without one.
+const hasDevChecks = (name) =>
+  readFileSync(resolve(pluginsDir, name, 'index.ts'), 'utf8').includes(
+    'import.meta.env.DEV'
+  );
+
+const buildPlugin = (name, dev) =>
+  build({
     configFile: false,
     root,
     logLevel: 'warn',
+    ...(dev && { define: { 'import.meta.env.DEV': 'true' } }),
     build: {
       target: 'esnext',
-      minify: 'terser',
+      minify: dev ? false : 'terser',
       terserOptions: { format: { ascii_only: true } },
       outDir: 'dist/plugins',
       emptyOutDir: false,
@@ -44,12 +52,19 @@ for (const name of plugins) {
       lib: {
         entry: resolve(pluginsDir, name, 'index.ts'),
         name: globalName(name),
-        formats: ['es', 'umd', 'iife'],
+        formats: dev ? ['es', 'iife'] : ['es', 'umd', 'iife'],
         fileName: (format) =>
-          format === 'es' ? `${name}.mjs` : `${name}.${format}.js`,
+          `${name}${dev ? '.dev' : ''}` +
+          (format === 'es' ? '.mjs' : `.${format}.js`),
       },
     },
   });
-}
 
-console.log(`Built ${plugins.length} standalone plugin bundles.`);
+const withDev = plugins.filter(hasDevChecks);
+for (const name of plugins) await buildPlugin(name, false);
+for (const name of withDev) await buildPlugin(name, true);
+
+console.log(
+  `Built ${plugins.length} standalone plugin bundles, and development ` +
+    `files for ${withDev.join(', ')}.`
+);

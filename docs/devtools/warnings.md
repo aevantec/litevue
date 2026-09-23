@@ -8,11 +8,11 @@ LiteVue reports a small set of mistakes that would otherwise fail silently — t
 page still renders, nothing throws, and the symptom appears later as lost input
 or a blank value.
 
-Every warning is guarded by `import.meta.env.DEV`. The production build replaces
-that constant and the minifier removes the branch, so neither the checks nor
-their messages reach a shipped bundle: **the core bundle is byte-for-byte
-identical with and without them.** Nothing here needs to be turned off for
-production.
+The warnings live only in the [development builds](/start-here/installation#development-builds).
+From npm you get them automatically while developing with Vite or webpack 5;
+from a CDN, load the `.dev` file. The production files contain neither the
+checks nor their messages, so nothing here needs to be turned off before you
+deploy.
 
 Each warning prints once per distinct cause, because most are raised from
 effects that re-run on every relevant state change.
