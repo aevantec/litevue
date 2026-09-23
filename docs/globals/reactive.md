@@ -58,7 +58,7 @@ createApp({ state, total }).mount();
 - Deep: nested objects and arrays become reactive when read.
 - Always read and write through the returned proxy. Changes made to the original object are not seen.
 - Destructuring copies the values out and loses reactivity: `const { theme } = session` is a plain string.
-- Takes objects and arrays only. `Map`, `Set`, `WeakMap` and `WeakSet` are not supported — their support is removed from the build for size, and one reachable from reactive state throws when read. Use plain objects and arrays.
+- `Map`, `Set`, `WeakMap` and `WeakSet` are returned as they are: usable, but not tracked, because their reactivity support is left out of the build for size. `map.set()` does not update the page; assigning a new collection does — `this.tags = new Set([...this.tags, tag])`. For state the page renders, prefer plain objects and arrays.
 - `createApp()` and `v-scope` already make their state reactive; you need `reactive()` only for state created in JavaScript.
 
 ## Related

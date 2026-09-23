@@ -6,7 +6,7 @@
   },
   "description": "Lightweight subset of Vue optimized for progressive enhancement. A fork of petite-vue with devtools.",
   "type": "commonjs",
-  "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import \u2014 both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",
+  "//sideEffects": "The core auto-mounts when its script tag has `init`, and the devtools panel self-initializes on import — both are real import side effects and must not be tree-shaken. The plugins bundle is pure, so bundlers may drop unused plugins.",
   "sideEffects": [
     "./dist/litevue.*",
     "./dist/litevue-devtools.*"
@@ -186,6 +186,7 @@
     "lint": "oxlint --deny-warnings src test scripts",
     "lint:package": "publint --strict && attw --pack .",
     "check:bundles": "node scripts/check-bundles.mjs",
+    "check:dist-runtime": "node scripts/check-dist-runtime.mjs",
     "check:docs-versions": "node scripts/check-docs-versions.mjs",
     "check:docs-sizes": "node scripts/check-docs-sizes.mjs",
     "prepublishOnly": "pnpm build && publint --strict",

@@ -56,6 +56,11 @@ jobs:
       - name: Check bundle boundaries
         run: pnpm check:bundles
 
+      # Tests import src/; this runs the built core. A Map in scope state
+      # crashed the shipped bundle while every test passed against source.
+      - name: Check the built bundle at runtime
+        run: pnpm check:dist-runtime
+
       - name: Check bundle sizes
         # Size is part of what this library promises. Without a gate it is
         # measured by hand, and a few hundred bytes of drift goes unnoticed

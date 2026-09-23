@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { trimReactivity } from './trim-reactivity.mts';
 
 export default defineConfig(({ command }) => ({
+  plugins: [trimReactivity()],
+  // pre-bundling runs esbuild, which skips plugin transforms
+  optimizeDeps: { exclude: ['@vue/reactivity'] },
   // vite 3+ preserves process.env.NODE_ENV in lib builds, but the
   // esm-bundler build of @vue/reactivity guards its dev-only code with it —
   // left unreplaced it would crash iife/umd usage in plain browsers and
@@ -42,20 +46,6 @@ export default defineConfig(({ command }) => ({
       // module" in Node. umd/iife keep their historical .js names.
       fileName: (format) =>
         format === 'es' ? `litevue.mjs` : `litevue.${format}.js`,
-    },
-    rollupOptions: {
-      plugins: [
-        {
-          name: 'remove-collection-handlers',
-          transform(code, id) {
-            if (id.endsWith('reactivity.esm-bundler.js')) {
-              return code
-                .replace(`mutableCollectionHandlers,`, `null,`)
-                .replace(`readonlyCollectionHandlers,`, `null,`);
-            }
-          },
-        },
-      ],
     },
   },
 }));
