@@ -66,14 +66,14 @@ export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
       : get(`($event => { ${exp} })`);
 
   // The event fires long after get() returned, so the evaluator's try/catch
-  // no longer applies; without this, throws went unattributed and rejections
-  // were silent.
+  // no longer applies; without this, throws go unattributed and rejections
+  // are silent.
   let handler = (...args: any[]) => {
     try {
       const result = raw(...args);
-      if (result && typeof result.then === 'function') {
-        result.catch((err: unknown) => fail(err));
-      }
+      // only a real Promise: a query builder is a thenable with no .catch,
+      // and would run its query if its then were called on its behalf
+      if (result instanceof Promise) result.catch(fail);
       return result;
     } catch (e) {
       fail(e);

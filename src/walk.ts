@@ -99,9 +99,8 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
 
     // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
-      // `|| {}` because a throwing v-scope expression returns undefined, and
-      // reading $template off it crashed the whole mount — the one failure
-      // that was not contained to the element that caused it
+      // `|| {}`: a throwing expression evaluates to undefined, and reading
+      // $template off that would take down the whole mount, not one region
       const scope =
         (exp ? evaluate(ctx.scope, exp, el, { source: 'v-scope', el }) : {}) ||
         {};
@@ -285,8 +284,8 @@ const applyDirective = (
       modifiers,
     });
   } catch (e) {
-    // a throwing setup used to abort the walk, leaving the rest of the page
-    // unbound with no sign of which directive failed
+    // contained, so one throwing setup cannot abort the walk and leave the
+    // rest of the page unbound
     handleError(e, { phase: 'directive', source, el, expression: exp });
     return;
   }

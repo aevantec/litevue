@@ -39,8 +39,8 @@ const flushJobs = () => {
     // clears tracking, so a queued runner would still fire one last write
     // into markup that is meant to be inert.
     if (stopped.has(job)) continue;
-    // A throw here used to end the loop with `queued` still set, so no flush
-    // was ever scheduled again and one bad watcher froze the whole page.
+    // Contained: a throw escaping the loop leaves `queued` set, so no flush
+    // is ever scheduled again and the whole page stops updating.
     try {
       job();
     } catch (e) {

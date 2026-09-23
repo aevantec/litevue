@@ -86,3 +86,45 @@ describe('handler expression forms', () => {
     expect([d.a, d.b]).toEqual([1, 1]);
   });
 });
+
+// A query builder (Supabase, Knex, Drizzle) is a thenable with no .catch, and
+// runs its query when .then is called — neither may be touched on its behalf.
+describe('a handler returning a thenable that is not a Promise', () => {
+  test('is not reported, and its then is never called', async () => {
+    const seen: unknown[] = [];
+    let thenCalls = 0;
+    const builder = {
+      // oxlint-disable-next-line unicorn/no-thenable -- a thenable is the fixture
+      then(resolve: (v: number) => void) {
+        thenCalls++;
+        resolve(1);
+      },
+    };
+    document.body.innerHTML = `<div v-scope="{}"><button @click="query()"></button></div>`;
+    const app = createApp({ query: () => builder });
+    app.onError((err) => seen.push(err));
+    app.mount();
+    await tick();
+
+    document.querySelector('button')!.click();
+    await tick();
+
+    expect(seen).toEqual([]);
+    expect(thenCalls).toBe(0);
+  });
+
+  test('a real rejected Promise is still reported', async () => {
+    const seen: unknown[] = [];
+    document.body.innerHTML = `<div v-scope="{}"><button @click="fail()"></button></div>`;
+    const app = createApp({ fail: () => Promise.reject(new Error('down')) });
+    app.onError((err) => seen.push(err));
+    app.mount();
+    await tick();
+
+    document.querySelector('button')!.click();
+    await tick();
+    await tick();
+
+    expect((seen[0] as Error)?.message).toBe('down');
+  });
+});
