@@ -47,6 +47,8 @@ Re-runs are batched through the framework scheduler:
 
 This is the difference from `@vue/reactivity`'s low-level `effect`, which fires synchronously on every single mutation and would see the DOM mid-update.
 
+A re-run that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not stop other updates on the page. The first run is an ordinary synchronous call, so a throw there reaches your code instead.
+
 ## Lifecycle
 
 Nothing stops a `watchEffect` automatically — it is not bound to a scope or an app, so `unmount()` does not clear it. Hold onto the returned function for anything shorter-lived than the page:

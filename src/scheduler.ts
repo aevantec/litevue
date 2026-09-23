@@ -1,5 +1,6 @@
 import { stop, type ReactiveEffectRunner } from '@vue/reactivity';
 import { emitFlush } from './devtools';
+import { handleError } from './errors';
 
 /**
  * Effects this library has stopped.
@@ -38,7 +39,13 @@ const flushJobs = () => {
     // clears tracking, so a queued runner would still fire one last write
     // into markup that is meant to be inert.
     if (stopped.has(job)) continue;
-    job();
+    // Contained: a throw escaping the loop leaves `queued` set, so no flush
+    // is ever scheduled again and the whole page stops updating.
+    try {
+      job();
+    } catch (e) {
+      handleError(e, { phase: 'effect' });
+    }
   }
   queue.length = 0;
   queued = false;

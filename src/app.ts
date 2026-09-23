@@ -8,6 +8,7 @@ import { walk } from './walk';
 import { devtools, registerComponent, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
+import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
 
 // DEV: elements this app has already walked, so a second mount of the same
@@ -37,6 +38,12 @@ export interface App {
    * plugin twice is a no-op.
    */
   use<Options>(plugin: Plugin<Options>, options?: Options): App;
+  /**
+   * Register a handler for every runtime error LiteVue catches. Runs in
+   * production too — this is where an app forwards errors to monitoring.
+   * Returns an unregister function; a full `unmount()` also releases it.
+   */
+  onError(handler: ErrorHandler): () => void;
   mount(el?: string | Element | null): App | void;
   /**
    * Tear down every mounted root, or — given an element or selector — only the
@@ -108,6 +115,9 @@ export const createApp = (initialData?: any) => {
   let rootBlocks: Block[] = [];
   const installedPlugins = new Set<Plugin>();
   const pluginTeardowns: PluginTeardown[] = [];
+  // The error registry is page-global: without these, a torn-down app keeps
+  // receiving other apps' errors and each remount stacks another handler.
+  const ownErrorHandlers: (() => void)[] = [];
 
   const app: App = {
     get scope() {
@@ -152,6 +162,16 @@ export const createApp = (initialData?: any) => {
       // against; a nested v-scope shadows it through the prototype chain
       ctx.scope[name] = factory;
       return this;
+    },
+
+    onError(handler: ErrorHandler) {
+      const off = addErrorHandler(handler);
+      ownErrorHandlers.push(off);
+      return () => {
+        const i = ownErrorHandlers.indexOf(off);
+        if (i > -1) ownErrorHandlers.splice(i, 1);
+        off();
+      };
     },
 
     use(plugin, options) {
@@ -259,11 +279,13 @@ export const createApp = (initialData?: any) => {
           try {
             fn();
           } catch (e) {
-            import.meta.env.DEV &&
-              console.error('[litevue] a plugin teardown threw:', e);
+            handleError(e, { phase: 'teardown', source: 'plugin' });
           }
         });
         installedPlugins.clear();
+        // after plugin teardowns, so a teardown that throws is still reported
+        // to this app's handlers; unmount(el) keeps them, like plugins
+        ownErrorHandlers.splice(0).forEach((off) => off());
         return;
       }
 

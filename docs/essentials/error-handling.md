@@ -1,0 +1,135 @@
+---
+title: Error Handling
+---
+
+# Error Handling <Badge type="section" text="Essentials" />
+
+Expressions in attributes are evaluated at runtime, so a typo is not caught until the page runs. LiteVue catches those failures, reports them with enough context to find the cause, and lets you route them somewhere in production.
+
+## In development
+
+A failing expression names the directive, the element and the expression, and checks a missing identifier against the names actually in scope:
+
+```
+[litevue] error evaluating v-text
+  expression: conter
+  element:    <span#total>
+  "conter" is not in scope — did you mean "counter"?
+```
+
+When nothing is close enough to suggest, it lists what the scope does offer instead:
+
+```
+  "zzzzzz" is not in scope. Available: counter, userName, items
+```
+
+The element is also logged as an object, so it is clickable in the browser's console and highlights in the DOM inspector.
+
+An unknown directive reports the ones that exist, which usually means a plugin was not installed:
+
+```
+[litevue] unknown directive v-collapse on <div.panel>.
+  Known directives: ref, v-bind, v-cloak, v-effect, v-for, v-html, …
+  A directive from a plugin needs app.use(...) before mount().
+```
+
+::: tip These messages are development-only
+The prose above is compiled out of the production build, so it costs your users nothing. `onError` below still runs in production — that part is deliberate.
+:::
+
+## What gets caught
+
+| Phase | When |
+|---|---|
+| `expression` | a directive's expression or a `{{ }}` interpolation threw |
+| `handler` | a [`v-on`](/directives/v-on) handler threw, or its promise rejected |
+| `directive` | a directive's own setup threw |
+| `compile` | the expression could not be parsed into a function at all |
+| `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect |
+| `teardown` | a [plugin's teardown](/plugins/#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
+
+`source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
+
+**Event handlers.** An error thrown when the event fires is attributed to its `@click` like any other failure, even though the expression was bound long before.
+
+**Async handlers.** A handler whose promise rejects is reported too:
+
+```html
+<button @click="save()">Save</button>
+```
+
+```js
+save() {
+  return fetch('/api/save', { method: 'POST' }); // rejects if the network is down
+}
+```
+
+The rejection carries the same context as a synchronous throw. Return the promise from your method for this to work — a method that fires a request and returns nothing has nothing to observe.
+
+## Recovering, not crashing
+
+A failure is contained to the thing that failed:
+
+- A broken expression yields `undefined`, and the rest of the page still binds.
+- A directive that throws during setup is skipped; the remaining elements are still processed.
+- A failing `v-scope` falls back to an empty scope rather than taking the mount down with it.
+- A handler that throws does not stop later events from firing.
+- A `$watch` callback or `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page.
+
+That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.
+
+## app.onError()
+
+Register a handler to receive everything LiteVue catches. It runs in **both** development and production, which is what makes it the hook for monitoring:
+
+```js
+import { createApp } from '@aevantec/litevue';
+
+const app = createApp({ count: 0 });
+
+app.onError((err, info) => {
+  Sentry.captureException(err, {
+    tags: { phase: info.phase, directive: info.source },
+    extra: { expression: info.expression },
+  });
+});
+
+app.mount();
+```
+
+The second argument describes where the failure came from:
+
+```ts
+interface ErrorInfo {
+  phase:
+    | 'expression'
+    | 'handler'
+    | 'directive'
+    | 'compile'
+    | 'effect'
+    | 'teardown';
+  expression?: string; // as written in the attribute
+  source?: string; // the attribute, e.g. 'v-text' or '@click'
+  el?: Node; // the element it sits on
+  scope?: Record<string, any>; // the scope it was evaluated against
+}
+```
+
+It returns a function that unregisters:
+
+```js
+const stop = app.onError(report);
+stop();
+```
+
+Several handlers may be registered and all of them run. One throwing does not prevent the others, nor hide the original error.
+
+The registry is page-wide rather than per-app, so a handler sees errors from any app on the page. A full `app.unmount()` releases the handlers that app registered — a per-region [`app.unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) leaves them in place, since the app is still running.
+
+::: warning Without a handler, production still logs
+If nothing is registered, a caught error is written to `console.error` so it is never swallowed entirely. Registering a handler takes over that responsibility — if yours discards the error, nothing else will report it.
+:::
+
+## What this does not cover
+
+These are errors LiteVue catches while running your expressions. An error thrown in code it never sees — a `setTimeout` callback, a module's top level, a promise you created outside a handler — belongs to the page, not the framework, and needs `window.onerror` or `unhandledrejection` as usual.

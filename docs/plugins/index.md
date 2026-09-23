@@ -51,7 +51,7 @@ Two details govern when it runs:
 - **`app.unmount()` releases plugins; `app.unmount(el)` does not.** The second form tears down one region while the app keeps running, and the remaining regions still need their directives registered.
 - **After a full unmount, `use()` installs again.** The record of what was installed is cleared alongside the teardowns, so re-using a plugin on a torn-down app reinstalls it rather than silently doing nothing.
 
-A teardown that throws is reported and does not prevent the others from running.
+A teardown that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not prevent the others from running.
 
 A directive that registers anything outside `effect()` — a listener, an observer, a timer — must [return a cleanup](/globals/create-app#returning-a-cleanup). `unmount(el)` tears down a region whose elements stay in the document, so whatever you left attached keeps running.
 

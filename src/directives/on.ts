@@ -1,6 +1,23 @@
 import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
+import { handleError } from '../errors';
+
+/**
+ * Can `exp` stand as a single expression, or is it a statement list?
+ * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
+ */
+const expressionCache: Record<string, boolean> = Object.create(null);
+const isExpression = (exp: string) => {
+  const hit = expressionCache[exp];
+  if (hit !== undefined) return hit;
+  try {
+    new Function(`return (${exp})`);
+    return (expressionCache[exp] = true);
+  } catch {
+    return (expressionCache[exp] = false);
+  }
+};
 
 // same as vue 2
 const simplePathRE =
@@ -32,7 +49,7 @@ const modifierGuards: Record<
 const nonKeyModifierRE =
   /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
-export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
+export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
   if (!arg) {
     if (import.meta.env.DEV) {
       console.error(`v-on="obj" syntax is not supported in LiteVue.`);
@@ -40,9 +57,38 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return;
   }
 
-  let handler = simplePathRE.test(exp)
+  // The expression form returns the value, so an async handler's rejection
+  // can be reported. Statement lists like `a++; b++` keep the block form.
+  const raw = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
-    : get(`($event => { ${exp} })`);
+    : isExpression(exp)
+      ? get(`($event => (${exp}))`)
+      : get(`($event => { ${exp} })`);
+
+  // The event fires long after get() returned, so the evaluator's try/catch
+  // no longer applies; without this, throws go unattributed and rejections
+  // are silent.
+  let handler = (...args: any[]) => {
+    try {
+      const result = raw(...args);
+      // only a real Promise: a query builder is a thenable with no .catch,
+      // and would run its query if its then were called on its behalf
+      if (result instanceof Promise) result.catch(fail);
+      return result;
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  function fail(e: unknown) {
+    handleError(e, {
+      phase: 'handler',
+      source: `@${arg}`,
+      expression: exp,
+      el,
+      scope: ctx.scope,
+    });
+  }
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
