@@ -4,7 +4,7 @@ title: watchEffect()
 
 # watchEffect() <Badge type="section" text="Global" />
 
-Runs a function now, then again whenever any reactive state it read changes — the JS-side counterpart to [`v-effect`](/directives/v-effect), for work that isn't tied to an element.
+Run a function now, and again whenever the reactive state it read changes.
 
 ```js
 import { store, watchEffect } from '@aevantec/litevue';
@@ -16,42 +16,40 @@ const stop = watchEffect(() => {
 });
 ```
 
-It returns a function that **stops watching**:
+## Signature
 
-```js
-stop();
+```ts
+watchEffect(fn: () => void): () => void
 ```
 
-## What it tracks
+Returns a function that stops the effect. The JavaScript counterpart to
+[`v-effect`](/directives/v-effect), for work not tied to an element.
 
-Any read of reactive state during the run: [stores](/globals/store), objects from [`reactive()`](/globals/create-app#other-exports), and element scopes (reachable through the [devtools registry](/globals/devtools)). Plain objects and local variables are not reactive and are never tracked.
+## Examples
+
+### What it tracks
+
+Any read of reactive state during a run: [stores](/globals/store), objects from
+[`reactive()`](/globals/reactive), and scopes. Plain objects and local variables
+are never tracked.
 
 ```js
 const state = reactive({ n: 0 });
 watchEffect(() => console.log(state.n)); // logs 0, then on every change
 ```
 
-Dependencies are collected **per run**, so a branch that isn't taken isn't tracked — the effect starts tracking `b` only once it actually reads it:
+Dependencies are collected on each run, so a branch that is not taken is not
+tracked until it is:
 
 ```js
 watchEffect(() => (state.useA ? state.a : state.b));
 ```
 
-## Timing
+### Stopping it
 
-Re-runs are batched through the framework scheduler:
-
-- the **first run is synchronous**, when you call `watchEffect`;
-- afterwards, a burst of mutations in one tick produces **one** re-run;
-- by the time it re-runs, the DOM already reflects the new state — so reading elements inside is safe.
-
-This is the difference from `@vue/reactivity`'s low-level `effect`, which fires synchronously on every single mutation and would see the DOM mid-update.
-
-A re-run that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not stop other updates on the page. The first run is an ordinary synchronous call, so a throw there reaches your code instead.
-
-## Lifecycle
-
-Nothing stops a `watchEffect` automatically — it is not bound to a scope or an app, so `unmount()` does not clear it. Hold onto the returned function for anything shorter-lived than the page:
+Nothing stops a `watchEffect` for you — it is not tied to a scope or an app, so
+`unmount()` leaves it running. Keep the returned function for anything that
+lives shorter than the page:
 
 ```js
 const stop = watchEffect(() => syncChart(store('metrics')));
@@ -59,15 +57,23 @@ const stop = watchEffect(() => syncChart(store('metrics')));
 stop();
 ```
 
-For per-element reactions that clean themselves up on unmount, use [`v-effect`](/directives/v-effect) or the [`$watch`](/magics/watch) magic instead.
+### Common uses
 
-## Use cases
+| Use | Example |
+| --- | --- |
+| Sync state outside templates | Storage, URL query parameters, cookies |
+| Reflect state onto the document | `document.title`, a theme class on `<html>` |
+| Drive other widgets | `chart.update(…)`, `map.setView(…)`, a web component |
+| Cross-cutting reactions | Autosave, analytics, unsaved-changes warnings |
 
-| Use case                        | Example                                              |
-| ------------------------------- | ---------------------------------------------------- |
-| Sync state outside templates    | write to storage, URL query params, cookies          |
-| Reflect state onto the document | `document.title`, a theme class on `<html>`          |
-| Drive non-litevue widgets       | `chart.update(…)`, `map.setView(…)`, a web component |
-| Cross-cutting reactions         | autosave, analytics, unsaved-changes warnings        |
+## Behavior
 
-The [persist plugin](/plugins/persist) is built on it — `persistStore()` is a `watchEffect` that snapshots a store into storage.
+- The first run is synchronous, inside the `watchEffect` call. A throw there reaches your code.
+- Re-runs are batched: several changes in one tick cause one run, after the DOM has updated — so reading elements inside is safe.
+- A re-run that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not stop other updates on the page.
+- Unlike `@vue/reactivity`'s low-level `effect`, it never runs mid-update.
+- For reactions that stop with their element, use [`v-effect`](/directives/v-effect) or [`$watch`](/magics/watch).
+
+## Related
+
+[v-effect](/directives/v-effect) · [$watch](/magics/watch) · [computed()](/globals/computed) · [persist](/plugins/persist)

@@ -4,14 +4,14 @@ title: computed()
 
 # computed() <Badge type="section" text="Global" />
 
-Derived state that **caches**. The getter runs once, and re-runs only when the reactive state it read actually changes — no matter how many bindings read the result.
+Derived state that is cached, and recalculated only when its sources change.
 
 ```js
 import { computed, createApp, reactive } from '@aevantec/litevue';
 
 const cart = reactive({ items: [], shipping: 5 });
-const total = computed(() =>
-  cart.items.reduce((sum, i) => sum + i.price, 0) + cart.shipping
+const total = computed(
+  () => cart.items.reduce((sum, i) => sum + i.price, 0) + cart.shipping
 );
 
 createApp({ cart, total }).mount();
@@ -24,11 +24,21 @@ createApp({ cart, total }).mount();
 </div>
 ```
 
-No `.value` in templates — a scope unwraps refs on read, the same way Vue does.
+## Signature
 
-## Compared with a plain getter
+```ts
+computed<T>(getter: () => T): ComputedRef<T>
+computed<T>(options: { get: () => T; set: (value: T) => void }): WritableComputedRef<T>
+```
 
-A getter on a scope works and stays reactive, but it is **not memoized** — it re-runs on every read:
+Re-exported from `@vue/reactivity`. In templates, read it without `.value` —
+scopes unwrap it. In JavaScript, use `total.value`.
+
+## Examples
+
+### Computed or a getter?
+
+A getter on a scope is reactive too, but it runs again on every read:
 
 ```js
 createApp({
@@ -40,46 +50,39 @@ createApp({
 });
 ```
 
-Three bindings reading `total` means three evaluations per update. With `computed`, one.
-
-Getters are still the right default for cheap derivations — they need no import and read naturally inline. Reach for `computed` when the work is **actually expensive** (filtering or sorting a large list, formatting dates in a loop, reducing over collections) or when many bindings share one derived value.
+Use a getter for cheap values. Use `computed` when the work is expensive —
+sorting or filtering a long list, formatting in a loop — or when many bindings
+read the same value.
 
 ::: tip Rule of thumb
 Sorting a 500-row table? `computed`. Multiplying two numbers? A getter is fine.
 :::
 
-## The source must be reactive first
+### Make the source reactive first
 
-This is the one real constraint, and it follows from *when* the getter runs. A `computed` tracks whatever reactive state it reads — so that state has to exist, and be reactive, before you create it.
-
-`createApp` makes its argument reactive, which happens **after** your object literal is built. So a `computed` cannot reach a sibling property of the same literal:
+A `computed` tracks the reactive state it reads, so that state must already be
+reactive when the `computed` is created. `createApp` makes its argument reactive
+only after your object is built, so this does not work:
 
 ```js
-// ✗ broken: `data.qty` is read off a plain object, so nothing is tracked
+// ✗ `data.qty` is read from a plain object, so nothing is tracked
 const data = { qty: 2, total: computed(() => data.qty * 10) };
 createApp(data).mount();
 ```
 
-Three patterns that work:
-
-**A store** — already reactive when `store()` returns it. The cleanest option for anything shared:
+Any of these does:
 
 ```js
+// a store is reactive as soon as it is registered
 store('cart', { items: [] });
 const count = computed(() => store('cart').items.length);
-```
 
-**`reactive()` first**, then hand both to `createApp`:
-
-```js
+// reactive() first, then hand both to createApp
 const state = reactive({ price: 10, qty: 2 });
 const total = computed(() => state.price * state.qty);
 createApp({ state, total }).mount();
-```
 
-**Setup-style `createApp`**, assigning the computed onto the reactive object — the closest thing to Vue's `setup()`:
-
-```js
+// a setup function, the closest thing to Vue's setup()
 createApp(() => {
   const s = reactive({ price: 10, qty: 2 });
   s.total = computed(() => s.price * s.qty);
@@ -87,13 +90,10 @@ createApp(() => {
 }).mount();
 ```
 
-::: warning Not available inside expressions
-`computed` is a JavaScript import, not a magic property, so `v-scope="{ total: computed(...) }"` won't work — expressions can't see it. Use a getter inline, or build the scope in a `<script>` with one of the patterns above.
-:::
+### Writable
 
-## Writable computeds
-
-Pass `get` and `set` for two-way derived state — useful with [`v-model`](/directives/v-model):
+Pass `get` and `set` for a value [`v-model`](/directives/v-model) can write back
+to:
 
 ```js
 const state = reactive({ celsius: 0 });
@@ -103,23 +103,23 @@ const fahrenheit = computed({
 });
 ```
 
-A getter-only computed **silently ignores writes** — assigning to it is a no-op rather than an error, so reach for the object form when a binding needs to write back.
+### Common uses
 
-## In the devtools
+| Use | Example |
+| --- | --- |
+| Expensive derivation | Filter or sort a long list once per change, not per binding |
+| Totals over a store | Cart totals, unread counts, validation summaries |
+| A value many bindings read | A flag driving several `v-if`, `:class` and `:disabled` |
+| Two-way conversion | Unit conversion behind `v-model` |
 
-Computed values appear in the [inspector panel](/devtools/panel) alongside ordinary state, rendered **read-only** (no input) so an edit can't vanish into a rejected write. Getter-only properties are shown the same way.
+## Behavior
 
-## Lifecycle
+- Lazy: the getter runs only when something reads the value, and at most once per change.
+- Needs no cleanup — it is garbage-collected with the state it closes over.
+- `computed` is an import, not a magic, so it cannot be called inside an expression: `v-scope="{ total: computed(…) }"` does not work.
+- Writing to a getter-only computed is silently ignored. Use the `get`/`set` form when a binding writes back.
+- The [inspector panel](/devtools/panel) shows computed values read-only.
 
-A `computed` is lazy and pull-based: it does nothing until something reads it, and needs no cleanup. Unlike [`watchEffect`](/globals/watch-effect) there is nothing to stop — it is garbage-collected with the state it closes over.
+## Related
 
-## Use cases
-
-| Use case                  | Example                                                 |
-| ------------------------- | ------------------------------------------------------- |
-| Expensive derivation      | filter/sort a long list once per change, not per binding |
-| Store-wide totals         | cart totals, unread counts, validation summaries         |
-| Values many bindings read | a flag driving several `v-if` / `:class` / `:disabled`   |
-| Two-way conversion        | unit conversion behind `v-model`, via `get`/`set`        |
-
-For reacting to changes with a side effect rather than producing a value, use [`watchEffect()`](/globals/watch-effect) or [`$watch`](/magics/watch).
+[reactive()](/globals/reactive) · [watchEffect()](/globals/watch-effect) · [$watch](/magics/watch) · [store()](/globals/store)

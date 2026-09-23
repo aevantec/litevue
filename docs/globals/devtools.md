@@ -4,38 +4,71 @@ title: Devtools API
 
 # Devtools API <Badge type="section" text="Global" />
 
-Every mounted app registers into `window.__LITE_VUE__` (also exported as `devtools`). Scopes are live reactive objects — reading is always current, writing updates the page.
-
-## Console usage
+A live registry of every scope and store on the page, available in the console
+as `window.__LITE_VUE__`.
 
 ```js
-// the scope governing the element selected in the elements panel
+__LITE_VUE__.getScope($0).count = 42; // the page updates immediately
+```
+
+## Signature
+
+```ts
+import { devtools, disableDevtools } from '@aevantec/litevue';
+```
+
+`devtools` is the same object as `window.__LITE_VUE__`.
+
+| Member | Meaning |
+| --- | --- |
+| `getScope(node)` | The scope governing a node — the nearest registered scope root at or above it |
+| `getScopeByName(name)` | The first scope registered with that [`v-name`](/directives/v-name) |
+| `scopes` | `Map<Element, scope>` of every scope root |
+| `names` | `Map<Element, string>` of `v-name` labels |
+| `exps` | `Map<Element, string>` of each root's `v-scope` expression |
+| `stores` | `Map<string, store>` of registered stores |
+| `components` | `Set<string>` of names registered with `app.component()` |
+| `on(event, fn)` | Subscribe to an event; returns an unsubscribe function |
+| `off(event, fn)` | Unsubscribe |
+
+### Events
+
+| Event | Arguments | When |
+| --- | --- | --- |
+| `scope:mount` | `(el, scope)` | A scope was registered. May repeat for the same element |
+| `scope:unmount` | `(el)` | A scope root was torn down |
+| `store:register` | `(name, store)` | A store was registered |
+| `flush` | — | A batch of updates reached the DOM |
+
+`disableDevtools()` takes no arguments — see [Disabling in production](#disabling-in-production).
+
+## Examples
+
+### In the console
+
+```js
+// the scope around the element selected in the Elements panel
 __LITE_VUE__.getScope($0);
 
-// live-edit state — the page reacts immediately
-__LITE_VUE__.getScope($0).count = 42;
-
-__LITE_VUE__.scopes; // Map<Element, scope>
-__LITE_VUE__.stores; // Map<name, store>
-__LITE_VUE__.components; // Set<name> registered with app.component()
-__LITE_VUE__.getScopeByName('cart'); // by v-name
+__LITE_VUE__.getScopeByName('cart');
+__LITE_VUE__.stores.get('cart');
 ```
 
-## Events
+### Subscribing
 
 ```js
-const off = __LITE_VUE__.on('scope:mount', (el, scope) => {});
-__LITE_VUE__.on('scope:unmount', (el) => {});
-__LITE_VUE__.on('store:register', (name, store) => {});
-__LITE_VUE__.on('flush', () => {}); // reactive queue flushed
+const off = __LITE_VUE__.on('scope:mount', (el, scope) => {
+  console.log('mounted', el, scope);
+});
 ```
 
-These events are the protocol behind the [inspector panel](/devtools/panel) and the [browser extension](/devtools/extension).
+These events drive the [inspector panel](/devtools/panel) and the
+[browser extension](/devtools/extension).
 
-## Disabling in production
+### Disabling in production
 
 ```html
-<!-- script-tag users: set the flag before the library loads -->
+<!-- script tag: set the flag before the library loads -->
 <script>
   window.__LITE_VUE_DEVTOOLS__ = false;
 </script>
@@ -43,7 +76,7 @@ These events are the protocol behind the [inspector panel](/devtools/panel) and 
 ```
 
 ```js
-// bundler users: call it once before mounting
+// bundler: call it once before mounting
 import { createApp, disableDevtools } from '@aevantec/litevue';
 
 if (import.meta.env.PROD) disableDevtools();
@@ -51,7 +84,18 @@ createApp().mount();
 ```
 
 ::: warning Check the flag your bundler actually defines
-`import.meta.env.PROD` is Vite's. On webpack, Rollup, or Node it is `undefined`, so the condition is false, `disableDevtools()` never runs, and the registry ships to production — the opposite of what the code appears to say. Use `process.env.NODE_ENV === 'production'` there, and verify against a real production build rather than trusting the guard.
+`import.meta.env.PROD` is Vite's. On webpack, Rollup or Node it is `undefined`,
+so `disableDevtools()` never runs and the registry ships to production. Use
+`process.env.NODE_ENV === 'production'` there, and check a real production
+build.
 :::
 
-When disabled: no `window.__LITE_VUE__`, no scope registration, and **no events** — including `flush`. `disableDevtools()` also clears anything already registered, so calling it late is safe, and a listener subscribed afterwards still receives nothing.
+## Behavior
+
+- Scopes are the live reactive objects, so reads are always current and writes update the page.
+- The registry holds references to every scope, and so to its data. Disable it where page state should not be reachable from the console — see [Security](/start-here/security).
+- Once disabled there is no `window.__LITE_VUE__`, nothing registers, and no event fires, including `flush`. Calling it late is safe: it clears anything already registered.
+
+## Related
+
+[Inspector panel](/devtools/panel) · [v-name](/directives/v-name) · [Warnings](/devtools/warnings) · [Security](/start-here/security)
