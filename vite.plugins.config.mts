@@ -10,34 +10,40 @@ const PKG = '@aevantec/litevue';
 
 // separate build for the first-party plugins so they never add weight to the
 // core library — consumers pull in only what they use
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      external: [PKG],
-      // import/require builds keep the bare specifier, so the consumer's
-      // resolver hands back the instance their app already loaded; <script>
-      // builds read it off the global the core defines.
-      output: { globals: { [PKG]: 'LiteVue' } },
-    },
-    target: 'esnext',
-    minify: 'terser',
-    terserOptions: {
-      format: {
-        ascii_only: true,
+// `--mode dev-bundle` builds the development files, as in vite.config.mts
+export default defineConfig(({ mode }) => {
+  const dev = mode === 'dev-bundle';
+  return {
+    ...(dev && { define: { 'import.meta.env.DEV': 'true' } }),
+    build: {
+      rollupOptions: {
+        external: [PKG],
+        // import/require builds keep the bare specifier, so the consumer's
+        // resolver hands back the instance their app already loaded; <script>
+        // builds read it off the global the core defines.
+        output: { globals: { [PKG]: 'LiteVue' } },
+      },
+      target: 'esnext',
+      minify: dev ? false : 'terser',
+      terserOptions: {
+        format: {
+          ascii_only: true,
+        },
+      },
+      emptyOutDir: false,
+      lib: {
+        entry: resolve(import.meta.dirname, 'src/plugins/index.ts'),
+        name: 'LiteVuePlugins',
+        formats: dev ? ['es', 'iife'] : ['es', 'umd', 'iife'],
+        // .mjs for the esm build so Node reads it as ESM (see vite.config.mts);
+        // umd backs the `require` condition; iife keeps its historical .js name
+        // for <script> tags.
+        fileName: (format) =>
+          (format === 'es'
+            ? `litevue-plugins.mjs`
+            : `litevue-plugins.${format}.js`
+          ).replace('plugins.', dev ? 'plugins.dev.' : 'plugins.'),
       },
     },
-    emptyOutDir: false,
-    lib: {
-      entry: resolve(import.meta.dirname, 'src/plugins/index.ts'),
-      name: 'LiteVuePlugins',
-      formats: ['es', 'umd', 'iife'],
-      // .mjs for the esm build so Node reads it as ESM (see vite.config.mts);
-      // umd backs the `require` condition; iife keeps its historical .js name
-      // for <script> tags.
-      fileName: (format) =>
-        format === 'es'
-          ? `litevue-plugins.mjs`
-          : `litevue-plugins.${format}.js`,
-    },
-  },
+  };
 });

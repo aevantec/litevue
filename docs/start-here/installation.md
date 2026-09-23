@@ -61,6 +61,34 @@ import { createApp } from '@aevantec/litevue';
 createApp().mount();
 ```
 
+## Development builds
+
+LiteVue's [development warnings](/devtools/warnings) and its
+["did you mean"](/essentials/error-handling#in-development) diagnostics live in
+separate development files, so the production files never carry them.
+
+**From npm, nothing to configure.** The package maps its development files
+under the `development` export condition. Vite and webpack 5 resolve it while
+you develop, and switch to the production files when you build for production.
+Vitest runs get the development build too.
+
+For a tool that does not set the condition, pass it explicitly — esbuild's
+`--conditions=development`, or `node --conditions=development`.
+
+**From a CDN**, load the `.dev` file while you develop:
+
+- Global build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.dev.iife.js` <!-- x-release-please-version -->
+- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.dev.mjs` <!-- x-release-please-version -->
+
+::: warning Never ship a .dev file
+Development files are unminified and about twice the size of the production
+build, gzipped. Switch back to `litevue.iife.js` or `litevue.mjs` before you deploy.
+:::
+
+Plugins with development checks — media, morph and persist, and the combined
+plugins bundle — ship `.dev` files the same way. See
+[Installing plugins](/plugins/installation#development-builds).
+
 ## Manual init
 
 Remove the `init` attribute to control mounting yourself — required when you use [plugins](/plugins/), since `init` mounts before your `use()` calls have run:
