@@ -9,7 +9,10 @@
   scope.
 </p>
 
-<div id="app" v-scope="{ counter: 0, userName: 'ada', items: [1, 2, 3] }">
+<div
+  id="app"
+  v-scope="{ counter: 0, userName: 'ada', items: [1, 2, 3], ticks: 0 }"
+>
   <p>
     <button @click="counter++">counter is {{ counter }}</button>
   </p>
@@ -25,11 +28,16 @@
     <button id="throw" @click="missing.deep.value = 1">handler throws</button>
   </p>
 
-  <!-- 4. async rejection — silent before this change -->
+  <!-- 4. async rejection -->
   <p><button id="reject" @click="failAsync()">async handler rejects</button></p>
 
   <!-- 5. a directive nobody registered -->
   <p><span v-nope="x">unknown directive</span></p>
+
+  <!-- 6. a watcher throws; the counter above must keep updating afterwards -->
+  <p v-effect="$watch('ticks', () => { throw new Error('watcher failed') })">
+    <button id="watch" @click="ticks++">watcher throws</button>
+  </p>
 </div>
 
 <script type="module">

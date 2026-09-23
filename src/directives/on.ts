@@ -5,10 +5,7 @@ import { handleError } from '../errors';
 
 /**
  * Can `exp` stand as a single expression, or is it a statement list?
- *
- * Memoised: this compiles a throwaway function to find out, and the answer
- * only depends on the text. Without the cache a `v-for` over 100 rows paid
- * 100 identical compiles for the same handler attribute.
+ * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
  */
 const expressionCache: Record<string, boolean> = Object.create(null);
 const isExpression = (exp: string) => {
@@ -60,22 +57,17 @@ export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
     return;
   }
 
-  // Prefer a form that yields the expression's value, so an async handler's
-  // promise is reachable and its rejection can be reported. Statements like
-  // `a++; b++` are not expressions, so fall back to the block form for those
-  // and accept that their return value is unavailable. Returning a value is
-  // safe either way: addEventListener ignores it.
+  // The expression form returns the value, so an async handler's rejection
+  // can be reported. Statement lists like `a++; b++` keep the block form.
   const raw = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
     : isExpression(exp)
       ? get(`($event => (${exp}))`)
       : get(`($event => { ${exp} })`);
 
-  // An error thrown once the event fires happens long after `get()` returned,
-  // so the evaluator's own try/catch is out of scope by then — it used to
-  // escape into the DOM's listener machinery, where the console showed a
-  // stack with no hint of which handler produced it. A rejected promise from
-  // an async handler was worse: entirely silent.
+  // The event fires long after get() returned, so the evaluator's try/catch
+  // no longer applies; without this, throws went unattributed and rejections
+  // were silent.
   let handler = (...args: any[]) => {
     try {
       const result = raw(...args);

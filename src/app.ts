@@ -8,7 +8,7 @@ import { walk } from './walk';
 import { devtools, registerComponent, registerScope } from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
-import { addErrorHandler, type ErrorHandler } from './errors';
+import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
 
 // DEV: elements this app has already walked, so a second mount of the same
@@ -39,13 +39,9 @@ export interface App {
    */
   use<Options>(plugin: Plugin<Options>, options?: Options): App;
   /**
-   * Register a handler for every runtime error LiteVue catches — a failing
-   * expression, a throwing directive, an event handler that raised or whose
-   * promise rejected. Returns a function that unregisters it.
-   *
-   * Handlers run in production as well as development, which is the point:
-   * this is where an app forwards errors to its monitoring. The rich console
-   * diagnostics are development-only, but the hook is not.
+   * Register a handler for every runtime error LiteVue catches. Runs in
+   * production too — this is where an app forwards errors to monitoring.
+   * Returns an unregister function; a full `unmount()` also releases it.
    */
   onError(handler: ErrorHandler): () => void;
   mount(el?: string | Element | null): App | void;
@@ -283,8 +279,7 @@ export const createApp = (initialData?: any) => {
           try {
             fn();
           } catch (e) {
-            import.meta.env.DEV &&
-              console.error('[litevue] a plugin teardown threw:', e);
+            handleError(e, { phase: 'teardown', source: 'plugin' });
           }
         });
         installedPlugins.clear();

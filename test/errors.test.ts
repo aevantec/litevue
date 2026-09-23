@@ -294,4 +294,17 @@ describe('handler registry lifecycle', () => {
 
     expect(calls).toBe(1);
   });
+
+  test('a throwing plugin teardown reaches the app handler before it is released', () => {
+    const app = createApp().use(() => () => {
+      throw new Error('boom');
+    });
+    app.onError((err, info) => seen.push({ err, info }));
+    app.unmount();
+
+    expect(seen).toHaveLength(1);
+    expect((seen[0].err as Error).message).toBe('boom');
+    expect(seen[0].info.phase).toBe('teardown');
+    expect(seen[0].info.source).toBe('plugin');
+  });
 });

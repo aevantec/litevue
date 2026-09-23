@@ -6,19 +6,9 @@ const evalCache: Record<string, Function> = Object.create(null);
 const mkDispatch = (el: Node) => (event: string, detail?: any) =>
   el.dispatchEvent(new CustomEvent(event, { detail, bubbles: true }));
 
-/**
- * Where the expression came from, so a failure can name it. Threaded from
- * `applyDirective`, which is the only place that knows the attribute; without
- * it an error could report the expression text but not which directive or
- * element produced it.
- */
+/** Where the expression came from, so a failure can name its directive and element. */
 export type EvalMeta = Pick<ErrorInfo, 'source' | 'el'> & {
-  /**
-   * What to show the reader instead of the compiled text. A `{{ }}`
-   * interpolation is compiled into `$s(...)` concatenations, and reporting
-   * that back was the original complaint: the message quoted framework
-   * internals rather than what the author wrote.
-   */
+  /** Shown instead of the compiled text: `{{ total }}`, not `$s( total )`. */
   expression?: string;
 };
 

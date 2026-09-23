@@ -1,14 +1,6 @@
 /**
- * One route for everything that goes wrong at runtime.
- *
- * Before this, a bad expression produced a bare `ReferenceError` with no
- * element, directive or scope, and an error thrown inside an event handler
- * escaped the framework entirely — the listener rejected and the console
- * showed a stack with no hint of which `@click` caused it.
- *
- * Every diagnostic string here is behind `import.meta.env.DEV` so a production
- * bundle carries the routing but none of the prose. `onError` handlers still
- * run in production, which is the point: that is where monitoring hooks in.
+ * One route for every runtime error. The diagnostic prose is DEV-only; the
+ * routing and `onError` handlers ship, since that is where monitoring hooks in.
  */
 
 export type ErrorPhase =
@@ -19,7 +11,11 @@ export type ErrorPhase =
   /** a directive's own setup threw */
   | 'directive'
   /** the expression could not be compiled into a function at all */
-  | 'compile';
+  | 'compile'
+  /** re-running after a change: a `$watch` callback, `watchEffect`, a plugin effect */
+  | 'effect'
+  /** a plugin's teardown, during a full `app.unmount()` */
+  | 'teardown';
 
 export interface ErrorInfo {
   phase: ErrorPhase;
@@ -41,7 +37,7 @@ const distance = (a: string, b: string): number => {
   const n = b.length;
   if (!m || !n) return m || n;
   let prev = Array.from({ length: n + 1 }, (_, i) => i);
-  const curr = new Array(n + 1);
+  const curr: number[] = [];
   for (let i = 1; i <= m; i++) {
     curr[0] = i;
     for (let j = 1; j <= n; j++) {
@@ -56,11 +52,7 @@ const distance = (a: string, b: string): number => {
   return prev[n];
 };
 
-/**
- * Every name the expression could legitimately have used. Walks the prototype
- * chain because scopes nest that way: a child `v-scope` inherits its parent's
- * properties rather than copying them.
- */
+/** Every name in scope, up the prototype chain that nested `v-scope`s inherit. */
 const scopeNames = (scope: Record<string, any>): string[] => {
   const names = new Set<string>();
   let cur: any = scope;
@@ -130,6 +122,8 @@ const PHASES: Record<ErrorPhase, string> = {
   handler: 'handling an event in',
   directive: 'setting up',
   compile: 'compiling',
+  effect: 're-running an effect',
+  teardown: 'tearing down',
 };
 
 export const handleError = (err: unknown, info: ErrorInfo) => {
