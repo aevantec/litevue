@@ -169,6 +169,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/plugins/' },
           { text: 'Installation', link: '/plugins/installation' },
+          { text: 'Writing a plugin', link: '/plugins/authoring' },
           { text: 'intersect', link: '/plugins/intersect' },
           { text: 'persist', link: '/plugins/persist' },
           { text: 'focus', link: '/plugins/focus' },

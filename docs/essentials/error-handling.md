@@ -46,7 +46,7 @@ The prose above is compiled out of the production build, so it costs your users 
 | `directive` | a directive's own setup threw |
 | `compile` | the expression could not be parsed into a function at all |
 | `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect |
-| `teardown` | a [plugin's teardown](/plugins/#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
+| `teardown` | a [plugin's teardown](/plugins/authoring#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
 
 `source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
 

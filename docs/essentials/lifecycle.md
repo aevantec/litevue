@@ -16,7 +16,7 @@ Listen to the special `mounted` and `unmounted` events on any element:
 
 - `@mounted` fires after the element is compiled and inserted (next tick).
 - `@unmounted` fires when the owning block is torn down — for example when a [`v-if`](/directives/v-if) branch switches or the app unmounts.
-- With a [leave transition](/plugins/transition#unmount-mode-v-if-v-for), `@unmounted` waits until the animation finishes.
+- With a [leave transition](/plugins/transition#with-v-if-and-v-for), `@unmounted` waits until the animation finishes.
 
 Combine with [`$watch`](/magics/watch) to react to state from a lifecycle hook:
 

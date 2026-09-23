@@ -62,7 +62,7 @@ Use a `<template>` to repeat several elements without a wrapper:
 ### Animating removal
 
 An item with [`v-transition`](/plugins/transition) and no expression animates
-out before it is removed — see [unmount mode](/plugins/transition#unmount-mode-v-if-v-for).
+out before it is removed — see [transition](/plugins/transition#with-v-if-and-v-for).
 
 ## Behavior
 
