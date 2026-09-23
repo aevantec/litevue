@@ -45,14 +45,14 @@ The prose above is compiled out of the production build, so it costs your users 
 | `handler` | a [`v-on`](/directives/v-on) handler threw, or its promise rejected |
 | `directive` | a directive's own setup threw |
 | `compile` | the expression could not be parsed into a function at all |
+| `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect |
+| `teardown` | a [plugin's teardown](/plugins/#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
 
 `source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
 
-Two of these are worth calling out.
+**Event handlers.** An error thrown when the event fires is attributed to its `@click` like any other failure, even though the expression was bound long before.
 
-**Event handlers.** An error thrown once the event fires happens long after the expression was bound, so it used to escape into the browser's listener machinery — a stack trace with no indication of which `@click` caused it. It is now attributed like any other failure.
-
-**Async handlers.** A handler whose promise rejects was previously silent:
+**Async handlers.** A handler whose promise rejects is reported too:
 
 ```html
 <button @click="save()">Save</button>
@@ -64,11 +64,17 @@ save() {
 }
 ```
 
-The rejection is now reported with the same context as a synchronous throw. Return the promise from your method for this to work — a method that fires a request and returns nothing has nothing to observe.
+The rejection carries the same context as a synchronous throw. Return the promise from your method for this to work — a method that fires a request and returns nothing has nothing to observe.
 
 ## Recovering, not crashing
 
-A failure is contained to the thing that failed. A broken expression yields `undefined` and the rest of the page still binds; a directive that throws during setup no longer aborts the walk, so the remaining elements are still processed; a failing `v-scope` falls back to an empty scope rather than taking the mount down with it; and a handler that throws does not stop later events from firing.
+A failure is contained to the thing that failed:
+
+- A broken expression yields `undefined`, and the rest of the page still binds.
+- A directive that throws during setup is skipped; the remaining elements are still processed.
+- A failing `v-scope` falls back to an empty scope rather than taking the mount down with it.
+- A handler that throws does not stop later events from firing.
+- A `$watch` callback or `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page.
 
 That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.
 
@@ -95,7 +101,13 @@ The second argument describes where the failure came from:
 
 ```ts
 interface ErrorInfo {
-  phase: 'expression' | 'handler' | 'directive' | 'compile';
+  phase:
+    | 'expression'
+    | 'handler'
+    | 'directive'
+    | 'compile'
+    | 'effect'
+    | 'teardown';
   expression?: string; // as written in the attribute
   source?: string; // the attribute, e.g. 'v-text' or '@click'
   el?: Node; // the element it sits on
@@ -112,12 +124,12 @@ stop();
 
 Several handlers may be registered and all of them run. One throwing does not prevent the others, nor hide the original error.
 
-The registry is page-wide rather than per-app, so a handler sees errors from any app on the page. A full `app.unmount()` releases the handlers that app registered — a per-region [`app.unmount(el)`](/globals/create-app#unmount) leaves them in place, since the app is still running.
+The registry is page-wide rather than per-app, so a handler sees errors from any app on the page. A full `app.unmount()` releases the handlers that app registered — a per-region [`app.unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) leaves them in place, since the app is still running.
 
 ::: warning Without a handler, production still logs
 If nothing is registered, a caught error is written to `console.error` so it is never swallowed entirely. Registering a handler takes over that responsibility — if yours discards the error, nothing else will report it.
 :::
 
-## Scope for what this covers
+## What this does not cover
 
 These are errors LiteVue catches while running your expressions. An error thrown in code it never sees — a `setTimeout` callback, a module's top level, a promise you created outside a handler — belongs to the page, not the framework, and needs `window.onerror` or `unhandledrejection` as usual.

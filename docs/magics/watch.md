@@ -19,3 +19,5 @@ $watch(
 ```
 
 Watchers are tied to their scope's lifecycle — they stop automatically when the scope unmounts. Reads inside the callback don't become dependencies.
+
+A callback that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not stop other updates on the page. The watcher keeps running, and the next change still receives the correct `oldValue`.

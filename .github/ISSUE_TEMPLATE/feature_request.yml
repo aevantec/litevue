@@ -7,7 +7,7 @@ body:
       value: |
         Before proposing, it helps to know what litevue is optimizing for:
 
-        - **Small** — the core is ~9kb<!-- size:dist/litevue.iife.js --> gzipped, and new bytes have to earn their place
+        - **Small** — the core is ~10kb<!-- size:dist/litevue.iife.js --> gzipped, and new bytes have to earn their place
         - **Vue-aligned** — syntax and semantics should match standard Vue
         - **No build step** — it has to keep working from a `<script>` tag
 
