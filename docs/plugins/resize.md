@@ -17,7 +17,7 @@ createApp().use(resize).mount();
 
 - Backed by one `ResizeObserver` per directive, observing the element it sits on.
 - It fires once on mount with the current size, then on every change.
-- Observation stops when the region unmounts, including via [`app.unmount(el)`](/globals/create-app#unmount).
+- Observation stops when the region unmounts, including via [`app.unmount(el)`](/essentials/dynamic-content#tearing-a-region-down).
 
 ## Why this is not a media query
 

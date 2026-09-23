@@ -4,36 +4,71 @@ title: v-model
 
 # v-model <Badge type="section" text="Directive" />
 
-Two-way binding for form elements — text inputs, textareas, checkboxes, radios, and selects (including `multiple`).
+Keep a native form control and reactive state in sync.
+
+```html
+<input v-model="name" />
+```
+
+## Syntax
+
+| Form | Meaning |
+| --- | --- |
+| `v-model="property"` | Two-way bind the control to a scope property |
+
+No argument. Supported on text inputs, textareas, checkboxes, radios and
+selects, including `multiple`.
+
+### Controls
+
+| Control | Model value |
+| --- | --- |
+| Text input, textarea | String, or a number with `.number` |
+| Checkbox | Boolean, or the `:true-value` / `:false-value` pair |
+| Checkbox group | Array of the checked values |
+| Radio group, single select | The selected value |
+| Multiple select | Array of the selected values |
+
+### Modifiers
+
+| Modifier | Meaning |
+| --- | --- |
+| `.lazy` | Sync on `change` rather than `input` |
+| `.number` | Cast to a number; unparseable input stays a string |
+| `.trim` | Trim whitespace; takes precedence over `.number` |
+| `.debounce` / `.debounce-<ms>` | Delay writes from input events; default 250ms |
+| `.fill` | Seed an empty model from the control's initial `value` |
+
+`.debounce` and `.fill` are LiteVue additions; the rest match Vue.
+
+## Examples
 
 <<< ../.vitepress/demos/v-model.html{html}
 
 <LiveDemo src="v-model" />
 
-Non-string values work through `:value` bindings, and checkboxes support `:true-value` / `:false-value`.
+### Non-string values
 
-## Modifiers
+Bind the value rather than writing it as an attribute. Checkboxes also accept
+`:true-value` and `:false-value`.
 
-### Vue's standard set
+```html
+<input type="checkbox" v-model="plan" :true-value="pro" :false-value="free" />
+```
 
-- **`.lazy`** — sync on `change` instead of `input`.
-- **`.number`** — cast the value to a number.
-- **`.trim`** — trim whitespace.
+### With v-mask
 
-### LiteVue additions
+The [mask plugin](/plugins/mask) formats the value before `v-model` reads it,
+so the model receives the masked string.
 
-- **`.debounce[-ms]`** — rate-limit model writes from input events (default 250ms):
+## Behavior
 
-  ```html
-  <input v-model.debounce-300="query" />
-  ```
+- `<input type="number">` casts to a number without needing `.number`.
+- Writes are batched with every other reactive update. Read the DOM after [`$nextTick`](/magics/next-tick).
+- `.fill` only seeds when the model is `null`, `undefined` or an empty string — it never overwrites existing state.
+- A pending `.debounce` is cancelled when the region unmounts, so a late write cannot land on a torn-down scope.
+- Radios and checkboxes re-sync on every update, since the browser retoggles them natively.
 
-- **`.fill`** — seed empty model state from the input's `value` attribute, handy for server-rendered forms:
+## Related
 
-  ```html
-  <input value="from-server" v-model.fill="name" />
-  ```
-
-## With v-mask
-
-The [mask plugin](/plugins/mask) formats values before `v-model` sees them.
+[v-bind](/directives/v-bind) · [mask](/plugins/mask) · [Templating](/essentials/templating)

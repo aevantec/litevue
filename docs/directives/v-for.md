@@ -4,21 +4,74 @@ title: v-for
 
 # v-for <Badge type="section" text="Directive" />
 
-Renders a list. LiteVue does real **keyed reconciliation** — with `:key`, reorders move existing DOM nodes instead of rewriting them, preserving element state.
+Render an element once per item in a list, object or range.
+
+```html
+<li v-for="todo in todos" :key="todo.id">{{ todo.text }}</li>
+```
+
+## Syntax
+
+| Form | Iterates |
+| --- | --- |
+| `item in items` | Array items |
+| `(item, index) in items` | Array items with their index |
+| `(value, key) in object` | Object values with their key |
+| `(value, key, index) in object` | Object values with key and position |
+| `n in 10` | The numbers 1 to 10 |
+| `{ id, name } in items` | Array items, destructured |
+| `[first, second] in pairs` | Array items, array-destructured |
+
+`of` works in place of `in`.
+
+### Keys
+
+| Attribute | Meaning |
+| --- | --- |
+| `:key="expression"` | A unique, stable identity per item. Recommended whenever the list can reorder |
+
+## Examples
 
 <<< ../.vitepress/demos/v-for.html{html}
 
 <LiveDemo src="v-for" />
 
-Index and object forms work too:
+### Per-row state
+
+`v-scope` on the same element gives every row its own state, with the loop
+variable in scope:
 
 ```html
-<li v-for="(item, index) in items">{{ index }}: {{ item }}</li>
-<li v-for="(value, key) in object">{{ key }} = {{ value }}</li>
+<li v-for="item in items" :key="item.id" v-scope="{ open: false }">
+  <button @click="open = !open">{{ item.title }}</button>
+  <p v-show="open">{{ item.body }}</p>
+</li>
 ```
 
-Array mutations (`push`, `splice`, `reverse`, …) and replacement are both reactive.
+### Repeating a group
 
-## Item removal transitions
+Use a `<template>` to repeat several elements without a wrapper:
 
-An item carrying [`v-transition`](/plugins/transition) with no expression animates out before removal — see [unmount mode](/plugins/transition#unmount-mode-v-if-v-for).
+```html
+<template v-for="entry in glossary" :key="entry.term">
+  <dt>{{ entry.term }}</dt>
+  <dd>{{ entry.definition }}</dd>
+</template>
+```
+
+### Animating removal
+
+An item with [`v-transition`](/plugins/transition) and no expression animates
+out before it is removed — see [unmount mode](/plugins/transition#unmount-mode-v-if-v-for).
+
+## Behavior
+
+- With `:key`, a reorder moves the existing DOM nodes, so focus, input values and scroll position stay with their item. Without it, nodes are reused by position. The [devtools](/devtools/warnings) warn when an unkeyed list reorders or keys repeat.
+- Array mutations (`push`, `splice`, `sort`, `reverse`, …) and replacing the array are both reactive.
+- `Map` and `Set` are not iterated. Convert them first: `v-for="[k, v] in [...map]"`.
+- `v-if` on the same element runs first and cannot see the loop variable — see [v-if](/directives/v-if#behavior).
+- A `ref` inside the loop points at the last row rendered, not an array — see [ref](/directives/ref).
+
+## Related
+
+[v-if](/directives/v-if) · [v-scope](/directives/v-scope) · [transition](/plugins/transition) · [Warnings](/devtools/warnings)

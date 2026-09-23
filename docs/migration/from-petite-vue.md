@@ -39,7 +39,7 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 
 ## Everything new is opt-in
 
-The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-extras), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
+The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
 
 Two later additions are worth knowing about specifically, because petite-vue has no equivalent and both address things you probably worked around:
 

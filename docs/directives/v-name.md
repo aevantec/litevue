@@ -4,15 +4,39 @@ title: v-name
 
 # v-name <Badge type="section" text="Directive" />
 
-Gives a scope an explicit [devtools](/devtools/panel) name, so the element doesn't need an `id`. The attribute is removed from the DOM at mount and exists only for inspection:
+Label a scope for the devtools without giving the element an `id`.
+
+```html
+<div v-scope="{ items: [] }" v-name="cart">…</div>
+```
+
+## Syntax
+
+| Form | Meaning |
+| --- | --- |
+| `v-name="label"` | A literal name for the scope, shown in the devtools |
+
+The value is literal text, not an expression. No argument or modifiers.
+
+## Examples
 
 <<< ../.vitepress/demos/v-name.html{html}
 
 <LiveDemo src="v-name" />
 
+### From the console
+
 ```js
-// look a scope up by name from the console
-__LITE_VUE__.getScopeByName('demo-cart');
+__LITE_VUE__.getScopeByName('cart');
 ```
 
-The inspector panel labels scopes as tags — `v-name` first, then element id, then tag name (e.g. `<cart>`, `<counter>`, `<div>`).
+## Behavior
+
+- Removed from the DOM at mount; it exists only for inspection and has no effect on rendering.
+- The [panel](/devtools/panel) labels a scope by its `v-name`, then its component name, then its `id`, then its tag.
+- If two scopes share a name, `getScopeByName` returns the first registered.
+- LiteVue addition.
+
+## Related
+
+[v-scope](/directives/v-scope) · [devtools](/globals/devtools) · [Inspector panel](/devtools/panel)

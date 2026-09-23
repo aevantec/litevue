@@ -36,7 +36,7 @@ LiteVue covers Alpine's feature set with Vue's syntax, at about half the size. T
 <div @scroll.window.throttle-100="onScroll"></div>
 ```
 
-LiteVue adds [animation-event filters](/directives/v-on#animation-event-filters) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
+LiteVue adds [animation-event filters](/directives/v-on#sequencing-animations) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
 
 ## Globals and magics
 
