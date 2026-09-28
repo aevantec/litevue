@@ -3,6 +3,19 @@
 ## [0.5.7](https://github.com/aevantec/litevue/compare/v0.5.6...v0.5.7) (2026-09-28)
 
 
+### Highlights
+
+* **A throwing watcher no longer freezes the page.** In every earlier version, a `$watch` callback or `watchEffect` that threw stopped all reactive updates on the page for good, and left dependency tracking paused. Each update is now contained, reported to `app.onError()`, and the rest keep running. Shipped inside the error-diagnostics feature, so it has no entry of its own below ([#108](https://github.com/aevantec/litevue/issues/108))
+* **A `Map` or `Set` in state no longer crashes the production bundle.** `v-scope="{ m: new Map() }"` threw on mount. Collections now work as plain values: usable, but not tracked; assign a new one to update the page ([#110](https://github.com/aevantec/litevue/issues/110))
+* **Development warnings reach users for the first time.** Every earlier build stripped them, including the new "did you mean" diagnostics. From npm, Vite and webpack 5 pick `litevue.dev.mjs` automatically while you develop; from a CDN, load `litevue.dev.iife.js`. See [Development builds](https://litevue.dev/start-here/installation#development-builds) ([#111](https://github.com/aevantec/litevue/issues/111))
+
+
+### Behavior changes
+
+* `@keydown.delete` now matches Backspace as well as Delete, as in Vue ([#113](https://github.com/aevantec/litevue/issues/113))
+* The core is documented as ~10kb gzipped, up from ~9kb: 9,962 bytes against 9,413 in 0.5.6, mostly error diagnostics ([#108](https://github.com/aevantec/litevue/issues/108))
+
+
 ### Features
 
 * publish development builds, so the warnings reach users ([#111](https://github.com/aevantec/litevue/issues/111)) ([9da882c](https://github.com/aevantec/litevue/commit/9da882ccc422bfa0509aeb22f75596db251f6ebe))
@@ -17,6 +30,14 @@
 * report a missing $template selector instead of throwing ([#104](https://github.com/aevantec/litevue/issues/104)) ([302bf62](https://github.com/aevantec/litevue/commit/302bf62fb2fe7af1e7581a6482d0b27cfa9d93fb))
 * stop a Map or Set in state from crashing the production build ([#110](https://github.com/aevantec/litevue/issues/110)) ([ad1b2b0](https://github.com/aevantec/litevue/commit/ad1b2b06c3406f6ae54f14d53b01ee40d07ba949))
 * support Vue's key aliases, and make .left/.right arrow keys on key events ([#113](https://github.com/aevantec/litevue/issues/113)) ([c8be545](https://github.com/aevantec/litevue/commit/c8be545238c4654a6ca1a0a03eb45843a887b15b))
+
+
+### Documentation
+
+`docs` commits are hidden by the changelog config; listed by hand because both change what users read.
+
+* Every reference page restructured around one shape (summary, Syntax or Signature, Examples, Behavior, Related), with new pages for `reactive()`, `nextTick()` and writing a plugin, and previously undocumented behaviour written down ([#109](https://github.com/aevantec/litevue/issues/109))
+* Sizes, links and content checked before this release: the issue templates linked a dead docs domain, and the README described neither new feature ([#115](https://github.com/aevantec/litevue/issues/115))
 
 ## [0.5.6](https://github.com/aevantec/litevue/compare/v0.5.5...v0.5.6) (2026-08-30)
 
