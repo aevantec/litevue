@@ -161,9 +161,9 @@ The exports sit **on** the global, so `persistStore` is `LiteVuePersist.persistS
 
 Unpinned URLs resolve to the latest release, which is convenient in development and a liability in production. Pin the version and use a fully resolved path:
 
-- Core: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.iife.js` <!-- x-release-please-version -->
-- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/plugins/mask.iife.js` <!-- x-release-please-version -->
-- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue-plugins.iife.js` <!-- x-release-please-version -->
+- Core: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue.iife.js` <!-- x-release-please-version -->
+- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/plugins/mask.iife.js` <!-- x-release-please-version -->
+- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue-plugins.iife.js` <!-- x-release-please-version -->
 
 jsDelivr serves the same files — swap the host for `https://cdn.jsdelivr.net/npm/`.
 
@@ -174,8 +174,8 @@ files beside their production ones, as does the combined bundle. From npm the
 `development` export condition picks them automatically, exactly as for the
 core. From a CDN, swap the file name while you develop:
 
-- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/plugins/media.dev.iife.js` <!-- x-release-please-version -->
-- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue-plugins.dev.iife.js` <!-- x-release-please-version -->
+- One plugin: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/plugins/media.dev.iife.js` <!-- x-release-please-version -->
+- All plugins: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue-plugins.dev.iife.js` <!-- x-release-please-version -->
 
 Pair a `.dev` plugin with the core's `.dev` file, and switch both back before
 you deploy — see [Development builds](/start-here/installation#development-builds).
