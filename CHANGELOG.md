@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.7](https://github.com/aevantec/litevue/compare/v0.5.6...v0.5.7) (2026-09-28)
+
+
+### Features
+
+* publish development builds, so the warnings reach users ([#111](https://github.com/aevantec/litevue/issues/111)) ([9da882c](https://github.com/aevantec/litevue/commit/9da882ccc422bfa0509aeb22f75596db251f6ebe))
+* report runtime errors with context, and an app.onError() hook ([#108](https://github.com/aevantec/litevue/issues/108)) ([7ff6b4b](https://github.com/aevantec/litevue/commit/7ff6b4b7f778438cc8bfd0049f9852f5cea7befe))
+
+
+### Bug Fixes
+
+* keep a v-for row's $id and $refs across list updates ([#99](https://github.com/aevantec/litevue/issues/99)) ([a557e7a](https://github.com/aevantec/litevue/commit/a557e7afe11aa82f521315211186cd0e57e2fdb4))
+* **plugins:** hand the element back untouched when v-collapse tears down ([#106](https://github.com/aevantec/litevue/issues/106)) ([598aa3c](https://github.com/aevantec/litevue/commit/598aa3c89bc4a9cca649e6c48b4c5bb381c74d3d))
+* remove directives written with modifiers once they are bound ([#112](https://github.com/aevantec/litevue/issues/112)) ([64e7bcb](https://github.com/aevantec/litevue/commit/64e7bcb5c53f778cadafd052150480c0a2287396))
+* report a missing $template selector instead of throwing ([#104](https://github.com/aevantec/litevue/issues/104)) ([302bf62](https://github.com/aevantec/litevue/commit/302bf62fb2fe7af1e7581a6482d0b27cfa9d93fb))
+* stop a Map or Set in state from crashing the production build ([#110](https://github.com/aevantec/litevue/issues/110)) ([ad1b2b0](https://github.com/aevantec/litevue/commit/ad1b2b06c3406f6ae54f14d53b01ee40d07ba949))
+* support Vue's key aliases, and make .left/.right arrow keys on key events ([#113](https://github.com/aevantec/litevue/issues/113)) ([c8be545](https://github.com/aevantec/litevue/commit/c8be545238c4654a6ca1a0a03eb45843a887b15b))
+
 ## [0.5.6](https://github.com/aevantec/litevue/compare/v0.5.5...v0.5.6) (2026-08-30)
 
 
