@@ -10,6 +10,7 @@ import { createId, createWatch } from './magics';
 import { stores } from './store';
 import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
+import { SCOPE_SELECTOR } from './lazy';
 
 // DEV: elements this app has already walked, so a second mount of the same
 // element can say why nothing happened. Weak, and never read in production.
@@ -197,11 +198,11 @@ export const createApp = (initialData?: any) => {
 
       el = el || document.documentElement;
       let roots: Element[];
-      if (el.hasAttribute('v-scope')) {
+      if (el.matches(SCOPE_SELECTOR)) {
         roots = [el];
       } else {
-        roots = [...el.querySelectorAll(`[v-scope]`)].filter(
-          (root) => !root.matches(`[v-scope] [v-scope]`)
+        roots = [...el.querySelectorAll(SCOPE_SELECTOR)].filter(
+          (root) => !root.matches(`:where(${SCOPE_SELECTOR}) *`)
         );
       }
       if (!roots.length) {

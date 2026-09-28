@@ -11,6 +11,7 @@ import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
 import { own, setOwner } from './ownership';
 import { describeEl, handleError } from './errors';
+import { deferScope } from './lazy';
 
 const dirRE = /^(?:v-|:|@)/;
 const modifierRE = /\.([\w-]+)/g;
@@ -57,6 +58,11 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     if (el.hasAttribute('v-pre')) {
       return;
     }
+
+    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
+    // of v-cloak, which must stay on the element until the region mounts, or
+    // its raw {{ }} shows while it waits.
+    if (deferScope(el, ctx, walk)) return;
 
     checkAttr(el, 'v-cloak');
 
