@@ -2,6 +2,7 @@ import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
 import { handleError } from '../errors';
+import { warnOnce } from '../warn';
 
 /**
  * Can `exp` stand as a single expression, or is it a statement list?
@@ -43,6 +44,18 @@ const modifierGuards: Record<
   right: (e) => 'button' in e && (e as MouseEvent).button !== 2,
   exact: (e, modifiers) =>
     systemModifiers.some((m) => (e as any)[`${m}Key`] && !modifiers[m]),
+};
+
+// Vue's key aliases. `left` and `right` are mouse buttons too — which one
+// depends on the event. `delete` also matches Backspace, as in Vue.
+const keyAliases: Record<string, string> = {
+  esc: 'escape',
+  space: ' ',
+  up: 'arrow-up',
+  down: 'arrow-down',
+  left: 'arrow-left',
+  right: 'arrow-right',
+  delete: 'backspace',
 };
 
 // modifiers that are never key-name filters on keyboard events
@@ -154,19 +167,34 @@ export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
     }
 
     const keyFilter = Object.keys(modifiers).filter(
-      (k) => !nonKeyModifierRE.test(k)
+      (k) => !nonKeyModifierRE.test(k) || k in keyAliases
     );
+
+    // A key name on a non-keyboard event filters nothing: Alpine's
+    // `.debounce.500ms` otherwise runs at 250ms without a sound.
+    if (import.meta.env.DEV && !arg.startsWith('key')) {
+      for (const k of keyFilter) {
+        if (k in keyAliases) continue;
+        const ms = /^(\d+)ms$/.exec(k);
+        warnOnce(
+          `modifier:${arg}.${k}`,
+          `@${arg}.${k}: .${k} is not a modifier LiteVue knows, so it is ` +
+            `ignored.` +
+            (ms
+              ? ` Timings are written with a dash — .debounce-${ms[1]} or ` +
+                `.throttle-${ms[1]}.`
+              : ` Key names only filter keyboard events.`)
+        );
+      }
+    }
 
     handler = (e: Event) => {
       if (modifiers.outside && el.contains(e.target as Node)) {
         return;
       }
-      if (
-        'key' in e &&
-        keyFilter.length &&
-        !(hyphenate((e as KeyboardEvent).key) in modifiers)
-      ) {
-        return;
+      if ('key' in e && keyFilter.length) {
+        const key = hyphenate((e as KeyboardEvent).key);
+        if (!keyFilter.some((k) => k === key || keyAliases[k] === key)) return;
       }
       for (const key in modifiers) {
         const guard = modifierGuards[key];

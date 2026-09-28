@@ -58,7 +58,7 @@ These work the way you'd expect coming from Vue, including modifiers and shortha
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Mustache text bindings                                                                         | configurable via [custom delimiters](/essentials/templating#custom-delimiters) |
 | [`v-bind`](/directives/v-bind)                                                                 | `:` shorthand, `class` / `style` special handling                              |
-| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and standard modifiers — key aliases differ, see below          |
+| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and all standard modifiers, including key aliases               |
 | [`v-model`](/directives/v-model)                                                               | all input types, non-string `:value` bindings                                  |
 | [`v-if`](/directives/v-if) / `v-else` / `v-else-if`                                            |                                                                                |
 | [`v-for`](/directives/v-for)                                                                   | with keyed reconciliation                                                      |
@@ -78,7 +78,6 @@ Deliberate divergences, all stemming from the absence of a component system:
 | [Components](/essentials/components) | plain functions returning scope objects                                                         |
 | Custom directives                    | a different, simpler interface — see [`app.directive()`](/globals/create-app#custom-directives) |
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
-| [Key modifiers](/directives/v-on#key-and-mouse-modifiers) | match `event.key` in kebab-case, with no aliases: `.escape` not `.esc`, `.arrow-up` not `.up`; no `.space` |
 | [`ref`](/directives/ref) in `v-for` | one element — the last row — rather than an array                                              |
 | [`$watch`](/magics/watch)            | no `immediate` or `deep` options, no stop handle, and a path compares by identity               |
 

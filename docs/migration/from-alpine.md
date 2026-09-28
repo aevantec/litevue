@@ -29,20 +29,18 @@ LiteVue covers Alpine's feature set with Vue's syntax, at about half the size. T
 
 ## Event modifiers
 
-`.outside`, `.window`, `.document`, `.debounce`, `.throttle`, `.once`, `.self`, `.prevent`, `.stop`, `.passive` and `.capture` exist with the same names:
+`.outside`, `.window`, `.document`, `.debounce`, `.throttle`, `.once`, `.self`, `.prevent`, `.stop`, `.passive`, `.capture` and key filters — including `.esc`, `.space` and the arrow keys — exist with the same names:
 
 ```html
 <div v-show="open" @click.outside="open = false">…</div>
 <div @scroll.window.throttle-100="onScroll"></div>
 ```
 
-Three differences to change as you migrate:
+One difference to change as you migrate:
 
 | Alpine | LiteVue | Why |
 | --- | --- | --- |
-| `.debounce.500ms`, `.throttle.750ms` | `.debounce-500`, `.throttle-750` | The Alpine form is silently ignored and the 250ms default applies |
-| `.esc`, `.space`, `.up`, `.down` | `.escape`, `.arrow-up`, `.arrow-down` | Key modifiers match `event.key` with no aliases; for the space bar use `$event.key === ' '` |
-| `@keydown.left`, `@keydown.right` | `@keydown.arrow-left`, `@keydown.arrow-right` | `.left` and `.right` are mouse buttons here — on a key event they filter nothing, so the handler runs for every key |
+| `.debounce.500ms`, `.throttle.750ms` | `.debounce-500`, `.throttle-750` | The Alpine form is ignored and the 250ms default applies; the development build warns |
 
 LiteVue adds [animation-event filters](/directives/v-on#sequencing-animations) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
 
