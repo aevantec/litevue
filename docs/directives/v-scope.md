@@ -92,6 +92,9 @@ fold or behind a click, and hide their raw `{{ }}` with
 - With `.interaction`, the click that wakes a region reaches its `@click` handlers. The key press that wakes it does not reach `@keydown` handlers inside, though `v-model` still receives the typed text.
 - Where `IntersectionObserver` is unavailable — in jsdom, for example — `.visible` mounts like `.idle` instead.
 - A region unmounted before its trigger fires never mounts, and its observer or listeners are released.
+- Directives on the deferred element itself wait too: its `ref`, `@click` and `:class` bind when it mounts.
+- Inside [`v-once`](/directives/v-once), a deferred region still renders once.
+- Use one modifier per element. With two, the region waits for both triggers in turn; beside a plain `v-scope`, the modifier's value replaces it.
 
 ## Related
 

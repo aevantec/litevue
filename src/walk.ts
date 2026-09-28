@@ -39,6 +39,18 @@ const addCleanup = (ctx: Context, cleanup: () => void) => {
   });
 };
 
+// A deferred region walks after the original walk has reset inOnce, so it
+// carries the value it was deferred under.
+const walkDeferred = (node: Node, ctx: Context, once: boolean) => {
+  const previous = inOnce;
+  inOnce = once;
+  try {
+    walk(node, ctx);
+  } finally {
+    inOnce = previous;
+  }
+};
+
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
   // Own what this node acquires, so a subtree removed on its own can be
   // disposed. Restored on exit so a nested walk leaves the cursor intact.
@@ -62,7 +74,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
     // of v-cloak, which must stay on the element until the region mounts, or
     // its raw {{ }} shows while it waits.
-    if (deferScope(el, ctx, walk)) return;
+    if (deferScope(el, ctx, walkDeferred, inOnce)) return;
 
     checkAttr(el, 'v-cloak');
 

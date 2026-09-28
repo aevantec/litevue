@@ -248,9 +248,11 @@ export const createApp = (initialData?: any) => {
         // a root without v-scope gets no stashed context during walk; seed
         // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
-        // roots with v-scope register during walk; only claim the rest. The
-        // cleanup sits on the block so unmount(el) deregisters just this one.
-        if (!devtools.scopes.has(el)) {
+        // roots with v-scope register during walk; only claim the rest. A
+        // deferred root still carries its v-scope.<mode> and registers when it
+        // mounts. The cleanup sits on the block so unmount(el) deregisters
+        // just this one.
+        if (!devtools.scopes.has(el) && !el.matches(SCOPE_SELECTOR)) {
           block.ctx.cleanups.push(
             registerScope(el, block.ctx.scope, undefined, name || undefined)
           );

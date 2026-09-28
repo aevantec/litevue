@@ -67,17 +67,20 @@ const arm = (el: Element, mode: LazyMode, fire: () => void): (() => void) => {
 export const deferScope = (
   el: Element,
   ctx: Context,
-  walk: (node: Node, ctx: Context) => unknown
+  walk: (node: Node, ctx: Context, once: boolean) => unknown,
+  once: boolean
 ): boolean => {
   const mode = LAZY_MODES.find((m) => el.hasAttribute(`v-scope.${m}`));
   if (!mode) return false;
 
   const attr = `v-scope.${mode}`;
   const dispose = arm(el, mode, () => {
+    // gone if a second mount() armed it again and the first trigger won
+    if (!el.hasAttribute(attr)) return;
     // hand the walker an ordinary v-scope; from here it is a normal mount
     el.setAttribute('v-scope', el.getAttribute(attr)!);
     el.removeAttribute(attr);
-    walk(el, ctx);
+    walk(el, ctx, once);
   });
   ctx.cleanups.push(dispose);
   own(dispose);
