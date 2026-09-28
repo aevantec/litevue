@@ -46,7 +46,7 @@ pnpm test       # vitest suite in jsdom (test/)
 pnpm test:watch # vitest in watch mode
 pnpm test:browser  # vitest suite in real Chromium (test/browser/)
 pnpm coverage      # vitest with a coverage report for src/
-pnpm build      # core + devtools + plugins bundles + types
+pnpm build      # core, devtools and plugin bundles, production and development, + types
 pnpm docs:dev   # documentation site at localhost:5173
 pnpm format     # prettier
 ```
@@ -100,7 +100,14 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    pnpm test
    pnpm test:browser
    pnpm build
+   pnpm check:size
+   pnpm check:bundles
+   pnpm check:dist-runtime
    ```
+
+   The last three read what `pnpm build` wrote, so they come after it.
+   `check:dist-runtime` runs the built bundles in jsdom — the test suite imports
+   `src/`, and a change only the build makes is invisible to it.
 
    `pnpm lint` runs [oxlint](https://oxc.rs/docs/guide/usage/linter). It covers
    the ground between prettier and `tsc` — dead code, unusable regex escapes, a

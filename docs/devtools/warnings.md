@@ -88,3 +88,24 @@ bring one back, insert fresh markup and mount that — which is what
 [morph](/plugins/morph) does. Mounting *new* markup into an existing app is
 unaffected and remains the documented way to
 [initialize dynamic content](/essentials/dynamic-content).
+
+## A modifier that can never match
+
+On any event other than `keydown`, `keyup` and `keypress`, a modifier LiteVue
+does not recognise is read as a key filter — and those events have no key, so
+it filters nothing. The handler runs anyway, and the modifier is silently
+ignored.
+
+The usual cause is Alpine's timing syntax:
+
+```html
+<!-- runs at the 250ms default, not 500ms -->
+<input @input.debounce.500ms="search()" />
+
+<!-- LiteVue writes the interval with a dash -->
+<input @input.debounce-500="search()" />
+```
+
+The warning names the modifier and, for a `<n>ms` modifier, suggests the dash
+form. Key names on keyboard events — `.enter`, `.f1`, `.esc` — never warn. See
+[`v-on`](/directives/v-on#key-and-mouse-modifiers).

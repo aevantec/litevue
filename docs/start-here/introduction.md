@@ -25,7 +25,7 @@ Most frameworks treat HTML as output — you write a template, a compiler turns 
 
 The practical consequences:
 
-- **No template compiler ships to the browser.** Standard Vue's runtime + compiler build is ~13kb larger precisely because it must parse template strings at runtime.
+- **No template compiler ships to the browser.** Standard Vue's runtime + compiler build is ~20kb larger than its runtime-only build (gzipped, Vue 3.5), because it must parse template strings in the browser.
 - **No re-render pass.** There is no virtual DOM and no diffing. When `count` changes, exactly the one text node bound to it updates.
 - **Server-rendered markup is never replaced.** Your HTML is the source of truth; LiteVue enhances it in place. There's no hydration mismatch to worry about, because there's no hydration.
 
