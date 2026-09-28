@@ -1,6 +1,6 @@
 // Builds one bundle per plugin alongside the combined `litevue-plugins.*`, so
-// a page wanting only `intersect` doesn't pay for morph and persist: 307–1279
-// bytes gzipped each, against 3065 for the set.
+// a page wanting only `intersect` doesn't pay for morph and persist. The sizes
+// live in size-budget.json, where CI checks them; figures here would rot.
 //
 // One vite invocation per plugin, because rollup refuses multiple entry points
 // for iife and umd — the formats a <script src> user needs.

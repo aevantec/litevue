@@ -34,15 +34,17 @@ features:
       An in-page inspector panel with live state editing, a stores tab, pick
       mode and themes — plus a browser-extension variant. One line disables
       everything for production.
-  - title: Transitions that work with v-if
+  - title: Errors that explain themselves
     details:
-      Vue-style enter/leave classes on show/hide, plus an unmount mode that
-      delays DOM removal until the leave animation finishes.
+      A failing expression names its directive, element and expression, and
+      suggests the name you meant. app.onError() routes every error to your
+      monitoring in production.
   - title: Plugin system
     details:
       app.use() with typed plugins. Nine first-party plugins cover
-      intersect, persist, focus (+trap), collapse, transition, mask, morph,
-      media and resize — each loadable on its own.
+      intersect, persist, focus (+trap), collapse, mask, morph, media, resize
+      and transition — including leave animations that v-if waits for. Each
+      loads on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML

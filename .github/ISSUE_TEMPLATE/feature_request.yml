@@ -11,7 +11,7 @@ body:
         - **Vue-aligned** — syntax and semantics should match standard Vue
         - **No build step** — it has to keep working from a `<script>` tag
 
-        Many good ideas belong in a [plugin](https://litevue.pages.dev/plugins/)
+        Many good ideas belong in a [plugin](https://litevue.dev/plugins/)
         rather than the core, and you can publish one without our involvement.
 
   - type: textarea

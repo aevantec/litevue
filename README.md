@@ -15,6 +15,8 @@ stays `LiteVue`.
 - **Global store** (`store()` / `$store`) and magic properties (`$dispatch`, `$watch`, `$id`, `$root`, …)
 - **Cached derived state** with `computed()`, alongside `reactive()` and `watchEffect()`
 - Extra event modifiers: `.outside`, `.window`, `.debounce`, `.throttle`, animation-event filters
+- **Error diagnostics** that name the directive, element and expression — and suggest the name you meant — plus `app.onError()` for monitoring in production
+- **Development builds** with warnings for common mistakes, picked automatically by Vite and webpack while you develop
 - Safe with dynamic content: injected markup stays inert until explicitly mounted, and `morph` updates a server-rendered region in place without losing scope state, focus or scroll
 
 ## Quick start
@@ -45,12 +47,12 @@ createApp({ count: 0 }).mount();
 Full documentation lives in the **[docs site](https://litevue.dev/)** (source in [`docs/`](docs/), `pnpm docs:dev` to run locally):
 
 - [Introduction](https://litevue.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
-- [Installation](https://litevue.dev/start-here/installation) — CDN, npm, and mount options
-- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content
+- [Installation](https://litevue.dev/start-here/installation) — CDN, npm, mount options, and development builds
+- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content, server-driven HTML, error handling
 - [Directives](https://litevue.dev/directives/) — a page per directive, with live demos
 - [Magics](https://litevue.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
-- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, `computed()`, `watchEffect()`, the devtools API
-- [Plugins](https://litevue.dev/plugins/) — the plugin system and all first-party plugins
+- [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, `reactive()`, `computed()`, `watchEffect()`, `nextTick()`, the devtools API
+- [Plugins](https://litevue.dev/plugins/) — all first-party plugins, and writing your own
 - [Devtools](https://litevue.dev/devtools/) — inspector panel, browser extension, production kill-switch
 - [Migrating from petite-vue](https://litevue.dev/migration/from-petite-vue) · [Coming from Alpine](https://litevue.dev/migration/from-alpine)
 
@@ -60,7 +62,7 @@ Full documentation lives in the **[docs site](https://litevue.dev/)** (source in
 pnpm install
 pnpm dev        # test pages at localhost:3000
 pnpm test       # vitest suite
-pnpm build      # core + devtools + plugins bundles
+pnpm build      # core, devtools and plugin bundles, production and development
 pnpm docs:dev   # documentation site
 ```
 
