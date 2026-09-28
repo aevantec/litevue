@@ -4,7 +4,7 @@ title: morph
 
 # morph <Badge type="section" text="Plugin" />
 
-Update a live region from new HTML **in place**, patching only what changed instead of replacing the markup.
+Update a live region from new HTML in place, patching only what changed.
 
 ```js
 import { createApp } from '@aevantec/litevue';
@@ -16,39 +16,58 @@ const html = await fetch('/cart').then((r) => r.text());
 morph(document.querySelector('#cart'), html);
 ```
 
-`morph(from, to)` takes a live element and either an HTML string for that element or another element. It returns the live element — the same node that was passed in, which is the point of the exercise.
+## Signature
 
-## Compared with replacing the markup
+```ts
+morph(from: Element, to: Element | string, options?: MorphOptions): Element
+```
 
-`innerHTML = html` destroys every element in the region, and a great deal depends on those nodes:
+| Parameter | Meaning |
+| --- | --- |
+| `from` | The live element to update |
+| `to` | The new markup for that element, as an HTML string or an element |
 
-- **Scope state.** A scope belongs to its element. Replace the element and `v-scope="{ open: true }"` resets — the open accordion closes, the loaded tab unloads.
-- **Browser state you don't control.** Focus and cursor position, text selection, IME composition, scroll offsets of inner containers, `<video>` playback, `<iframe>` contents, `<details open>`, in-flight CSS transitions.
-- **Effects.** A replaced region's effects have to be torn down with [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) first, or they stay subscribed and keep writing to detached nodes. Morph never detaches them, so the question doesn't arise.
+Returns `from` — the same node, which keeps its scope.
 
-::: tip This is the counterpart to manual initialization
-[Dynamic content](/essentials/dynamic-content) stays inert until you call `mount(el)` — a deliberate security decision. That handles **new** fragments well and **replacing** live ones badly. Morph is the other half: it updates a region without re-executing anything already alive.
-:::
+### Options
 
-## What the client owns
+| Option | Meaning |
+| --- | --- |
+| `key(el)` | Identity for matching children. Default: `id`, then `data-key`, then `data-id` |
+| `skip(from, to)` | Return `true` to leave a matched element's contents untouched |
+| `preserve(el)` | Return `true` to keep an element even when the new HTML omits it |
+| `beforeNodeAdded(node)` | Called before inserting a node; return `false` to leave it out |
+| `afterNodeRemoved(node)` | Called after a node is removed and its effects are released |
 
-After LiteVue walks a tree, the DOM no longer looks like the HTML your server sent — <code v-pre>{{ count }}</code> has become `3`, and `v-scope`, `@click` and `:class` have been stripped from the attributes. Morph uses the **incoming** markup to work out what the client owns, because that copy still carries the directives:
+### Attributes
 
-| In the new HTML                       | What morph does                                     |
-| ------------------------------------- | --------------------------------------------------- |
-| <code v-pre>{{ … }}</code> in a text node | leaves the rendered text alone                  |
-| `v-*`, `:`, `@` attributes            | never re-added to a live element                    |
-| `:class="…"`                          | leaves the live `class` alone — the binding owns it |
-| `v-model`                             | leaves `value` / `checked` alone                    |
-| `v-text` / `v-html` / `v-pre` / `v-once` | leaves that element's children alone             |
-| an element with `v-if` / `v-for`      | leaves the whole containing region alone            |
-| anything else                         | patched to match the server                         |
+| Attribute | Meaning |
+| --- | --- |
+| `data-morph-skip` | Never patch this element's attributes or children |
+| `data-morph-preserve` | Never remove or replace this element |
 
-Everything else — `href`, `title`, `data-*`, static text, plain classes on unbound elements — is patched, and attributes the server stopped sending are removed.
+### In templates
 
-## Keys
+`morphPlugin` adds `$morph(from, to, options?)` to every expression.
 
-Children are matched by key so a reordered list reuses its existing nodes rather than rebuilding them. Out of the box morph tries **`id`**, then **`data-key`**, then **`data-id`**:
+## Examples
+
+### Why not innerHTML
+
+`innerHTML = html` destroys every element in the region, and with them:
+
+- **Scope state** — an open accordion closes, a loaded tab unloads.
+- **Browser state** — focus, cursor, selection, inner scroll offsets, `<video>` playback, `<details open>`, running transitions.
+- **Effects** — which must be torn down with [`unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) first, or they keep writing to detached nodes.
+
+Morph keeps every node that still matches, so none of that is lost. It is the
+counterpart to [dynamic content](/essentials/dynamic-content): `mount()` adds
+new fragments, morph updates live ones.
+
+### Keys
+
+Children are matched by key, so a reordered list moves its nodes rather than
+rebuilding them:
 
 ```html
 <ul id="list">
@@ -57,109 +76,49 @@ Children are matched by key so a reordered list reuses its existing nodes rather
 </ul>
 ```
 
-Reorder those server-side and the `<li>` elements move; their scopes, focus and scroll survive.
-
-Keys only need to be unique **within a parent**, not across the page — which is why a `data-*` attribute is usually easier than `id`. The attribute name is part of the key, so an `id` of `5` and a `data-id` of `5` on two siblings don't collide. Duplicate keys among siblings log a warning in development, because the earlier element would silently lose its node.
-
-Unkeyed children fall back to positional matching, and mixing keyed with unkeyed siblings is fine — an unkeyed slot never consumes a keyed node.
-
-Supply `key` for anything else:
+Keys only need to be unique among siblings. For anything else, pass `key`:
 
 ```js
-// a row whose link is its identity
 morph(el, html, {
   key: (el) => el.querySelector('a')?.getAttribute('href') ?? null,
 });
 ```
 
-Return `null` for elements with no natural identity; they fall back to position.
+Return `null` for an element with no natural identity; it is matched by
+position. Keys are only needed when the server reorders, removes from the
+middle or inserts at the front — for content edits and appends, position is
+enough.
 
-::: warning Keys must survive the walk
-The key has to be readable from **both** the live DOM and the incoming HTML — and LiteVue strips every directive attribute from live elements during [walk](/essentials/dynamic-content). So `v-name`, `ref`, `:`… and `@`… cannot serve as keys, despite `v-name` appearing well suited to it. Use a plain HTML attribute.
-:::
+### A widget the client owns
 
-### When keys are unnecessary
-
-Positional matching is correct whenever the server never reorders — content edits, attribute changes, appends at the end. Keys earn their place for reordering, removal from the middle, and insertion at the front, where position no longer implies identity.
-
-## Opting out
-
-Mark a subtree the server should never touch:
+A chart, editor, map or player is created on the client and absent from every
+server render. Protect both its existence and its contents:
 
 ```html
-<div data-morph-skip>…client-rendered chart…</div>
-```
-
-Or decide per element:
-
-```js
-morph(el, html, { skip: (from, to) => from.classList.contains('live') });
-```
-
-`skip` keeps a matched element's *contents* intact. It does not keep the element
-itself: it is consulted only when an element has a counterpart in the incoming
-HTML, so it never sees one the server has simply stopped sending. For that, use
-`preserve`.
-
-## Preserving a node the server does not send
-
-A chart, an editor, a map, a media player — anything the client created and the
-server does not know about — is absent from every re-render. Without help, the
-first morph removes it.
-
-```html
-<div id="chart" data-morph-preserve>…initialised by a charting library…</div>
-```
-
-The element is kept whatever the incoming HTML says: not removed when it is
-missing, and not replaced when the tag at that position differs. Everything
-around it still updates.
-
-The programmatic form takes the element and returns whether to keep it:
-
-```js
-morph(el, html, { preserve: (el) => el.id === 'chart' });
-```
-
-### `skip` and `preserve` protect different things
-
-They are orthogonal, and a client-owned widget usually wants both.
-
-| | `data-morph-skip` | `data-morph-preserve` |
-| --- | --- | --- |
-| Protects | the element's **contents** | the element's **existence** |
-| Element is in the incoming HTML | attributes and children left alone | **attributes and children are patched** |
-| Element is absent from it | removed | kept |
-| Tag at that position differs | **replaced** | kept |
-
-So `preserve` alone keeps your chart's element, but lets the server rewrite what
-is inside it on any update that does include it. And `skip` alone keeps the
-contents, but the element is still removed when the server stops sending it, and
-still replaced if the tag changes.
-
-```html
-<!-- a widget the client owns entirely -->
 <div id="chart" data-morph-skip data-morph-preserve></div>
 ```
 
-Together: never removed, never replaced, never patched.
+| | `data-morph-skip` | `data-morph-preserve` |
+| --- | --- | --- |
+| Protects | The element's contents | The element's existence |
+| Present in the new HTML | Attributes and children left alone | Attributes and children patched |
+| Absent from it | Removed | Kept |
+| A different tag at that position | Replaced | Kept |
 
-::: tip Why not `v-preserve`
-An unrecognised `v-` attribute makes the walker report an unknown directive, and
-registering one as a real directive would have the walker strip it — leaving
-nothing for the next morph to find. `data-morph-preserve` sits alongside
-`data-morph-skip` and the walker never touches either.
-:::
+The programmatic forms decide per element:
 
-## Lifecycle hooks
+```js
+morph(el, html, {
+  skip: (from) => from.classList.contains('live'),
+  preserve: (el) => el.id === 'chart',
+});
+```
 
-For anything the two attributes cannot express, morph reports what it is about
-to do:
+### Hooks
 
 ```js
 morph(el, html, {
   beforeNodeAdded(node) {
-    // return false to leave it out
     return !(node instanceof Element && node.matches('.ad-slot'));
   },
   afterNodeRemoved(node) {
@@ -168,22 +127,11 @@ morph(el, html, {
 });
 ```
 
-`beforeNodeAdded` runs for every node morph is about to insert, including one
-replacing an element whose tag changed. Returning `false` skips that insertion
-and nothing else.
-
-`afterNodeRemoved` runs once the node is out of the document **and its LiteVue
-effects, listeners and scopes have been released**. What it hands you is inert,
-so a hook that keeps the node for a while is holding markup rather than a live
-subtree. Preserved nodes are never announced, because they were never removed.
-
-## In templates
-
-The plugin registers [`$morph`](/magics/) on the root scope, so simple cases don't need a `<script>`:
+### Without a script
 
 ```html
 <div v-scope="{ busy: false }">
-  <section ref="panel"><!-- … --></section>
+  <section ref="panel">…</section>
   <button
     @click="busy = true;
             fetch('/panel').then(r => r.text())
@@ -194,15 +142,29 @@ The plugin registers [`$morph`](/magics/) on the root scope, so simple cases don
 </div>
 ```
 
-## Limitations
+## Behavior
 
-Known constraints to weigh before depending on it:
+Morph reads the **incoming** HTML to learn what the client owns, since that copy
+still carries the directives:
 
-- **A container hosting `v-if` or `v-for` is skipped whole.** The live DOM holds block anchors plus however many clones the data produced; the server still sends the single authoring template. Those shapes can't be reconciled positionally, so the client keeps ownership — including any static siblings in that container.
-- **`v-scope` changes are ignored on live elements.** If the server renders `v-scope="{ count: 0 }"` for an element whose count is already `3`, the live value wins. Reset state explicitly rather than expecting the markup to do it.
-- **Static attributes bound elsewhere can be clobbered.** Morph only knows a `class` is client-owned when the incoming element carries `:class`. If you set a class imperatively from JavaScript, mark the element `data-morph-skip`.
-- **A removed element's `v-scope` is gone with it.** Effects, listeners and scopes are released as the node is detached, so nothing is left subscribed — but the state that scope held is not recoverable, and markup the server sends again arrives as a fresh scope at its initial values. Keep anything that must outlive a re-render in a [store](/globals/store) rather than in the region.
+| In the new HTML | Morph |
+| --- | --- |
+| <code v-pre>{{ … }}</code> in a text node | Leaves the rendered text alone |
+| `v-*`, `:` and `@` attributes | Never adds them to a live element |
+| `:class` | Leaves the live `class` alone |
+| `v-model` | Leaves `value` and `checked` alone |
+| `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
+| An element with `v-if` or `v-for` | Leaves the whole containing element alone |
+| Anything else | Patches it to match, and removes attributes the server dropped |
 
-::: warning Morphed-in markup is walked
-New elements inserted by a morph **are** initialized, including any `v-scope` they carry — that's what makes newly-added content work. It stays narrower than auto-init, because it only happens inside a region you explicitly named, but treat the HTML you morph in with the same care as anything else you mount: see [Security](/start-here/security#morph-and-server-rendered-updates).
-:::
+- New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
+- A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
+- A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
+- A removed element's scope is released with it. State that must survive a re-render belongs in a [store](/globals/store).
+- A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
+- Duplicate sibling keys warn in development, since the earlier element would lose its node.
+- `afterNodeRemoved` receives an inert node. Preserved nodes are never announced, because they are never removed.
+
+## Related
+
+[Server-driven HTML](/essentials/server-driven-html) · [Dynamic content](/essentials/dynamic-content) · [Security](/start-here/security) · [Installation](/plugins/installation)

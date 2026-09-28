@@ -8,11 +8,11 @@ LiteVue reports a small set of mistakes that would otherwise fail silently — t
 page still renders, nothing throws, and the symptom appears later as lost input
 or a blank value.
 
-Every warning is guarded by `import.meta.env.DEV`. The production build replaces
-that constant and the minifier removes the branch, so neither the checks nor
-their messages reach a shipped bundle: **the core bundle is byte-for-byte
-identical with and without them.** Nothing here needs to be turned off for
-production.
+The warnings live only in the [development builds](/start-here/installation#development-builds).
+From npm you get them automatically while developing with Vite or webpack 5;
+from a CDN, load the `.dev` file. The production files contain neither the
+checks nor their messages, so nothing here needs to be turned off before you
+deploy.
 
 Each warning prints once per distinct cause, because most are raised from
 effects that re-run on every relevant state change.
@@ -88,3 +88,24 @@ bring one back, insert fresh markup and mount that — which is what
 [morph](/plugins/morph) does. Mounting *new* markup into an existing app is
 unaffected and remains the documented way to
 [initialize dynamic content](/essentials/dynamic-content).
+
+## A modifier that can never match
+
+On any event other than `keydown`, `keyup` and `keypress`, a modifier LiteVue
+does not recognise is read as a key filter — and those events have no key, so
+it filters nothing. The handler runs anyway, and the modifier is silently
+ignored.
+
+The usual cause is Alpine's timing syntax:
+
+```html
+<!-- runs at the 250ms default, not 500ms -->
+<input @input.debounce.500ms="search()" />
+
+<!-- LiteVue writes the interval with a dash -->
+<input @input.debounce-500="search()" />
+```
+
+The warning names the modifier and, for a `<n>ms` modifier, suggests the dash
+form. Key names on keyboard events — `.enter`, `.f1`, `.esc` — never warn. See
+[`v-on`](/directives/v-on#key-and-mouse-modifiers).

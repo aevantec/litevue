@@ -31,13 +31,19 @@ export const createWatch =
     let init = false;
     ctx.effect(() => {
       const value = getter();
-      if (init && value !== oldValue) {
-        // don't let reads inside the callback become dependencies
+      const previous = oldValue;
+      // recorded first, so a callback that throws cannot leave it stale
+      oldValue = value;
+      if (init && value !== previous) {
+        // don't let reads inside the callback become dependencies; the
+        // finally matters, since a paused tracker stays paused page-wide
         pauseTracking();
-        cb(value, oldValue);
-        resetTracking();
+        try {
+          cb(value, previous);
+        } finally {
+          resetTracking();
+        }
       }
       init = true;
-      oldValue = value;
     });
   };

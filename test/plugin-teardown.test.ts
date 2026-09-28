@@ -63,7 +63,9 @@ describe('plugin teardown contract', () => {
 
     expect(() => app.unmount()).not.toThrow();
     expect(second).toBe(true);
-    expect(String(err.mock.calls[0]?.[0])).toContain('plugin teardown threw');
+    expect(String(err.mock.calls[0]?.[0])).toContain(
+      'error tearing down plugin'
+    );
     err.mockRestore();
   });
 

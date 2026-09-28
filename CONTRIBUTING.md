@@ -9,7 +9,7 @@ a pull request, and how releases work.
 
 Before proposing a feature, it helps to know what `litevue` is trying to be:
 
-- **Small.** The core is ~9kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
+- **Small.** The core is ~10kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
   afterthought — a change that grows it needs to earn the bytes.
 - **Vue-aligned.** Syntax and semantics should match standard Vue wherever
   possible, so code can graduate to full Vue with minimal friction.
@@ -46,7 +46,7 @@ pnpm test       # vitest suite in jsdom (test/)
 pnpm test:watch # vitest in watch mode
 pnpm test:browser  # vitest suite in real Chromium (test/browser/)
 pnpm coverage      # vitest with a coverage report for src/
-pnpm build      # core + devtools + plugins bundles + types
+pnpm build      # core, devtools and plugin bundles, production and development, + types
 pnpm docs:dev   # documentation site at localhost:5173
 pnpm format     # prettier
 ```
@@ -96,10 +96,37 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    ```bash
    pnpm prettier --check "**/*.{ts,mts,js,html,json}"
    pnpm tsc --noEmit
+   pnpm lint
    pnpm test
    pnpm test:browser
    pnpm build
+   pnpm check:size
+   pnpm check:bundles
+   pnpm check:dist-runtime
    ```
+
+   The last three read what `pnpm build` wrote, so they come after it.
+   `check:dist-runtime` runs the built bundles in jsdom — the test suite imports
+   `src/`, and a change only the build makes is invisible to it.
+
+   `pnpm lint` runs [oxlint](https://oxc.rs/docs/guide/usage/linter). It covers
+   the ground between prettier and `tsc` — dead code, unusable regex escapes, a
+   variable a guard depends on that is never assigned — and finishes in about a
+   second. Warnings fail the build, so fix them rather than leaving them.
+   Rules live in `.oxlintrc.json`. It runs oxlint's default `correctness`
+   category, with two rules deliberately off:
+
+   - **`no-unused-expressions`** — `cond && doThing()` is the house idiom here,
+     used throughout source and tests. Thirty hits, all intentional.
+   - **`unicorn/no-useless-spread`** — a false positive on *live* DOM
+     collections. `walk.ts` and morph's `patchAttrs` iterate `el.attributes`
+     while calling `removeAttribute`, so the spread is exactly what stops the
+     iteration skipping entries. Following the rule's advice would introduce
+     real bugs.
+
+   The style categories were tried and rejected: they flag `__ctx`, `__leave`
+   and `__LITEVUE_DEVTOOLS__`, which are deliberate internal markers, and
+   sequential `await`s in tests, which are ordering rather than an oversight.
 
    `pnpm test:browser` needs the Chromium build once per machine:
    `pnpm exec playwright install chromium`.

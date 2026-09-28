@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: LiteVue
-  text: Vue's template syntax in ~9kb
+  text: Vue's template syntax in ~10kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
   image:
     src: /logo.png
@@ -27,22 +27,24 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~9kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~4kb<!-- size:dist/litevue-plugins.iife.js --> for all nine) and devtools (~6kb<!-- size:dist/litevue-devtools.iife.js -->)
+      ~10kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~4kb<!-- size:dist/litevue-plugins.iife.js --> for all nine) and devtools (~6kb<!-- size:dist/litevue-devtools.iife.js -->)
       ship as separate opt-in bundles that add zero weight to the core.
   - title: Built-in devtools
     details:
       An in-page inspector panel with live state editing, a stores tab, pick
       mode and themes — plus a browser-extension variant. One line disables
       everything for production.
-  - title: Transitions that work with v-if
+  - title: Errors that explain themselves
     details:
-      Vue-style enter/leave classes on show/hide, plus an unmount mode that
-      delays DOM removal until the leave animation finishes.
+      A failing expression names its directive, element and expression, and
+      suggests the name you meant. app.onError() routes every error to your
+      monitoring in production.
   - title: Plugin system
     details:
       app.use() with typed plugins. Nine first-party plugins cover
-      intersect, persist, focus (+trap), collapse, transition, mask, morph,
-      media and resize — each loadable on its own.
+      intersect, persist, focus (+trap), collapse, mask, morph, media, resize
+      and transition — including leave animations that v-if waits for. Each
+      loads on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML

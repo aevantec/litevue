@@ -4,7 +4,7 @@ contact_links:
     url: https://github.com/aevantec/litevue/discussions
     about: Ask in Discussions — issues are for bugs and feature proposals.
   - name: Documentation
-    url: https://litevue.pages.dev/
+    url: https://litevue.dev/
     about: Directives, magics, plugins, devtools, and the migration guides.
   - name: Security vulnerability
     url: https://github.com/aevantec/litevue/security/advisories/new

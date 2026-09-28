@@ -9,7 +9,7 @@ import {
   persist,
   transition,
 } from '../src/plugins';
-import { mount, tick, sleep } from './utils';
+import { tick, sleep } from './utils';
 
 describe('installing every first-party plugin', () => {
   // Guards the "Installing every plugin" example in

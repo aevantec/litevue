@@ -4,12 +4,36 @@ title: v-html
 
 # v-html <Badge type="section" text="Directive" />
 
-Sets the element's `innerHTML` from an expression:
+Set an element's inner HTML from an expression.
+
+```html
+<article v-html="post.bodyHtml"></article>
+```
+
+::: danger Only for trusted HTML
+`v-html` renders raw markup. Passing it anything a user can influence is a
+cross-site scripting risk. See [Security](/start-here/security#v-html).
+:::
+
+## Syntax
+
+| Form | Meaning |
+| --- | --- |
+| `v-html="expression"` | Replace the element's content with the value, parsed as HTML |
+
+No argument or modifiers.
+
+## Examples
 
 <<< ../.vitepress/demos/v-html.html{html}
 
 <LiveDemo src="v-html" />
 
-::: danger XSS
-Never feed untrusted input to `v-html` — it renders raw HTML. Note that even markup injected through `v-html` stays inert as LiteVue templates: directives inside it are **not** compiled (see [Dynamic Content](/essentials/dynamic-content)), but plain HTML/script injection hazards still apply as with any `innerHTML`.
-:::
+## Behavior
+
+- Directives and `{{ }}` inside the inserted HTML are not compiled. To make new markup interactive, see [Dynamic content](/essentials/dynamic-content).
+- Every update replaces the whole content, so focus, selection and any state inside it are lost.
+
+## Related
+
+[v-text](/directives/v-text) · [Security](/start-here/security) · [Dynamic content](/essentials/dynamic-content)

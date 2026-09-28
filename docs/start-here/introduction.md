@@ -4,7 +4,7 @@ title: Introduction
 
 # Introduction <Badge type="section" text="Start Here" />
 
-**LiteVue** is a ~9kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
+**LiteVue** is a ~10kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
 
 It is a maintained fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You, continuing from 0.4.1 with devtools, transitions, a plugin system, a global store, and additional directives — while keeping the original goal of staying as close to standard Vue as the format allows.
 
@@ -25,7 +25,7 @@ Most frameworks treat HTML as output — you write a template, a compiler turns 
 
 The practical consequences:
 
-- **No template compiler ships to the browser.** Standard Vue's runtime + compiler build is ~13kb larger precisely because it must parse template strings at runtime.
+- **No template compiler ships to the browser.** Standard Vue's runtime + compiler build is ~20kb larger than its runtime-only build (gzipped, Vue 3.5), because it must parse template strings in the browser.
 - **No re-render pass.** There is no virtual DOM and no diffing. When `count` changes, exactly the one text node bound to it updates.
 - **Server-rendered markup is never replaced.** Your HTML is the source of truth; LiteVue enhances it in place. There's no hydration mismatch to worry about, because there's no hydration.
 
@@ -58,14 +58,14 @@ These work the way you'd expect coming from Vue, including modifiers and shortha
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Mustache text bindings                                                                         | configurable via [custom delimiters](/essentials/templating#custom-delimiters) |
 | [`v-bind`](/directives/v-bind)                                                                 | `:` shorthand, `class` / `style` special handling                              |
-| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and all standard modifiers                                       |
+| [`v-on`](/directives/v-on)                                                                     | `@` shorthand and all standard modifiers, including key aliases               |
 | [`v-model`](/directives/v-model)                                                               | all input types, non-string `:value` bindings                                  |
 | [`v-if`](/directives/v-if) / `v-else` / `v-else-if`                                            |                                                                                |
 | [`v-for`](/directives/v-for)                                                                   | with keyed reconciliation                                                      |
 | [`v-show`](/directives/v-show), [`v-text`](/directives/v-text), [`v-html`](/directives/v-html) |                                                                                |
 | [`v-pre`](/directives/v-pre), [`v-once`](/directives/v-once), [`v-cloak`](/directives/v-cloak) |                                                                                |
 | [`ref`](/directives/ref) template refs                                                         | exposed as [`$refs`](/magics/refs)                                             |
-| `reactive()`, `nextTick()`                                                                     | re-exported from `@vue/reactivity`                                             |
+| [`reactive()`](/globals/reactive), [`nextTick()`](/globals/next-tick)                          | re-exported from `@vue/reactivity`                                             |
 
 ## What behaves differently
 
@@ -78,6 +78,8 @@ Deliberate divergences, all stemming from the absence of a component system:
 | [Components](/essentials/components) | plain functions returning scope objects                                                         |
 | Custom directives                    | a different, simpler interface — see [`app.directive()`](/globals/create-app#custom-directives) |
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
+| [`ref`](/directives/ref) in `v-for` | one element — the last row — rather than an array                                              |
+| [`$watch`](/magics/watch)            | no `immediate` or `deep` options, no stop handle, and a path compares by identity               |
 
 ## What's not supported
 
@@ -85,10 +87,10 @@ Dropped because their utility-to-size ratio doesn't justify inclusion for progre
 
 - `ref()` and `watch()` as standalone APIs (use scope state and [`$watch`](/magics/watch)) — `reactive()`, [`computed()`](/globals/computed) and [`watchEffect()`](/globals/watch-effect) _are_ exported
 - Render functions and JSX — there is no virtual DOM
-- Reactivity for collection types (`Map`, `Set`) — stripped from the build for size
+- Reactivity for `Map`, `Set`, `WeakMap` and `WeakSet` — left out of the build for size. They work in state but are not tracked; [assign a new one](/globals/reactive#behavior) to update the page
 - `KeepAlive`, `Suspense`, async components
 - Single-file components, scoped styles, and everything else requiring a build step
-- `v-for` deep destructuring, `v-on="object"`, `v-is` / `<component :is>`
+- `v-for` deep destructuring, `v-on="object"`, dynamic arguments (`:[name]`), `v-is` / `<component :is>`
 - Server-side rendering and platform-agnostic rendering — LiteVue is coupled to the DOM by design
 
 ::: tip Partially covered
@@ -138,7 +140,7 @@ The core stays small because everything else is opt-in and separately bundled:
 
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
-| Core                              | ~9kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
+| Core                              | ~10kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
 | [Plugins](/plugins/)              | ~4kb<!-- size:dist/litevue-plugins.iife.js --> (all nine) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [Devtools panel](/devtools/panel) | ~6kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |
 

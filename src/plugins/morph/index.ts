@@ -12,7 +12,8 @@ import type { Plugin } from '../../app';
 
 export interface MorphOptions {
   /**
-   * Identity used to match children across the update. Defaults to `id`.
+   * Identity used to match children across the update. Defaults to `id`,
+   * then `data-key`, then `data-id`.
    * Elements that match keep their DOM node (and therefore their scope);
    * unkeyed children fall back to matching by position.
    */

@@ -10,6 +10,7 @@ import { ref } from './directives/ref';
 import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
 import { own, setOwner } from './ownership';
+import { describeEl, handleError } from './errors';
 
 const dirRE = /^(?:v-|:|@)/;
 const modifierRE = /\.([\w-]+)/g;
@@ -98,7 +99,11 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
 
     // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
-      const scope = exp ? evaluate(ctx.scope, exp) : {};
+      // `|| {}`: a throwing expression evaluates to undefined, and reading
+      // $template off that would take down the whole mount, not one region
+      const scope =
+        (exp ? evaluate(ctx.scope, exp, el, { source: 'v-scope', el }) : {}) ||
+        {};
       ctx = createScopedContext(ctx, scope);
       // stashed so code inserting markup into a live tree later (the morph
       // plugin) walks it with the scope it landed in, not the root
@@ -133,7 +138,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     const deferred: [string, string][] = [];
     for (const { name, value } of [...el.attributes]) {
       if (dirRE.test(name) && name !== 'v-cloak') {
-        if (name === 'v-model') {
+        if (name === 'v-model' || name.startsWith('v-model.')) {
           // defer v-model since it relies on :value bindings to be processed
           // first, but also before v-on listeners (#73)
           deferred.unshift([name, value]);
@@ -168,7 +173,16 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       if (lastIndex < data.length) {
         segments.push(JSON.stringify(data.slice(lastIndex)));
       }
-      applyDirective(node, text, segments.join('+'), ctx);
+      applyDirective(
+        node,
+        text,
+        segments.join('+'),
+        ctx,
+        undefined,
+        undefined,
+        '{{ }}',
+        data.trim()
+      );
     }
   } else if (type === 11) {
     walkChildren(node as DocumentFragment, ctx);
@@ -191,6 +205,9 @@ const processDirective = (
   let dir: Directive;
   let arg: string | undefined;
   let modifiers: Record<string, true> | undefined;
+  // the attribute as written, modifiers included: what diagnostics quote and
+  // what must be removed — the stripped name below never existed on the element
+  const source = raw;
 
   // modifiers
   raw = raw.replace(modifierRE, (_, m) => {
@@ -212,10 +229,30 @@ const processDirective = (
   }
   if (dir) {
     if (dir === bind && arg === 'ref') dir = ref;
-    applyDirective(el, dir, exp, ctx, arg, modifiers);
-    el.removeAttribute(raw);
+    applyDirective(el, dir, exp, ctx, arg, modifiers, source);
+    el.removeAttribute(source);
   } else if (import.meta.env.DEV) {
-    console.error(`unknown custom directive ${raw}.`);
+    // The structural ones are consumed directly in walk() rather than living
+    // in builtInDirectives, so listing only that map would have told the
+    // reader that v-if and v-for do not exist.
+    const known = [
+      'v-scope',
+      'v-if',
+      'v-for',
+      'v-once',
+      'v-pre',
+      'v-cloak',
+      'v-teleport',
+      'v-name',
+      'ref',
+      ...Object.keys(builtInDirectives).map((d) => 'v-' + d),
+      ...Object.keys(ctx.dirs).map((d) => 'v-' + d),
+    ].sort();
+    console.error(
+      `[litevue] unknown directive ${source} on ${describeEl(el)}.\n` +
+        `  Known directives: ${known.join(', ')}.\n` +
+        `  A directive from a plugin needs app.use(...) before mount().`
+    );
   }
 };
 
@@ -225,22 +262,33 @@ const applyDirective = (
   exp: string,
   ctx: Context,
   arg?: string,
-  modifiers?: Record<string, true>
+  modifiers?: Record<string, true>,
+  source?: string,
+  displayExp?: string
 ) => {
-  const get = (e = exp) => evaluate(ctx.scope, e, el);
+  const meta = { source, el, expression: displayExp };
+  const get = (e = exp) => evaluate(ctx.scope, e, el, meta);
   // ctx.effect is passed through unwrapped: directives are applied while the
   // walk cursor still points at this element, so anything they create
   // synchronously is attributed correctly. v-effect is the one exception and
   // restores the cursor itself.
-  const cleanup = dir({
-    el,
-    get,
-    effect: ctx.effect,
-    ctx,
-    exp,
-    arg,
-    modifiers,
-  });
+  let cleanup;
+  try {
+    cleanup = dir({
+      el,
+      get,
+      effect: ctx.effect,
+      ctx,
+      exp,
+      arg,
+      modifiers,
+    });
+  } catch (e) {
+    // contained, so one throwing setup cannot abort the walk and leave the
+    // rest of the page unbound
+    handleError(e, { phase: 'directive', source, el, expression: exp });
+    return;
+  }
   if (cleanup) {
     addCleanup(ctx, cleanup);
   }
@@ -249,10 +297,16 @@ const applyDirective = (
 const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = document.querySelector(template);
-    if (import.meta.env.DEV && !templateEl) {
-      console.error(
-        `template selector ${template} has no matching <template> element.`
-      );
+    // Returning matters in production, where the warning below is stripped:
+    // without it a missing selector reaches `.content` and throws with no
+    // diagnostic at all.
+    if (!templateEl) {
+      if (import.meta.env.DEV) {
+        console.error(
+          `template selector ${template} has no matching <template> element.`
+        );
+      }
+      return;
     }
     el.appendChild((templateEl as HTMLTemplateElement).content.cloneNode(true));
     return;

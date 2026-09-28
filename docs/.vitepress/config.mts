@@ -27,7 +27,7 @@ export default defineConfig({
   },
   title: 'LiteVue',
   description:
-    "Vue's template syntax at ~9kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
+    "Vue's template syntax at ~10kb — a petite-vue fork with devtools, transitions, plugins, and a global store.",
   base,
   // Cloudflare already 307s /foo.html to /foo, so emitting .html links meant
   // every internal link and every sitemap entry pointed at a redirect rather
@@ -108,6 +108,7 @@ export default defineConfig({
             text: 'Server-Driven HTML',
             link: '/essentials/server-driven-html',
           },
+          { text: 'Error Handling', link: '/essentials/error-handling' },
         ],
       },
       {
@@ -155,8 +156,10 @@ export default defineConfig({
           { text: 'Overview', link: '/globals/' },
           { text: 'createApp()', link: '/globals/create-app' },
           { text: 'store()', link: '/globals/store' },
+          { text: 'reactive()', link: '/globals/reactive' },
           { text: 'computed()', link: '/globals/computed' },
           { text: 'watchEffect()', link: '/globals/watch-effect' },
+          { text: 'nextTick()', link: '/globals/next-tick' },
           { text: 'Devtools API', link: '/globals/devtools' },
         ],
       },
@@ -166,6 +169,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/plugins/' },
           { text: 'Installation', link: '/plugins/installation' },
+          { text: 'Writing a plugin', link: '/plugins/authoring' },
           { text: 'intersect', link: '/plugins/intersect' },
           { text: 'persist', link: '/plugins/persist' },
           { text: 'focus', link: '/plugins/focus' },

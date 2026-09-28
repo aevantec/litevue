@@ -16,7 +16,7 @@ body:
     attributes:
       label: litevue version
       description: 'Run `npm list @aevantec/litevue`, or give the CDN URL you loaded.'
-      placeholder: 0.5.1
+      placeholder: 0.x.y
     validations:
       required: true
 
@@ -26,10 +26,11 @@ body:
       label: How are you loading it?
       options:
         - Script tag (CDN, IIFE build)
+        - Script tag (CDN, .dev build)
         - Bundler (npm, ESM)
         - Bundler (npm, CJS / require)
-        - litevue/plugins
-        - litevue/devtools
+        - '@aevantec/litevue/plugins'
+        - '@aevantec/litevue/devtools'
         - Browser extension
     validations:
       required: true
@@ -46,7 +47,7 @@ body:
 
         or:
 
-        <script src="https://unpkg.com/litevue" defer init></script>
+        <script src="https://unpkg.com/@aevantec/litevue" defer init></script>
         <div v-scope="{ count: 0 }">…</div>
     validations:
       required: true
@@ -84,7 +85,7 @@ body:
         - label: I'm on the latest version, or I've confirmed the bug still exists there.
           required: true
         - label: >-
-            I've checked the [docs](https://litevue.pages.dev/) — including the
-            [Vue compatibility and limitations](https://litevue.pages.dev/start-here/introduction)
+            I've checked the [docs](https://litevue.dev/) — including the
+            [Vue compatibility and limitations](https://litevue.dev/start-here/introduction)
             section, since litevue is intentionally a subset of Vue.
           required: true

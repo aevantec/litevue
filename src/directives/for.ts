@@ -6,7 +6,7 @@ import { setOwner } from '../ownership';
 import { warnOnce } from '../warn';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
-const forIteratorRE = /,([^,\}\]]*)(?:,([^,\}\]]*))?$/;
+const forIteratorRE = /,([^,}\]]*)(?:,([^,}\]]*))?$/;
 const stripParensRE = /^\(|\)$/g;
 const destructureRE = /^[{[]\s*((?:[\w_$]+\s*,?\s*)+)[\]}]$/;
 
@@ -110,7 +110,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       indexExp && (data[indexExp] = index);
     }
     const childCtx = createScopedContext(ctx, data);
-    const key = keyExp ? evaluate(childCtx.scope, keyExp) : index;
+    const key = keyExp
+      ? evaluate(childCtx.scope, keyExp, el, { source: ':key', el })
+      : index;
     map.set(key, index);
     childCtx.key = key;
     return childCtx;
@@ -129,7 +131,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   let prevItems: any[] | undefined;
 
   ctx.effect(() => {
-    const source = evaluate(ctx.scope, sourceExp);
+    const source = evaluate(ctx.scope, sourceExp, el, { source: 'v-for', el });
     const prevKeyToIndexMap = keyToIndexMap;
     [childCtxs, keyToIndexMap] = createChildContexts(source);
 

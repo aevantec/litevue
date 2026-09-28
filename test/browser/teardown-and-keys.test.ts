@@ -1,7 +1,7 @@
 import { describe, test, afterEach, expect } from 'vitest';
 import { createApp } from '../../src';
 import { morph, morphPlugin } from '../../src/plugins';
-import { mount, tick, sleep } from '../utils';
+import { mount, tick } from '../utils';
 
 /**
  * The remaining two bugs that shipped past a green jsdom suite: an unmounted

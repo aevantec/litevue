@@ -16,6 +16,11 @@ export const collapse: Plugin = (app) => {
       const match = /^duration-(\d+)$/.exec(m);
       if (match) duration = +match[1];
     }
+    // Restored on teardown: app.unmount(el) leaves the element in the
+    // document, so a style left behind keeps acting on it — a region
+    // collapsed at unmount would stay at height 0 with nothing to reopen it.
+    const owned = ['overflow', 'height', 'transition'] as const;
+    const before = owned.map((k) => elem.style[k]);
     elem.style.overflow = 'hidden';
     let first = true;
     let seq = 0;
@@ -56,6 +61,9 @@ export const collapse: Plugin = (app) => {
       }
     });
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      owned.forEach((k, i) => (elem.style[k] = before[i]));
+    };
   });
 };

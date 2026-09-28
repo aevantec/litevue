@@ -39,6 +39,12 @@ jobs:
       - name: Type check
         run: pnpm tsc --noEmit
 
+      # Catches the class that sits between prettier and tsc: dead code,
+      # unusable regex escapes, and variables a guard depends on that are
+      # never assigned. Rust-based, so the whole tree lints in about a second.
+      - name: Lint
+        run: pnpm lint
+
       - name: Test
         run: pnpm test
 
@@ -49,6 +55,11 @@ jobs:
       # bundle a second store registry, and persistence then fails silently.
       - name: Check bundle boundaries
         run: pnpm check:bundles
+
+      # Tests import src/; this runs the built core. A Map in scope state
+      # crashed the shipped bundle while every test passed against source.
+      - name: Check the built bundle at runtime
+        run: pnpm check:dist-runtime
 
       - name: Check bundle sizes
         # Size is part of what this library promises. Without a gate it is

@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { resolve } from 'path';
+import { trimReactivity } from './trim-reactivity.mts';
 
 /**
  * The suite jsdom cannot run.
@@ -15,6 +16,9 @@ import { resolve } from 'path';
  * an order of magnitude faster.
  */
 export default defineConfig({
+  // the same reactivity the build ships; see trim-reactivity.mts
+  plugins: [trimReactivity()],
+  optimizeDeps: { exclude: ['@vue/reactivity'] },
   resolve: {
     alias: {
       '@aevantec/litevue': resolve(import.meta.dirname, 'src/index.ts'),

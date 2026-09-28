@@ -1,6 +1,24 @@
 import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
+import { handleError } from '../errors';
+import { warnOnce } from '../warn';
+
+/**
+ * Can `exp` stand as a single expression, or is it a statement list?
+ * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
+ */
+const expressionCache: Record<string, boolean> = Object.create(null);
+const isExpression = (exp: string) => {
+  const hit = expressionCache[exp];
+  if (hit !== undefined) return hit;
+  try {
+    new Function(`return (${exp})`);
+    return (expressionCache[exp] = true);
+  } catch {
+    return (expressionCache[exp] = false);
+  }
+};
 
 // same as vue 2
 const simplePathRE =
@@ -28,11 +46,23 @@ const modifierGuards: Record<
     systemModifiers.some((m) => (e as any)[`${m}Key`] && !modifiers[m]),
 };
 
+// Vue's key aliases. `left` and `right` are mouse buttons too — which one
+// depends on the event. `delete` also matches Backspace, as in Vue.
+const keyAliases: Record<string, string> = {
+  esc: 'escape',
+  space: ' ',
+  up: 'arrow-up',
+  down: 'arrow-down',
+  left: 'arrow-left',
+  right: 'arrow-right',
+  delete: 'backspace',
+};
+
 // modifiers that are never key-name filters on keyboard events
 const nonKeyModifierRE =
   /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
-export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
+export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
   if (!arg) {
     if (import.meta.env.DEV) {
       console.error(`v-on="obj" syntax is not supported in LiteVue.`);
@@ -40,9 +70,38 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return;
   }
 
-  let handler = simplePathRE.test(exp)
+  // The expression form returns the value, so an async handler's rejection
+  // can be reported. Statement lists like `a++; b++` keep the block form.
+  const raw = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
-    : get(`($event => { ${exp} })`);
+    : isExpression(exp)
+      ? get(`($event => (${exp}))`)
+      : get(`($event => { ${exp} })`);
+
+  // The event fires long after get() returned, so the evaluator's try/catch
+  // no longer applies; without this, throws go unattributed and rejections
+  // are silent.
+  let handler = (...args: any[]) => {
+    try {
+      const result = raw(...args);
+      // only a real Promise: a query builder is a thenable with no .catch,
+      // and would run its query if its then were called on its behalf
+      if (result instanceof Promise) result.catch(fail);
+      return result;
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  function fail(e: unknown) {
+    handleError(e, {
+      phase: 'handler',
+      source: `@${arg}`,
+      expression: exp,
+      el,
+      scope: ctx.scope,
+    });
+  }
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
@@ -108,19 +167,34 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     }
 
     const keyFilter = Object.keys(modifiers).filter(
-      (k) => !nonKeyModifierRE.test(k)
+      (k) => !nonKeyModifierRE.test(k) || k in keyAliases
     );
+
+    // A key name on a non-keyboard event filters nothing: Alpine's
+    // `.debounce.500ms` otherwise runs at 250ms without a sound.
+    if (import.meta.env.DEV && !arg.startsWith('key')) {
+      for (const k of keyFilter) {
+        if (k in keyAliases) continue;
+        const ms = /^(\d+)ms$/.exec(k);
+        warnOnce(
+          `modifier:${arg}.${k}`,
+          `@${arg}.${k}: .${k} is not a modifier LiteVue knows, so it is ` +
+            `ignored.` +
+            (ms
+              ? ` Timings are written with a dash — .debounce-${ms[1]} or ` +
+                `.throttle-${ms[1]}.`
+              : ` Key names only filter keyboard events.`)
+        );
+      }
+    }
 
     handler = (e: Event) => {
       if (modifiers.outside && el.contains(e.target as Node)) {
         return;
       }
-      if (
-        'key' in e &&
-        keyFilter.length &&
-        !(hyphenate((e as KeyboardEvent).key) in modifiers)
-      ) {
-        return;
+      if ('key' in e && keyFilter.length) {
+        const key = hyphenate((e as KeyboardEvent).key);
+        if (!keyFilter.some((k) => k === key || keyAliases[k] === key)) return;
       }
       for (const key in modifiers) {
         const guard = modifierGuards[key];

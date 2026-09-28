@@ -65,11 +65,23 @@ export const createContext = (parent?: Context): Context => {
   return ctx;
 };
 
+/**
+ * Framework-provided, so non-enumerable: `Object.assign`-ing one scope onto
+ * another must copy the user's data and leave these alone. v-for does exactly
+ * that on every update, which reset each row's $id and wiped its $refs.
+ */
+const hide = (scope: any, key: string, value: any) =>
+  Object.defineProperty(scope, key, {
+    value,
+    writable: true,
+    configurable: true,
+  });
+
 export const createScopedContext = (ctx: Context, data = {}): Context => {
   const parentScope = ctx.scope;
   const mergedScope = Object.create(parentScope);
   Object.defineProperties(mergedScope, Object.getOwnPropertyDescriptors(data));
-  mergedScope.$refs = Object.create(parentScope.$refs);
+  hide(mergedScope, '$refs', Object.create(parentScope.$refs));
   const reactiveProxy = reactive(
     new Proxy(mergedScope, {
       set(target, key, val, receiver) {
@@ -91,8 +103,8 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   };
   // per-scope magics — set on the raw scope, not the proxy, so the set trap
   // cannot fall them through to the parent
-  mergedScope.$watch = createWatch(scopedCtx);
-  mergedScope.$id = createId();
+  hide(mergedScope, '$watch', createWatch(scopedCtx));
+  hide(mergedScope, '$id', createId());
   bindContextMethods(reactiveProxy);
   return scopedCtx;
 };

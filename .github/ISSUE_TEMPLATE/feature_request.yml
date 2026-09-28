@@ -7,11 +7,11 @@ body:
       value: |
         Before proposing, it helps to know what litevue is optimizing for:
 
-        - **Small** — the core is ~8kb gzipped, and new bytes have to earn their place
+        - **Small** — the core is ~10kb<!-- size:dist/litevue.iife.js --> gzipped, and new bytes have to earn their place
         - **Vue-aligned** — syntax and semantics should match standard Vue
         - **No build step** — it has to keep working from a `<script>` tag
 
-        Many good ideas belong in a [plugin](https://litevue.pages.dev/plugins/)
+        Many good ideas belong in a [plugin](https://litevue.dev/plugins/)
         rather than the core, and you can publish one without our involvement.
 
   - type: textarea

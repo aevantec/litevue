@@ -4,7 +4,8 @@ title: store()
 
 # store() <Badge type="section" text="Global" />
 
-A first-class global store, shared across every app on the page and exposed to expressions as [`$store`](/magics/store).
+Register named state that every app on the page shares, reachable in
+expressions as [`$store`](/magics/store).
 
 ```js
 import { createApp, store } from '@aevantec/litevue';
@@ -17,41 +18,75 @@ store('cart', {
   get count() {
     return this.items.length;
   },
-  init() {
-    // runs once when the store is registered
-  },
 });
 
 createApp().mount();
-
-// read/mutate from JS anywhere — apps react
-store('cart').add('book');
 ```
 
 ```html
-<div v-scope>
-  <button @click="$store.cart.add('thing')">add</button>
-  <span>{{ $store.cart.count }}</span>
-</div>
+<button @click="$store.cart.add('book')">Add</button>
+<span>{{ $store.cart.count }}</span>
 ```
 
-- `store(name, value)` registers (and returns) a reactive store; `store(name)` retrieves it.
-- Getters are reactive, but **not cached** — they re-run on every read. Wrap expensive derivations in [`computed()`](/globals/computed) instead.
-- `init()` runs once at registration.
-- Registering a store **after** mount is picked up reactively by expressions referencing it.
-- Stores appear in the [devtools panel](/devtools/panel) under the Stores tab.
+## Signature
 
-## Persisting a store
+```ts
+store<T extends object>(name: string, value: T): T  // register
+store<T extends object>(name: string): T | undefined  // read
+```
 
-Use `persistStore()` from the [persist plugin](/plugins/persist#persisting-a-store) to keep a store in localStorage across page loads:
+Registering returns the reactive store. Reading returns `undefined` for a name
+that was never registered.
+
+### Special keys
+
+| Key | Meaning |
+| --- | --- |
+| `init()` | Runs once, when the store is registered, with `this` as the store |
+
+## Examples
+
+### From JavaScript
+
+Read and change a store from any script — every app reading it updates:
 
 ```js
-import { store } from '@aevantec/litevue';
+store('cart').add('book');
+```
+
+### Initializing
+
+```js
+store('session', {
+  user: null,
+  async init() {
+    this.user = await fetch('/api/me').then((r) => r.json());
+  },
+});
+```
+
+### Persisting
+
+Keep a store in `localStorage` across page loads with the
+[persist plugin](/plugins/persist#persisting-a-store):
+
+```js
 import { persistStore } from '@aevantec/litevue/plugins';
 
 store('cart', { items: [], coupon: '' });
 
-persistStore('cart'); // whole store
-persistStore('cart', { keys: ['items'] }); // or only selected properties
-persistStore('cart', { storage: 'session' }); // or a different storage
+persistStore('cart'); // the whole store
+persistStore('cart', { keys: ['items'] }); // selected properties
+persistStore('cart', { storage: 'session' }); // sessionStorage instead
 ```
+
+## Behavior
+
+- Registering a name again replaces the store and runs its `init()` again.
+- A store registered after mount still reaches expressions that already reference it.
+- Getters are reactive but not cached; they run on every read. Use [`computed()`](/globals/computed) for expensive derivations.
+- Stores appear in the [inspector panel](/devtools/panel) under the Stores tab.
+
+## Related
+
+[$store](/magics/store) · [persist](/plugins/persist) · [computed()](/globals/computed) · [State](/essentials/state#sharing-state-across-apps)

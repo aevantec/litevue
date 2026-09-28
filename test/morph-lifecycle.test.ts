@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { createApp, reactive } from '../src';
 import { morph, morphPlugin } from '../src/plugins';
 import { tick } from './utils';
