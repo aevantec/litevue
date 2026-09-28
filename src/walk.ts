@@ -138,7 +138,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     const deferred: [string, string][] = [];
     for (const { name, value } of [...el.attributes]) {
       if (dirRE.test(name) && name !== 'v-cloak') {
-        if (name === 'v-model') {
+        if (name === 'v-model' || name.startsWith('v-model.')) {
           // defer v-model since it relies on :value bindings to be processed
           // first, but also before v-on listeners (#73)
           deferred.unshift([name, value]);
@@ -205,8 +205,8 @@ const processDirective = (
   let dir: Directive;
   let arg: string | undefined;
   let modifiers: Record<string, true> | undefined;
-  // kept before the modifier strip below, so diagnostics quote the attribute
-  // as the author actually wrote it
+  // the attribute as written, modifiers included: what diagnostics quote and
+  // what must be removed — the stripped name below never existed on the element
   const source = raw;
 
   // modifiers
@@ -230,7 +230,7 @@ const processDirective = (
   if (dir) {
     if (dir === bind && arg === 'ref') dir = ref;
     applyDirective(el, dir, exp, ctx, arg, modifiers, source);
-    el.removeAttribute(raw);
+    el.removeAttribute(source);
   } else if (import.meta.env.DEV) {
     // The structural ones are consumed directly in walk() rather than living
     // in builtInDirectives, so listing only that map would have told the
@@ -297,7 +297,7 @@ const applyDirective = (
 const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = document.querySelector(template);
-    // Returning matters in production, where the warning above is stripped:
+    // Returning matters in production, where the warning below is stripped:
     // without it a missing selector reaches `.content` and throws with no
     // diagnostic at all.
     if (!templateEl) {
