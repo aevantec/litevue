@@ -25,8 +25,8 @@ No build step required:
 
 For production, pin a version and use a fully resolved URL:
 
-- Global build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.iife.js` <!-- x-release-please-version --> — exposes the `LiteVue` global, supports the `init` attribute.
-- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.mjs` <!-- x-release-please-version --> — use with `<script type="module">`.
+- Global build: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue.iife.js` <!-- x-release-please-version --> — exposes the `LiteVue` global, supports the `init` attribute.
+- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue.mjs` <!-- x-release-please-version --> — use with `<script type="module">`.
 
 ## From npm
 
@@ -77,8 +77,8 @@ For a tool that does not set the condition, pass it explicitly — esbuild's
 
 **From a CDN**, load the `.dev` file while you develop:
 
-- Global build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.dev.iife.js` <!-- x-release-please-version -->
-- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.6/dist/litevue.dev.mjs` <!-- x-release-please-version -->
+- Global build: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue.dev.iife.js` <!-- x-release-please-version -->
+- ESM build: `https://unpkg.com/@aevantec/litevue@0.5.7/dist/litevue.dev.mjs` <!-- x-release-please-version -->
 
 ::: warning Never ship a .dev file
 Development files are unminified and about twice the size of the production
