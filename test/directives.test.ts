@@ -140,6 +140,22 @@ describe('v-text / v-html / v-pre', () => {
 
 // A string property stringifies what it is given, so null used to render as
 // the word "null" on property-backed names and be removed on attribute-only ones
+describe('v-html with no value', () => {
+  test('undefined and null both render empty, and content can follow', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ a: undefined, b: null }">
+        <p v-html="a"></p><s v-html="b"></s>
+        <button @click="a = '<em>x</em>'"></button>
+      </div>`
+    );
+    expect($('p').innerHTML).toBe('');
+    expect($('s').innerHTML).toBe('');
+    $('button').click();
+    await tick();
+    expect($('p').innerHTML).toBe('<em>x</em>');
+  });
+});
+
 describe('v-bind null and undefined on DOM properties', () => {
   test('null and undefined remove a string property attribute', async () => {
     const { $ } = await mount(
@@ -176,5 +192,37 @@ describe('v-bind null and undefined on DOM properties', () => {
       `<div v-scope><input value="x" :value="null"></div>`
     );
     expect(($('input') as HTMLInputElement).value).toBe('');
+  });
+});
+
+// The previous value was kept by reference, so mutating the bound object in
+// place left nothing to compare a deleted key against
+describe('v-bind and style objects mutated in place', () => {
+  test('deleting a key from a v-bind object removes its attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ attrs: { 'data-x': '1', title: 't' } }">
+        <b v-bind="attrs"></b>
+        <button @click="delete attrs['data-x']; delete attrs.title"></button>
+      </div>`
+    );
+    expect($('b').getAttribute('data-x')).toBe('1');
+    $('button').click();
+    await tick();
+    expect($('b').hasAttribute('data-x')).toBe(false);
+    expect($('b').hasAttribute('title')).toBe(false);
+  });
+
+  test('deleting a key from a :style object clears that property', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ s: { color: 'red', width: '10px' } }">
+        <i :style="s"></i>
+        <button @click="delete s.color"></button>
+      </div>`
+    );
+    expect(($('i') as HTMLElement).style.color).toBe('red');
+    $('button').click();
+    await tick();
+    expect(($('i') as HTMLElement).style.color).toBe('');
+    expect(($('i') as HTMLElement).style.width).toBe('10px');
   });
 });
