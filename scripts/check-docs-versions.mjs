@@ -6,7 +6,8 @@
 // because a stale URL still resolves.
 //
 // So every `@x.y.z` in the docs must: carry the marker, sit in a file
-// registered in extra-files, and match package.json.
+// registered in extra-files, and match package.json. The devtools extension's
+// manifest version is held to the same rule; it sat at 0.5.0 for seven releases.
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -15,8 +16,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(root, p), 'utf8');
 
 const { version } = JSON.parse(read('package.json'));
+// entries are a path, or { type, path, jsonpath } for a structured file
+const extraFileEntries = JSON.parse(read('release-please-config.json'))
+  .packages['.']['extra-files'];
 const extraFiles = new Set(
-  JSON.parse(read('release-please-config.json')).packages['.']['extra-files']
+  extraFileEntries.map((e) => (typeof e === 'string' ? e : e.path))
 );
 
 const MARKER = 'x-release-please-version';
@@ -65,10 +69,29 @@ for (const file of markdown) {
     });
 }
 
+// The extension is versioned with the package; release-please must rewrite it
+const MANIFEST = 'extension/manifest.json';
+const manifestEntry = extraFileEntries.find(
+  (e) => typeof e === 'object' && e.path === MANIFEST
+);
+if (manifestEntry?.type !== 'json' || manifestEntry.jsonpath !== '$.version') {
+  failures.push(
+    `${MANIFEST} needs an extra-files entry { "type": "json", "path": "${MANIFEST}", "jsonpath": "$.version" }`
+  );
+}
+const manifestVersion = JSON.parse(read(MANIFEST)).version;
+if (manifestVersion !== version) {
+  failures.push(
+    `${MANIFEST} is ${manifestVersion}, but package.json is ${version}`
+  );
+}
+
 if (failures.length) {
   console.error(
     'Docs version check failed:\n' + failures.map((f) => `  - ${f}`).join('\n')
   );
   process.exit(1);
 }
-console.log(`Docs pinned versions all tied to ${version}.`);
+console.log(
+  `Docs pinned versions and the extension manifest all tied to ${version}.`
+);
