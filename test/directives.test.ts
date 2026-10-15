@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { devtools } from '../src';
 import { mount, tick } from './utils';
 
 describe('v-if / v-else', () => {
@@ -203,6 +204,53 @@ describe('v-text / v-html / v-pre', () => {
       `<div v-scope="{ n: 1 }"><span v-pre>{{ n }}</span></div>`
     );
     expect($('span').textContent).toBe('{{ n }}');
+  });
+});
+
+describe('v-cloak', () => {
+  test('is removed from every element once its region mounts', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ n: 1 }" v-cloak><p v-cloak>{{ n }}</p></div>`
+    );
+    expect(root.hasAttribute('v-cloak')).toBe(false);
+    expect(root.querySelector('[v-cloak]')).toBeNull();
+    expect(root.querySelector('p')!.textContent).toBe('1');
+  });
+});
+
+// The security page states that v-html output is never walked: directives and
+// interpolations inside it stay inert, as with any innerHTML assignment.
+describe('v-html with untrusted markup', () => {
+  const hostile =
+    '<span id="i">{{ secret }}</span>' +
+    '<button id="b" @click="secret = \'leaked\'" :title="secret"></button>' +
+    '<div id="s" v-scope="{ x: 1 }" v-text="secret"></div>';
+
+  test('interpolations in injected HTML are not compiled', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ secret: 'token', h: '' }"><p v-html="h"></p></div>`
+    );
+    devtools.getScope($('p'))!.h = hostile;
+    await tick();
+    expect($('#i').textContent).toBe('{{ secret }}');
+    expect($('#s').textContent).toBe('');
+  });
+
+  test('directives in injected HTML do not bind', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ secret: 'token', h: '' }"><p v-html="h"></p></div>`
+    );
+    const scope = devtools.getScope($('p'))!;
+    scope.h = hostile;
+    await tick();
+    const button = $('#b') as HTMLButtonElement;
+    // left as inert attributes, never consumed by a walk
+    expect(button.getAttribute('@click')).not.toBeNull();
+    expect(button.hasAttribute('title')).toBe(false);
+    button.click();
+    await tick();
+    expect(scope.secret).toBe('token');
+    expect($('#s').getAttribute('v-scope')).not.toBeNull();
   });
 });
 
