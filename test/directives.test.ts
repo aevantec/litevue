@@ -178,3 +178,35 @@ describe('v-bind null and undefined on DOM properties', () => {
     expect(($('input') as HTMLInputElement).value).toBe('');
   });
 });
+
+// The previous value was kept by reference, so mutating the bound object in
+// place left nothing to compare a deleted key against
+describe('v-bind and style objects mutated in place', () => {
+  test('deleting a key from a v-bind object removes its attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ attrs: { 'data-x': '1', title: 't' } }">
+        <b v-bind="attrs"></b>
+        <button @click="delete attrs['data-x']; delete attrs.title"></button>
+      </div>`
+    );
+    expect($('b').getAttribute('data-x')).toBe('1');
+    $('button').click();
+    await tick();
+    expect($('b').hasAttribute('data-x')).toBe(false);
+    expect($('b').hasAttribute('title')).toBe(false);
+  });
+
+  test('deleting a key from a :style object clears that property', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ s: { color: 'red', width: '10px' } }">
+        <i :style="s"></i>
+        <button @click="delete s.color"></button>
+      </div>`
+    );
+    expect(($('i') as HTMLElement).style.color).toBe('red');
+    $('button').click();
+    await tick();
+    expect(($('i') as HTMLElement).style.color).toBe('');
+    expect(($('i') as HTMLElement).style.width).toBe('10px');
+  });
+});
