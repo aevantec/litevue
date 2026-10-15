@@ -20,7 +20,7 @@ state, events and timing.
 | [$data](/magics/data) | `object` | The current scope |
 | [$root](/magics/root) | `object` | The app's root scope |
 | [$store](/magics/store) | `Record<string, object>` | The global stores |
-| [$watch](/magics/watch) | `(source, callback) => void` | Run a callback when one value changes |
+| [$watch](/magics/watch) | `(source, callback, options?) => stop` | Run a callback when one value changes |
 | [$nextTick](/magics/next-tick) | `(callback?) => Promise` | Run after the DOM has updated |
 | [$dispatch](/magics/dispatch) | `(event, detail?) => boolean` | Fire a bubbling custom event |
 | [$id](/magics/id) | `(name?) => string` | A stable, unique id for accessibility attributes |
