@@ -32,6 +32,17 @@ describe('v-model modifiers', () => {
     expect(scope.keep).toBe('existing');
     expect(($('#kept') as HTMLInputElement).value).toBe('existing');
   });
+
+  test(".fill seeds from a textarea's initial text", async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ body: '' }">
+        <textarea v-model.fill="body">Dear team,</textarea>
+      </div>`
+    );
+    const scope = devtools.getScope($('textarea'))!;
+    expect(scope.body).toBe('Dear team,');
+    expect(($('textarea') as HTMLTextAreaElement).value).toBe('Dear team,');
+  });
 });
 
 /**
