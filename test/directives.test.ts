@@ -116,6 +116,40 @@ describe('v-model', () => {
     await tick();
     expect($('span').textContent).toBe('true');
   });
+
+  test('holds input during IME composition and syncs when it ends', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ msg: '' }">
+        <input v-model="msg" />
+        <span>{{ msg }}</span>
+      </div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    input.dispatchEvent(new Event('compositionstart'));
+    input.value = 'にほ';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    expect($('span').textContent).toBe('');
+
+    input.value = '日本';
+    input.dispatchEvent(new Event('compositionend'));
+    await tick();
+    expect($('span').textContent).toBe('日本');
+  });
+
+  test('the input event fired after composition bubbles and is cancelable', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ msg: '' }"><input v-model="msg" /></div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    const seen: Event[] = [];
+    document.addEventListener('input', (e) => seen.push(e), { once: true });
+    input.dispatchEvent(new Event('compositionstart'));
+    input.dispatchEvent(new Event('compositionend'));
+    expect(seen).toHaveLength(1);
+    expect(seen[0].target).toBe(input);
+    expect(seen[0].cancelable).toBe(true);
+  });
 });
 
 describe('v-model on <select multiple>', () => {
