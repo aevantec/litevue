@@ -190,6 +190,7 @@ mq.configure({ breakpoints: { ...defaultBreakpoints, xs: 420 } }); // add one
 ## Behavior
 
 - Falsy values are returned, not treated as missing: `mq({ base: 1, lg: 0 }, 99)` is `0` at `lg`. Only `undefined` falls through to the fallback — use `null` for a deliberate "nothing" that should win.
+- A missing map, such as `null` while data loads, returns the fallback in every build.
 - The scale is shared by every app on the page. A second app passing a different scale replaces the first, and development warns.
 - `configure()` is safe at any time; anything already on screen updates.
 - `$mqDevice` and the `mobile` / `tablet` / `desktop` aliases are defined by `md` and `lg`. A custom scale without those keys falls back to the default widths, with a development warning.

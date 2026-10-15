@@ -179,7 +179,8 @@ const warnOnce = (msg: string) => {
 
 const resolve = <T>(map: ResponsiveMap<T>, fallback?: T): T | undefined => {
   trackAll();
-  if (import.meta.env.DEV && (!map || typeof map !== 'object')) {
+  // in every build: a missing map is usually data still loading
+  if (!map || typeof map !== 'object') {
     warnOnce(`expected a responsive map object, got ${typeof map}.`);
     return fallback;
   }

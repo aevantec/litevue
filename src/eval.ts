@@ -1,6 +1,13 @@
 import { handleError, type ErrorInfo } from './errors';
 
-const evalCache: Record<string, Function> = Object.create(null);
+// Bounded: morph can stream server HTML whose expressions inline per-record
+// data, so distinct sources keep arriving. Recompiling after a reset is cheap.
+export const EVAL_CACHE_LIMIT = 1000;
+let evalCache: Record<string, Function> = Object.create(null);
+let cached = 0;
+
+/** For tests: how many compiled expressions are held. */
+export const evalCacheSize = () => cached;
 
 // $dispatch magic: fire a bubbling custom event from the current element
 const mkDispatch = (el: Node) => (event: string, detail?: any) =>
@@ -24,7 +31,14 @@ export const execute = (
   el?: Node,
   meta?: EvalMeta
 ) => {
-  const fn = evalCache[exp] || (evalCache[exp] = toFunction(exp, el, meta));
+  let fn = evalCache[exp];
+  if (!fn) {
+    if (++cached > EVAL_CACHE_LIMIT) {
+      evalCache = Object.create(null);
+      cached = 1;
+    }
+    fn = evalCache[exp] = toFunction(exp, el, meta);
+  }
   try {
     return fn(scope, el, el && mkDispatch(el));
   } catch (e) {

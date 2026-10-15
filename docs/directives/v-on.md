@@ -118,7 +118,7 @@ Return the promise and a rejection is reported to
 - `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
 - Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
 - A handler that throws is reported and does not stop later events.
-- The object form `v-on="{ click: handler }"` is not supported.
+- The object form `v-on="{ click: handler }"` is not supported. It binds nothing, and only the development build says so; bind each event with its own `@event`.
 
 ## Related
 

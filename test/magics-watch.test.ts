@@ -113,6 +113,67 @@ describe('$watch', () => {
     await tick(8);
     expect(track).not.toHaveBeenCalled();
   });
+
+  test('returns a function that stops the watcher', async () => {
+    const track = vi.fn();
+    let stop: (() => void) | undefined;
+    const { root } = await mount(
+      `<div v-scope="{ n: 1 }" @mounted="keep($watch('n', track))"></div>`,
+      { track, keep: (fn: () => void) => (stop = fn) }
+    );
+    await tick(8);
+    const scope = (root as any).__ctx.scope;
+    scope.n = 2;
+    await tick(8);
+    expect(track).toHaveBeenCalledTimes(1);
+
+    expect(typeof stop).toBe('function');
+    stop!();
+    expect(() => stop!()).not.toThrow();
+    scope.n = 3;
+    await tick(8);
+    expect(track).toHaveBeenCalledTimes(1);
+  });
+
+  test('the stop function is safe inside v-once, where nothing re-runs', async () => {
+    let stop: (() => void) | undefined;
+    await mount(
+      // the nested v-scope is evaluated during the v-once walk, where
+      // effects run once and are not reactive runners
+      `<div v-scope="{ n: 1 }"><p v-once><i v-scope="{ s: keep($watch('n', () => {})) }"></i></p></div>`,
+      { keep: (fn: () => void) => (stop = fn) }
+    );
+    await tick(8);
+    expect(typeof stop).toBe('function');
+    expect(() => stop!()).not.toThrow();
+  });
+
+  test('{ immediate: true } calls back with the initial value', async () => {
+    const seen: [any, any][] = [];
+    const { root } = await mount(
+      `<div v-scope="{ n: 1 }" @mounted="$watch('n', track, { immediate: true })"></div>`,
+      { track: (v: any, old: any) => seen.push([v, old]) }
+    );
+    await tick(8);
+    expect(seen).toEqual([[1, undefined]]);
+
+    (root as any).__ctx.scope.n = 2;
+    await tick(8);
+    expect(seen).toEqual([
+      [1, undefined],
+      [2, 1],
+    ]);
+  });
+
+  test('{ immediate: true } calls back even when the initial value is undefined', async () => {
+    const track = vi.fn();
+    await mount(
+      `<div v-scope="{ n: undefined }" @mounted="$watch('n', track, { immediate: true })"></div>`,
+      { track }
+    );
+    await tick(8);
+    expect(track).toHaveBeenCalledWith(undefined, undefined);
+  });
 });
 
 describe('$id', () => {

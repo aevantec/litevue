@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { devtools } from '../src';
 import { mount, tick } from './utils';
 
 describe('v-if / v-else', () => {
@@ -32,6 +33,26 @@ describe('v-if / v-else', () => {
     $('button').click();
     await tick();
     expect(root.querySelector('i')!.textContent).toBe('0');
+  });
+
+  test('an empty v-if renders nothing, and its v-else takes over', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { root } = await mount(
+      `<div v-scope>
+        <span id="empty" v-if="">a</span>
+        <span id="else" v-else>b</span>
+        <span id="blank" v-if="  ">c</span>
+      </div>`
+    );
+    expect(root.querySelector('#empty')).toBeNull();
+    expect(root.querySelector('#else')).toBeTruthy();
+    expect(root.querySelector('#blank')).toBeNull();
+    // the warning explains it; no compile error on top
+    expect(warn).toHaveBeenCalledWith('v-if expression cannot be empty.');
+    expect(error).not.toHaveBeenCalled();
+    warn.mockRestore();
+    error.mockRestore();
   });
 });
 
@@ -116,6 +137,40 @@ describe('v-model', () => {
     await tick();
     expect($('span').textContent).toBe('true');
   });
+
+  test('holds input during IME composition and syncs when it ends', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ msg: '' }">
+        <input v-model="msg" />
+        <span>{{ msg }}</span>
+      </div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    input.dispatchEvent(new Event('compositionstart'));
+    input.value = 'にほ';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    expect($('span').textContent).toBe('');
+
+    input.value = '日本';
+    input.dispatchEvent(new Event('compositionend'));
+    await tick();
+    expect($('span').textContent).toBe('日本');
+  });
+
+  test('the input event fired after composition bubbles and is cancelable', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ msg: '' }"><input v-model="msg" /></div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    const seen: Event[] = [];
+    document.addEventListener('input', (e) => seen.push(e), { once: true });
+    input.dispatchEvent(new Event('compositionstart'));
+    input.dispatchEvent(new Event('compositionend'));
+    expect(seen).toHaveLength(1);
+    expect(seen[0].target).toBe(input);
+    expect(seen[0].cancelable).toBe(true);
+  });
 });
 
 describe('v-model on <select multiple>', () => {
@@ -169,6 +224,53 @@ describe('v-text / v-html / v-pre', () => {
       `<div v-scope="{ n: 1 }"><span v-pre>{{ n }}</span></div>`
     );
     expect($('span').textContent).toBe('{{ n }}');
+  });
+});
+
+describe('v-cloak', () => {
+  test('is removed from every element once its region mounts', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ n: 1 }" v-cloak><p v-cloak>{{ n }}</p></div>`
+    );
+    expect(root.hasAttribute('v-cloak')).toBe(false);
+    expect(root.querySelector('[v-cloak]')).toBeNull();
+    expect(root.querySelector('p')!.textContent).toBe('1');
+  });
+});
+
+// The security page states that v-html output is never walked: directives and
+// interpolations inside it stay inert, as with any innerHTML assignment.
+describe('v-html with untrusted markup', () => {
+  const hostile =
+    '<span id="i">{{ secret }}</span>' +
+    '<button id="b" @click="secret = \'leaked\'" :title="secret"></button>' +
+    '<div id="s" v-scope="{ x: 1 }" v-text="secret"></div>';
+
+  test('interpolations in injected HTML are not compiled', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ secret: 'token', h: '' }"><p v-html="h"></p></div>`
+    );
+    devtools.getScope($('p'))!.h = hostile;
+    await tick();
+    expect($('#i').textContent).toBe('{{ secret }}');
+    expect($('#s').textContent).toBe('');
+  });
+
+  test('directives in injected HTML do not bind', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ secret: 'token', h: '' }"><p v-html="h"></p></div>`
+    );
+    const scope = devtools.getScope($('p'))!;
+    scope.h = hostile;
+    await tick();
+    const button = $('#b') as HTMLButtonElement;
+    // left as inert attributes, never consumed by a walk
+    expect(button.getAttribute('@click')).not.toBeNull();
+    expect(button.hasAttribute('title')).toBe(false);
+    button.click();
+    await tick();
+    expect(scope.secret).toBe('token');
+    expect($('#s').getAttribute('v-scope')).not.toBeNull();
   });
 });
 

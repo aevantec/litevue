@@ -42,13 +42,18 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - Keys deleted from an object bound with `v-bind="obj"` or `:style="obj"` are cleared, not only keys missing from a replacement object.
 - A static `class` on an SVG element survives `:class`; petite-vue renders `class="baseVal animVal …"`.
 - Vue's key aliases work — `.esc`, `.space`, `.up`, `.down`, `.delete` — and `.left` / `.right` filter arrow keys on keyboard events.
+- `v-html` renders `undefined` and `null` as empty; petite-vue writes the text `"undefined"`.
+- An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally.
+- A getter in a `v-scope` object is not run at setup, so one that throws is reported where it is read; in petite-vue it stops the whole page from mounting.
+- The compiled-expression cache is bounded, so a page that morphs in server HTML with per-record data does not grow it for its whole life.
+- A `<select multiple>` model must be an array. petite-vue also reads a `Set`; LiteVue selects nothing for one and warns in the development build, since a `Set` cannot update reactively here. Convert with `[...set]`.
 - Reserved scope keys grew: `$store`, `$watch`, `$id`, `$root` join `$refs` / `$nextTick` / `$s`. Rename any conflicting data properties.
 
 ## Everything new is opt-in
 
 The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
 
-Three later additions are worth knowing about specifically, because petite-vue has no equivalent and both address things you probably worked around:
+Three later additions are worth knowing about specifically, because petite-vue has no equivalent and each addresses something you probably worked around:
 
 - [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings evaluated three times per update, with no memoized option.
 - [Lazy mounting](/directives/v-scope#mounting-on-demand) — `v-scope.visible`, `.idle` and `.interaction` — leaves a region unbound until it is needed. Previously every scope on the page paid its setup cost at load, and deferring one meant wiring up an `IntersectionObserver` and a manual `mount()` yourself.
