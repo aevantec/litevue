@@ -251,8 +251,9 @@ The component is **not** registered, because registering it would overwrite
 ### media: a value that is not a responsive map
 
 `$mq(map)` expects an object keyed by breakpoint, such as
-`{ base: 1, md: 2 }`. The development build returns the fallback for anything
-else; pass a map. See [media](/plugins/media#syntax).
+`{ base: 1, md: 2 }`. Anything else, such as `null` while data is still
+loading, returns the fallback; the development build also warns. See
+[media](/plugins/media#syntax).
 
 ### media: an unknown breakpoint key
 

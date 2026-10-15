@@ -139,6 +139,25 @@ describe('mq() — resolving a responsive map', () => {
     warn.mockRestore();
   });
 
+  // A null map is usually data still loading; the fallback is what was asked
+  // for. Production used to skip this check and throw on Object.keys(null).
+  test.each([
+    ['development', true],
+    ['production', false],
+  ])('returns the fallback for a missing map in %s', (_, dev) => {
+    vi.stubEnv('DEV', dev);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(mq(null as any, 'fallback')).toBe('fallback');
+      expect(mq(undefined as any, 3)).toBe(3);
+      expect(mq('md' as any, 'x')).toBe('x');
+      expect(warn.mock.calls.length > 0).toBe(dev);
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
   test('resolves several maps in one call', () => {
     setWidth(800);
     expect(
