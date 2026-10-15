@@ -34,6 +34,26 @@ describe('v-if / v-else', () => {
     await tick();
     expect(root.querySelector('i')!.textContent).toBe('0');
   });
+
+  test('an empty v-if renders nothing, and its v-else takes over', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { root } = await mount(
+      `<div v-scope>
+        <span id="empty" v-if="">a</span>
+        <span id="else" v-else>b</span>
+        <span id="blank" v-if="  ">c</span>
+      </div>`
+    );
+    expect(root.querySelector('#empty')).toBeNull();
+    expect(root.querySelector('#else')).toBeTruthy();
+    expect(root.querySelector('#blank')).toBeNull();
+    // the warning explains it; no compile error on top
+    expect(warn).toHaveBeenCalledWith('v-if expression cannot be empty.');
+    expect(error).not.toHaveBeenCalled();
+    warn.mockRestore();
+    error.mockRestore();
+  });
 });
 
 describe('v-for', () => {

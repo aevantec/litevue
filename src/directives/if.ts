@@ -19,9 +19,10 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const anchor = new Comment('v-if');
   el.before(anchor);
 
+  // an empty or blank v-if is false, rather than a compile error
   const branches: Branch[] = [
     {
-      exp,
+      exp: exp.trim() || '0',
       el,
     },
   ];
