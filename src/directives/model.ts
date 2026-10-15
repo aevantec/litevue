@@ -1,6 +1,7 @@
 import { isArray, looseEqual, looseIndexOf, toNumber } from '@vue/shared';
 import { Directive } from '.';
 import { listen } from '../utils';
+import { warnOnce } from '../warn';
 
 export const model: Directive<
   HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -28,15 +29,22 @@ export const model: Directive<
     effect(() => {
       const value = get();
       const isMultiple = sel.multiple;
+      if (import.meta.env.DEV && isMultiple && !isArray(value)) {
+        warnOnce(
+          `select-multiple:${exp}`,
+          `<select multiple v-model="${exp}"> needs an array, but got ` +
+            `${value === null ? 'null' : typeof value}, so no option is ` +
+            `selected. Initialise it as [] — a change writes an array either way.`
+        );
+      }
       for (let i = 0, l = sel.options.length; i < l; i++) {
         const option = sel.options[i];
         const optionValue = getValue(option);
         if (isMultiple) {
-          if (isArray(value)) {
-            option.selected = looseIndexOf(value, optionValue) > -1;
-          } else {
-            option.selected = value.has(optionValue);
-          }
+          // arrays only: a Set cannot be tracked here, since collection
+          // reactivity is trimmed from the build, and a change writes an array
+          option.selected =
+            isArray(value) && looseIndexOf(value, optionValue) > -1;
         } else {
           if (looseEqual(getValue(option), value)) {
             if (sel.selectedIndex !== i) sel.selectedIndex = i;

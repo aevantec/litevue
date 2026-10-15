@@ -27,7 +27,7 @@ selects, including `multiple`.
 | Checkbox | Boolean, or the `:true-value` / `:false-value` pair |
 | Checkbox group | Array of the checked values |
 | Radio group, single select | The selected value |
-| Multiple select | Array of the selected values |
+| Multiple select | Array of the selected values; start it as `[]` |
 
 ### Modifiers
 
