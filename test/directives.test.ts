@@ -140,6 +140,22 @@ describe('v-text / v-html / v-pre', () => {
 
 // A string property stringifies what it is given, so null used to render as
 // the word "null" on property-backed names and be removed on attribute-only ones
+describe('v-html with no value', () => {
+  test('undefined and null both render empty, and content can follow', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ a: undefined, b: null }">
+        <p v-html="a"></p><s v-html="b"></s>
+        <button @click="a = '<em>x</em>'"></button>
+      </div>`
+    );
+    expect($('p').innerHTML).toBe('');
+    expect($('s').innerHTML).toBe('');
+    $('button').click();
+    await tick();
+    expect($('p').innerHTML).toBe('<em>x</em>');
+  });
+});
+
 describe('v-bind null and undefined on DOM properties', () => {
   test('null and undefined remove a string property attribute', async () => {
     const { $ } = await mount(
