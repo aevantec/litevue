@@ -81,6 +81,27 @@ describe('createApp', () => {
     expect($('span').getAttribute('data-url')).toBe('/b');
   });
 
+  // On SVG, className is an SVGAnimatedString, not a string
+  test(':class on SVG merges with a static class and updates', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ on: false }">
+        <svg class="icon" :class="{ active: on }"></svg>
+        <button @click="on = true"></button>
+      </div>`
+    );
+    expect($('svg').getAttribute('class')).toBe('icon');
+    $('button').click();
+    await tick();
+    expect($('svg').getAttribute('class')).toBe('icon active');
+  });
+
+  test(':class on SVG without a static class', async () => {
+    const { $ } = await mount(
+      `<div v-scope><svg><circle :class="'dot'"></circle></svg></div>`
+    );
+    expect($('circle').getAttribute('class')).toBe('dot');
+  });
+
   test('v-show toggles display', async () => {
     const { $ } = await mount(
       `<div v-scope="{ vis: true }">
