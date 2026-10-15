@@ -2,404 +2,36 @@
 // registry through window.__LITE_VUE__ only, never by module import, so it
 // always sees the same instance as the app.
 import type { LiteVueDevtools } from './devtools';
-
-/**
- * Panel stylesheet. Note the template below is a *string* — comments inside it
- * ship verbatim, so explanations belong out here where terser strips them.
- *
- * Docked layouts (`.dock-bottom` / `.dock-right`) give the tree a full viewport
- * edge, as browser devtools do; only the cross-axis stays resizable, since the
- * other would fight the dock.
- *
- * `min-height` is 320px, not 200: against the fixed chrome (34px header, 28px
- * tabs, 23px filter) 200 left about five rows of tree, too few to read. 320
- * keeps roughly eleven.
- *
- * Sizing uses an explicit `.grip` rather than CSS `resize`, whose handle is
- * always bottom-right — the wrong corner once docked, where dragging down would
- * grow the panel upward. Each mode gets a handle on the edge that moves.
- */
-const css = `
-:host {
-  all: initial;
-  --bg: #1e1e1e;
-  --bg2: #252526;
-  --hover: #2a2d2e;
-  --border: #3c3c3c;
-  --fg: #d4d4d4;
-  --muted: #808080;
-  --accent: #42b883;
-  --sel: #094771;
-  --key: #9cdcfe;
-  --val: #ce9178;
-  --exp: #6a9955;
-}
-:host(.light) {
-  --bg: #ffffff;
-  --bg2: #f3f3f3;
-  --hover: #ececec;
-  --border: #d0d0d0;
-  --fg: #383a42;
-  --muted: #8e8e90;
-  --sel: #d2e5f5;
-  --key: #0451a5;
-  --val: #a31515;
-  --exp: #22863a;
-}
-* {
-  box-sizing: border-box;
-}
-.pill, .panel {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 2147483646;
-  font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace;
-  color: var(--fg);
-}
-.pill {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 10px;
-  cursor: pointer;
-  user-select: none;
-}
-.pill:hover {
-  border-color: var(--accent);
-}
-.panel {
-  display: flex;
-  flex-direction: column;
-  width: 760px;
-  max-width: calc(100vw - 24px);
-  height: 450px;
-  max-height: calc(100vh - 24px);
-  min-width: 320px;
-  min-height: 320px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-}
-.panel.dock-bottom {
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  max-width: none;
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
-}
-.panel.dock-right {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  max-height: none;
-  border-radius: 0;
-  border-top: 0;
-  border-right: 0;
-  border-bottom: 0;
-}
-.panel.dock-bottom .header,
-.panel.dock-right .header {
-  cursor: default;
-}
-.grip {
-  position: absolute;
-  z-index: 1;
-  touch-action: none;
-  right: 0;
-  bottom: 0;
-  width: 14px;
-  height: 14px;
-  cursor: nwse-resize;
-  background: linear-gradient(135deg, transparent 50%, var(--border) 50%);
-}
-.panel.dock-bottom .grip {
-  top: 0;
-  left: 0;
-  width: auto;
-  height: 5px;
-  cursor: ns-resize;
-  background: none;
-}
-.panel.dock-right .grip {
-  top: 0;
-  left: 0;
-  width: 5px;
-  height: auto;
-  cursor: ew-resize;
-  background: none;
-}
-.panel.dock-bottom .grip:hover,
-.panel.dock-bottom .grip.active,
-.panel.dock-right .grip:hover,
-.panel.dock-right .grip.active {
-  background: var(--accent);
-}
-.header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  user-select: none;
-  cursor: move;
-}
-.title {
-  color: var(--accent);
-  font-weight: bold;
-  margin-right: auto;
-}
-.btn {
-  display: flex;
-  align-items: center;
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  color: var(--fg);
-  font: inherit;
-  padding: 3px 7px;
-  cursor: pointer;
-}
-.btn svg {
-  display: block;
-}
-.btn:hover {
-  border-color: var(--accent);
-}
-.btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
-}
-.body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-.side {
-  display: flex;
-  flex-direction: column;
-  width: 40%;
-  min-width: 0;
-  border-right: 1px solid var(--border);
-}
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  user-select: none;
-}
-.tab {
-  flex: 1;
-  padding: 4px 0;
-  text-align: center;
-  color: var(--muted);
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-}
-.tab:hover {
-  color: var(--fg);
-}
-.tab.active {
-  color: var(--fg);
-  border-bottom-color: var(--accent);
-}
-.filter {
-  margin: 6px 6px 2px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  color: var(--fg);
-  font: inherit;
-  padding: 2px 6px;
-  outline: none;
-}
-.filter:focus {
-  border-color: var(--accent);
-}
-.filter::placeholder {
-  color: var(--muted);
-}
-.tree {
-  flex: 1;
-  overflow: auto;
-  padding: 4px 0;
-}
-.state {
-  flex: 1;
-  overflow: auto;
-  padding: 4px 0;
-}
-.row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  cursor: pointer;
-}
-.row .label {
-  flex-shrink: 0;
-}
-.row .arrow {
-  cursor: pointer;
-  padding: 3px 4px;
-  margin: -3px -4px;
-  box-sizing: content-box;
-}
-.row .arrow:hover {
-  color: var(--key);
-}
-.row .hit {
-  color: var(--exp);
-  opacity: 0.75;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.row:hover {
-  background: var(--hover);
-}
-.row.sel {
-  background: var(--sel);
-}
-.row .name {
-  color: var(--key);
-}
-.row .punct {
-  color: var(--muted);
-}
-.row .exp {
-  color: var(--exp);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.prop {
-  display: flex;
-  gap: 6px;
-  padding: 2px 8px;
-  align-items: center;
-}
-.prop .key {
-  color: var(--key);
-  flex-shrink: 0;
-}
-.arrow {
-  width: 12px;
-  flex-shrink: 0;
-  color: var(--muted);
-  font-size: 9px;
-  transition: transform 0.1s;
-}
-.arrow.open {
-  transform: rotate(90deg);
-}
-.spacer {
-  width: 12px;
-  flex-shrink: 0;
-}
-.prop.toggle {
-  cursor: pointer;
-  user-select: none;
-}
-.prop.toggle:hover {
-  background: var(--hover);
-}
-.preview {
-  flex: 1;
-  min-width: 0;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.muted {
-  color: var(--muted);
-  padding: 2px 8px;
-}
-.check {
-  margin: 0;
-  flex-shrink: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.del {
-  visibility: hidden;
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  padding: 0 2px;
-  color: var(--muted);
-  font: inherit;
-  cursor: pointer;
-}
-.prop:hover .del {
-  visibility: visible;
-}
-.del:hover {
-  color: #e5534b;
-}
-.adder .key-in {
-  flex: 0 0 30%;
-  color: var(--key);
-}
-.adder input::placeholder {
-  color: var(--muted);
-}
-.adder input {
-  border-color: var(--border);
-}
-.bool {
-  color: var(--val);
-}
-.prop.inherited .key {
-  color: var(--muted);
-}
-.prop .val {
-  flex: 1;
-  min-width: 0;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  color: var(--val);
-  font: inherit;
-  padding: 0 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-input.val:hover, input.val:focus {
-  border-color: var(--border);
-  outline: none;
-  background: var(--bg2);
-}
-.divider {
-  padding: 4px 8px 1px;
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  user-select: none;
-}
-.empty {
-  padding: 8px;
-  color: var(--muted);
-}
-.highlight {
-  position: fixed;
-  z-index: 2147483645;
-  background: rgba(66, 184, 131, 0.25);
-  border: 1px solid var(--accent);
-  pointer-events: none;
-  display: none;
-}
-`;
+import { css } from './devtools-panel/styles';
+import {
+  clamp,
+  dockIcons,
+  dockTitles,
+  icon,
+  loadTheme,
+  loadUi,
+  maxH,
+  maxW,
+  MIN_H,
+  MIN_W,
+  nextDock,
+  nextTheme,
+  saveTheme,
+  saveUi,
+  themeIcons,
+  type Dock,
+  type ThemeMode,
+} from './devtools-panel/chrome';
+import {
+  coerce,
+  collectProps,
+  descriptorOf,
+  findInState,
+  fmt,
+  h,
+  isReadOnly,
+  previewOf,
+} from './devtools-panel/values';
 
 let devtools: LiteVueDevtools;
 let shadow: ShadowRoot;
@@ -427,118 +59,10 @@ let floatBottom = '';
 let bottomH = '';
 let rightW = '';
 
-// Bounds for every mode, mirroring min-width / min-height in the stylesheet.
-// CSS clamps what is rendered, this clamps what is stored; if they drift, a
-// stored value the layout will not honour comes back wrong on the next load.
-const MIN_W = 320;
-const MIN_H = 320;
-const maxW = () => window.innerWidth - 24;
-const maxH = () => window.innerHeight - 24;
-const clamp = (v: number, lo: number, hi: number) =>
-  Math.min(Math.max(v, lo), Math.max(lo, hi));
 let elementsTab: HTMLElement;
 let storesTab: HTMLElement;
 
-const icon = (paths: string) =>
-  '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
-  'stroke="currentColor" stroke-width="2">' +
-  paths +
-  '</svg>';
-
-type ThemeMode = 'dark' | 'light' | 'system';
-
-const THEME_KEY = 'litevue-devtools-theme';
-const UI_KEY = 'litevue-devtools-ui';
-
-// persisted panel chrome: open state, position (right/bottom offsets) and size
-type Dock = 'float' | 'bottom' | 'right';
-
-interface UiState {
-  open?: boolean;
-  right?: number;
-  bottom?: number;
-  w?: number;
-  h?: number;
-  /** dock-bottom height and dock-right width, remembered separately */
-  bh?: number;
-  rw?: number;
-  dock?: Dock;
-}
-
-const loadUi = (): UiState => {
-  try {
-    return JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-  } catch {
-    return {};
-  }
-};
-
-const saveUi = (patch: UiState) => {
-  try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ ...loadUi(), ...patch }));
-  } catch {}
-};
-
-const themeIcons: Record<ThemeMode, string> = {
-  dark: icon('<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'),
-  light: icon(
-    '<circle cx="12" cy="12" r="5"/>' +
-      '<line x1="12" y1="1" x2="12" y2="3"/>' +
-      '<line x1="12" y1="21" x2="12" y2="23"/>' +
-      '<line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/>' +
-      '<line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/>' +
-      '<line x1="1" y1="12" x2="3" y2="12"/>' +
-      '<line x1="21" y1="12" x2="23" y2="12"/>' +
-      '<line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/>' +
-      '<line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>'
-  ),
-  system: icon(
-    '<rect x="2" y="3" width="20" height="14" rx="2"/>' +
-      '<line x1="8" y1="21" x2="16" y2="21"/>' +
-      '<line x1="12" y1="17" x2="12" y2="21"/>'
-  ),
-};
-
-/** Dock icons: an outlined viewport with the docked region filled, per browser
- *  devtools convention. Floating shows a detached window. */
-const dockIcons: Record<Dock, string> = {
-  float: icon(
-    '<rect x="2" y="4" width="14" height="11" rx="1"/>' +
-      '<rect x="9" y="10" width="13" height="10" rx="1" fill="currentColor"/>'
-  ),
-  bottom: icon(
-    '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
-      '<rect x="2" y="14" width="20" height="7" fill="currentColor"/>'
-  ),
-  right: icon(
-    '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
-      '<rect x="14" y="3" width="8" height="18" fill="currentColor"/>'
-  ),
-};
-
-const nextDock: Record<Dock, Dock> = {
-  float: 'bottom',
-  bottom: 'right',
-  right: 'float',
-};
-
-const dockTitles: Record<Dock, string> = {
-  float: 'floating',
-  bottom: 'docked to bottom',
-  right: 'docked to right',
-};
-
-const nextTheme: Record<ThemeMode, ThemeMode> = {
-  dark: 'light',
-  light: 'system',
-  system: 'dark',
-};
-
-let theme: ThemeMode = 'dark';
-try {
-  const saved = localStorage.getItem(THEME_KEY);
-  if (saved === 'light' || saved === 'system') theme = saved;
-} catch {}
+let theme: ThemeMode = loadTheme();
 
 const prefersLight = matchMedia('(prefers-color-scheme: light)');
 
@@ -609,13 +133,6 @@ const applyDock = (next: Dock) => {
   dockBtn.title = 'panel: ' + dockTitles[next];
 };
 
-const h = (tag: string, className: string, text?: string) => {
-  const el = document.createElement(tag);
-  el.className = className;
-  if (text != null) el.textContent = text;
-  return el;
-};
-
 // html-tag-style label for a scope root, e.g. <cart>. See nameOf for source.
 const tagOf = (el: Element) => {
   const label = h('span', 'label');
@@ -633,106 +150,6 @@ const parentScopeOf = (el: Element) => {
     p = p.parentElement;
   }
   return null;
-};
-
-/**
- * Finds `term` among a scope's property names and values, returning the first
- * hit's path so the tree can show why a scope matched.
- *
- * Bounded on purpose: it runs on every keystroke over every mounted scope and
- * state is arbitrary. Depth is capped, functions and `$` magics are skipped,
- * and visited objects are remembered so cycles terminate.
- */
-const findInState = (scope: any, term: string) => {
-  const seen = new Set<any>();
-  const walk = (
-    value: any,
-    path: string,
-    depth: number
-  ): string | undefined => {
-    if (value == null) return;
-    if (typeof value === 'object') {
-      if (depth > 4 || seen.has(value)) return;
-      seen.add(value);
-      for (const key of Object.keys(value)) {
-        if (key[0] === '$') continue;
-        let child: unknown;
-        // a getter can throw, and one bad computed must not break the filter
-        try {
-          child = value[key];
-        } catch {
-          continue;
-        }
-        if (typeof child === 'function') continue;
-        const here = path ? `${path}.${key}` : key;
-        if (key.toLowerCase().includes(term)) return here;
-        const hit = walk(child, here, depth + 1);
-        if (hit) return hit;
-      }
-      return;
-    }
-    return String(value).toLowerCase().includes(term) ? path : undefined;
-  };
-  return walk(scope, '', 0);
-};
-
-const fmt = (v: unknown) => {
-  let s: string;
-  try {
-    s = v === undefined ? 'undefined' : (JSON.stringify(v) ?? String(v));
-  } catch {
-    s = String(v);
-  }
-  return s.length > 60 ? s.slice(0, 60) + '…' : s;
-};
-
-const coerce = (raw: string, old: unknown) => {
-  if (typeof old === 'number') {
-    const n = parseFloat(raw);
-    return isNaN(n) ? raw : n;
-  }
-  return raw;
-};
-
-// scopes inherit through a prototype chain, so a plain
-// getOwnPropertyDescriptor misses everything under the "inherited" divider
-const descriptorOf = (o: any, key: string): PropertyDescriptor | undefined => {
-  for (let t = o; t && t !== Object.prototype; t = Object.getPrototypeOf(t)) {
-    const d = Object.getOwnPropertyDescriptor(t, key);
-    if (d) return d;
-  }
-};
-
-/**
- * True for values with no editor: setter-less accessors and getter-only
- * `computed()` refs. A computed is only recognizable from the raw descriptor,
- * since reading through the proxy has already unwrapped it. The reactivity
- * flags are read directly to keep @vue/reactivity out of this bundle.
- */
-const isReadOnly = (desc?: PropertyDescriptor) => {
-  if (!desc) return false;
-  if (desc.get && !desc.set) return true;
-  const raw = desc.value;
-  return !!raw && raw.__v_isRef === true && raw.__v_isReadonly === true;
-};
-
-const collectProps = (scope: Record<string, any>) => {
-  const isData = (o: any, k: string) =>
-    k[0] !== '$' && typeof o[k] !== 'function';
-  const own = Object.keys(scope).filter((k) => isData(scope, k));
-  const seen = new Set(own);
-  const inherited: string[] = [];
-  let proto = Object.getPrototypeOf(scope);
-  while (proto && proto !== Object.prototype) {
-    for (const k of Object.keys(proto)) {
-      if (!seen.has(k) && isData(proto, k)) {
-        seen.add(k);
-        inherited.push(k);
-      }
-    }
-    proto = Object.getPrototypeOf(proto);
-  }
-  return { own, inherited };
 };
 
 const showHighlight = (el: Element) => {
@@ -983,9 +400,6 @@ const buildAdder = (scope: Record<string, any>) => {
   row.appendChild(valIn);
   return row;
 };
-
-const previewOf = (v: any) =>
-  Array.isArray(v) ? `(${v.length}) ${fmt(v)}` : fmt(v);
 
 const addNode = (
   key: string,
@@ -1271,9 +685,7 @@ const build = () => {
   themeBtn = h('button', 'btn');
   themeBtn.onclick = () => {
     theme = nextTheme[theme];
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {}
+    saveTheme(theme);
     applyTheme();
   };
   header.appendChild(themeBtn);
