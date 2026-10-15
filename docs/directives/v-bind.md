@@ -45,7 +45,7 @@ the attribute.
 ### Class and style
 
 `:class` accepts a string, an object or an array, and merges with the static
-`class` attribute. `:style` accepts a string, an object or an array of objects.
+`class` attribute, on SVG elements too. `:style` accepts a string, an object or an array of objects.
 
 ```html
 <span class="badge" :class="{ active: isOpen, muted: !enabled }"></span>
@@ -60,8 +60,8 @@ Style objects also take CSS custom properties and `!important`:
 
 ### Binding an object
 
-Without an argument, each key becomes an attribute. Keys that disappear on a
-later update are removed:
+Without an argument, each key becomes an attribute. A key that disappears is
+removed, whether the object is replaced or the key is deleted from it:
 
 ```html
 <input v-bind="{ id: fieldId, 'aria-invalid': hasError, placeholder }" />
