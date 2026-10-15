@@ -78,8 +78,8 @@ Deliberate divergences, all stemming from the absence of a component system:
 | [Components](/essentials/components) | plain functions returning scope objects                                                         |
 | Custom directives                    | a different, simpler interface — see [`app.directive()`](/globals/create-app#custom-directives) |
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
-| [`ref`](/directives/ref) in `v-for` | one element — the last row — rather than an array                                              |
-| [`$watch`](/magics/watch)            | no `immediate` or `deep` options, no stop handle, and a path compares by identity               |
+| [`ref`](/directives/ref) in `v-for` | per row: each row's `$refs` holds its own element, and the parent sees none — no array          |
+| [`$watch`](/magics/watch)            | `immediate` and a stop function, but no `deep` option; a path compares by identity              |
 | [`v-model`](/directives/v-model) on `<select multiple>` | an array only; Vue also accepts a `Set`                                  |
 
 ## What's not supported

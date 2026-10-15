@@ -1,5 +1,6 @@
 import { pauseTracking, resetTracking } from '@vue/reactivity';
 import type { Context } from './context';
+import { stopEffect } from './scheduler';
 
 let uid = 0;
 
@@ -13,13 +14,17 @@ export const createId = () => {
 };
 
 /**
- * $watch(source, callback) — watches a dot-path string or getter and calls
- * back with (value, oldValue). Tied to the owning scope's effects, so it stops
- * when the scope unmounts.
+ * $watch(source, callback, { immediate }) — watches a dot-path string or getter
+ * and calls back with (value, oldValue). Returns a stop function; it also stops
+ * when the owning scope unmounts.
  */
 export const createWatch =
   (ctx: Context) =>
-  (source: string | (() => any), cb: (value: any, oldValue: any) => void) => {
+  (
+    source: string | (() => any),
+    cb: (value: any, oldValue: any) => void,
+    options?: { immediate?: boolean }
+  ) => {
     const getter =
       typeof source === 'function'
         ? source
@@ -29,12 +34,12 @@ export const createWatch =
               .reduce((o: any, k) => (o == null ? o : o[k]), ctx.scope);
     let oldValue: any;
     let init = false;
-    ctx.effect(() => {
+    const runner = ctx.effect(() => {
       const value = getter();
       const previous = oldValue;
       // recorded first, so a callback that throws cannot leave it stale
       oldValue = value;
-      if (init && value !== previous) {
+      if (init ? value !== previous : options?.immediate) {
         // don't let reads inside the callback become dependencies; the
         // finally matters, since a paused tracker stays paused page-wide
         pauseTracking();
@@ -46,4 +51,6 @@ export const createWatch =
       }
       init = true;
     });
+    // inside v-once the effect ran once and is a plain function, not a runner
+    return () => runner.effect && stopEffect(runner);
   };
