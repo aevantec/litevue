@@ -27,7 +27,7 @@ $refs: Record<string, Element>
 
 - Each `v-scope` has its own `$refs`, which falls back to its parent's for names it does not define.
 - A ref is only available once its element has mounted. Read it in handlers, `@mounted` or [`$nextTick`](/magics/next-tick), not during the first render.
-- One name holds one element; inside `v-for` it points at the last row — see [ref](/directives/ref#behavior).
+- One name holds one element. Inside `v-for`, each row has its own `$refs`, so a row reads its own element and the parent reads none — see [ref](/directives/ref#behavior).
 
 ## Related
 

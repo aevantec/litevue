@@ -15,15 +15,13 @@ export const ref: Directive = ({
     if (import.meta.env.DEV) {
       const existing = $refs[ref];
       // A second claimant replaces the first, so $refs holds whichever
-      // mounted last. Usually a ref inside v-for: refs do not collect into a
-      // list here as they do in Vue.
+      // mounted last. v-for rows each have their own $refs, so never collide.
       if (existing && existing !== el && existing.isConnected) {
         warnOnce(
           `ref-dup:${ref}`,
           `two elements claim ref="${ref}" in the same scope; $refs.${ref} ` +
             `points at the last one mounted and the earlier element is no ` +
-            `longer reachable. Give each element its own name, or key off ` +
-            `the item inside v-for rather than using a ref.`
+            `longer reachable. Give each element its own name.`
         );
       }
     }
