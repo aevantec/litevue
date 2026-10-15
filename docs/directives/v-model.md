@@ -35,7 +35,7 @@ selects, including `multiple`.
 | --- | --- |
 | `.lazy` | Sync on `change` rather than `input` |
 | `.number` | Cast to a number; unparseable input stays a string |
-| `.trim` | Trim whitespace; takes precedence over `.number` |
+| `.trim` | Trim whitespace; with `.number`, the trimmed value is then cast |
 | `.debounce` / `.debounce-<ms>` | Delay writes from input events; default 250ms |
 | `.fill` | Seed an empty model from the control's initial `value` |
 

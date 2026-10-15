@@ -89,10 +89,10 @@ export const model: Directive<
     });
   } else {
     // text-like
+    // trim first, then convert, as in Vue: .trim.number yields a number
     const resolveValue = (val: string) => {
-      if (trim) return val.trim();
-      if (number) return toNumber(val);
-      return val;
+      if (trim) val = val.trim();
+      return number ? toNumber(val) : val;
     };
 
     // .debounce[-ms]: rate-limit assignments from input events
