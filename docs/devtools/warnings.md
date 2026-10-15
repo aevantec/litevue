@@ -162,9 +162,9 @@ whose plugin was not installed with `app.use()` before `mount()`.
 
 ### An empty `v-if`
 
-An empty `v-if=""` is treated like `v-else`: the element always renders, and
-any `v-else-if` or `v-else` after it never does. The empty attribute is usually
-a template that lost its condition during editing.
+An empty or blank `v-if=""` is read as false: the element does not render, and
+a following `v-else-if` or `v-else` is evaluated as usual. The empty attribute
+is usually a template that lost its condition during editing.
 
 ### An invalid `v-for` expression
 

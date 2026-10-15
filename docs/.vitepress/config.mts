@@ -43,6 +43,13 @@ export default defineConfig({
     // are fixed. The block's own chrome is still theme-driven, so custom.css
     // pins that in light mode to match.
     theme: 'github-dark',
+    // Pages compile as Vue templates and only fenced blocks get v-pre, so an
+    // inline `{{ }}` rendered as an empty <code>. LiteVue's docs quote it often.
+    config(md) {
+      const codeInline = md.renderer.rules.code_inline!;
+      md.renderer.rules.code_inline = (...args) =>
+        codeInline(...args).replace(/^<code/, '<code v-pre');
+    },
   },
   head: [
     // head entries are emitted verbatim, so these need the base itself.
