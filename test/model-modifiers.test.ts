@@ -121,3 +121,35 @@ describe('checkbox and radio stay in sync with the model', () => {
     expect([els[0].checked, els[1].checked]).toEqual([true, false]);
   });
 });
+
+describe('.trim with .number', () => {
+  const type = async (html: string, value: string) => {
+    const { $ } = await mount(`<div v-scope="{ v: '' }">${html}</div>`);
+    const input = $('input') as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await tick();
+    return devtools.getScope(input)!.v;
+  };
+
+  test('.trim.number trims, then converts to a number', async () => {
+    expect(await type(`<input v-model.trim.number="v" />`, ' 42 ')).toBe(42);
+  });
+
+  test('.trim on a type="number" input still converts', async () => {
+    expect(
+      // a number input sanitises spaces away itself, so only the type matters
+      await type(`<input type="number" v-model.trim="v" />`, '7')
+    ).toBe(7);
+  });
+
+  test('.trim alone keeps a trimmed string', async () => {
+    expect(await type(`<input v-model.trim="v" />`, ' 42 ')).toBe('42');
+  });
+
+  test('.trim.number leaves text that is not a number as a string', async () => {
+    expect(await type(`<input v-model.trim.number="v" />`, ' abc ')).toBe(
+      'abc'
+    );
+  });
+});

@@ -34,7 +34,9 @@ for (const [file, limit] of Object.entries(budgets)) {
 
 const w = Math.max(...rows.map(([f]) => f.length));
 for (const [file, bytes, limit, headroom, pct] of rows) {
-  const bar = pct >= 100 ? 'OVER' : `${pct}%`;
+  // off the real overage, not the rounded percentage: 10392/10400 rounds to
+  // 100 and read as OVER while the row still showed 8 bytes spare
+  const bar = bytes > limit ? 'OVER' : `${pct}%`;
   console.log(
     `${file.padEnd(w)}  ${String(bytes).padStart(5)} / ${String(limit).padEnd(5)} gz  ${bar.padStart(5)}  (${headroom} spare)`
   );
