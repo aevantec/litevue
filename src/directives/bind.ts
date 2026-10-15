@@ -4,6 +4,7 @@ import {
   normalizeStyle,
   isString,
   isArray,
+  isPlainObject,
   hyphenate,
   camelize,
 } from '@vue/shared';
@@ -42,7 +43,9 @@ export const bind: Directive<Element & { _class?: string | null }> = ({
         }
       }
     }
-    prevValue = value;
+    // a copy, not the object: one mutated in place would otherwise be its own
+    // previous value, and a deleted key would never be cleared
+    prevValue = isPlainObject(value) ? { ...value } : value;
   });
 };
 
