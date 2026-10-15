@@ -10,7 +10,7 @@ import {
 
 const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
 
-export const bind: Directive<Element & { _class?: string }> = ({
+export const bind: Directive<Element & { _class?: string | null }> = ({
   el,
   get,
   effect,
@@ -19,9 +19,10 @@ export const bind: Directive<Element & { _class?: string }> = ({
 }) => {
   let prevValue: any;
 
-  // record static class
+  // record static class; the attribute, since an SVG element's className is
+  // an SVGAnimatedString, not a string
   if (arg === 'class') {
-    el._class = el.className;
+    el._class = el.getAttribute('class');
   }
 
   effect(() => {
@@ -46,7 +47,7 @@ export const bind: Directive<Element & { _class?: string }> = ({
 };
 
 const setProp = (
-  el: Element & { _class?: string },
+  el: Element & { _class?: string | null },
   key: string,
   value: any,
   prevValue?: any
