@@ -45,6 +45,7 @@ To run code only when a specific value changes, register a
 - The first run happens one tick after mount, so the rest of the region is already bound and `$el` is in the document.
 - Re-runs are batched: several changes in one tick cause one run.
 - Every reactive value read during the run becomes a dependency, including reads inside functions it calls.
+- Writing state that other bindings read updates them in the same tick. Two effects that each write what the other reads are stopped after 100 re-runs and [reported](/essentials/error-handling#what-gets-caught); derive one value from the other with a getter or [`computed()`](/globals/computed) instead.
 - The effect stops when its region unmounts. A run that throws is reported to [`app.onError()`](/essentials/error-handling) and later runs continue.
 
 ## Related

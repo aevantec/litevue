@@ -45,7 +45,7 @@ They appear while you develop — automatically from npm with Vite or webpack 5,
 | `handler` | a [`v-on`](/directives/v-on) handler threw, or its promise rejected |
 | `directive` | a directive's own setup threw |
 | `compile` | the expression could not be parsed into a function at all |
-| `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect |
+| `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect — or an effect was stopped for re-running 100 times in one update |
 | `teardown` | a [plugin's teardown](/plugins/authoring#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
 
 `source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
@@ -72,7 +72,8 @@ A failure is contained to the thing that failed:
 
 - A broken expression yields `undefined`, and the rest of the page still binds.
 - A directive that throws during setup is skipped; the remaining elements are still processed.
-- A failing `v-scope` falls back to an empty scope rather than taking the mount down with it.
+- A failing `v-scope` falls back to an empty scope rather than taking the mount down with it. A getter that throws is reported where it is read.
+- Two effects that keep writing state the other reads are stopped after 100 re-runs in one update and reported, instead of freezing the page.
 - A handler that throws does not stop later events from firing.
 - A `$watch` callback or `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page.
 

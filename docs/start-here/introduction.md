@@ -80,6 +80,7 @@ Deliberate divergences, all stemming from the absence of a component system:
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
 | [`ref`](/directives/ref) in `v-for` | one element — the last row — rather than an array                                              |
 | [`$watch`](/magics/watch)            | no `immediate` or `deep` options, no stop handle, and a path compares by identity               |
+| [`v-model`](/directives/v-model) on `<select multiple>` | an array only; Vue also accepts a `Set`                                  |
 
 ## What's not supported
 
@@ -90,7 +91,8 @@ Dropped because their utility-to-size ratio doesn't justify inclusion for progre
 - Reactivity for `Map`, `Set`, `WeakMap` and `WeakSet` — left out of the build for size. They work in state but are not tracked; [assign a new one](/globals/reactive#behavior) to update the page
 - `KeepAlive`, `Suspense`, async components
 - Single-file components, scoped styles, and everything else requiring a build step
-- `v-for` deep destructuring, `v-on="object"`, dynamic arguments (`:[name]`), `v-is` / `<component :is>`
+- `v-for` destructuring with defaults or nesting, `v-on="object"`, dynamic arguments (`:[name]`), `v-is` / `<component :is>`
+- The `.attr` and `.prop` modifiers on `v-bind`
 - Server-side rendering and platform-agnostic rendering — LiteVue is coupled to the DOM by design
 
 ::: tip Partially covered

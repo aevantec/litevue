@@ -20,6 +20,17 @@ Mark a region for LiteVue and declare its state.
 | `v-scope="Component(props)"` | State returned by a [component](/essentials/components) function |
 | `v-scope` | A region that only uses inherited or root state |
 
+### Modifiers
+
+Defer mounting a region until it is needed. Until then nothing inside is bound —
+no scope, effects or listeners.
+
+| Modifier | Mounts when |
+| --- | --- |
+| `.visible` | The region scrolls into view |
+| `.idle` | The browser is next idle |
+| `.interaction` | The first pointer press, key press or focus inside the region |
+
 ### Special keys
 
 | Key | Meaning |
@@ -58,6 +69,18 @@ writing to an inherited key updates the parent:
 </div>
 ```
 
+### Mounting on demand
+
+A page with many widgets pays for every scope at load. Defer the ones below the
+fold or behind a click, and hide their raw `{{ }}` with
+[`v-cloak`](/directives/v-cloak) until they mount:
+
+```html
+<section v-scope.visible="Comments({ postId: 7 })" v-cloak>…</section>
+<nav v-scope.interaction="{ open: false }">…</nav>
+<aside v-scope.idle="Recommendations()" v-cloak>…</aside>
+```
+
 ## Behavior
 
 - With `createApp().mount()` or the `init` script attribute, every top-level `v-scope` becomes a root region.
@@ -65,6 +88,13 @@ writing to an inherited key updates the parent:
 - If the expression throws, the region falls back to an empty scope and the rest of the page still mounts — see [Error handling](/essentials/error-handling).
 - On the same element as `v-for`, each row gets its own scope — see [v-for](/directives/v-for#per-row-state).
 - Name a scope for the devtools with [`v-name`](/directives/v-name).
+- A deferred region mounts inside its parent scope, so it sees parent state exactly as an ordinary nested scope would.
+- With `.interaction`, the click that wakes a region reaches its `@click` handlers. The key press that wakes it does not reach `@keydown` handlers inside, though `v-model` still receives the typed text.
+- Where `IntersectionObserver` is unavailable — in jsdom, for example — `.visible` mounts like `.idle` instead.
+- A region unmounted before its trigger fires never mounts, and its observer or listeners are released.
+- Directives on the deferred element itself wait too: its `ref`, `@click` and `:class` bind when it mounts.
+- Inside [`v-once`](/directives/v-once), a deferred region still renders once.
+- Use one modifier per element. With two, the region waits for both triggers in turn; beside a plain `v-scope`, the modifier's value replaces it.
 
 ## Related
 

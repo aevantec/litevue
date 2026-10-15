@@ -245,6 +245,43 @@ describe('every construct reports where it came from', () => {
     // the sibling region still bound
     expect(root.querySelector('b')!.textContent).toBe('fine');
   });
+
+  test('a throwing getter in v-scope does not take the whole mount down', async () => {
+    document.body.innerHTML = `<div id="root">
+      <div v-scope="{ get bad() { return this.missing.deep } }"></div>
+      <div v-scope="{ msg: 'fine' }"><b v-text="msg"></b></div>
+    </div>`;
+    const root = document.body.firstElementChild as HTMLElement;
+    const app = createApp();
+    app.onError((err, info) => seen.push({ err, info }));
+    expect(() => app.mount(root)).not.toThrow();
+    await tick(4);
+
+    expect(root.querySelector('b')!.textContent).toBe('fine');
+    // never read, so nothing to report
+    expect(seen).toHaveLength(0);
+  });
+
+  test('a throwing getter on the root data does not take the mount down', async () => {
+    expect(() =>
+      mount(`<div v-scope><b v-text="'fine'"></b></div>`, {
+        get bad(): never {
+          throw new Error('boom');
+        },
+      })
+    ).not.toThrow();
+    await tick(4);
+    expect(document.querySelector('b')!.textContent).toBe('fine');
+  });
+
+  test('a throwing getter is reported where it is read', async () => {
+    mount(`<div v-scope="{ get bad() { return this.missing.deep } }">
+      <span>{{ bad }}</span>
+    </div>`);
+    await tick(4);
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info.expression).toBe('{{ bad }}');
+  });
 });
 
 describe('handler registry lifecycle', () => {

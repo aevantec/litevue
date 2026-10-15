@@ -29,7 +29,7 @@ Bind an attribute or DOM property to an expression.
 | Value | Property name (`disabled`, `value`, `title`) | Attribute only (`aria-*`, `data-*`) |
 | --- | --- | --- |
 | `true` / `false` | Assigned to the property; `false` clears a boolean such as `disabled` | Written as the string `"true"` / `"false"` |
-| `null` / `undefined` | Assigned to the property — a string property such as `title` then reads `"null"` | Attribute removed |
+| `null` / `undefined` | Attribute removed; a boolean such as `disabled` becomes `false` | Attribute removed |
 | Anything else | Assigned to the property | Written as a string |
 
 A name is treated as a property when the element has one by that name. SVG
@@ -45,7 +45,7 @@ the attribute.
 ### Class and style
 
 `:class` accepts a string, an object or an array, and merges with the static
-`class` attribute. `:style` accepts a string, an object or an array of objects.
+`class` attribute, on SVG elements too. `:style` accepts a string, an object or an array of objects.
 
 ```html
 <span class="badge" :class="{ active: isOpen, muted: !enabled }"></span>
@@ -60,8 +60,8 @@ Style objects also take CSS custom properties and `!important`:
 
 ### Binding an object
 
-Without an argument, each key becomes an attribute. Keys that disappear on a
-later update are removed:
+Without an argument, each key becomes an attribute. A key that disappears is
+removed, whether the object is replaced or the key is deleted from it:
 
 ```html
 <input v-bind="{ id: fieldId, 'aria-invalid': hasError, placeholder }" />

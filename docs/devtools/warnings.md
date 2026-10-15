@@ -89,6 +89,22 @@ bring one back, insert fresh markup and mount that — which is what
 unaffected and remains the documented way to
 [initialize dynamic content](/essentials/dynamic-content).
 
+## `<select multiple>` with a model that is not an array
+
+```html
+<div v-scope="{ chosen: null }">
+  <select multiple v-model="chosen">…</select>
+</div>
+```
+
+A multiple select reads its model as the list of selected values, so anything
+other than an array — `null`, a string, a `Set` — selects nothing. The first
+change the user makes writes an array, so the page appears to fix itself, and
+the options that should have started selected never were.
+
+Initialise the model as `[]`, or as an array of the values to preselect. See
+[`v-model`](/directives/v-model#controls).
+
 ## A modifier that can never match
 
 On any event other than `keydown`, `keyup` and `keypress`, a modifier LiteVue

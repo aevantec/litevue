@@ -16,9 +16,8 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     console.warn(`v-if expression cannot be empty.`);
   }
 
-  const parent = el.parentElement!;
   const anchor = new Comment('v-if');
-  parent.insertBefore(anchor, el);
+  el.before(anchor);
 
   const branches: Branch[] = [
     {
@@ -36,7 +35,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
       checkAttr(elseEl, 'v-else') === '' ||
       (elseExp = checkAttr(elseEl, 'v-else-if'))
     ) {
-      parent.removeChild(elseEl);
+      elseEl.remove();
       branches.push({ exp: elseExp, el: elseEl });
     } else {
       break;
@@ -44,7 +43,7 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   }
 
   const nextNode = el.nextSibling;
-  parent.removeChild(el);
+  el.remove();
 
   // as in v-for, `el` is a template outside the document and can own nothing
   // a subtree disposal could reach
@@ -55,11 +54,9 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
 
   const removeActiveBlock = () => {
     if (block) {
-      // teleported roots don't live under parent; their anchor was never
-      // removed, so the position is already preserved
-      if (block.el.parentNode === parent) {
-        parent.insertBefore(anchor, block.el);
-      }
+      // a teleported root never took the anchor out, so its position is
+      // already held
+      if (!anchor.parentNode) block.el.before(anchor);
       block.remove();
       block = undefined;
     }
@@ -77,12 +74,14 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
       if (!exp || evaluate(ctx.scope, exp, el, { source: 'v-if', el })) {
         if (i !== activeBranchIndex) {
           removeActiveBlock();
+          // read per insert, not captured: inside a <template> block the
+          // parent starts as its DocumentFragment, which empties into the
+          // real element once that block is inserted
+          const parent = anchor.parentNode as Element;
           block = new Block(el, ctx);
           block.insert(parent, anchor);
           own(stopBranches, block.el);
-          if (block.el.parentNode === parent) {
-            parent.removeChild(anchor);
-          }
+          if (block.el.parentNode === parent) anchor.remove();
           activeBranchIndex = i;
         }
         return;

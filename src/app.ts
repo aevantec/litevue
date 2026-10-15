@@ -10,6 +10,7 @@ import { createId, createWatch } from './magics';
 import { stores } from './store';
 import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
+import { SCOPE_SELECTOR } from './lazy';
 
 // DEV: elements this app has already walked, so a second mount of the same
 // element can say why nothing happened. Weak, and never read in production.
@@ -187,21 +188,22 @@ export const createApp = (initialData?: any) => {
 
     mount(el?: string | Element | null) {
       if (typeof el === 'string') {
-        el = document.querySelector(el);
-        if (!el) {
+        const target = document.querySelector(el);
+        if (!target) {
           import.meta.env.DEV &&
-            console.error(`selector ${el} has no matching element.`);
+            console.error(`mount: selector ${el} has no matching element.`);
           return;
         }
+        el = target;
       }
 
       el = el || document.documentElement;
       let roots: Element[];
-      if (el.hasAttribute('v-scope')) {
+      if (el.matches(SCOPE_SELECTOR)) {
         roots = [el];
       } else {
-        roots = [...el.querySelectorAll(`[v-scope]`)].filter(
-          (root) => !root.matches(`[v-scope] [v-scope]`)
+        roots = [...el.querySelectorAll(SCOPE_SELECTOR)].filter(
+          (root) => !root.matches(`:where(${SCOPE_SELECTOR}) *`)
         );
       }
       if (!roots.length) {
@@ -247,9 +249,11 @@ export const createApp = (initialData?: any) => {
         // a root without v-scope gets no stashed context during walk; seed
         // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
-        // roots with v-scope register during walk; only claim the rest. The
-        // cleanup sits on the block so unmount(el) deregisters just this one.
-        if (!devtools.scopes.has(el)) {
+        // roots with v-scope register during walk; only claim the rest. A
+        // deferred root still carries its v-scope.<mode> and registers when it
+        // mounts. The cleanup sits on the block so unmount(el) deregisters
+        // just this one.
+        if (!devtools.scopes.has(el) && !el.matches(SCOPE_SELECTOR)) {
           block.ctx.cleanups.push(
             registerScope(el, block.ctx.scope, undefined, name || undefined)
           );

@@ -68,13 +68,14 @@ When several directives share an element they run in this order, which matters
 for what each one can see:
 
 1. `v-pre` — nothing else runs
-2. `v-if`
-3. `v-for`
-4. `v-scope`, then `ref`
-5. The element's children
-6. Bindings and other directives, in attribute order
-7. `v-model`, so it sees any `:value` binding
-8. `v-on` listeners
+2. `v-scope.visible`, `.idle` or `.interaction` — the whole element waits for its trigger, then continues from step 3
+3. `v-if`
+4. `v-for`
+5. `v-scope`, then `ref`
+6. The element's children
+7. Bindings and other directives, in attribute order
+8. `v-model`, so it sees any `:value` binding
+9. `v-on` listeners
 
 So `v-if` beside `v-for` cannot read the loop variable, while `v-scope` beside
 `v-for` creates state per row.

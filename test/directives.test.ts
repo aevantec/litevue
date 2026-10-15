@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { mount, tick } from './utils';
 
 describe('v-if / v-else', () => {
@@ -118,6 +118,40 @@ describe('v-model', () => {
   });
 });
 
+describe('v-model on <select multiple>', () => {
+  const html = `<select multiple v-model="v">
+      <option>a</option><option>b</option><option>c</option>
+    </select>`;
+  const selected = (el: HTMLElement) =>
+    [...(el as HTMLSelectElement).selectedOptions].map((o) => o.value);
+
+  test('an array model selects its options, and a change writes an array', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ v: ['a', 'c'] }">${html}<p>{{ v }}</p></div>`
+    );
+    expect(selected($('select'))).toEqual(['a', 'c']);
+
+    const sel = $('select') as HTMLSelectElement;
+    sel.options[1].selected = true;
+    sel.dispatchEvent(new Event('change'));
+    await tick();
+    expect(JSON.parse($('p').textContent!)).toEqual(['a', 'b', 'c']);
+  });
+
+  test('a non-array model selects nothing and warns, instead of throwing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { $ } = await mount(`<div v-scope="{ v: null }">${html}</div>`);
+    expect(selected($('select'))).toEqual([]);
+    expect(error).not.toHaveBeenCalled();
+    expect(warn.mock.calls.map((c) => String(c[0])).join()).toMatch(
+      /select multiple.*array/i
+    );
+    warn.mockRestore();
+    error.mockRestore();
+  });
+});
+
 describe('v-text / v-html / v-pre', () => {
   test('v-text and v-html', async () => {
     const { $ } = await mount(
@@ -135,5 +169,94 @@ describe('v-text / v-html / v-pre', () => {
       `<div v-scope="{ n: 1 }"><span v-pre>{{ n }}</span></div>`
     );
     expect($('span').textContent).toBe('{{ n }}');
+  });
+});
+
+// A string property stringifies what it is given, so null used to render as
+// the word "null" on property-backed names and be removed on attribute-only ones
+describe('v-html with no value', () => {
+  test('undefined and null both render empty, and content can follow', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ a: undefined, b: null }">
+        <p v-html="a"></p><s v-html="b"></s>
+        <button @click="a = '<em>x</em>'"></button>
+      </div>`
+    );
+    expect($('p').innerHTML).toBe('');
+    expect($('s').innerHTML).toBe('');
+    $('button').click();
+    await tick();
+    expect($('p').innerHTML).toBe('<em>x</em>');
+  });
+});
+
+describe('v-bind null and undefined on DOM properties', () => {
+  test('null and undefined remove a string property attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope><a title="t" lang="en" :title="null" :lang="undefined"></a></div>`
+    );
+    expect($('a').hasAttribute('title')).toBe(false);
+    expect($('a').hasAttribute('lang')).toBe(false);
+    expect(($('a') as HTMLAnchorElement).title).toBe('');
+  });
+
+  test('a value that becomes null removes the attribute, and can come back', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ t: 'hi' }"><a :title="t"></a><button @click="t = t ? null : 'back'"></button></div>`
+    );
+    expect($('a').getAttribute('title')).toBe('hi');
+    $('button').click();
+    await tick();
+    expect($('a').hasAttribute('title')).toBe(false);
+    $('button').click();
+    await tick();
+    expect($('a').getAttribute('title')).toBe('back');
+  });
+
+  test('boolean properties still treat null as false', async () => {
+    const { $ } = await mount(
+      `<div v-scope><button disabled :disabled="null"></button><p :hidden="true"></p></div>`
+    );
+    expect(($('button') as HTMLButtonElement).disabled).toBe(false);
+    expect(($('p') as HTMLElement).hidden).toBe(true);
+  });
+
+  test(':value null clears an input', async () => {
+    const { $ } = await mount(
+      `<div v-scope><input value="x" :value="null"></div>`
+    );
+    expect(($('input') as HTMLInputElement).value).toBe('');
+  });
+});
+
+// The previous value was kept by reference, so mutating the bound object in
+// place left nothing to compare a deleted key against
+describe('v-bind and style objects mutated in place', () => {
+  test('deleting a key from a v-bind object removes its attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ attrs: { 'data-x': '1', title: 't' } }">
+        <b v-bind="attrs"></b>
+        <button @click="delete attrs['data-x']; delete attrs.title"></button>
+      </div>`
+    );
+    expect($('b').getAttribute('data-x')).toBe('1');
+    $('button').click();
+    await tick();
+    expect($('b').hasAttribute('data-x')).toBe(false);
+    expect($('b').hasAttribute('title')).toBe(false);
+  });
+
+  test('deleting a key from a :style object clears that property', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ s: { color: 'red', width: '10px' } }">
+        <i :style="s"></i>
+        <button @click="delete s.color"></button>
+      </div>`
+    );
+    expect(($('i') as HTMLElement).style.color).toBe('red');
+    $('button').click();
+    await tick();
+    expect(($('i') as HTMLElement).style.color).toBe('');
+    expect(($('i') as HTMLElement).style.width).toBe('10px');
   });
 });

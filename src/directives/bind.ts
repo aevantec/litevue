@@ -4,13 +4,14 @@ import {
   normalizeStyle,
   isString,
   isArray,
+  isPlainObject,
   hyphenate,
   camelize,
 } from '@vue/shared';
 
 const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
 
-export const bind: Directive<Element & { _class?: string }> = ({
+export const bind: Directive<Element & { _class?: string | null }> = ({
   el,
   get,
   effect,
@@ -19,9 +20,10 @@ export const bind: Directive<Element & { _class?: string }> = ({
 }) => {
   let prevValue: any;
 
-  // record static class
+  // record static class; the attribute, since an SVG element's className is
+  // an SVGAnimatedString, not a string
   if (arg === 'class') {
-    el._class = el.className;
+    el._class = el.getAttribute('class');
   }
 
   effect(() => {
@@ -41,12 +43,14 @@ export const bind: Directive<Element & { _class?: string }> = ({
         }
       }
     }
-    prevValue = value;
+    // a copy, not the object: one mutated in place would otherwise be its own
+    // previous value, and a deleted key would never be cleared
+    prevValue = isPlainObject(value) ? { ...value } : value;
   });
 };
 
 const setProp = (
-  el: Element & { _class?: string },
+  el: Element & { _class?: string | null },
   key: string,
   value: any,
   prevValue?: any
@@ -80,8 +84,11 @@ const setProp = (
     key in el &&
     !forceAttrRE.test(key)
   ) {
+    // A string property would read null as "null", so it gets '' and the
+    // attribute goes, as in Vue. Booleans still take null as false.
     // @ts-ignore
-    el[key] = value;
+    el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    if (value == null) el.removeAttribute(key);
     if (key === 'value') {
       // @ts-ignore
       el._value = value;

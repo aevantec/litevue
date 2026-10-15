@@ -168,3 +168,11 @@ describe('mounting an element twice', () => {
     expect(matching(warn, /already been mounted/)).toEqual([]);
   });
 });
+
+describe('mount() with a selector that matches nothing', () => {
+  test('the message names the selector that was passed', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    createApp().mount('#no-such-region');
+    expect(String(error.mock.calls[0]?.[0])).toContain('#no-such-region');
+  });
+});

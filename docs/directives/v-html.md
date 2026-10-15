@@ -32,6 +32,7 @@ No argument or modifiers.
 ## Behavior
 
 - Directives and `{{ }}` inside the inserted HTML are not compiled. To make new markup interactive, see [Dynamic content](/essentials/dynamic-content).
+- `null` and `undefined` render as empty.
 - Every update replaces the whole content, so focus, selection and any state inside it are lost.
 
 ## Related
