@@ -19,7 +19,7 @@
 * **directives:** make v-model.trim.number convert the trimmed value to a number ([#127](https://github.com/aevantec/litevue/issues/127)) ([97b790a](https://github.com/aevantec/litevue/commit/97b790a3cde079028b56ee240c1ea63a6abbd2dc))
 * **directives:** remove the attribute when v-bind sets a string DOM property to null ([#128](https://github.com/aevantec/litevue/issues/128)) ([3ffc52f](https://github.com/aevantec/litevue/commit/3ffc52f2db7eaae55d1ebde07a65ad53ac655e07))
 * **directives:** render undefined as empty in v-html ([#130](https://github.com/aevantec/litevue/issues/130)) ([a4e3531](https://github.com/aevantec/litevue/commit/a4e35310b4ce141e8c92b467111818bf33de5b35))
-* **directives:** stop &lt;select multiple&gt; v-model throwing on a non-array value ([#132](https://github.com/aevantec/litevue/issues/132)) ([98a5397](https://github.com/aevantec/litevue/commit/98a5397a88ed2d3a72d9f9df6a6577f5a47f6780))
+* **directives:** stop &lt;select multiple&gt; v-model throwing on a non-array value; a non-array model, including a `Set`, now selects nothing and warns in development builds ([#132](https://github.com/aevantec/litevue/issues/132)) ([98a5397](https://github.com/aevantec/litevue/commit/98a5397a88ed2d3a72d9f9df6a6577f5a47f6780))
 
 ## [0.5.7](https://github.com/aevantec/litevue/compare/v0.5.6...v0.5.7) (2026-09-28)
 
