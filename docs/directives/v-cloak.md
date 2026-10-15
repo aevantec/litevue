@@ -39,6 +39,7 @@ Then mark any region whose raw `{{ }}` should not be visible:
 
 - Without it, a slow connection can briefly show the raw `{{ msg }}` text before the script runs.
 - Put the CSS in the `<head>`, not in a file that loads after the markup, or it will not apply in time.
+- On a region deferred with [`v-scope.visible`, `.idle` or `.interaction`](/directives/v-scope#mounting-on-demand), `v-cloak` stays until that region mounts.
 - [`v-text`](/directives/v-text) avoids the flash for a single value without any CSS.
 
 ## Related

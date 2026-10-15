@@ -43,6 +43,7 @@ createApp({ seen: false }).use(intersect).mount();
 - Backed by one `IntersectionObserver` per element, relative to the viewport.
 - The observer disconnects when the element unmounts.
 - Modifiers combine: `.once.full` runs once, the first time the element is fully visible.
+- To leave a whole region unbound until it scrolls into view, use [`v-scope.visible`](/directives/v-scope#mounting-on-demand) instead; it needs no plugin.
 
 ## Related
 
