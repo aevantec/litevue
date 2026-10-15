@@ -112,13 +112,19 @@ export class Block {
       }
       this.teardown();
     };
-    // a leave hook (transition plugin, unmount mode) defers removal until the
-    // animation finishes; effects stay live until then
-    const leave = this.isFragment
-      ? undefined
-      : ((this.template as any).__leave as (() => Promise<void>) | undefined);
-    if (leave) {
-      leave().then(removeNow);
+    // Leave hooks (transition plugin, unmount mode) defer removal until every
+    // animation finishes. A fragment's <template> never enters the DOM, so
+    // its hooks sit on its top-level nodes instead.
+    const leaves: Promise<void>[] = [];
+    let node: Node | null = this.start || this.template;
+    while (node) {
+      const leave = (node as any).__leave as (() => Promise<void>) | undefined;
+      if (leave) leaves.push(leave());
+      if (!this.start || node === this.end) break;
+      node = node.nextSibling;
+    }
+    if (leaves.length) {
+      Promise.all(leaves).then(removeNow);
     } else {
       removeNow();
     }

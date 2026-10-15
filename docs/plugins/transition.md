@@ -52,6 +52,17 @@ and `@unmounted`, wait for the leave transition:
 <li v-for="item in items" :key="item.id" v-transition:slide>{{ item.text }}</li>
 ```
 
+On a `<template v-if>` or `<template v-for>`, place `v-transition` on the
+template's top-level elements. The whole fragment stays in place until every
+one of them has finished leaving:
+
+```html
+<template v-if="open">
+  <h3 v-transition:fade>Title</h3>
+  <p v-transition:fade>Body</p>
+</template>
+```
+
 ### The CSS
 
 ```css

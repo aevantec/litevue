@@ -52,3 +52,64 @@ describe('v-if leave transitions (v-transition unmount mode)', () => {
     app.unmount();
   });
 });
+
+describe('leave transitions inside fragment blocks', () => {
+  test('<template v-if> defers removal until its children finish leaving', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ show: true }">
+      <template v-if="show">
+        <div id="box" v-transition:fade></div>
+        <p id="plain"></p>
+      </template>
+      <button @click="show = false"></button>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    document.querySelector('button')!.click();
+    await tick();
+    // the whole fragment stays until the leave ends, so siblings do not jump
+    const box = document.getElementById('box')!;
+    expect(box).toBeTruthy();
+    expect(box.classList.contains('fade-leave-active')).toBe(true);
+    expect(document.getElementById('plain')).toBeTruthy();
+    await sleep(20);
+    expect(document.getElementById('box')).toBeNull();
+    expect(document.getElementById('plain')).toBeNull();
+    app.unmount();
+  });
+
+  test('<template v-for> rows run their leave when removed', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ items: [1, 2] }">
+      <template v-for="i in items" :key="i">
+        <div :id="'row' + i" v-transition:fade></div>
+      </template>
+      <button @click="items = [1]"></button>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    document.querySelector('button')!.click();
+    await tick();
+    const row = document.getElementById('row2')!;
+    expect(row).toBeTruthy();
+    expect(row.classList.contains('fade-leave-active')).toBe(true);
+    await sleep(20);
+    expect(document.getElementById('row2')).toBeNull();
+    expect(document.getElementById('row1')).toBeTruthy();
+    app.unmount();
+  });
+
+  test('a fragment with no transitions is still removed synchronously', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ show: true }">
+      <template v-if="show"><p id="plain"></p></template>
+      <button @click="show = false"></button>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    document.querySelector('button')!.click();
+    await tick();
+    expect(document.getElementById('plain')).toBeNull();
+    app.unmount();
+  });
+});
