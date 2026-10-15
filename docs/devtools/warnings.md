@@ -56,9 +56,11 @@ correct code teaches you to ignore the console.
 ```
 
 `$refs` holds one element per name, so the second element replaces the first and
-the earlier one is no longer reachable. The usual cause is a `ref` inside
-`v-for`, where every row claims the same name — refs do not collect into a list
-here the way they do in Vue.
+the earlier one is no longer reachable. Give each element its own name.
+
+A `ref` inside `v-for` does not trigger this: each row has its own `$refs`, so
+rows never claim the same name as each other. See
+[`ref`](/directives/ref#behavior).
 
 ### Reading an unregistered `$store`
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { createApp, store } from '../src';
+import { createApp, devtools, store } from '../src';
 import { mount, tick } from './utils';
 
 /**
@@ -93,6 +93,27 @@ describe('duplicate ref names', () => {
     const hits = matching(warn, /claim ref="dupName"/);
     expect(hits.length).toBe(1);
     expect(hits[0]).toContain('last one mounted');
+  });
+
+  // each v-for row has its own $refs, so rows never collide with each other
+  // or with the parent: $refs.row is the row's own element, and the parent
+  // sees nothing under that name
+  test('a ref inside v-for is per row, and does not warn', async () => {
+    const warn = spy();
+    const { root } = await mount(
+      `<div v-scope="{ items: [1, 2, 3], seen: [] }">
+         <button v-for="i in items" ref="row" :id="'r' + i"
+           @click="seen.push($refs.row.id)"></button>
+       </div>`
+    );
+    await tick(8);
+    const scope = devtools.getScope(root)!;
+    expect(scope.$refs.row).toBeUndefined();
+    for (const id of ['r1', 'r3']) {
+      (root.querySelector('#' + id) as HTMLElement).click();
+    }
+    expect(scope.seen).toEqual(['r1', 'r3']);
+    expect(matching(warn, /claim ref=/)).toEqual([]);
   });
 
   test('does not warn for distinct names', async () => {
