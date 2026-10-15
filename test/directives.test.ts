@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { mount, tick } from './utils';
 
 describe('v-if / v-else', () => {
@@ -115,6 +115,40 @@ describe('v-model', () => {
     cb.dispatchEvent(new Event('change', { bubbles: true }));
     await tick();
     expect($('span').textContent).toBe('true');
+  });
+});
+
+describe('v-model on <select multiple>', () => {
+  const html = `<select multiple v-model="v">
+      <option>a</option><option>b</option><option>c</option>
+    </select>`;
+  const selected = (el: HTMLElement) =>
+    [...(el as HTMLSelectElement).selectedOptions].map((o) => o.value);
+
+  test('an array model selects its options, and a change writes an array', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ v: ['a', 'c'] }">${html}<p>{{ v }}</p></div>`
+    );
+    expect(selected($('select'))).toEqual(['a', 'c']);
+
+    const sel = $('select') as HTMLSelectElement;
+    sel.options[1].selected = true;
+    sel.dispatchEvent(new Event('change'));
+    await tick();
+    expect(JSON.parse($('p').textContent!)).toEqual(['a', 'b', 'c']);
+  });
+
+  test('a non-array model selects nothing and warns, instead of throwing', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { $ } = await mount(`<div v-scope="{ v: null }">${html}</div>`);
+    expect(selected($('select'))).toEqual([]);
+    expect(error).not.toHaveBeenCalled();
+    expect(warn.mock.calls.map((c) => String(c[0])).join()).toMatch(
+      /select multiple.*array/i
+    );
+    warn.mockRestore();
+    error.mockRestore();
   });
 });
 
