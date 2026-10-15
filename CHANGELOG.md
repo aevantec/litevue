@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.9](https://github.com/aevantec/litevue/compare/v0.5.8...v0.5.9) (2026-10-15)
+
+
+### Features
+
+* **core:** $watch returns a stop function and accepts { immediate } ([#150](https://github.com/aevantec/litevue/issues/150)) ([de9d496](https://github.com/aevantec/litevue/commit/de9d49654378ef95e16adece3a839723a10fbae3))
+
+
+### Bug Fixes
+
+* **core:** cap the compiled-expression cache so morph-heavy pages stop growing it ([#145](https://github.com/aevantec/litevue/issues/145)) ([2acb741](https://github.com/aevantec/litevue/commit/2acb741922101a5eca290b012d3fd928e0820090))
+* **core:** run leave transitions on &lt;template v-if&gt; and &lt;template v-for&gt; blocks ([#141](https://github.com/aevantec/litevue/issues/141)) ([837f2b1](https://github.com/aevantec/litevue/commit/837f2b1776df1cb565388a8d839f7d9e938b18ad))
+* **directives:** render nothing for an empty v-if ([#143](https://github.com/aevantec/litevue/issues/143)) ([de141c0](https://github.com/aevantec/litevue/commit/de141c0b15b0ef6876f8c165b16cb44ccda2e9f6))
+* **plugins:** return $mq's fallback for a missing map in production too ([#147](https://github.com/aevantec/litevue/issues/147)) ([69c1a76](https://github.com/aevantec/litevue/commit/69c1a7675577e8cbdfbcbddad9fb8c94be4c1c97))
+
 ## [0.5.8](https://github.com/aevantec/litevue/compare/v0.5.7...v0.5.8) (2026-10-15)
 
 
