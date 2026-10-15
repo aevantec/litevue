@@ -29,7 +29,7 @@ Bind an attribute or DOM property to an expression.
 | Value | Property name (`disabled`, `value`, `title`) | Attribute only (`aria-*`, `data-*`) |
 | --- | --- | --- |
 | `true` / `false` | Assigned to the property; `false` clears a boolean such as `disabled` | Written as the string `"true"` / `"false"` |
-| `null` / `undefined` | Assigned to the property — a string property such as `title` then reads `"null"` | Attribute removed |
+| `null` / `undefined` | Attribute removed; a boolean such as `disabled` becomes `false` | Attribute removed |
 | Anything else | Assigned to the property | Written as a string |
 
 A name is treated as a property when the element has one by that name. SVG
