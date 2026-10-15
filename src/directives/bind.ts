@@ -81,8 +81,11 @@ const setProp = (
     key in el &&
     !forceAttrRE.test(key)
   ) {
+    // A string property would read null as "null", so it gets '' and the
+    // attribute goes, as in Vue. Booleans still take null as false.
     // @ts-ignore
-    el[key] = value;
+    el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    if (value == null) el.removeAttribute(key);
     if (key === 'value') {
       // @ts-ignore
       el._value = value;
