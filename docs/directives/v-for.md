@@ -70,7 +70,7 @@ out before it is removed — see [transition](/plugins/transition#with-v-if-and-
 - Array mutations (`push`, `splice`, `sort`, `reverse`, …) and replacing the array are both reactive.
 - `Map` and `Set` are not iterated. Spread one into an array — `v-for="[k, v] in [...map]"` — and note that changes to its contents are not tracked; see [reactive()](/globals/reactive#behavior).
 - `v-if` on the same element runs first and cannot see the loop variable — see [v-if](/directives/v-if#behavior).
-- A `ref` inside the loop points at the last row rendered, not an array — see [ref](/directives/ref).
+- A `ref` inside the loop is per row: each row's `$refs` holds its own element, and the parent sees none of them — see [ref](/directives/ref#behavior).
 
 ## Related
 
