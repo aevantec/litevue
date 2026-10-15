@@ -110,3 +110,74 @@ describe('<template v-for> / <template v-if> — removing a fragment', () => {
     }
   });
 });
+
+// Inside a fragment block, a structural directive's parent is the cloned
+// DocumentFragment until the block is inserted, and the real element after.
+describe('structural directives as direct children of a <template>', () => {
+  const text = (root: Element, sel: string) =>
+    [...root.querySelectorAll(sel)].map((n) => n.textContent).join(',');
+
+  test('v-for inside <template v-if> renders, and updates after insertion', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ show: true, xs: [1, 2] }">
+         <template v-if="show"><i v-for="x in xs" :key="x">{{ x }}</i></template>
+       </div>`
+    );
+    expect(text(root, 'i')).toBe('1,2');
+
+    const scope = (root as any).__ctx.scope;
+    scope.xs = [2, 1, 3];
+    await tick(8);
+    expect(text(root, 'i')).toBe('2,1,3');
+
+    scope.xs = [3];
+    await tick(8);
+    expect(text(root, 'i')).toBe('3');
+  });
+
+  test('v-for inside <template v-if> that turns true later', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ show: false }">
+         <template v-if="show"><i v-for="n in 2">{{ n }}</i></template>
+       </div>`
+    );
+    expect(text(root, 'i')).toBe('');
+
+    (root as any).__ctx.scope.show = true;
+    await tick(8);
+    expect(text(root, 'i')).toBe('1,2');
+  });
+
+  test('v-if / v-else inside <template v-for>, toggled and reordered', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ xs: [{ id: 1, on: true }, { id: 2, on: false }] }">
+         <template v-for="x in xs" :key="x.id"><b v-if="x.on">{{ x.id }}</b><s v-else>{{ x.id }}</s></template>
+       </div>`
+    );
+    expect(text(root, 'b')).toBe('1');
+    expect(text(root, 's')).toBe('2');
+
+    const scope = (root as any).__ctx.scope;
+    scope.xs[0].on = false;
+    scope.xs[1].on = true;
+    await tick(8);
+    expect(text(root, 'b')).toBe('2');
+    expect(text(root, 's')).toBe('1');
+
+    scope.xs = [scope.xs[1], scope.xs[0]];
+    await tick(8);
+    expect(text(root, 'b, s')).toBe('2,1');
+  });
+
+  test('a v-if inside a removed <template v-for> row is torn down with it', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ xs: [1, 2] }">
+         <template v-for="x in xs" :key="x"><b v-if="x">{{ x }}</b></template>
+       </div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    scope.xs = [2];
+    await tick(8);
+    expect(text(root, 'b')).toBe('2');
+  });
+});

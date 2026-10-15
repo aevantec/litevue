@@ -21,10 +21,12 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
 
   const nextNode = el.nextSibling;
 
-  const parent = el.parentElement!;
+  // Resolved through the anchor on every use: as a direct child of a
+  // <template> block the parent starts as its DocumentFragment, which empties
+  // into the real element once the block is inserted.
   const anchor = new Text('');
-  parent.insertBefore(anchor, el);
-  parent.removeChild(el);
+  el.replaceWith(anchor);
+  const parent = () => anchor.parentNode as Element;
 
   // From here the directive's effects belong to the anchor: `el` has left the
   // document, so a subtree disposal could never reach anything it owns and the
@@ -121,7 +123,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   const mountBlock = (ctx: Context, ref: Node) => {
     const block = new Block(el, ctx);
     block.key = ctx.key;
-    block.insert(parent, ref);
+    block.insert(parent(), ref);
     return block;
   };
 
@@ -210,7 +212,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
               prevMovedBlock === nextBlock
             ) {
               prevMovedBlock = block;
-              block.insert(parent, nextBlock ? nextBlock.el : anchor);
+              block.insert(parent(), nextBlock ? nextBlock.el : anchor);
             }
           }
         }
