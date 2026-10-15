@@ -188,12 +188,13 @@ export const createApp = (initialData?: any) => {
 
     mount(el?: string | Element | null) {
       if (typeof el === 'string') {
-        el = document.querySelector(el);
-        if (!el) {
+        const target = document.querySelector(el);
+        if (!target) {
           import.meta.env.DEV &&
-            console.error(`selector ${el} has no matching element.`);
+            console.error(`mount: selector ${el} has no matching element.`);
           return;
         }
+        el = target;
       }
 
       el = el || document.documentElement;
