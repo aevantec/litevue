@@ -61,10 +61,14 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # Safe to re-run with "Re-run failed jobs": the job outputs above are kept,
+  # and scripts/publish-npm.mjs skips a version that is already published.
   publish:
     needs: release-please
     if: needs.release-please.outputs.released == 'true'
     runs-on: ubuntu-latest
+    # install + test + build take a few minutes; the registry wait allows ten
+    timeout-minutes: 30
     permissions:
       contents: read
       # npm authenticates this job by OIDC — no token anywhere. The package is
@@ -87,9 +91,11 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       # Trusted publishing needs npm >= 11.5.1; Node 22 still bundles npm 10.
+      # Pinned to the major rather than @latest, so a new npm major cannot
+      # arrive unannounced in the one job nothing else exercises.
       - name: Use an npm that supports trusted publishing
         run: |
-          npm install -g npm@latest
+          npm install -g npm@^11.5.1
           npm --version
 
       - name: Install dependencies
@@ -104,48 +110,14 @@ jobs:
       - name: Validate package
         run: pnpm lint:package
 
-      # No NODE_AUTH_TOKEN: the OIDC exchange above is the credential, and
-      # access comes from publishConfig in package.json.
+      # Publishes, waits until the registry shows the version, and reports
+      # provenance. The registry can lag `npm publish` by over 90s — 0.5.7 went
+      # red for that alone — and a re-run of a published version is skipped
+      # rather than failed. See the script for the details.
       #
-      # Provenance is attached automatically when publishing this way, but only
-      # once this repository is public — npm requires a publicly resolvable
-      # repository, since an attestation nobody can check against the source is
-      # worthless. 0.5.1 went out without one for that reason. Passing
-      # --provenance explicitly while private makes the publish fail outright,
-      # so the flag stays off and the check below reports the outcome instead.
+      # No NODE_AUTH_TOKEN: the OIDC exchange is the credential, and provenance
+      # is attached automatically now that the repository is public.
       - name: Publish to npm
-        run: npm publish
-
-      # A new version is not always readable the instant `npm publish` returns.
-      # 0.5.3 published fine and this step 404'd about a second later, failing
-      # the run and skipping the provenance report below — while 0.5.2, same
-      # workflow, passed. So it is a propagation race, not a permissions
-      # problem: retry rather than trust a single immediate read.
-      #
-      # A genuine publish failure still fails the job, just after ~100s.
-      - name: Verify it is on the registry
-        run: |
-          version='${{ needs.release-please.outputs.version }}'
-          for attempt in $(seq 1 10); do
-            if npm view "@aevantec/litevue@${version}" version 2>/dev/null; then
-              echo "visible on the registry after ${attempt} attempt(s)"
-              exit 0
-            fi
-            echo "not visible yet — retrying in 10s (${attempt}/10)"
-            sleep 10
-          done
-          echo "::error::${version} did not appear on the registry within 100s"
-          exit 1
-
-      # always(): this reports on a publish that already happened, so it should
-      # still run when the step above gave up waiting. 0.5.3 published without
-      # anyone learning its provenance status, because this was skipped.
-      - name: Report provenance status
-        if: always()
-        run: |
-          version='${{ needs.release-please.outputs.version }}'
-          if npm view "@aevantec/litevue@${version}" dist.attestations 2>/dev/null | grep -q provenance; then
-            echo "provenance attestation present for ${version}"
-          else
-            echo "::warning::${version} published without a provenance attestation — expected while the repository is private, a regression once it is public"
-          fi
+        env:
+          VERSION: ${{ needs.release-please.outputs.version }}
+        run: node scripts/publish-npm.mjs "$VERSION"
