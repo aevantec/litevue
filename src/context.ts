@@ -109,10 +109,13 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   return scopedCtx;
 };
 
+// Read from the descriptor, not the property: reading runs every getter,
+// outside any error containment, so one throwing getter aborted the mount.
 export const bindContextMethods = (scope: Record<string, any>) => {
   for (const key of Object.keys(scope)) {
-    if (typeof scope[key] === 'function') {
-      scope[key] = scope[key].bind(scope);
+    const fn = Object.getOwnPropertyDescriptor(scope, key)!.value;
+    if (typeof fn === 'function') {
+      scope[key] = fn.bind(scope);
     }
   }
 };

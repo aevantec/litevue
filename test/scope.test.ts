@@ -79,3 +79,22 @@ describe('v-scope', () => {
     expect($('span').textContent).toBe('4');
   });
 });
+
+describe('binding scope methods', () => {
+  test('getters are not run while the scope is set up', async () => {
+    const reads = { n: 0 };
+    const { $ } = await mount(
+      `<div v-scope="{ n: 1, get double() { reads.n++; return this.n * 2 }, inc() { this.n++ } }">
+         <button @click="inc()"></button><span>{{ n }}</span>
+       </div>`,
+      { reads }
+    );
+    // nothing renders `double`, so nothing should have read it
+    expect(reads.n).toBe(0);
+
+    // methods are still bound to their scope
+    $('button').click();
+    await tick();
+    expect($('span').textContent).toBe('2');
+  });
+});
