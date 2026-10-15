@@ -80,8 +80,8 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
 
     let exp: string | null;
 
-    // v-if
-    if ((exp = checkAttr(el, 'v-if'))) {
+    // v-if; `!= null` so an empty v-if="" reaches _if, which reads it as false
+    if ((exp = checkAttr(el, 'v-if')) != null) {
       return _if(el, exp, ctx);
     }
 
