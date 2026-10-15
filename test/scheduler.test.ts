@@ -151,3 +151,77 @@ describe('batching through the DOM', () => {
     expect(scope.renders.length).toBe(before + 1);
   });
 });
+
+describe('re-queueing during a flush', () => {
+  test('a job that already ran is queued again when re-triggered', async () => {
+    const order: string[] = [];
+    const a = () => order.push('a');
+    queueJob(a);
+    queueJob(() => {
+      order.push('b');
+      queueJob(a);
+    });
+    await tick(3);
+    expect(order).toEqual(['a', 'b', 'a']);
+  });
+
+  test('a job still pending in the flush is not queued twice', async () => {
+    const order: string[] = [];
+    const c = () => order.push('c');
+    queueJob(() => {
+      order.push('b');
+      queueJob(c);
+    });
+    queueJob(c);
+    await tick(3);
+    expect(order).toEqual(['b', 'c']);
+  });
+
+  test('an effect reading state a later effect derives stays current', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ a: 1, x: 0 }">
+         <span>{{ a }}-{{ x }}</span>
+         <p v-effect="x = a + 1"></p>
+         <button @click="a = 5"></button>
+       </div>`
+    );
+    expect($('span').textContent).toBe('1-2');
+    $('button').click();
+    await tick(6);
+    expect($('span').textContent).toBe('5-6');
+  });
+
+  test('two jobs re-queueing each other forever stop and report', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let runs = 0;
+    const ping = (): void => {
+      runs++;
+      queueJob(pong);
+    };
+    const pong = (): void => {
+      runs++;
+      queueJob(ping);
+    };
+    queueJob(ping);
+    await tick(3);
+    expect(runs).toBeLessThan(1000);
+    expect(error).toHaveBeenCalled();
+
+    // the scheduler is still usable afterwards
+    const later = vi.fn();
+    queueJob(later);
+    await tick(3);
+    expect(later).toHaveBeenCalledTimes(1);
+  });
+
+  test('a loop does not stop unrelated jobs in the same flush', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const ping = (): void => queueJob(pong);
+    const pong = (): void => queueJob(ping);
+    const bystander = vi.fn();
+    queueJob(ping);
+    queueJob(bystander);
+    await tick(3);
+    expect(bystander).toHaveBeenCalledTimes(1);
+  });
+});
