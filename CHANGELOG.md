@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.8](https://github.com/aevantec/litevue/compare/v0.5.7...v0.5.8) (2026-10-15)
+
+
+### Features
+
+* lazy mounting with v-scope.visible, .idle and .interaction ([#118](https://github.com/aevantec/litevue/issues/118)) ([15922b1](https://github.com/aevantec/litevue/commit/15922b13b257daa26b12e5f57e5b9778619deed6))
+
+
+### Bug Fixes
+
+* **core:** name the selector when mount() finds no matching element ([#131](https://github.com/aevantec/litevue/issues/131)) ([a39b643](https://github.com/aevantec/litevue/commit/a39b6434f76846f3f38e0015ec942dc39a6f3bdc))
+* **core:** re-run an effect re-queued after it already ran in the flush ([#123](https://github.com/aevantec/litevue/issues/123)) ([a0e9ebb](https://github.com/aevantec/litevue/commit/a0e9ebb61405e60f506ee1fa686e53096ab230e8))
+* **core:** stop a throwing scope getter from aborting the mount ([#125](https://github.com/aevantec/litevue/issues/125)) ([d0bab9c](https://github.com/aevantec/litevue/commit/d0bab9cfc9c517b2ca7d759050a9dea3515ce69a))
+* **directives:** allow v-for and v-if as direct children of a &lt;template&gt; ([#122](https://github.com/aevantec/litevue/issues/122)) ([60c8c93](https://github.com/aevantec/litevue/commit/60c8c9323867851710515cc98291ece98bfb8004))
+* **directives:** clear keys deleted from a v-bind or :style object mutated in place ([#129](https://github.com/aevantec/litevue/issues/129)) ([54f4506](https://github.com/aevantec/litevue/commit/54f450686fd62824b6fa694faba2ec8f3083f4a8))
+* **directives:** keep an SVG element's static class when :class is bound ([#126](https://github.com/aevantec/litevue/issues/126)) ([f931c98](https://github.com/aevantec/litevue/commit/f931c98c1019c9147168ce2357d426ae9acdc5b2))
+* **directives:** make v-model.trim.number convert the trimmed value to a number ([#127](https://github.com/aevantec/litevue/issues/127)) ([97b790a](https://github.com/aevantec/litevue/commit/97b790a3cde079028b56ee240c1ea63a6abbd2dc))
+* **directives:** remove the attribute when v-bind sets a string DOM property to null ([#128](https://github.com/aevantec/litevue/issues/128)) ([3ffc52f](https://github.com/aevantec/litevue/commit/3ffc52f2db7eaae55d1ebde07a65ad53ac655e07))
+* **directives:** render undefined as empty in v-html ([#130](https://github.com/aevantec/litevue/issues/130)) ([a4e3531](https://github.com/aevantec/litevue/commit/a4e35310b4ce141e8c92b467111818bf33de5b35))
+* **directives:** stop &lt;select multiple&gt; v-model throwing on a non-array value; a non-array model, including a `Set`, now selects nothing and warns in development builds ([#132](https://github.com/aevantec/litevue/issues/132)) ([98a5397](https://github.com/aevantec/litevue/commit/98a5397a88ed2d3a72d9f9df6a6577f5a47f6780))
+
 ## [0.5.7](https://github.com/aevantec/litevue/compare/v0.5.6...v0.5.7) (2026-09-28)
 
 
