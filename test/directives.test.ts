@@ -137,3 +137,44 @@ describe('v-text / v-html / v-pre', () => {
     expect($('span').textContent).toBe('{{ n }}');
   });
 });
+
+// A string property stringifies what it is given, so null used to render as
+// the word "null" on property-backed names and be removed on attribute-only ones
+describe('v-bind null and undefined on DOM properties', () => {
+  test('null and undefined remove a string property attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope><a title="t" lang="en" :title="null" :lang="undefined"></a></div>`
+    );
+    expect($('a').hasAttribute('title')).toBe(false);
+    expect($('a').hasAttribute('lang')).toBe(false);
+    expect(($('a') as HTMLAnchorElement).title).toBe('');
+  });
+
+  test('a value that becomes null removes the attribute, and can come back', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ t: 'hi' }"><a :title="t"></a><button @click="t = t ? null : 'back'"></button></div>`
+    );
+    expect($('a').getAttribute('title')).toBe('hi');
+    $('button').click();
+    await tick();
+    expect($('a').hasAttribute('title')).toBe(false);
+    $('button').click();
+    await tick();
+    expect($('a').getAttribute('title')).toBe('back');
+  });
+
+  test('boolean properties still treat null as false', async () => {
+    const { $ } = await mount(
+      `<div v-scope><button disabled :disabled="null"></button><p :hidden="true"></p></div>`
+    );
+    expect(($('button') as HTMLButtonElement).disabled).toBe(false);
+    expect(($('p') as HTMLElement).hidden).toBe(true);
+  });
+
+  test(':value null clears an input', async () => {
+    const { $ } = await mount(
+      `<div v-scope><input value="x" :value="null"></div>`
+    );
+    expect(($('input') as HTMLInputElement).value).toBe('');
+  });
+});
