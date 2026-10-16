@@ -186,6 +186,8 @@ still carries the directives:
 | `v-*`, `:` and `@` attributes | Never adds them to a live element |
 | `:class` | Leaves the live `class` alone |
 | `v-model` | Leaves `value` and `checked` alone |
+| `v-bind` with an object | Updates the attributes the server sends, and removes none |
+| Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
 | An element with `v-if` or `v-for` | Leaves the whole containing element alone |
 | Anything else | Patches it to match, and removes attributes the server dropped |
@@ -193,6 +195,7 @@ still carries the directives:
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
+- On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
 - A removed element's scope is released with it. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
 - Duplicate sibling keys warn in development, since the earlier element would lose its node.

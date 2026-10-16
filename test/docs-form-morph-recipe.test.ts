@@ -152,6 +152,10 @@ describe('the server-rendered form', () => {
     expect(document.querySelector('#email')).toBe(input);
     expect(input.value).toBe('ada@example.com');
     expect(document.activeElement).toBe(input);
+    // v-show's display: none survives the morph, so the failure stays hidden
+    expect(
+      (document.querySelector('#failed') as HTMLElement).style.display
+    ).toBe('none');
   });
 
   test('bindings stay live after the morph', async () => {
