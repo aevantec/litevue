@@ -125,3 +125,75 @@ describe('v-resize.window', () => {
     expect((root as any).__ctx.scope.n).toBe(settled);
   });
 });
+
+describe('v-resize.visual', () => {
+  /** A stand-in visualViewport: an EventTarget with a size, as browsers expose. */
+  const stubVisualViewport = (width: number, height: number) => {
+    const view = Object.assign(new EventTarget(), { width, height });
+    Object.defineProperty(window, 'visualViewport', {
+      value: view,
+      configurable: true,
+    });
+    return view;
+  };
+  afterEach(() => {
+    delete (window as any).visualViewport;
+  });
+
+  test('reads the visual viewport, which shrinks when a keyboard opens', async () => {
+    installResizeObserver();
+    (window as any).innerHeight = 800;
+    const view = stubVisualViewport(390, 800);
+    const { root } = mount(
+      `<div v-scope="{ w: 0, h: 0 }"><div v-resize.visual="w = $width; h = $height"></div></div>`
+    );
+    await tick();
+    expect((root as any).__ctx.scope.h).toBe(800);
+
+    // the on-screen keyboard shrinks the visual viewport, not innerHeight
+    view.height = 460;
+    view.dispatchEvent(new Event('resize'));
+    await tick();
+    expect((root as any).__ctx.scope.w).toBe(390);
+    expect((root as any).__ctx.scope.h).toBe(460);
+    expect(observed).toEqual([]);
+  });
+
+  test('.window keeps the layout viewport, so pinch-zoom does not move it', async () => {
+    installResizeObserver();
+    (window as any).innerWidth = 1024;
+    stubVisualViewport(512, 400);
+    const { root } = mount(
+      `<div v-scope="{ w: 0 }"><div v-resize.window="w = $width"></div></div>`
+    );
+    await tick();
+    expect((root as any).__ctx.scope.w).toBe(1024);
+  });
+
+  test('falls back to innerWidth and innerHeight without visualViewport', async () => {
+    installResizeObserver();
+    delete (window as any).visualViewport;
+    (window as any).innerWidth = 1024;
+    (window as any).innerHeight = 700;
+    const { root } = mount(
+      `<div v-scope="{ w: 0, h: 0 }"><div v-resize.visual="w = $width; h = $height"></div></div>`
+    );
+    await tick();
+    expect((root as any).__ctx.scope.w).toBe(1024);
+    expect((root as any).__ctx.scope.h).toBe(700);
+  });
+
+  test('stops listening when the region unmounts', async () => {
+    installResizeObserver();
+    const view = stubVisualViewport(390, 800);
+    const { app, root } = mount(
+      `<div v-scope="{ n: 0 }"><div v-resize.visual="n++"></div></div>`
+    );
+    await tick();
+    const settled = (root as any).__ctx.scope.n;
+    app.unmount();
+    view.dispatchEvent(new Event('resize'));
+    await tick();
+    expect((root as any).__ctx.scope.n).toBe(settled);
+  });
+});
