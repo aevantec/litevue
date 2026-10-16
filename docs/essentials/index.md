@@ -4,7 +4,7 @@ title: Essentials
 
 # Essentials <Badge type="section" text="Essentials" />
 
-The core concepts behind every LiteVue page: where state lives, how templates render it, when elements come and go, and how dynamically added markup becomes live — ending with the pattern the rest of it is for, [server-driven HTML](/essentials/server-driven-html).
+The core concepts behind every LiteVue page: where state lives, how templates render it, when elements come and go, and how dynamically added markup becomes live. It builds to the pattern the rest of it is for, [server-driven HTML](/essentials/server-driven-html), followed by recipes for loading data and submitting forms, and by error handling.
 
 | Page                                                 | What it covers                                                                   |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------- |

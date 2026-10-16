@@ -49,7 +49,7 @@ Full documentation lives in the **[docs site](https://litevue.dev/)** (source in
 
 - [Introduction](https://litevue.dev/start-here/introduction) — what it is, Vue compatibility, limitations, security and CSP
 - [Installation](https://litevue.dev/start-here/installation) — CDN, npm, mount options, and development builds
-- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content, server-driven HTML, error handling
+- [Essentials](https://litevue.dev/essentials/) — state, templating, components, lifecycle, dynamic content, server-driven HTML, resources, forms, error handling
 - [Directives](https://litevue.dev/directives/) — a page per directive, with live demos
 - [Magics](https://litevue.dev/magics/) — `$el`, `$store`, `$dispatch`, `$watch`, `$id`, …
 - [Globals](https://litevue.dev/globals/) — `createApp()`, `store()`, `reactive()`, `computed()`, `watchEffect()`, `nextTick()`, the devtools API
