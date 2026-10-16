@@ -40,6 +40,35 @@ const assets = (doc: Document) =>
     .sort()
     .join();
 
+/**
+ * Adds the next page's head elements and returns a function dropping the
+ * current page's, run after the swap so the old styles hold until then.
+ * Scripts are left out both ways: fetched ones never run, and removing a
+ * script does not unload it. New stylesheets load before the swap.
+ */
+const mergeHead = async (doc: Document) => {
+  const sel = 'link,style,meta';
+  const live = [...document.head.querySelectorAll(sel)];
+  const loads: Promise<unknown>[] = [];
+  for (const el of doc.head.querySelectorAll(sel)) {
+    const i = live.findIndex((l) => l.isEqualNode(el));
+    if (i > -1) {
+      live.splice(i, 1);
+      continue;
+    }
+    const fresh = document.importNode(el, true) as HTMLLinkElement;
+    if (fresh.matches('link[rel=stylesheet]')) {
+      // an error resolves too: a missing stylesheet must not block the page
+      loads.push(new Promise((r) => (fresh.onload = fresh.onerror = r)));
+    }
+    document.head.append(fresh);
+  }
+  await Promise.all(loads);
+  // tracked elements never reach here unmatched: a change forces a full load
+  return () =>
+    live.forEach((el) => el.matches('[data-navigate-preserve]') || el.remove());
+};
+
 const hasCtxAbove = (el: Element | null) => {
   for (; el; el = el.parentElement) if ((el as any).__ctx) return true;
   return false;
@@ -88,6 +117,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     doc: Document,
     url: URL,
     push: boolean,
+    dropOld: () => void,
     y?: number
   ) => {
     // history first, so the new page's scopes read its URL as they mount
@@ -101,6 +131,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     rendered = pathOf(location);
     document.title = doc.title;
     render(app, app.scope.$morph, from, doc.querySelector(target)!);
+    dropOld();
     if (options.scroll !== false) {
       const anchor = url.hash && document.getElementById(url.hash.slice(1));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
@@ -160,9 +191,12 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       }
       // the page's own scripts already ran; fetched ones never do
       doc.querySelectorAll('script').forEach((s) => s.remove());
-      // a transition runs this later; a newer navigation may have started
+      const dropOld = await mergeHead(doc);
+      // stylesheets and transitions both defer this; a newer navigation may
+      // have started meanwhile
       const run = () =>
-        c === controller && show(from, doc, url, res.ok && y == null, y);
+        c === controller &&
+        show(from, doc, url, res.ok && y == null, dropOld, y);
       options.transition && document.startViewTransition
         ? document.startViewTransition(run)
         : run();
