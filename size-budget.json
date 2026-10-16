@@ -11,6 +11,7 @@
     "dist/plugins/media.iife.js": 1350,
     "dist/plugins/morph.iife.js": 1400,
     "dist/plugins/persist.iife.js": 820,
+    "dist/plugins/popover.iife.js": 1100,
     "dist/plugins/resize.iife.js": 340,
     "dist/plugins/transition.iife.js": 760
   },

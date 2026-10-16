@@ -1,0 +1,52 @@
+<meta charset="utf-8" />
+
+<script type="module">
+  import { createApp } from '../src';
+  import { popover } from '../src/plugins/popover';
+
+  // ?fallback hides CSS anchor positioning, to exercise the script placement
+  if (location.search.includes('fallback')) {
+    const supports = CSS.supports.bind(CSS);
+    CSS.supports = (...args) =>
+      String(args[0]).includes('anchor') ? false : supports(...args);
+  }
+
+  createApp().use(popover).mount('#app');
+</script>
+
+<style>
+  [popover] {
+    width: 160px;
+    padding: 8px;
+    border: 1px solid #888;
+  }
+</style>
+
+<div id="app" v-scope="{ open: false, tip: false }">
+  <p>
+    The menu is anchored below its button and syncs with <code>open</code>.
+    Escape or a click outside closes it.
+  </p>
+  <button ref="menuBtn" @click="open = !open" style="margin: 120px 200px">
+    Menu
+  </button>
+  <div
+    id="menu"
+    v-popover="open"
+    v-anchor.bottom-start.offset-8="$refs.menuBtn"
+  >
+    <a href="#">Profile</a><br /><a href="#">Settings</a>
+  </div>
+  <p>open: {{ open }}</p>
+
+  <button
+    ref="tipBtn"
+    @click="tip = !tip"
+    style="position: fixed; bottom: 12px; left: 200px"
+  >
+    Near the bottom
+  </button>
+  <div id="tip" v-popover="tip" v-anchor.bottom.offset-6="$refs.tipBtn">
+    Flipped above, since there is no room below.
+  </div>
+</div>
