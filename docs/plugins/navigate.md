@@ -123,7 +123,7 @@ document.addEventListener('navigate:after', () => progress.done());
 - Scripts in the fetched page never run. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - With the default `body` target, focus returns to the start of the document, as after a full load. With a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
-- The new page's title is announced through a visually hidden live region, so screen-reader users learn the page changed.
+- The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
 - Back and forward fetch the page again and restore its scroll position. There is no page cache.
 - On full unmount, the plugin stops intercepting and removes its live region.
 

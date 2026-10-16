@@ -239,6 +239,23 @@ describe('navigate: links', () => {
     expect(document.querySelector('[aria-live]')!.textContent).toBe('Page two');
   });
 
+  test.each([
+    ['the first heading', '<main id="main"><h1> Orders </h1></main>', 'Orders'],
+    ['the path', '<main id="main">no heading</main>', '/untitled'],
+  ])('announces %s when the page has no title', async (_, body, said) => {
+    replies['/untitled'] = {
+      body: `<!doctype html><html><head><title></title></head><body>${body}</body></html>`,
+    };
+    await start('<a href="/untitled">Untitled</a><main id="main">One</main>', {
+      target: '#main',
+    });
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('[aria-live]')!.textContent).toBe(said);
+  });
+
   test('scrolls to the top, or to the hash target', async () => {
     replies['/two'] = {
       body: page('Two', '<main>Two<h2 id="part">Part</h2></main>'),

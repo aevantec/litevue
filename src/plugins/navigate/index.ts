@@ -143,7 +143,11 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       from.hasAttribute('tabindex') || from.setAttribute('tabindex', '-1');
       (from as HTMLElement).focus({ preventScroll: true });
     }
-    status.textContent = document.title;
+    // as Next.js does: an untitled page still says where the user landed
+    status.textContent =
+      document.title ||
+      document.querySelector('h1')?.textContent?.trim() ||
+      location.pathname;
     emit('after', { url: url.href });
   };
 
