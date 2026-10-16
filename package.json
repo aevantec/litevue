@@ -1,6 +1,6 @@
 {
   "name": "@aevantec/litevue",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "publishConfig": {
     "access": "public"
   },
