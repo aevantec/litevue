@@ -78,6 +78,10 @@ const analytics = (app) => {
 };
 ```
 
+The [inspector panel's plugins view](/devtools/panel#see-installed-plugins)
+lists every installed plugin and marks one that returned no teardown, which is
+a quick way to check yours.
+
 A directive that sets anything up outside `effect()` needs its own cleanup too
 — see [Returning a cleanup](/globals/create-app#returning-a-cleanup).
 
