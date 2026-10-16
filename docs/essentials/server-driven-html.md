@@ -86,6 +86,10 @@ morph(document.querySelector('#cart'), html);
 changes only what differs. An input the user is typing in keeps its value, its
 caret position and its focus, because the element is never removed.
 
+Forms follow the same pattern: the server re-renders the form with its
+validation errors, and morph patches it in. See
+[server-rendered forms](/essentials/forms#server-rendered-forms-with-morph).
+
 ## Replacing a region: unmount first
 
 If you do replace markup wholesale, tear the old region down before you do:
