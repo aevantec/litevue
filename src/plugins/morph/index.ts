@@ -36,6 +36,12 @@ export interface MorphOptions {
    * released — so what arrives here is inert, not a live subtree.
    */
   afterNodeRemoved?: (node: Node) => void;
+  /**
+   * Patch inside `document.startViewTransition()` where supported. The patch
+   * then runs once the browser has captured the old view, not before `morph`
+   * returns. Without the API it patches immediately, as if the option were off.
+   */
+  transition?: boolean;
 }
 
 /**
@@ -321,9 +327,14 @@ export const morph = (
     target = to;
   }
   if (target) {
-    const restore = captureFocus();
-    patchNode(from, target, nearestCtx(from), opts);
-    restore();
+    const patch = () => {
+      const restore = captureFocus();
+      patchNode(from, target!, nearestCtx(from), opts);
+      restore();
+    };
+    opts.transition && document.startViewTransition
+      ? document.startViewTransition(patch)
+      : patch();
   }
   return from;
 };
