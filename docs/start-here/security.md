@@ -4,7 +4,7 @@ title: Security
 
 # Security <Badge type="section" text="Start Here" />
 
-LiteVue evaluates JavaScript expressions it finds in your markup. `v-scope`, `@click`, `:class` and `{{ }}` are all code, compiled at runtime from attribute values. Everything on this page follows from that one fact.
+This page is for anyone deploying LiteVue: what it trusts, what it cannot run under, and what to check first. LiteVue evaluates JavaScript expressions it finds in your markup. `v-scope`, `@click`, `:class` and `{{ }}` are all code, compiled at runtime from attribute values. Everything on this page follows from that one fact.
 
 That design is inherited from petite-vue and is not a defect. It is what allows a server-rendered page to become interactive without a build step. It also means **the markup LiteVue walks is part of your trusted codebase**, exactly like a `<script>` tag, and has to be treated that way.
 
@@ -108,3 +108,7 @@ Report privately through [GitHub security advisories](https://github.com/aevante
 Because expression evaluation is intentional, reports that restate it — that `@click` in attacker-supplied HTML runs, or that a CSP without `'unsafe-eval'` blocks the library — are closed as working as documented.
 
 In scope: escaping the intended scope of an expression, prototype pollution, bypassing the devtools production kill-switch to reach application state, or getting content that should have stayed inert to execute. The full policy is in [SECURITY.md](https://github.com/aevantec/litevue/blob/main/SECURITY.md).
+
+## Next
+
+Put LiteVue on a page with [Installation](/start-here/installation).

@@ -4,19 +4,25 @@ title: Devtools
 
 # Devtools <Badge type="section" text="Devtools" />
 
-LiteVue ships inspection tooling in the box, built on the public [Devtools API](/globals/devtools) — and a single line [disables it all in production](/globals/devtools#disabling-in-production).
+LiteVue ships its own inspection tooling, for anyone debugging state on a page
+while they develop. Every tool reads the same public
+[Devtools API](/globals/devtools), and one line
+[disables it all in production](/globals/devtools#disabling-in-production).
 
-| Tool                                     | What it is                                                                  |
-| ---------------------------------------- | --------------------------------------------------------------------------- |
-| [Inspector Panel](/devtools/panel)       | in-page panel: scope/store tabs, search over state, live editing, docking, pick mode, themes |
-| [Browser Extension](/devtools/extension) | Chrome/Firefox devtools tab reading the same registry                       |
-| [Devtools API](/globals/devtools)        | `__LITE_VUE__` console access, registry events, production kill-switch      |
-| [Development Warnings](/devtools/warnings) | console warnings for mistakes that otherwise fail silently                |
+## Choose a tool
 
-## Quick setup
+| Tool | Use it to |
+| --- | --- |
+| [Inspector Panel](/devtools/panel) | Browse scopes and stores in the page, search and edit state, and pick a scope by clicking its element |
+| [Browser Extension](/devtools/extension) | Inspect the same state from a tab in the browser's own devtools |
+| [Devtools API](/globals/devtools) | Read scopes from the console through `__LITE_VUE__`, listen to registry events, and switch the registry off |
+| [Development Warnings](/devtools/warnings) | See console warnings for mistakes that would otherwise fail silently |
+
+## Add the panel in one step
+
+Load the panel after the library, and only while you develop:
 
 ```html
-<!-- script tag: load the panel after the library -->
 <script src="https://unpkg.com/@aevantec/litevue" defer init></script>
 <script
   src="https://unpkg.com/@aevantec/litevue/dist/litevue-devtools.iife.js"
@@ -24,13 +30,22 @@ LiteVue ships inspection tooling in the box, built on the public [Devtools API](
 ></script>
 ```
 
+From npm, import it behind a development check so it never reaches the
+production bundle:
+
 ```js
-// npm: a dev-only side-effect import
 if (import.meta.env.DEV) {
   await import('@aevantec/litevue/devtools');
 }
 ```
 
-`import.meta.env.DEV` is Vite's flag. On webpack, Rollup, or Node, guard with `process.env.NODE_ENV !== 'production'` instead — the point is that the import stays inside a condition your bundler can resolve at build time, so the panel never reaches the production bundle.
+`import.meta.env.DEV` is Vite's flag. On webpack, Rollup or Node, guard with
+`process.env.NODE_ENV !== 'production'` instead. Either way, the condition must
+be one your bundler resolves at build time.
 
-See the [inspector panel](/devtools/panel) for the full setup, and [disabling in production](/globals/devtools#disabling-in-production) for shipping without any devtools surface.
+The development warnings need no setup: the npm package and the `.dev` CDN files
+include them. See [Development builds](/start-here/installation#development-builds).
+
+## Next
+
+Learn what the [Inspector Panel](/devtools/panel) shows and how to use it.
