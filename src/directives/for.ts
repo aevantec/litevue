@@ -12,6 +12,12 @@ const destructureRE = /^[{[]\s*((?:[\w_$]+\s*,?\s*)+)[\]}]$/;
 
 type KeyToIndexMap = Map<any, number>;
 
+// a row's data and key; a scoped context is only built when the row mounts
+interface Row {
+  data: Record<string, any>;
+  key: any;
+}
+
 export const _for = (el: Element, exp: string, ctx: Context) => {
   const inMatch = exp.match(forAliasRE);
   if (!inMatch) {
@@ -66,37 +72,37 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
 
   let mounted = false;
   let blocks: Block[];
-  let childCtxs: Context[];
+  let rows: Row[];
   let keyToIndexMap: Map<any, number>;
 
-  const createChildContexts = (source: unknown): [Context[], KeyToIndexMap] => {
+  const createRows = (source: unknown): [Row[], KeyToIndexMap] => {
     const map: KeyToIndexMap = new Map();
-    const ctxs: Context[] = [];
+    const rows: Row[] = [];
 
     if (isArray(source)) {
       for (let i = 0; i < source.length; i++) {
-        ctxs.push(createChildContext(map, source[i], i));
+        rows.push(createRow(map, source[i], i));
       }
     } else if (typeof source === 'number') {
       for (let i = 0; i < source; i++) {
-        ctxs.push(createChildContext(map, i + 1, i));
+        rows.push(createRow(map, i + 1, i));
       }
     } else if (isObject(source)) {
       let i = 0;
       for (const key in source) {
-        ctxs.push(createChildContext(map, source[key], i++, key));
+        rows.push(createRow(map, source[key], i++, key));
       }
     }
 
-    return [ctxs, map];
+    return [rows, map];
   };
 
-  const createChildContext = (
+  const createRow = (
     map: KeyToIndexMap,
     value: any,
     index: number,
     objKey?: string
-  ): Context => {
+  ): Row => {
     const data: any = {};
     if (destructureBindings) {
       destructureBindings.forEach(
@@ -111,18 +117,22 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       indexExp && (data[indexExp] = index);
     }
-    const childCtx = createScopedContext(ctx, data);
+    // The data itself, over the parent scope, rather than a scoped context:
+    // one per row per update made a one-item change cost most of a rebuild.
+    // Items read from reactive state are reactive, so `it.id` still tracks.
     const key = keyExp
-      ? evaluate(childCtx.scope, keyExp, el, { source: ':key', el })
+      ? evaluate(Object.setPrototypeOf(data, ctx.scope), keyExp, el, {
+          source: ':key',
+          el,
+        })
       : index;
     map.set(key, index);
-    childCtx.key = key;
-    return childCtx;
+    return { data, key };
   };
 
-  const mountBlock = (ctx: Context, ref: Node) => {
-    const block = new Block(el, ctx);
-    block.key = ctx.key;
+  const mountBlock = (row: Row, ref: Node) => {
+    const block = new Block(el, createScopedContext(ctx, row.data));
+    block.key = row.key;
     block.insert(parent(), ref);
     return block;
   };
@@ -135,19 +145,19 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   ctx.effect(() => {
     const source = evaluate(ctx.scope, sourceExp, el, { source: 'v-for', el });
     const prevKeyToIndexMap = keyToIndexMap;
-    [childCtxs, keyToIndexMap] = createChildContexts(source);
+    [rows, keyToIndexMap] = createRows(source);
 
     if (import.meta.env.DEV) {
       // Detection is free — a repeated key means fewer map entries than
       // contexts. Naming the offender costs a pass, and only runs once one
       // is known to exist.
-      if (keyToIndexMap.size !== childCtxs.length) {
+      if (keyToIndexMap.size !== rows.length) {
         const counts = new Map<any, number>();
         let dup: any;
-        for (const child of childCtxs) {
-          const n = (counts.get(child.key) || 0) + 1;
-          counts.set(child.key, n);
-          if (n > 1 && dup === undefined) dup = child.key;
+        for (const row of rows) {
+          const n = (counts.get(row.key) || 0) + 1;
+          counts.set(row.key, n);
+          if (n > 1 && dup === undefined) dup = row.key;
         }
         warnOnce(
           `for-dup-key:${exp}`,
@@ -180,7 +190,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       }
     }
     if (!mounted) {
-      blocks = childCtxs.map((s) => mountBlock(s, anchor));
+      blocks = rows.map((row) => mountBlock(row, anchor));
       mounted = true;
     } else {
       for (let i = 0; i < blocks.length; i++) {
@@ -190,20 +200,20 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       }
 
       const nextBlocks: Block[] = [];
-      let i = childCtxs.length;
+      let i = rows.length;
       let nextBlock: Block | undefined;
       let prevMovedBlock: Block | undefined;
       while (i--) {
-        const childCtx = childCtxs[i];
-        const oldIndex = prevKeyToIndexMap.get(childCtx.key);
+        const row = rows[i];
+        const oldIndex = prevKeyToIndexMap.get(row.key);
         let block;
         if (oldIndex == null) {
           // new
-          block = mountBlock(childCtx, nextBlock ? nextBlock.el : anchor);
+          block = mountBlock(row, nextBlock ? nextBlock.el : anchor);
         } else {
           // update
           block = blocks[oldIndex];
-          Object.assign(block.ctx.scope, childCtx.scope);
+          Object.assign(block.ctx.scope, row.data);
           if (oldIndex !== i) {
             // moved
             if (
