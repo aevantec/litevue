@@ -104,7 +104,13 @@ immediately.
 
 ### Async handlers
 
-Return the promise and a rejection is reported to
+A handler can `await`, so it can update state when a request finishes:
+
+```html
+<button @click="busy = true; result = await save(); busy = false">Save</button>
+```
+
+Return the promise, or `await` it, and a rejection is reported to
 [`app.onError()`](/essentials/error-handling#app-onerror):
 
 ```html
@@ -118,6 +124,7 @@ Return the promise and a rejection is reported to
 - `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
 - Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
 - A handler that throws is reported and does not stop later events.
+- A handler containing `await` runs as an async function. Modifiers such as `.prevent` still apply before it starts, and the code before the first `await` runs at once. Handlers without `await` stay synchronous.
 - The object form `v-on="{ click: handler }"` is not supported. It binds nothing, and only the development build says so; bind each event with its own `@event`.
 
 ## Related

@@ -64,7 +64,7 @@ save() {
 }
 ```
 
-The rejection carries the same context as a synchronous throw. Return the promise from your method for this to work — a method that fires a request and returns nothing has nothing to observe.
+The rejection carries the same context as a synchronous throw. Return the promise from your method, or `await` it in the handler, for this to work — a method that fires a request and returns nothing has nothing to observe.
 
 ## Recovering, not crashing
 
