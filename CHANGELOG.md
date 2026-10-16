@@ -3,6 +3,13 @@
 ## [0.5.10](https://github.com/aevantec/litevue/compare/v0.5.9...v0.5.10) (2026-10-16)
 
 
+### Behavior changes
+
+* On an element carrying a `v-` directive other than `v-scope` or `v-on`, such as `v-show` or `v-collapse`, morph keeps the live inline `style` and no longer applies the server's. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root ([#160](https://github.com/aevantec/litevue/issues/160))
+* On an element with `v-bind="obj"`, morph no longer removes live attributes the server stopped sending. Attributes the server sends are still updated ([#160](https://github.com/aevantec/litevue/issues/160))
+* Replacing every row of a large keyed `v-for` is about 5% slower, while changing a few rows is about three times faster: one row of 500 went from 9.7 ms to 2.9 ms ([#156](https://github.com/aevantec/litevue/issues/156))
+
+
 ### Features
 
 * **plugins:** opt-in view transitions on morph with { transition: true } ([#158](https://github.com/aevantec/litevue/issues/158)) ([f33560b](https://github.com/aevantec/litevue/commit/f33560b3871224680c2109c7c42a7499561aa50e))
