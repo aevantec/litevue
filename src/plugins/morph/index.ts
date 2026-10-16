@@ -36,6 +36,12 @@ export interface MorphOptions {
    * released — so what arrives here is inert, not a live subtree.
    */
   afterNodeRemoved?: (node: Node) => void;
+  /**
+   * Patch inside `document.startViewTransition()` where supported. The patch
+   * then runs once the browser has captured the old view, not before `morph`
+   * returns. Without the API it patches immediately, as if the option were off.
+   */
+  transition?: boolean;
 }
 
 /**
@@ -50,6 +56,8 @@ const preserved = (node: Node, opts: MorphOptions) =>
 
 const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
+// v-scope roots often carry server-set custom properties; v-on writes nothing
+const clientStyleRE = /^v-(?!scope|on:)/;
 
 /**
  * Attributes tried in order when no `key` option is given. All three express
@@ -92,6 +100,12 @@ const boundAttrs = (to: Element) => {
     } else if (name === 'v-model') {
       owned.add('value');
       owned.add('checked');
+    } else if (name === 'v-bind') {
+      // object keys are only known at runtime, so keep every live attribute
+      owned.add('*');
+    } else if (clientStyleRE.test(name)) {
+      // v-show, v-collapse, v-transition and custom directives write inline style
+      owned.add('style');
     }
   }
   return owned;
@@ -137,7 +151,7 @@ const patchAttrs = (from: Element, to: Element) => {
   }
 
   for (const { name } of [...from.attributes]) {
-    if (owned.has(name) || to.hasAttribute(name)) continue;
+    if (owned.has('*') || owned.has(name) || to.hasAttribute(name)) continue;
     from.removeAttribute(name);
   }
 };
@@ -321,9 +335,14 @@ export const morph = (
     target = to;
   }
   if (target) {
-    const restore = captureFocus();
-    patchNode(from, target, nearestCtx(from), opts);
-    restore();
+    const patch = () => {
+      const restore = captureFocus();
+      patchNode(from, target!, nearestCtx(from), opts);
+      restore();
+    };
+    opts.transition && document.startViewTransition
+      ? document.startViewTransition(patch)
+      : patch();
   }
   return from;
 };

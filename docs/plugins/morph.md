@@ -38,6 +38,7 @@ Returns `from` — the same node, which keeps its scope.
 | `preserve(el)` | Return `true` to keep an element even when the new HTML omits it |
 | `beforeNodeAdded(node)` | Called before inserting a node; return `false` to leave it out |
 | `afterNodeRemoved(node)` | Called after a node is removed and its effects are released |
+| `transition` | `true` to patch inside a [view transition](#view-transitions) where the browser supports it |
 
 ### Attributes
 
@@ -127,6 +128,38 @@ morph(el, html, {
 });
 ```
 
+### View transitions
+
+`transition: true` runs the patch inside
+[`document.startViewTransition()`](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition),
+so the browser animates from the old region to the new one. Browsers without
+the API patch immediately, as if the option were absent.
+
+```js
+morph(document.querySelector('#cart'), html, { transition: true });
+```
+
+The patch runs once the browser has captured the old view, so the DOM still
+holds the old content when `morph` returns. To wait for the patch or the
+animation, start the transition yourself and morph inside it:
+
+```js
+const transition = document.startViewTransition(() => morph(el, html));
+await transition.updateCallbackDone; // patched
+await transition.finished; // animation over
+```
+
+Browsers do not skip view transitions for visitors who prefer reduced motion.
+Turn the animation off in CSS:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation: none;
+  }
+}
+```
+
 ### Without a script
 
 ```html
@@ -153,6 +186,8 @@ still carries the directives:
 | `v-*`, `:` and `@` attributes | Never adds them to a live element |
 | `:class` | Leaves the live `class` alone |
 | `v-model` | Leaves `value` and `checked` alone |
+| `v-bind` with an object | Updates the attributes the server sends, and removes none |
+| Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
 | An element with `v-if` or `v-for` | Leaves the whole containing element alone |
 | Anything else | Patches it to match, and removes attributes the server dropped |
@@ -160,6 +195,7 @@ still carries the directives:
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
+- On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
 - A removed element's scope is released with it. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
 - Duplicate sibling keys warn in development, since the earlier element would lose its node.

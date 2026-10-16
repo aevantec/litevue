@@ -199,7 +199,7 @@ That externalization is deliberate. It is what allows `persistStore()` to reach 
 
 ### Mount manually — `init` is not compatible with plugins
 
-The [`init` attribute](/start-here/installation#manual-init) mounts as soon as the core script executes, which is before any `use()` call has run. Mount explicitly instead:
+The [`init` attribute](/start-here/installation#mount-it-yourself) mounts as soon as the core script executes, which is before any `use()` call has run. Mount explicitly instead:
 
 ```html
 <script src="https://unpkg.com/@aevantec/litevue"></script>

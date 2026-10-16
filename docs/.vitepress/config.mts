@@ -115,6 +115,8 @@ export default defineConfig({
             text: 'Server-Driven HTML',
             link: '/essentials/server-driven-html',
           },
+          { text: 'Resources', link: '/essentials/resources' },
+          { text: 'Forms', link: '/essentials/forms' },
           { text: 'Error Handling', link: '/essentials/error-handling' },
         ],
       },

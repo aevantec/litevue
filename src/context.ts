@@ -11,7 +11,6 @@ import { queueJob, stopEffect } from './scheduler';
 import { inOnce } from './walk';
 import { own } from './ownership';
 export interface Context {
-  key?: any;
   scope: Record<string, any>;
   dirs: Record<string, Directive>;
   blocks: Block[];

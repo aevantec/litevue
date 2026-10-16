@@ -4,19 +4,37 @@ title: Browser Extension
 
 # Browser Extension <Badge type="section" text="Devtools" />
 
-A devtools-tab variant of the inspector for Chrome and Firefox lives in the repo's [`extension/`](https://github.com/aevantec/litevue/tree/main/extension) directory.
+A version of the inspector that lives in the browser's own devtools, for Chrome
+and Firefox. Use it when you would rather inspect state beside the Elements and
+Console tabs than in a panel on the page. It is in the repository's
+[`extension/`](https://github.com/aevantec/litevue/tree/main/extension)
+directory and is loaded unpacked.
 
-## How it works
+## Install it
 
-The panel reads the page's `window.__LITE_VUE__` registry through `chrome.devtools.inspectedWindow.eval`, which runs in the page world — so no content script or messaging bridge is required, and the extension page stays free of `eval` (MV3 CSP applies to the extension, not the inspected page). v1 polls a JSON-safe snapshot every 500ms.
+- **Chrome:** open `chrome://extensions`, enable Developer mode, choose "Load
+  unpacked" and select the `extension/` directory. Open devtools on a page using
+  LiteVue and choose the **LiteVue** tab.
+- **Firefox 115 or later:** open `about:debugging#/runtime/this-firefox`, choose
+  "Load Temporary Add-on…" and select `extension/manifest.json`.
 
-## Loading the extension
+## How it reads the page
 
-- **Chrome**: `chrome://extensions` → enable Developer mode → "Load unpacked" → select the `extension/` directory. Open devtools on a page using LiteVue → **lite-vue** tab.
-- **Firefox** (115+): `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on…" → select `manifest.json`.
+The extension reads the page's `window.__LITE_VUE__` registry through
+`chrome.devtools.inspectedWindow.eval`, which runs in the page's own world. No
+content script or messaging bridge is needed, and the extension page itself
+never calls `eval`, so it stays within the Manifest V3 security policy. It polls
+a JSON-safe snapshot of the registry every 500ms.
 
-## Limitations (v1)
+## Limitations
 
-- Polling, not event-driven (500ms refresh).
-- Edits are limited to top-level primitive values — the [in-page panel](/devtools/panel) is the richer tool for deep editing.
-- Requires the page's devtools registry: [`disableDevtools()`](/globals/devtools#disabling-in-production) hides everything, by design.
+- It polls rather than listening for changes, so updates appear within 500ms.
+- It edits top-level primitive values only. The
+  [Inspector Panel](/devtools/panel) edits nested state.
+- It needs the page's devtools registry, so
+  [`disableDevtools()`](/globals/devtools#disabling-in-production) hides
+  everything from it, by design.
+
+## Next
+
+Use the registry directly from the console with the [Devtools API](/globals/devtools).

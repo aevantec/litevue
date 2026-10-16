@@ -4,7 +4,7 @@ title: Installation
 
 # Installation <Badge type="section" text="Start Here" />
 
-Getting LiteVue onto a page. For what it is, how it compares to Vue and Alpine, and the security/CSP constraints, read the [Introduction](/start-here/introduction) first.
+How to get LiteVue onto a page: from a CDN with no build step, or from npm in a bundled project. For what it is, how it compares to Vue and Alpine, and its security and CSP constraints, read the [Introduction](/start-here/introduction) first.
 
 ## From a CDN
 
@@ -89,7 +89,7 @@ Plugins with development checks — media, morph and persist, and the combined
 plugins bundle — ship `.dev` files the same way. See
 [Installing plugins](/plugins/installation#development-builds).
 
-## Manual init
+## Mount it yourself
 
 Remove the `init` attribute to control mounting yourself — required when you use [plugins](/plugins/), since `init` mounts before your `use()` calls have run:
 
