@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.11](https://github.com/aevantec/litevue/compare/v0.5.10...v0.5.11) (2026-10-16)
+
+
+### Behavior changes
+
+* An event handler whose expression contains the word `await` now compiles as an async function, so it returns a promise, and a rejection after the `await` reaches `app.onError()` rather than throwing synchronously. Handlers without `await` are unchanged ([#166](https://github.com/aevantec/litevue/issues/166))
+* The devtools bundle grows from about 6kb to about 7kb gzipped to hold the plugins view. It is development-only and does not affect the core or plugin bundles ([#165](https://github.com/aevantec/litevue/issues/165))
+
+
+### Features
+
+* **devtools:** list installed plugins and what each one registered ([#165](https://github.com/aevantec/litevue/issues/165)) ([3f34256](https://github.com/aevantec/litevue/commit/3f342564ba9c33e5998e9e80858bbaa48dc73251))
+* **directives:** allow await in event handlers ([#166](https://github.com/aevantec/litevue/issues/166)) ([967fb2e](https://github.com/aevantec/litevue/commit/967fb2eab1563154d7de0438263354072a203ecb))
+* **plugins:** add a popover plugin with v-popover and v-anchor ([#167](https://github.com/aevantec/litevue/issues/167)) ([7213416](https://github.com/aevantec/litevue/commit/72134169af55863e2e7963c2c7bc133a6c3f9f91))
+* **plugins:** add v-resize.window and v-resize.visual for viewport size ([#168](https://github.com/aevantec/litevue/issues/168)) ([fa5e2c8](https://github.com/aevantec/litevue/commit/fa5e2c8864b0cd8419c9905998811b167ffb0ddf))
+
 ## [0.5.10](https://github.com/aevantec/litevue/compare/v0.5.9...v0.5.10) (2026-10-16)
 
 
