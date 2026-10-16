@@ -193,10 +193,11 @@ still carries the directives:
 | Anything else | Patches it to match, and removes attributes the server dropped |
 
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
+- That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
 - On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
-- A removed element's scope is released with it. State that must survive a re-render belongs in a [store](/globals/store).
+- A removed element's scope is released with it, inside a mounted scope or outside every one: its effects stop and its listeners are removed. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
 - Duplicate sibling keys warn in development, since the earlier element would lose its node.
 - `afterNodeRemoved` receives an inert node. Preserved nodes are never announced, because they are never removed.
