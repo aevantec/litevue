@@ -72,11 +72,13 @@ export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
 
   // The expression form returns the value, so an async handler's rejection
   // can be reported. Statement lists like `a++; b++` keep the block form.
+  // `await` makes the handler async; handlers without it stay synchronous.
+  const a = /\bawait\b/.test(exp) ? 'async ' : '';
   const raw = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
     : isExpression(exp)
-      ? get(`($event => (${exp}))`)
-      : get(`($event => { ${exp} })`);
+      ? get(`(${a}$event => (${exp}))`)
+      : get(`(${a}$event => { ${exp} })`);
 
   // The event fires long after get() returned, so the evaluator's try/catch
   // no longer applies; without this, throws go unattributed and rejections
