@@ -4,9 +4,12 @@ title: Inspector Panel
 
 # Inspector Panel <Badge type="section" text="Devtools" />
 
-A standalone in-page inspector ships as a separate bundle (~6kb<!-- size:dist/litevue-devtools.iife.js --> gzipped) — zero weight added to the core. Load it **after** the library, and **only during development**.
+An in-page inspector for checking and changing state while you develop. It ships
+as a separate bundle (~6kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
+so it adds nothing to the core. Load it **after** the library, and **only during
+development**.
 
-## With a script tag
+## Load it with a script tag
 
 ```html
 <script src="https://unpkg.com/@aevantec/litevue" defer init></script>
@@ -16,9 +19,10 @@ A standalone in-page inspector ships as a separate bundle (~6kb<!-- size:dist/li
 ></script>
 ```
 
-## Installed via npm
+## Load it from npm
 
-The panel is a **side-effect import** — importing it mounts the inspector, there is nothing to call:
+The panel is a **side-effect import**: importing it mounts the inspector, and
+there is nothing to call.
 
 ```js
 import { createApp } from '@aevantec/litevue';
@@ -27,7 +31,8 @@ import '@aevantec/litevue/devtools';
 createApp().mount();
 ```
 
-Guard it so it never reaches production. With Vite (or anything exposing `import.meta.env`), a dynamic import keeps the bundle out of the production build entirely:
+Guard it so it never reaches production. With Vite, or anything that exposes
+`import.meta.env`, a dynamic import keeps the bundle out of the production build:
 
 ```js
 import { createApp } from '@aevantec/litevue';
@@ -39,7 +44,7 @@ if (import.meta.env.DEV) {
 createApp().mount();
 ```
 
-The webpack/Node equivalent:
+The webpack and Node equivalent:
 
 ```js
 if (process.env.NODE_ENV !== 'production') {
@@ -48,20 +53,54 @@ if (process.env.NODE_ENV !== 'production') {
 ```
 
 ::: tip Import it before mounting
-The panel picks up apps and stores through registry events, so import order isn't critical — but importing before `mount()` means the first render is already captured when the panel opens.
+The panel picks up apps and stores through registry events, so import order is
+not critical. Importing before `mount()` means the first render is already
+captured when the panel opens.
 :::
 
-A `⚡ LiteVue` pill appears bottom-right and expands into the panel:
+## Find a scope
 
-- **Elements / Stores** tabs with live counts — scopes labeled as tags, named by [`v-name`](/directives/v-name), then the [component](/essentials/components#registering-by-name) the scope came from, then the id, then the tag: `v-scope="Cart()"` reads as `<Cart>`
-- a **filter** over names *and* state — `2026` finds the scope holding it, and the row shows the path that matched, such as `user.meta.tags.0` (case-insensitive; Escape clears)
-- nested `v-scope` regions render as a **collapsible tree**; filtering keeps a match's ancestors, so a result is never left indented under nothing
-- a state view separating own from inherited state; arrays and objects render as an **expandable tree**; every primitive leaf edits inline with type coercion, booleans get checkboxes, and derived values — getter-only props and [`computed()`](/globals/computed) — are read-only
-- an **add-key row** and per-row ✕ delete for top-level keys
-- hover-to-highlight, plus a **pick mode** — click any element on the page to select its scope
-- dark / light / system **themes**; the selected scope is exposed as `window.$scope`
-- three layouts, cycled from one icon: **floating**, **docked to the bottom** (full width) and **docked to the right** (full height)
-- the panel **drags** by its header and **resizes** by a handle whose edge follows the mode: a corner when floating, the top edge docked to the bottom, the left edge docked to the right. Each mode keeps its own size, and both dimensions are bounded — no smaller than 320&nbsp;×&nbsp;320, no larger than the viewport
-- open state, position, size and dock are remembered between reloads
+A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 
-Everything the panel shows comes from the public [Devtools API](/globals/devtools) — and one line [disables it all in production](/globals/devtools#disabling-in-production).
+- **Elements** and **Stores** tabs list every scope and store, with live counts.
+- Scopes are labelled as tags. The name comes from [`v-name`](/directives/v-name),
+  then the [component](/essentials/components#registering-by-name) the scope came
+  from, then the id, then the tag: `v-scope="Cart()"` reads as `<Cart>`.
+- Nested `v-scope` regions form a **collapsible tree**.
+- The **filter** matches names *and* state, case-insensitively: `2026` finds the
+  scope holding it, and the row shows the path that matched, such as
+  `user.meta.tags.0`. A match keeps its ancestors visible, so it is never left
+  indented under nothing. Escape clears the filter.
+- Hovering a row highlights its element. **Pick mode** works the other way:
+  click any element on the page to select its scope.
+- The selected scope or store is exposed as `window.$scope`, for the console.
+
+## Read and edit state
+
+- The state view separates a scope's own state from what it inherits.
+- Arrays and objects render as an **expandable tree**.
+- Every primitive value edits inline, keeping its type; booleans get a checkbox.
+- Derived values, getter-only properties and [`computed()`](/globals/computed),
+  are read-only.
+- An **add-key row** adds a top-level key, and each top-level row has a ✕ to
+  delete it.
+
+## Arrange the panel
+
+- One icon cycles three layouts: **floating**, **docked to the bottom** at full
+  width, and **docked to the right** at full height.
+- The panel **drags** by its header. It **resizes** by a handle on the edge that
+  moves in each layout: a corner when floating, the top edge when docked to the
+  bottom, and the left edge when docked to the right.
+- Each layout keeps its own size. Both dimensions are bounded, no smaller than
+  320&nbsp;×&nbsp;320 and no larger than the viewport.
+- The theme cycles through dark, light and system.
+- Open state, position, size, layout and theme are remembered between reloads.
+
+Everything the panel shows comes from the public [Devtools API](/globals/devtools),
+and one line [disables it all in production](/globals/devtools#disabling-in-production).
+
+## Next
+
+Inspect from the browser's own devtools with the
+[Browser Extension](/devtools/extension).

@@ -194,7 +194,7 @@ navigation; LiteVue owns the region.
 
 ### Unpoly
 
-Unpoly is the closest fit of the four, because
+Unpoly is the closest fit of the three, because
 [`up.compiler()`](https://unpoly.com/up.compiler) already expresses exactly this
 lifecycle: it runs for matching elements on the initial page **and** whenever a
 fragment is inserted, and the function it returns runs when that element is
@@ -221,8 +221,9 @@ remember.
 - **No build step is required**, and no framework runtime is shipped to render
   what the server already rendered.
 
-## Related
+## Next
 
-- [Dynamic Content](/essentials/dynamic-content) — mounting and unmounting regions
-- [morph](/plugins/morph) — how patching works, and what the client owns
-- [Security](/start-here/security) — why injected markup is inert by default
+Learn how patching works, and what the client owns, in [morph](/plugins/morph).
+For mounting and unmounting regions in detail, see
+[Dynamic Content](/essentials/dynamic-content); for why injected markup is inert
+by default, see [Security](/start-here/security).
