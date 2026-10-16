@@ -10,6 +10,7 @@
     "dist/plugins/mask.iife.js": 470,
     "dist/plugins/media.iife.js": 1350,
     "dist/plugins/morph.iife.js": 1400,
+    "dist/plugins/navigate.iife.js": 1900,
     "dist/plugins/persist.iife.js": 820,
     "dist/plugins/popover.iife.js": 1100,
     "dist/plugins/resize.iife.js": 380,

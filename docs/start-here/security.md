@@ -67,6 +67,8 @@ The [morph](/plugins/morph) plugin patches a live region from new HTML, and elem
 
 This is narrower than automatic initialisation, because it only happens inside a region you explicitly named. It still means the HTML you morph in is trusted input. Treat a morph source the same as anything you would pass to `app.mount()`: it should come from your own server, over a response you control.
 
+The [navigate](/plugins/navigate) plugin morphs whole pages, so the same applies to every page it fetches. It fetches only same-origin URLs, accepts only HTML, and never runs scripts from the response.
+
 ## Devtools in production
 
 The devtools registry exposes mounted scopes and stores on `window.__LITE_VUE__`, and the panel can edit them live.
