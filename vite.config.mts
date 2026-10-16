@@ -23,9 +23,11 @@ export default defineConfig(({ command, mode }) => {
             ...(dev && { 'import.meta.env.DEV': 'true' }),
           }
         : undefined,
-    // keep the historical dev port (vite 5 defaults to 5173)
+    // keep the historical dev port (vite 5 defaults to 5173); fail rather than
+    // drift onto a port another local server may already answer on
     server: {
       port: 3000,
+      strictPort: true,
     },
     // the plugins import the core by package name so the published bundles keep
     // it external (see vite.plugins.config.mts); the playground pages load source
