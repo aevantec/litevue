@@ -38,6 +38,7 @@ Returns `from` — the same node, which keeps its scope.
 | `preserve(el)` | Return `true` to keep an element even when the new HTML omits it |
 | `beforeNodeAdded(node)` | Called before inserting a node; return `false` to leave it out |
 | `afterNodeRemoved(node)` | Called after a node is removed and its effects are released |
+| `transition` | `true` to patch inside a [view transition](#view-transitions) where the browser supports it |
 
 ### Attributes
 
@@ -125,6 +126,38 @@ morph(el, html, {
     teardownWidget(node);
   },
 });
+```
+
+### View transitions
+
+`transition: true` runs the patch inside
+[`document.startViewTransition()`](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition),
+so the browser animates from the old region to the new one. Browsers without
+the API patch immediately, as if the option were absent.
+
+```js
+morph(document.querySelector('#cart'), html, { transition: true });
+```
+
+The patch runs once the browser has captured the old view, so the DOM still
+holds the old content when `morph` returns. To wait for the patch or the
+animation, start the transition yourself and morph inside it:
+
+```js
+const transition = document.startViewTransition(() => morph(el, html));
+await transition.updateCallbackDone; // patched
+await transition.finished; // animation over
+```
+
+Browsers do not skip view transitions for visitors who prefer reduced motion.
+Turn the animation off in CSS:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation: none;
+  }
+}
 ```
 
 ### Without a script
