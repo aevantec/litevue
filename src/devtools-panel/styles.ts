@@ -4,6 +4,9 @@
  * Panel stylesheet. Note the template below is a *string* — comments inside it
  * ship verbatim, so explanations belong out here where terser strips them.
  *
+ * `[hidden]` is forced with `!important` because an author `display`, such as
+ * `.side`'s flex, beats the UA rule, and the plugins view hides by `hidden`.
+ *
  * Docked layouts (`.dock-bottom` / `.dock-right`) give the tree a full viewport
  * edge, as browser devtools do; only the cross-axis stays resizable, since the
  * other would fight the dock.
@@ -180,6 +183,32 @@ export const css = `
   display: flex;
   flex: 1;
   min-height: 0;
+}
+[hidden] {
+  display: none !important;
+}
+.plugins {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 0;
+}
+.plugin {
+  display: flex;
+  gap: 8px;
+  padding: 3px 10px;
+  align-items: baseline;
+}
+.plugin .name {
+  min-width: 120px;
+}
+.plugin .gave {
+  flex: 1;
+  color: var(--muted);
+  word-break: break-word;
+}
+.plugin .flag {
+  color: var(--muted);
+  opacity: 0.7;
 }
 .side {
   display: flex;
