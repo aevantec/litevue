@@ -1,0 +1,128 @@
+---
+title: navigate
+---
+
+# navigate <Badge type="section" text="Plugin" />
+
+Follow same-origin links and submit forms without a full page load. The plugin fetches the next page and [morphs](/plugins/morph) it into this one, so the parts both pages share keep their state: an open sidebar, a playing video, a half-typed search.
+
+```js
+import { createApp } from '@aevantec/litevue';
+import { morphPlugin } from '@aevantec/litevue/plugins/morph';
+import { navigate } from '@aevantec/litevue/plugins/navigate';
+
+createApp().use(morphPlugin).use(navigate).mount();
+```
+
+The plugin ships on its own (~2kb<!-- size:dist/plugins/navigate.iife.js --> gzipped) and is not part of the combined plugins bundle. It needs [morph](/plugins/morph) installed too, which it does not bundle, so a page already using morph carries one copy. From a CDN, load `dist/plugins/navigate.iife.js` after the core and morph; it defines `LiteVueNavigate`.
+
+## Options
+
+```js
+createApp()
+  .use(morphPlugin)
+  .use(navigate, { target: '#main', transition: true })
+  .mount();
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `target` | `'body'` | Selector of the region to update. The fetched page must contain it too |
+| `transition` | `false` | Run each navigation inside a [view transition](/plugins/morph#view-transitions) where supported |
+| `scroll` | `true` | Scroll to the top, or to the URL's `#hash`, after navigating |
+
+## What it intercepts
+
+- Clicks on links to the same origin
+- Submits of `GET` and `POST` forms to the same origin
+
+The browser keeps everything else:
+
+- Clicks with Ctrl, Cmd, Shift or Alt held, and middle clicks
+- Links and forms with a `target` other than `_self`, and links with `download`
+- Links to another origin, and `#hash` links within the current page
+- `<form method="dialog">`
+- A click or submit that another handler already cancelled with `preventDefault()`
+- Anything inside an element with `data-navigate="false"`
+
+```html
+<a href="/export.csv" data-navigate="false">Download</a>
+```
+
+## Keeping state across pages
+
+Morph matches elements by `id` first, then by position. A scope root with the same `id` on both pages is kept, and its state with it. Give the layout's scopes a fixed `id`, and give each page's own scope root an `id` of its own, so it starts fresh:
+
+```html
+<!-- on every page: kept, so the player keeps playing -->
+<aside id="player" v-scope="{ playing: false }">…</aside>
+
+<!-- different on each page: replaced, so each page gets its own state -->
+<main id="page-orders" v-scope="{ filter: 'open' }">…</main>
+```
+
+::: warning A page root needs its own id
+Two pages whose `<main v-scope="…">` has no `id`, or the same one, are matched by position. The second page's markup is patched into the first page's element, which keeps the first page's scope and data.
+:::
+
+To keep a client-only element that the next page does not contain, such as a toast or a chat widget, mark it `data-morph-preserve`, as with [morph](/plugins/morph#a-widget-the-client-owns).
+
+## Forms
+
+A `GET` form navigates to its `action` with the fields as the query string. A `POST` form sends its fields as `FormData` and follows the server's redirect, so the URL ends on the page the server sent you to. The submit button's `name` and `value`, and its `formaction`, `formmethod` and `formtarget`, are honored.
+
+When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
+
+## Deploys and the head
+
+Only `document.title` is taken from the fetched page's `<head>`. To reload the page when a deploy changes your scripts or styles, mark them `data-navigate-track`. If the fetched page's tracked assets differ from the current ones, the plugin does a full load instead, so old and new code never mix:
+
+```html
+<script type="module" src="/assets/app.4f2a.js" data-navigate-track></script>
+<link rel="stylesheet" href="/assets/app.9c1e.css" data-navigate-track />
+```
+
+Untracked assets are ignored, so a site with a different entry script on each page still navigates.
+
+## Events
+
+Each fires on `document`, with `event.detail.url`:
+
+| Event | When |
+| --- | --- |
+| `navigate:before` | Before fetching. Call `preventDefault()` to cancel and leave the browser to it |
+| `navigate:after` | After the new page is in place |
+| `navigate:error` | When a navigation fails; `detail.error` says why. A `GET` then falls back to a full load |
+
+```js
+document.addEventListener('navigate:before', () => progress.start());
+document.addEventListener('navigate:after', () => progress.done());
+```
+
+## Behavior
+
+- Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load.
+- A navigation still in flight is cancelled when another starts.
+- The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element.
+- Scripts in the fetched page never run. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
+- The URL changes before the new content mounts, so new scopes read the new `location`.
+- With the default `body` target, focus returns to the start of the document, as after a full load. With a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
+- The new page's title is announced through a visually hidden live region, so screen-reader users learn the page changed.
+- Back and forward fetch the page again and restore its scroll position. There is no page cache.
+- On full unmount, the plugin stops intercepting and removes its live region.
+
+## Security
+
+Morph initialises the directives in the markup it inserts, so a navigation evaluates expressions from the fetched page. That trusts the page as much as a full load of it would, and no more: the plugin fetches only same-origin URLs, checks the final URL after redirects, accepts only `text/html`, and never runs `<script>` elements from the response. See [Security](/start-here/security#morph-and-server-rendered-updates).
+
+## Coming from Turbo or htmx
+
+The plugin works like Turbo Drive or htmx's `hx-boost` on `<body>`: links and forms are intercepted by default, and the new page is swapped in. Differences:
+
+- The swap is a morph, not a replacement, so matching elements keep their scope, focus and state.
+- Turbo reloads on changed assets only when they are marked `data-turbo-track="reload"`; here the marker is `data-navigate-track`.
+- There is no page cache, prefetching, progress bar or frames. The events let you add a progress bar.
+
+## Related
+
+[morph](/plugins/morph) · [Dynamic content](/essentials/dynamic-content) · [Security](/start-here/security) · [Installation](/plugins/installation)

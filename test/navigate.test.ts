@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createApp, reactive } from '../src';
 import { navigate } from '../src/plugins/navigate';
+import { morphPlugin } from '../src/plugins/morph';
 import { sleep, tick } from './utils';
 
 /**
@@ -52,7 +53,7 @@ const settle = async () => {
 const start = async (body: string, options = {}, data?: object) => {
   document.head.innerHTML = '<title>Home</title>';
   document.body.innerHTML = body;
-  const app = createApp(data).use(navigate, options);
+  const app = createApp(data).use(morphPlugin).use(navigate, options);
   app.mount();
   current = app;
   await tick();
@@ -541,14 +542,18 @@ describe('navigate: falls back to a full load', () => {
     expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
   });
 
-  test("when the fetched page's head loads different scripts or styles", async () => {
+  test("when the head's tracked scripts or styles differ", async () => {
     replies['/x'] = {
-      body: page('X', '<main>x</main>', '<script src="/app.v2.js"></script>'),
+      body: page(
+        'X',
+        '<main>x</main>',
+        '<script src="/app.v2.js" data-navigate-track></script>'
+      ),
     };
     await start('<a href="/x">x</a><main>Home</main>');
     document.head.insertAdjacentHTML(
       'beforeend',
-      '<script src="/app.v1.js"></script>'
+      '<script src="/app.v1.js" data-navigate-track></script>'
     );
     stubLocation();
 
@@ -556,5 +561,46 @@ describe('navigate: falls back to a full load', () => {
     await settle();
 
     expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
+  });
+
+  test('without the morph plugin installed', async () => {
+    replies['/x'] = { body: page('X', '<main>x</main>') };
+    document.body.innerHTML = '<a href="/x">x</a><main>Home</main>';
+    const app = createApp().use(navigate);
+    app.mount();
+    current = app;
+    stubLocation();
+    const error = vi.fn();
+    document.addEventListener('navigate:error', error);
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
+    expect(String(error.mock.calls[0][0].detail.error)).toMatch(/morph/);
+    expect(consoleError.mock.calls[0][0]).toMatch(/morphPlugin/);
+    consoleError.mockRestore();
+    document.removeEventListener('navigate:error', error);
+  });
+});
+
+describe('navigate: head', () => {
+  test('ignores scripts and styles that are not tracked', async () => {
+    replies['/x'] = {
+      body: page('X', '<main>x</main>', '<script src="/page-x.js"></script>'),
+    };
+    await start('<a href="/x">x</a><main>Home</main>');
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      '<script src="/page-home.js"></script>'
+    );
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('x');
   });
 });

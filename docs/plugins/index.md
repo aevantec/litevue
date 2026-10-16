@@ -24,12 +24,13 @@ createApp().use(mask).mount();
 | [mask](/plugins/mask) | `v-mask` | Formatting input as it is typed |
 | [media](/plugins/media) | `$mq` and helpers, `mq` | Behavior by viewport breakpoint |
 | [morph](/plugins/morph) | `morph()`, `$morph` | Patching a live region from new HTML |
+| [navigate](/plugins/navigate) | link and form interception | Moving between pages without a full load |
 | [persist](/plugins/persist) | `v-persist`, `persistStore()` | Saving state to storage |
 | [popover](/plugins/popover) | `v-popover`, `v-anchor` | Menus and tooltips, positioned against a trigger |
 | [resize](/plugins/resize) | `v-resize` | Reacting to an element's size, or the window's |
 | [transition](/plugins/transition) | `v-transition` | Enter and leave animations |
 
-The combined bundle holds every plugin except popover: all nine together are ~4kb<!-- size:dist/litevue-plugins.iife.js --> gzipped. Popover ships only on its own, so pages without menus or tooltips never pay for it.
+The combined bundle holds every plugin except popover and navigate: all nine together are ~4kb<!-- size:dist/litevue-plugins.iife.js --> gzipped. Popover and navigate ship only on their own, so pages that do not use them never pay for them.
 
 ## Installing
 

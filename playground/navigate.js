@@ -1,10 +1,11 @@
-// shared by both pages: a per-page inline script gets its own URL from Vite,
-// which the plugin reads as a different deploy and answers with a full load
+// shared by both pages, as a site's one bundle would be
 import { createApp } from '../src';
+import { morphPlugin } from '../src/plugins/morph';
 import { navigate } from '../src/plugins/navigate';
 
 // open a page with ?transition to compare; the option lasts for the visit
 createApp()
+  .use(morphPlugin)
   .use(navigate, { transition: location.search.includes('transition') })
   .mount();
 

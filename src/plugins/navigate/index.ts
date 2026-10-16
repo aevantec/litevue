@@ -1,14 +1,15 @@
 import type { App, Plugin } from '../../app';
 import { SCOPE_SELECTOR } from '../../lazy';
-import { morph } from '../morph';
+import type { morph } from '../morph';
 
 /**
  * Same-origin links and forms fetch the next page and morph it into this one,
  * so scopes the two pages share keep their state. Anything it cannot do
  * safely falls back to a full load: a non-HTML response, another origin, a
- * missing target, or a head that loads different scripts or styles.
+ * missing target, or different [data-navigate-track] scripts or styles.
  *
- * Opt out per region with data-navigate="false".
+ * Needs the morph plugin installed too; it is not bundled, so a page loading
+ * both carries one copy. Opt out per region with data-navigate="false".
  */
 
 export interface NavigateOptions {
@@ -31,9 +32,10 @@ const emit = (name: string, detail: object, cancelable = false) =>
     new CustomEvent('navigate:' + name, { detail, cancelable })
   );
 
-// scripts and styles the head loads; a difference means a new deploy
+// opt-in, as per-page entry scripts would otherwise force a full load on
+// every navigation; a tracked asset that changed means a new deploy
 const assets = (doc: Document) =>
-  [...doc.head.querySelectorAll('script[src],link[rel=stylesheet]')]
+  [...doc.head.querySelectorAll('[data-navigate-track]')]
     .map((el) => el.getAttribute('src') || el.getAttribute('href'))
     .sort()
     .join();
@@ -48,12 +50,12 @@ const hasCtxAbove = (el: Element | null) => {
  * and releases nodes itself; at page level there is no scope, so roots the
  * page removes are unmounted and roots it adds are mounted here.
  */
-const render = (app: App, from: Element, to: Element) => {
+const render = (app: App, patch: typeof morph, from: Element, to: Element) => {
   const roots = [from, ...from.querySelectorAll('*')].filter(
     (el) => (el as any).__ctx && !hasCtxAbove(el.parentElement)
   );
   const added: Element[] = [];
-  morph(from, to, {
+  patch(from, to, {
     beforeNodeAdded: (node) => {
       node.nodeType === 1 && added.push(node as Element);
     },
@@ -98,7 +100,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     }
     rendered = pathOf(location);
     document.title = doc.title;
-    render(app, from, doc.querySelector(target)!);
+    render(app, app.scope.$morph, from, doc.querySelector(target)!);
     if (options.scroll !== false) {
       const anchor = url.hash && document.getElementById(url.hash.slice(1));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
@@ -122,6 +124,13 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     // remembered so back can restore it
     if (y == null) history.replaceState({ ...history.state, y: scrollY }, '');
     try {
+      if (!app.scope.$morph) {
+        import.meta.env.DEV &&
+          console.error(
+            '[navigate] needs the morph plugin: app.use(morphPlugin).use(navigate)'
+          );
+        throw new Error('navigate needs the morph plugin');
+      }
       const res = await fetch(href, {
         ...init,
         signal: c.signal,

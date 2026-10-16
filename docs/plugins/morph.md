@@ -203,4 +203,4 @@ still carries the directives:
 
 ## Related
 
-[Server-driven HTML](/essentials/server-driven-html) · [Dynamic content](/essentials/dynamic-content) · [Security](/start-here/security) · [Installation](/plugins/installation)
+[Server-driven HTML](/essentials/server-driven-html) · [navigate](/plugins/navigate) · [Dynamic content](/essentials/dynamic-content) · [Security](/start-here/security) · [Installation](/plugins/installation)

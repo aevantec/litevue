@@ -113,6 +113,17 @@
         "default": "./dist/plugins/morph.umd.js"
       }
     },
+    "./plugins/navigate": {
+      "import": {
+        "types": "./dist/types/plugins/navigate/index.d.mts",
+        "development": "./dist/plugins/navigate.dev.mjs",
+        "default": "./dist/plugins/navigate.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/navigate/index.d.ts",
+        "default": "./dist/plugins/navigate.umd.js"
+      }
+    },
     "./plugins/persist": {
       "import": {
         "types": "./dist/types/plugins/persist/index.d.mts",
@@ -182,6 +193,9 @@
       ],
       "plugins/morph": [
         "./dist/types/plugins/morph/index.d.ts"
+      ],
+      "plugins/navigate": [
+        "./dist/types/plugins/navigate/index.d.ts"
       ],
       "plugins/persist": [
         "./dist/types/plugins/persist/index.d.ts"
