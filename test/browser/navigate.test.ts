@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { createApp } from '../../src';
 import { morphPlugin } from '../../src/plugins/morph';
 import { navigate } from '../../src/plugins/navigate';
-import { tick } from '../utils';
+import { sleep, tick } from '../utils';
 
 /**
  * Real focus, real scrolling and the View Transition API, which jsdom lacks.
@@ -99,15 +99,19 @@ test('back does not scroll the current page before the previous one arrives', as
       `<main id="main"><div style="height: 3000px">${name}</div></main>`
     );
   let next = tall('two');
+  let hold: Promise<void> | undefined;
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string) => ({
-      ok: true,
-      status: 200,
-      url: new URL(url, location.href).href,
-      headers: new Headers({ 'content-type': 'text/html' }),
-      text: async () => next,
-    }))
+    vi.fn(async (url: string) => {
+      await hold;
+      return {
+        ok: true,
+        status: 200,
+        url: new URL(url, location.href).href,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        text: async () => next,
+      };
+    })
   );
   document.body.innerHTML =
     '<div v-scope><a id="go" href="two.html">two</a><main id="main"><div style="height: 3000px">one</div></main></div>';
@@ -125,14 +129,23 @@ test('back does not scroll the current page before the previous one arrives', as
   await done;
   expect(scrollY).toBe(0);
 
+  // hold the previous page's response, so the outgoing one stays on screen
   next = tall('one');
-  let atPop = -1;
-  addEventListener('popstate', () => (atPop = scrollY), { once: true });
+  let release!: () => void;
+  hold = new Promise((r) => (release = r));
+  const started = new Promise((r) =>
+    document.addEventListener('navigate:before', r, { once: true })
+  );
   done = arrived();
   history.back();
+  await started;
+  // Chromium restores scroll just after popstate, not during it
+  await sleep(100);
+  const whileLoading = scrollY;
+  release();
   await done;
 
-  expect(atPop).toBe(0);
+  expect(whileLoading).toBe(0);
   expect(scrollY).toBe(800);
 });
 
