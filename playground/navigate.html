@@ -1,0 +1,50 @@
+<meta charset="utf-8" />
+<title>Navigate: page one</title>
+
+<script type="module" src="./navigate.js"></script>
+
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 640px;
+    margin: 24px auto;
+  }
+  nav a {
+    margin-right: 12px;
+  }
+  #player {
+    padding: 8px;
+    border: 1px solid #888;
+  }
+  .spacer {
+    height: 1200px;
+  }
+</style>
+
+<nav id="nav">
+  <a href="navigate.html">Page one</a>
+  <a href="navigate-2.html">Page two</a>
+  <a href="navigate-2.html#bottom">Page two, bottom</a>
+  <a href="navigate.html" data-navigate="false">Page one (full load)</a>
+</nav>
+
+<!-- the same id on both pages, so it is kept: its count survives navigation -->
+<aside id="player" v-scope="{ seconds: 0, playing: false }">
+  <button @click="playing = !playing">{{ playing ? 'Pause' : 'Play' }}</button>
+  <span v-effect="playing && setTimeout(() => seconds++, 1000), seconds"
+    >{{ seconds }}s</span
+  >
+  <input placeholder="type, then navigate" />
+</aside>
+
+<!-- a different id per page, so each page gets a fresh scope -->
+<main id="page-one" v-scope="{ n: 0 }">
+  <h1>Page one</h1>
+  <p>Count {{ n }} <button @click="n++">+</button></p>
+  <form action="navigate-2.html">
+    <input name="q" value="cats" /> <button>Search on page two</button>
+  </form>
+  <a href="https://example.com/">Another origin (full load)</a>
+</main>
+
+<p id="log"></p>
