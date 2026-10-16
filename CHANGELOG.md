@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.10](https://github.com/aevantec/litevue/compare/v0.5.9...v0.5.10) (2026-10-16)
+
+
+### Features
+
+* **plugins:** opt-in view transitions on morph with { transition: true } ([#158](https://github.com/aevantec/litevue/issues/158)) ([f33560b](https://github.com/aevantec/litevue/commit/f33560b3871224680c2109c7c42a7499561aa50e))
+
+
+### Bug Fixes
+
+* **plugins:** stop morph removing attributes that v-show, v-bind objects and plugin directives wrote ([#160](https://github.com/aevantec/litevue/issues/160)) ([9cc068e](https://github.com/aevantec/litevue/commit/9cc068e86da3d970eeeaeb4e0e2b4409025c8411))
+
+
+### Performance
+
+* **directives:** stop v-for building a scoped context for every row on every update ([#156](https://github.com/aevantec/litevue/issues/156)) ([561447b](https://github.com/aevantec/litevue/commit/561447b30471961660f3e64b44da52776e6860a9))
+
 ## [0.5.9](https://github.com/aevantec/litevue/compare/v0.5.8...v0.5.9) (2026-10-15)
 
 
