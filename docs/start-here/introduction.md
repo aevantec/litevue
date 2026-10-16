@@ -144,7 +144,7 @@ The core stays small because everything else is opt-in and separately bundled:
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
 | Core                              | ~10kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
 | [Plugins](/plugins/)              | ~4kb<!-- size:dist/litevue-plugins.iife.js --> (all nine) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
-| [Devtools panel](/devtools/panel) | ~6kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |
+| [Devtools panel](/devtools/panel) | ~7kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |
 
 Devtools registration can also be [disabled entirely](/globals/devtools#disabling-in-production) with one line so no scope data is exposed in production builds.
 

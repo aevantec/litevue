@@ -1,7 +1,30 @@
 export type DevtoolsEvent =
-  'scope:mount' | 'scope:unmount' | 'store:register' | 'flush';
+  | 'scope:mount'
+  | 'scope:unmount'
+  | 'store:register'
+  | 'plugin:install'
+  | 'flush';
 
 type Listener = (...args: any[]) => void;
+
+/**
+ * What one `app.use()` contributed.
+ *
+ * `directives` and `magics` carry the weight, not `name`: minifiers rename
+ * plugin functions, so `Function.name` is an empty string in every production
+ * build — the builds an inspector is actually pointed at. What a plugin added
+ * survives minification and is what someone debugging wants anyway.
+ */
+export interface PluginInfo {
+  /** The plugin function's name where a build kept it, else `plugin <n>`. */
+  name: string;
+  /** Directives it registered, e.g. `["intersect"]`. */
+  directives: string[];
+  /** Root-scope magics it added, e.g. `["$morph"]`. */
+  magics: string[];
+  /** Whether it returned a teardown, so a full unmount releases it. */
+  teardown: boolean;
+}
 
 export interface LiteVueDevtools {
   /**
@@ -31,6 +54,10 @@ export interface LiteVueDevtools {
    */
   components: Set<string>;
   /**
+   * Plugins passed to app.use(), in install order.
+   */
+  plugins: PluginInfo[];
+  /**
    * Find the scope governing a node by walking up the DOM to the nearest
    * registered scope root. Usable from the console: __LITE_VUE__.getScope($0)
    */
@@ -46,6 +73,7 @@ export interface LiteVueDevtools {
    *   the same element (upsert semantics).
    * - 'scope:unmount' (el): a scope root was torn down.
    * - 'store:register' (name, store): a global store was registered.
+   * - 'plugin:install' (info): a plugin was installed via app.use().
    * - 'flush': the reactive job queue flushed; state may have changed.
    */
   on(event: DevtoolsEvent, fn: Listener): () => void;
@@ -57,6 +85,7 @@ const exps = new Map<Element, string>();
 const names = new Map<Element, string>();
 const storeMap = new Map<string, Record<string, any>>();
 const componentNames = new Set<string>();
+const pluginList: PluginInfo[] = [];
 
 let disabled = false;
 
@@ -70,6 +99,7 @@ const listeners: Record<DevtoolsEvent, Set<Listener>> = {
   'scope:mount': new Set(),
   'scope:unmount': new Set(),
   'store:register': new Set(),
+  'plugin:install': new Set(),
   flush: new Set(),
 };
 
@@ -109,6 +139,20 @@ export const registerComponent = (name: string) => {
   if (!isDisabled()) componentNames.add(name);
 };
 
+/** Registers a plugin and returns a deregister, as registerScope does. */
+export const registerPlugin = (info: PluginInfo) => {
+  if (isDisabled()) return;
+  pluginList.push(info);
+  emit('plugin:install', info);
+  return () => {
+    const i = pluginList.indexOf(info);
+    if (i > -1) pluginList.splice(i, 1);
+  };
+};
+
+/** True when something is listening, so app.use() can skip the diff. */
+export const pluginsWatched = () => !isDisabled();
+
 export const emitFlush = () => {
   // Size check first: this runs on every flush, and with nothing subscribed
   // it costs one property read. The disabled check is what the other events
@@ -125,6 +169,7 @@ export const devtools: LiteVueDevtools = {
   names,
   stores: storeMap,
   components: componentNames,
+  plugins: pluginList,
   getScopeByName(name) {
     for (const [el, n] of names) {
       if (n === name) return scopes.get(el);
@@ -161,6 +206,7 @@ export const disableDevtools = () => {
   names.clear();
   storeMap.clear();
   componentNames.clear();
+  pluginList.length = 0;
   for (const event in listeners) {
     listeners[event as DevtoolsEvent].clear();
   }
