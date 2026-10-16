@@ -130,4 +130,4 @@ createApp({ createResource, search }).mount();
 
 ## Next
 
-Handle what a failed request leaves behind with [Error Handling](/essentials/error-handling).
+Submit data with validation errors and cancellation in [Forms](/essentials/forms).
