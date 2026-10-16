@@ -5,7 +5,13 @@ import { bindContextMethods, createContext } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick } from './scheduler';
 import { walk } from './walk';
-import { devtools, registerComponent, registerScope } from './devtools';
+import {
+  devtools,
+  pluginsWatched,
+  registerComponent,
+  registerPlugin,
+  registerScope,
+} from './devtools';
 import { createId, createWatch } from './magics';
 import { stores } from './store';
 import { addErrorHandler, handleError, type ErrorHandler } from './errors';
@@ -114,6 +120,7 @@ export const createApp = (initialData?: any) => {
 
   const components: Record<string, ComponentFactory> = Object.create(null);
   let rootBlocks: Block[] = [];
+  const pluginDeregisters: (() => void)[] = [];
   const installedPlugins = new Set<Plugin>();
   const pluginTeardowns: PluginTeardown[] = [];
   // The error registry is page-global: without these, a torn-down app keeps
@@ -178,10 +185,32 @@ export const createApp = (initialData?: any) => {
     use(plugin, options) {
       if (!installedPlugins.has(plugin)) {
         installedPlugins.add(plugin);
+        // identified by what it contributed, since minifiers empty Function.name;
+        // DEV-only because the snapshots cost the core bytes
+        const watched = import.meta.env.DEV && pluginsWatched();
+        const dirsBefore = watched ? Object.keys(ctx.dirs) : [];
+        const scopeBefore = watched ? Object.keys(ctx.scope) : [];
         const teardown = (
           typeof plugin === 'function' ? plugin : plugin.install
         )(app, options);
         if (typeof teardown === 'function') pluginTeardowns.push(teardown);
+        if (watched) {
+          const off = registerPlugin({
+            name:
+              (typeof plugin === 'function' && plugin.name) ||
+              `plugin ${installedPlugins.size}`,
+            directives: Object.keys(ctx.dirs).filter(
+              (d) => !dirsBefore.includes(d)
+            ),
+            magics: Object.keys(ctx.scope).filter(
+              (k) => k[0] === '$' && !scopeBefore.includes(k)
+            ),
+            teardown: typeof teardown === 'function',
+          });
+          // deregistered with the app, so the panel stops listing a plugin
+          // whose app is gone
+          if (off) pluginDeregisters.push(off);
+        }
       }
       return app;
     },
@@ -279,6 +308,7 @@ export const createApp = (initialData?: any) => {
         // deliberately leaves them, since other regions still need them. The
         // install record is cleared so a later use() reinstalls rather than
         // no-opping. Each teardown is isolated so one throw strands nothing.
+        pluginDeregisters.splice(0).forEach((fn) => fn());
         pluginTeardowns.splice(0).forEach((fn) => {
           try {
             fn();

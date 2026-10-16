@@ -13,7 +13,7 @@ while they develop. Every tool reads the same public
 
 | Tool | Use it to |
 | --- | --- |
-| [Inspector Panel](/devtools/panel) | Browse scopes and stores in the page, search and edit state, and pick a scope by clicking its element |
+| [Inspector Panel](/devtools/panel) | Browse scopes and stores in the page, search and edit state, pick a scope by clicking its element, and see installed plugins |
 | [Browser Extension](/devtools/extension) | Inspect the same state from a tab in the browser's own devtools |
 | [Devtools API](/globals/devtools) | Read scopes from the console through `__LITE_VUE__`, listen to registry events, and switch the registry off |
 | [Development Warnings](/devtools/warnings) | See console warnings for mistakes that would otherwise fail silently |

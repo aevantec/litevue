@@ -3,6 +3,7 @@
 // always sees the same instance as the app.
 import type { LiteVueDevtools } from './devtools';
 import { css } from './devtools-panel/styles';
+import { createPluginsView } from './devtools-panel/plugins';
 import {
   clamp,
   dockIcons,
@@ -61,6 +62,7 @@ let rightW = '';
 
 let elementsTab: HTMLElement;
 let storesTab: HTMLElement;
+let renderPlugins = () => {};
 
 let theme: ThemeMode = loadTheme();
 
@@ -217,6 +219,7 @@ const renderTabs = () => {
 
 const renderTree = () => {
   renderTabs();
+  renderPlugins();
   treeEl.textContent = '';
 
   if (activeTab === 'Elements') {
@@ -673,6 +676,10 @@ const build = () => {
     document.addEventListener('mouseup', up);
   });
 
+  const plugins = createPluginsView(devtools);
+  renderPlugins = plugins.render;
+  header.appendChild(plugins.btn);
+
   // Cycles through dock positions like the theme button: the icon shows the
   // current state rather than opening a menu.
   dockBtn = h('button', 'btn');
@@ -743,6 +750,7 @@ const build = () => {
   stateEl = h('div', 'state');
   body.appendChild(side);
   body.appendChild(stateEl);
+  body.appendChild(plugins.el);
   panelEl.appendChild(body);
   panelEl.appendChild(grip);
   shadow.appendChild(panelEl);
@@ -776,6 +784,7 @@ const build = () => {
   if (devtools.stores) {
     devtools.on('store:register', scheduleRender);
   }
+  if (devtools.plugins) devtools.on('plugin:install', scheduleRender);
   devtools.on('flush', scheduleRender);
 };
 

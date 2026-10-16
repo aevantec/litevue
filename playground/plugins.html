@@ -1,6 +1,9 @@
+<meta charset="utf-8" />
+
 <script type="module">
   import { createApp } from '../src';
   import { intersect, persist, focus, collapse } from '../src/plugins';
+  import '../src/devtools-panel';
 
   createApp({ editing: false, open: false, seen: false })
     .use(intersect)
@@ -11,6 +14,12 @@
 </script>
 
 <div id="app" v-scope>
+  <p>
+    Open the devtools pill, then the puzzle-piece button in its bar: the plugins
+    view lists each <code>app.use()</code> with the directives it registered and
+    whether it returned a teardown.
+  </p>
+
   <h3>persist</h3>
   <div id="counter" v-scope="{ count: 0 }" v-persist="plugins-counter">
     <button id="inc" @click="count++">count: {{ count }}</button>
