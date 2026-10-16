@@ -7,6 +7,7 @@ import type { Plugin } from '../../app';
  * positioning where supported, a script fallback elsewhere.
  *
  * Placements: top, bottom (default), left, right, each with -start or -end.
+ * Modifiers: .offset-<px> gap between the two (default 0).
  */
 
 // position-area for each placement; "span-right" starts at the anchor's left edge
@@ -35,10 +36,16 @@ const OPPOSITE: Record<string, string> = {
 let count = 0;
 
 /** Script placement for engines without anchor positioning: flip, then align. */
-const place = (float: HTMLElement, target: Element, placement: string) => {
+const place = (
+  float: HTMLElement,
+  target: Element,
+  placement: string,
+  gap: number
+) => {
   const [side, align] = placement.split('-');
   const t = target.getBoundingClientRect();
-  const { width: w, height: h } = float.getBoundingClientRect();
+  const w = float.offsetWidth + gap;
+  const h = float.offsetHeight + gap;
   const room: Record<string, number> = {
     top: t.top - h,
     bottom: innerHeight - t.bottom - h,
@@ -48,8 +55,8 @@ const place = (float: HTMLElement, target: Element, placement: string) => {
   const s = room[side] < 0 && room[OPPOSITE[side]] >= 0 ? OPPOSITE[side] : side;
   const vertical = s === 'top' || s === 'bottom';
   const [start, size, span] = vertical
-    ? [t.left, t.width, w]
-    : [t.top, t.height, h];
+    ? [t.left, t.width, float.offsetWidth]
+    : [t.top, t.height, float.offsetHeight];
   const along =
     align === 'start'
       ? start
@@ -60,10 +67,10 @@ const place = (float: HTMLElement, target: Element, placement: string) => {
     s === 'top'
       ? t.top - h
       : s === 'bottom'
-        ? t.bottom
+        ? t.bottom + gap
         : s === 'left'
           ? t.left - w
-          : t.right;
+          : t.right + gap;
   float.style.left = (vertical ? along : across) + 'px';
   float.style.top = (vertical ? across : along) + 'px';
 };
@@ -86,17 +93,26 @@ export const popover: Plugin = (app) => {
 
   app.directive('anchor', ({ el, get, effect, modifiers }) => {
     const float = el as HTMLElement;
-    const placement =
-      Object.keys(modifiers || {}).find((m) => m in AREAS) || 'bottom';
+    let placement = 'bottom';
+    let gap = 0;
+    for (const m in modifiers || {}) {
+      if (m in AREAS) placement = m;
+      const match = /^offset-(\d+)$/.exec(m);
+      if (match) gap = +match[1];
+    }
     const before = float.style.cssText;
+    const vertical = /^(top|bottom)/.test(placement);
     let target: HTMLElement | undefined;
 
     // the UA centres a popover with inset: 0 and margin: auto
+    float.style.position = 'fixed';
     float.style.inset = 'auto';
     float.style.margin = '0';
 
     if (CSS.supports('anchor-name: --a')) {
       const name = `--litevue-anchor-${++count}`;
+      // the gap is a margin on the side facing the anchor, kept through a flip
+      float.style.margin = vertical ? `${gap}px 0` : `0 ${gap}px`;
       float.style.setProperty('position-anchor', name);
       float.style.setProperty('position-area', AREAS[placement]);
       float.style.setProperty(
@@ -108,30 +124,28 @@ export const popover: Plugin = (app) => {
         target = get();
         target?.style.setProperty('anchor-name', name);
       });
-    } else {
-      float.style.position = 'fixed';
-      const update = () => {
-        if (target && (!float.popover || float.matches(':popover-open'))) {
-          place(float, target, placement);
-        }
-      };
-      effect(() => {
-        target = get();
-        update();
-      });
-      addEventListener('scroll', update, true);
-      addEventListener('resize', update);
-      float.addEventListener('toggle', update);
       return () => {
-        removeEventListener('scroll', update, true);
-        removeEventListener('resize', update);
-        float.removeEventListener('toggle', update);
+        target?.style.removeProperty('anchor-name');
         float.style.cssText = before;
       };
     }
 
+    const update = () => {
+      if (target && (!float.popover || float.matches(':popover-open'))) {
+        place(float, target, placement, gap);
+      }
+    };
+    effect(() => {
+      target = get();
+      update();
+    });
+    addEventListener('scroll', update, true);
+    addEventListener('resize', update);
+    float.addEventListener('toggle', update);
     return () => {
-      target?.style.removeProperty('anchor-name');
+      removeEventListener('scroll', update, true);
+      removeEventListener('resize', update);
+      float.removeEventListener('toggle', update);
       float.style.cssText = before;
     };
   });

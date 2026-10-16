@@ -124,6 +124,16 @@
         "default": "./dist/plugins/persist.umd.js"
       }
     },
+    "./plugins/popover": {
+      "import": {
+        "types": "./dist/types/plugins/popover/index.d.mts",
+        "default": "./dist/plugins/popover.mjs"
+      },
+      "require": {
+        "types": "./dist/types/plugins/popover/index.d.ts",
+        "default": "./dist/plugins/popover.umd.js"
+      }
+    },
     "./plugins/resize": {
       "import": {
         "types": "./dist/types/plugins/resize/index.d.mts",
@@ -175,6 +185,9 @@
       ],
       "plugins/persist": [
         "./dist/types/plugins/persist/index.d.ts"
+      ],
+      "plugins/popover": [
+        "./dist/types/plugins/popover/index.d.ts"
       ],
       "plugins/resize": [
         "./dist/types/plugins/resize/index.d.ts"

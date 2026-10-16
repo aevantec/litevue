@@ -28,9 +28,9 @@ const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThan(2);
 
 const anchored = (placement: string, triggerStyle = 'margin: 200px 300px') => `
   <div v-scope="{ open: false }">
-    <button ref="btn" style="${triggerStyle}; width: 120px; height: 30px">menu</button>
+    <button ref="btn" @click="open = !open" style="${triggerStyle}; width: 120px; height: 30px">menu</button>
     <div id="pop" popover v-popover="open" v-anchor.${placement}="$refs.btn"
-      style="width: 80px; height: 50px; padding: 0; border: 0">items</div>
+      style="width: 80px; height: 50px; padding: 0; border: 0"><a id="item" href="#">items</a></div>
     <i id="state">{{ open }}</i>
     <button id="openBtn" @click="open = true">open</button>
   </div>`;
@@ -67,6 +67,19 @@ describe('v-anchor with CSS anchor positioning', () => {
 
     near(rect('#pop').bottom, rect('button').top);
   });
+
+  test('.offset-8 leaves a gap, kept through a flip', async () => {
+    await mount(anchored('bottom.offset-8'));
+    await open();
+    near(rect('#pop').top, rect('button').bottom + 8);
+
+    document.body.innerHTML = '';
+    await mount(
+      anchored('bottom.offset-8', 'position: fixed; bottom: 10px; left: 300px')
+    );
+    await open();
+    near(rect('#pop').bottom, rect('button').top - 8);
+  });
 });
 
 describe('v-anchor without CSS anchor positioning', () => {
@@ -96,6 +109,14 @@ describe('v-anchor without CSS anchor positioning', () => {
     await open();
 
     near(rect('#pop').bottom, rect('button').top);
+  });
+
+  test('.offset-8 leaves a gap', async () => {
+    noAnchors();
+    await mount(anchored('bottom.offset-8'));
+    await open();
+
+    near(rect('#pop').top, rect('button').bottom + 8);
   });
 });
 
@@ -129,6 +150,36 @@ describe('v-popover', () => {
 
     expect(isOpen()).toBe(false);
     expect(document.querySelector('#state')!.textContent).toBe('false');
+  });
+
+  test('clicking the trigger while open closes it', async () => {
+    await mount(anchored('bottom'));
+    await userEvent.click(document.querySelector('button')!);
+    await tick(6);
+    expect(isOpen()).toBe(true);
+
+    await userEvent.click(document.querySelector('button')!);
+    await tick(6);
+    await sleep(20);
+
+    expect(isOpen()).toBe(false);
+    expect(document.querySelector('#state')!.textContent).toBe('false');
+  });
+
+  test('closing returns focus to where it was, as the browser does natively', async () => {
+    await mount(anchored('bottom'));
+    const trigger = document.querySelector('button') as HTMLElement;
+    trigger.focus();
+    await userEvent.keyboard('{Enter}');
+    await tick(6);
+    await sleep(20);
+    (document.querySelector('#item') as HTMLElement).focus();
+    expect(document.activeElement!.id).toBe('item');
+
+    await userEvent.keyboard('{Escape}');
+    await tick(6);
+
+    expect(document.activeElement).toBe(trigger);
   });
 
   test('unmounting restores the styles it set', async () => {

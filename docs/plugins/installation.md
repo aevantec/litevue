@@ -152,8 +152,11 @@ The standalone file defines a `LiteVue`-prefixed global holding that plugin's na
 | [media](/plugins/media)           | `…/plugins/media`                      | `LiteVueMedia`      | `media`, `mq`, `defaultBreakpoints`, `resetMedia`           |
 | [morph](/plugins/morph)           | `…/plugins/morph`                      | `LiteVueMorph`      | `morph`, `morphPlugin`                                      |
 | [persist](/plugins/persist)       | `…/plugins/persist`                    | `LiteVuePersist`    | `persist`, `persistStore`, `registerStorage`, `setDefaultStorage` |
+| [popover](/plugins/popover)       | `…/plugins/popover` only               | `LiteVuePopover`    | `popover`                                                   |
 | [resize](/plugins/resize)         | `…/plugins/resize`                     | `LiteVueResize`     | `resize`                                                    |
 | [transition](/plugins/transition) | `…/plugins/transition`                 | `LiteVueTransition` | `transition`                                                |
+
+Popover is not in the combined bundle or the `@aevantec/litevue/plugins` entry; import it from its own subpath, or load its standalone file.
 
 The exports sit **on** the global, so `persistStore` is `LiteVuePersist.persistStore` — not a bare `persistStore`.
 

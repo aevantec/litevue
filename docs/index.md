@@ -27,7 +27,7 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~10kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~4kb<!-- size:dist/litevue-plugins.iife.js --> for all nine) and devtools (~6kb<!-- size:dist/litevue-devtools.iife.js -->)
+      ~10kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~4kb<!-- size:dist/litevue-plugins.iife.js --> for the nine in the combined bundle) and devtools (~6kb<!-- size:dist/litevue-devtools.iife.js -->)
       ship as separate opt-in bundles that add zero weight to the core, and
       a region can wait to mount until it is seen, idle or first used.
   - title: Built-in devtools
@@ -42,10 +42,10 @@ features:
       monitoring in production.
   - title: Plugin system
     details:
-      app.use() with typed plugins. Nine first-party plugins cover
-      intersect, persist, focus (+trap), collapse, mask, morph, media, resize
-      and transition — including leave animations that v-if waits for. Each
-      loads on its own.
+      app.use() with typed plugins. Ten first-party plugins cover
+      intersect, persist, focus (+trap), collapse, mask, morph, media, resize,
+      transition and popover — including leave animations that v-if waits
+      for. Each loads on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML

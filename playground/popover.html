@@ -30,7 +30,7 @@
   <button ref="menuBtn" @click="open = !open" style="margin: 120px 200px">
     Menu
   </button>
-  <div id="menu" v-popover="open" v-anchor.bottom-start="$refs.menuBtn">
+  <div id="menu" v-popover="open" v-anchor.bottom-start.offset-8="$refs.menuBtn">
     <a href="#">Profile</a><br /><a href="#">Settings</a>
   </div>
   <p>open: {{ open }}</p>
@@ -42,7 +42,7 @@
   >
     Near the bottom
   </button>
-  <div id="tip" v-popover="tip" v-anchor.bottom="$refs.tipBtn">
+  <div id="tip" v-popover="tip" v-anchor.bottom.offset-6="$refs.tipBtn">
     Flipped above, since there is no room below.
   </div>
 </div>
