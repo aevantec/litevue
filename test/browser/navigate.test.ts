@@ -91,3 +91,65 @@ test('runs inside a view transition when asked', async () => {
   expect(spy).toHaveBeenCalledOnce();
   expect(document.querySelector('#main')!.textContent).toBe('two');
 });
+
+test('back does not scroll the current page before the previous one arrives', async () => {
+  const tall = (name: string) =>
+    page(
+      name,
+      `<main id="main"><div style="height: 3000px">${name}</div></main>`
+    );
+  let next = tall('two');
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => ({
+      ok: true,
+      status: 200,
+      url: new URL(url, location.href).href,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      text: async () => next,
+    }))
+  );
+  document.body.innerHTML =
+    '<div v-scope><a id="go" href="two.html">two</a><main id="main"><div style="height: 3000px">one</div></main></div>';
+  app = createApp().use(morphPlugin).use(navigate, { target: '#main' });
+  app.mount(document.body.firstElementChild as Element);
+  await tick();
+  const arrived = () =>
+    new Promise((r) =>
+      document.addEventListener('navigate:after', r, { once: true })
+    );
+
+  scrollTo(0, 800);
+  let done = arrived();
+  (document.querySelector('#go') as HTMLElement).click();
+  await done;
+  expect(scrollY).toBe(0);
+
+  next = tall('one');
+  let atPop = -1;
+  addEventListener('popstate', () => (atPop = scrollY), { once: true });
+  done = arrived();
+  history.back();
+  await done;
+
+  expect(atPop).toBe(0);
+  expect(scrollY).toBe(800);
+});
+
+test("a stylesheet's own onload still runs when the head merge adds it", async () => {
+  (window as any).__cssLoaded = false;
+  serve(
+    page('Two', '<main id="main">two</main>').replace(
+      '</head>',
+      `<link rel="stylesheet" href="data:text/css,main{}" onload="window.__cssLoaded = true"></head>`
+    )
+  );
+
+  await go(
+    '<div v-scope><a href="two.html">two</a><main id="main">one</main></div>',
+    { target: '#main' }
+  );
+
+  expect((window as any).__cssLoaded).toBe(true);
+  document.head.querySelector('link[href^="data:"]')?.remove();
+});

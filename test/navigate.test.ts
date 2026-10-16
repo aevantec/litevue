@@ -239,6 +239,20 @@ describe('navigate: links', () => {
     expect(document.querySelector('[aria-live]')!.textContent).toBe('Page two');
   });
 
+  test('focuses an autofocus field in the new content', async () => {
+    replies['/find'] = {
+      body: page('Find', '<main id="main"><input id="q" autofocus></main>'),
+    };
+    await start('<a href="/find">Find</a><main id="main">One</main>', {
+      target: '#main',
+    });
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.activeElement).toBe(document.querySelector('#q'));
+  });
+
   test.each([
     ['the first heading', '<main id="main"><h1> Orders </h1></main>', 'Orders'],
     ['the path', '<main id="main">no heading</main>', '/untitled'],
@@ -440,6 +454,45 @@ describe('navigate: forms', () => {
     expect(document.querySelector('main')!.textContent).toBe('saved');
   });
 
+  test('ignores a second POST from a form whose first is still in flight', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post"><button>Save</button></form><main></main>`
+    );
+    const button = document.querySelector('button')!;
+
+    button.click();
+    button.click();
+    await settle();
+    const posts = () =>
+      fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST').length;
+    expect(posts()).toBe(1);
+
+    // once the first settles, a form can post again
+    document.body.insertAdjacentHTML(
+      'afterbegin',
+      '<form id="again" action="/save" method="post"><button>Again</button></form>'
+    );
+    (document.querySelector('#again button') as HTMLElement).click();
+    await settle();
+    expect(posts()).toBe(2);
+  });
+
+  test('a GET form submitted again restarts with the newer query', async () => {
+    replies['/search'] = { body: page('Search', '<main>results</main>') };
+    await start(
+      `<form action="/search"><input name="q" value="ca"><button>Go</button></form><main></main>`
+    );
+    const input = document.querySelector('input')!;
+
+    document.querySelector('button')!.click();
+    input.value = 'cats';
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(location.search).toBe('?q=cats');
+  });
+
   test('renders a 422 in place without changing the URL', async () => {
     replies['/save'] = {
       status: 422,
@@ -496,6 +549,33 @@ describe('navigate: history', () => {
 
     expect(document.querySelector('main')!.textContent).toBe('Home');
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 240);
+  });
+
+  test("takes over the browser's scroll restoration, and gives it back", async () => {
+    history.scrollRestoration = 'auto';
+    const app = await start('<main>Home</main>');
+
+    expect(history.scrollRestoration).toBe('manual');
+
+    app.unmount();
+    current = undefined;
+    expect(history.scrollRestoration).toBe('auto');
+  });
+
+  test('back to a URL with a hash restores the saved position, not the anchor', async () => {
+    replies['/two'] = {
+      body: page('Two', '<main>Two<h2 id="end">End</h2></main>'),
+    };
+    await start('<main>Home</main>');
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+
+    history.replaceState(null, '', '/two#end');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { y: 500 } }));
+    await settle();
+
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 500);
+    expect(into).not.toHaveBeenCalled();
   });
 
   test('ignores a popstate that only changes the hash', async () => {
