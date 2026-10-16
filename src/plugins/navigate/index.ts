@@ -160,7 +160,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       }
       // the page's own scripts already ran; fetched ones never do
       doc.querySelectorAll('script').forEach((s) => s.remove());
-      const run = () => show(from, doc, url, res.ok && y == null, y);
+      // a transition runs this later; a newer navigation may have started
+      const run = () =>
+        c === controller && show(from, doc, url, res.ok && y == null, y);
       options.transition && document.startViewTransition
         ? document.startViewTransition(run)
         : run();

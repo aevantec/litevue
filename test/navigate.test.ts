@@ -312,6 +312,33 @@ describe('navigate: links', () => {
     expect(location.pathname).toBe('/b');
   });
 
+  test('a navigation waiting on its view transition never overtakes a newer one', async () => {
+    replies['/a'] = { body: page('A', '<main>A</main>') };
+    replies['/b'] = { body: page('B', '<main>B</main>') };
+    const queued: (() => void)[] = [];
+    (document as any).startViewTransition = (run: () => void) => {
+      queued.push(run);
+    };
+    await start('<a href="/a">A</a><a href="/b">B</a><main></main>', {
+      transition: true,
+    });
+    const after = vi.fn();
+    document.addEventListener('navigate:after', after);
+    const [a, b] = document.querySelectorAll('a');
+
+    click(a);
+    await settle();
+    click(b);
+    await settle();
+    queued.forEach((run) => run());
+
+    expect(document.querySelector('main')!.textContent).toBe('B');
+    expect(location.pathname).toBe('/b');
+    expect(after).toHaveBeenCalledOnce();
+    document.removeEventListener('navigate:after', after);
+    delete (document as any).startViewTransition;
+  });
+
   test('stops intercepting once the app unmounts', async () => {
     const app = await start('<a href="/x">x</a>');
     app.unmount();
