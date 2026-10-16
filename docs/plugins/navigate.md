@@ -73,6 +73,8 @@ A `GET` form navigates to its `action` with the fields as the query string. A `P
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
+While a form's `POST` is in flight, further submits of that form are ignored, so a double click sends one request. A `GET` form submitted again restarts with the newer values, so a search always shows the latest query.
+
 ## The head
 
 The fetched page's `<head>` is merged into the current one, so each page keeps its own stylesheets and meta tags:
@@ -81,7 +83,7 @@ The fetched page's `<head>` is merged into the current one, so each page keeps i
 - `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
 - Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up.
 - Ones only the current page has are removed once the new page is in place.
-- `<script>` elements are never added or removed. Scripts in a fetched page never run, and removing a script would not unload it.
+- `<script>` elements are never added or removed. A fetched page's `<script>` elements never run, and removing a script would not unload it.
 
 Mark an element `data-navigate-preserve` to keep it even when the next page lacks it, such as a stylesheet a client-side library injected:
 
@@ -120,16 +122,16 @@ document.addEventListener('navigate:after', () => progress.done());
 - Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load.
 - A navigation still in flight is cancelled when another starts.
 - The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element.
-- Scripts in the fetched page never run. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
+- `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
-- With the default `body` target, focus returns to the start of the document, as after a full load. With a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
+- Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
-- Back and forward fetch the page again and restore its scroll position. There is no page cache.
+- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount. There is no page cache.
 - On full unmount, the plugin stops intercepting and removes its live region.
 
 ## Security
 
-Morph initialises the directives in the markup it inserts, so a navigation evaluates expressions from the fetched page. That trusts the page as much as a full load of it would, and no more: the plugin fetches only same-origin URLs, checks the final URL after redirects, accepts only `text/html`, and never runs `<script>` elements from the response. See [Security](/start-here/security#morph-and-server-rendered-updates).
+Morph initialises the directives in the markup it inserts, so a navigation evaluates expressions from the fetched page. That trusts the page as much as a full load of it would, and no more: the plugin fetches only same-origin URLs, checks the final URL after redirects, accepts only `text/html`, and never runs `<script>` elements from the response. Inline event handler attributes in the response do run, as on a full load. See [Security](/start-here/security#morph-and-server-rendered-updates).
 
 ## Coming from Turbo or htmx
 

@@ -58,8 +58,14 @@ const mergeHead = async (doc: Document) => {
     }
     const fresh = document.importNode(el, true) as HTMLLinkElement;
     if (fresh.matches('link[rel=stylesheet]')) {
-      // an error resolves too: a missing stylesheet must not block the page
-      loads.push(new Promise((r) => (fresh.onload = fresh.onerror = r)));
+      // listeners, not onload: the page's own handler (the media="print"
+      // async-CSS pattern) must still run; an error must not block the page
+      loads.push(
+        new Promise((r) => {
+          fresh.addEventListener('load', r);
+          fresh.addEventListener('error', r);
+        })
+      );
     }
     document.head.append(fresh);
   }
@@ -103,6 +109,11 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const target = options.target || 'body';
   let controller: AbortController | undefined;
   let rendered = pathOf(location);
+  const posting = new WeakSet<HTMLFormElement>();
+  // the browser would restore scroll onto the outgoing page before the next
+  // one arrives; navigate restores it after rendering instead
+  const restoration = history.scrollRestoration;
+  history.scrollRestoration = 'manual';
 
   const status = document.createElement('div');
   status.id = STATUS_ID;
@@ -133,11 +144,17 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     render(app, app.scope.$morph, from, doc.querySelector(target)!);
     dropOld();
     if (options.scroll !== false) {
-      const anchor = url.hash && document.getElementById(url.hash.slice(1));
+      // back and forward return to where the user was, not to the anchor
+      const anchor =
+        y == null && url.hash && document.getElementById(url.hash.slice(1));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
     }
-    // a full load starts focus at the top of the document; a region takes it
-    if (from === document.body) {
+    // as on a full load: an autofocus field, else the top of the document;
+    // a region takes focus itself
+    const auto = from.querySelector<HTMLElement>('[autofocus]');
+    if (auto) {
+      auto.focus();
+    } else if (from === document.body) {
       (document.activeElement as HTMLElement | null)?.blur?.();
     } else {
       from.hasAttribute('tabindex') || from.setAttribute('tabindex', '-1');
@@ -240,7 +257,14 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     const data = new FormData(form);
     if (by?.name) data.append(by.name, by.value);
     e.preventDefault();
-    if (method === 'post') return go(url.href, { method: 'POST', body: data });
+    if (method === 'post') {
+      // the server would get both: aborting a request does not unsend it
+      if (posting.has(form)) return;
+      posting.add(form);
+      return go(url.href, { method: 'POST', body: data }).finally(() =>
+        posting.delete(form)
+      );
+    }
     url.search = new URLSearchParams(data as any).toString();
     go(url.href);
   };
@@ -259,6 +283,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     document.removeEventListener('click', onClick);
     document.removeEventListener('submit', onSubmit);
     removeEventListener('popstate', onPop);
+    history.scrollRestoration = restoration;
     status.remove();
   };
 };
