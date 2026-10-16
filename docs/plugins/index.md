@@ -26,7 +26,7 @@ createApp().use(mask).mount();
 | [morph](/plugins/morph) | `morph()`, `$morph` | Patching a live region from new HTML |
 | [persist](/plugins/persist) | `v-persist`, `persistStore()` | Saving state to storage |
 | [popover](/plugins/popover) | `v-popover`, `v-anchor` | Menus and tooltips, positioned against a trigger |
-| [resize](/plugins/resize) | `v-resize` | Reacting to an element's own size |
+| [resize](/plugins/resize) | `v-resize` | Reacting to an element's size, or the window's |
 | [transition](/plugins/transition) | `v-transition` | Enter and leave animations |
 
 The combined bundle holds every plugin except popover: all nine together are ~4kb<!-- size:dist/litevue-plugins.iife.js --> gzipped. Popover ships only on its own, so pages without menus or tooltips never pay for it.

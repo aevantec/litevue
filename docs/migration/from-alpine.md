@@ -65,7 +65,8 @@ LiteVue adds [animation-event filters](/directives/v-on#sequencing-animations) A
 | Mask                       | [`mask`](/plugins/mask)                                                   |
 | Anchor (`x-anchor`)        | [`v-anchor`](/plugins/popover) — same placements; `.offset-10` for `.offset.10` |
 | Morph (`Alpine.morph`)     | [`morph`](/plugins/morph) — `morph(el, html)` or `$morph` in templates    |
-| Anchor / Sort              | not shipped — they'd pull in Floating UI / SortableJS; use those directly |
+| Resize (`x-resize`)        | [`resize`](/plugins/resize) — `.window` measures the viewport; Alpine's `.document` measures the document |
+| Sort                       | not shipped — it would pull in SortableJS; use it directly                 |
 
 ## What's different by design
 
