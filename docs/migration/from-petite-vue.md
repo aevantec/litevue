@@ -53,8 +53,9 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 
 The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
 
-Three later additions are worth knowing about specifically, because petite-vue has no equivalent and each addresses something you probably worked around:
+Four later additions are worth knowing about specifically, because petite-vue has no equivalent and each addresses something you probably worked around:
 
 - [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings evaluated three times per update, with no memoized option.
 - [Lazy mounting](/directives/v-scope#mounting-on-demand) — `v-scope.visible`, `.idle` and `.interaction` — leaves a region unbound until it is needed. Previously every scope on the page paid its setup cost at load, and deferring one meant wiring up an `IntersectionObserver` and a manual `mount()` yourself.
 - The [morph plugin](/plugins/morph) updates a live region from new server HTML **in place**. Previously the only option was replacing the markup and re-mounting, which resets scope state and loses focus, caret and scroll.
+- An [event handler can `await`](/directives/v-on#async-handlers), as in `@click="result = await save()"`. In petite-vue that handler fails to compile, so the usual workaround was `save().then((r) => (result = r))`.
