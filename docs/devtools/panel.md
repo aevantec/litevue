@@ -5,7 +5,7 @@ title: Inspector Panel
 # Inspector Panel <Badge type="section" text="Devtools" />
 
 An in-page inspector for checking and changing state while you develop. It ships
-as a separate bundle (~6kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
+as a separate bundle (~7kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
 so it adds nothing to the core. Load it **after** the library, and **only during
 development**.
 
@@ -84,6 +84,23 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
   are read-only.
 - An **add-key row** adds a top-level key, and each top-level row has a ✕ to
   delete it.
+
+## See installed plugins
+
+The puzzle-piece button in the panel bar opens the **plugins view**, which
+lists each [`app.use()`](/globals/create-app#the-app-instance) in install order. Its tooltip
+shows the count.
+
+- Each row shows the directives and magics the plugin registered, such as
+  `v-focus v-trap` or `$morph`. A plugin is identified by these rather than by
+  name, because minified builds have no function names.
+- **no teardown** marks a plugin that returned no cleanup function. Most
+  plugins only register directives and need none. It matters for a plugin that
+  adds page-wide listeners or timers, which a full `unmount()` cannot then
+  release.
+- The view takes the whole panel. Press the button again to return to scopes.
+- Plugins are recorded in [development builds](/start-here/installation#development-builds)
+  only. Against a production build the view is empty.
 
 ## Arrange the panel
 
