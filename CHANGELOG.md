@@ -3,6 +3,12 @@
 ## [0.5.11](https://github.com/aevantec/litevue/compare/v0.5.10...v0.5.11) (2026-10-16)
 
 
+### Behavior changes
+
+* An event handler whose expression contains the word `await` now compiles as an async function, so it returns a promise, and a rejection after the `await` reaches `app.onError()` rather than throwing synchronously. Handlers without `await` are unchanged ([#166](https://github.com/aevantec/litevue/issues/166))
+* The devtools bundle grows from about 6kb to about 7kb gzipped to hold the plugins view. It is development-only and does not affect the core or plugin bundles ([#165](https://github.com/aevantec/litevue/issues/165))
+
+
 ### Features
 
 * **devtools:** list installed plugins and what each one registered ([#165](https://github.com/aevantec/litevue/issues/165)) ([3f34256](https://github.com/aevantec/litevue/commit/3f342564ba9c33e5998e9e80858bbaa48dc73251))
