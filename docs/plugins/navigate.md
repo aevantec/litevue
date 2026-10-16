@@ -73,16 +73,32 @@ A `GET` form navigates to its `action` with the fields as the query string. A `P
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
-## Deploys and the head
+## The head
 
-Only `document.title` is taken from the fetched page's `<head>`. To reload the page when a deploy changes your scripts or styles, mark them `data-navigate-track`. If the fetched page's tracked assets differ from the current ones, the plugin does a full load instead, so old and new code never mix:
+The fetched page's `<head>` is merged into the current one, so each page keeps its own stylesheets and meta tags:
+
+- `<title>` is replaced.
+- `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
+- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up.
+- Ones only the current page has are removed once the new page is in place.
+- `<script>` elements are never added or removed. Scripts in a fetched page never run, and removing a script would not unload it.
+
+Mark an element `data-navigate-preserve` to keep it even when the next page lacks it, such as a stylesheet a client-side library injected:
+
+```html
+<style data-navigate-preserve>…</style>
+```
+
+### Deploys
+
+To reload the page when a deploy changes your scripts or styles, mark them `data-navigate-track`. If the fetched page's tracked assets differ from the current ones, the plugin does a full load instead, so old and new code never mix:
 
 ```html
 <script type="module" src="/assets/app.4f2a.js" data-navigate-track></script>
 <link rel="stylesheet" href="/assets/app.9c1e.css" data-navigate-track />
 ```
 
-Untracked assets are ignored, so a site with a different entry script on each page still navigates.
+Untracked scripts are ignored, so a site with a different entry script on each page still navigates.
 
 ## Events
 
@@ -107,7 +123,7 @@ document.addEventListener('navigate:after', () => progress.done());
 - Scripts in the fetched page never run. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - With the default `body` target, focus returns to the start of the document, as after a full load. With a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
-- The new page's title is announced through a visually hidden live region, so screen-reader users learn the page changed.
+- The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
 - Back and forward fetch the page again and restore its scroll position. There is no page cache.
 - On full unmount, the plugin stops intercepting and removes its live region.
 
@@ -120,6 +136,7 @@ Morph initialises the directives in the markup it inserts, so a navigation evalu
 The plugin works like Turbo Drive or htmx's `hx-boost` on `<body>`: links and forms are intercepted by default, and the new page is swapped in. Differences:
 
 - The swap is a morph, not a replacement, so matching elements keep their scope, focus and state.
+- Both merge the head. Turbo removes a stylesheet the next page lacks only when it is marked `data-turbo-track="dynamic"`; here every unshared one is removed unless marked `data-navigate-preserve`, as with htmx's head-support extension.
 - Turbo reloads on changed assets only when they are marked `data-turbo-track="reload"`; here the marker is `data-navigate-track`.
 - There is no page cache, prefetching, progress bar or frames. The events let you add a progress bar.
 
