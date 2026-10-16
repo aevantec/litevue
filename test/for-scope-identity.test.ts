@@ -84,3 +84,78 @@ describe('scope identity across a v-for update', () => {
     expect(new Set(ids).size).toBe(2);
   });
 });
+
+/**
+ * Keys are evaluated against each row's data on every update. These pin what
+ * that evaluation must keep tracking, whatever object it runs against.
+ */
+describe('v-for keys stay reactive', () => {
+  test("changing an item's key field re-keys that row", async () => {
+    const root = mount(`
+      <ul v-scope="{ items: [{ id: 1 }, { id: 2 }] }">
+        <li v-for="it in items" :key="it.id" v-scope="{ touched: false }"
+          @click="touched = true">{{ it.id }}:{{ touched }}</li>
+      </ul>`);
+    await tick();
+    const [first] = document.querySelectorAll('li');
+    (first as HTMLElement).click();
+    await tick();
+    expect(first.textContent).toBe('1:true');
+
+    root.__ctx.scope.items[0].id = 9;
+    await tick();
+    const rows = [...document.querySelectorAll('li')];
+    // a new key is a new row: fresh element, fresh row state
+    expect(rows.map((r) => r.textContent)).toEqual(['9:false', '2:false']);
+    expect(rows[0]).not.toBe(first);
+  });
+
+  test('a key that reads parent state re-keys every row when it changes', async () => {
+    const root = mount(`
+      <ul v-scope="{ prefix: 'a', items: [{ id: 1 }, { id: 2 }] }">
+        <li v-for="it in items" :key="prefix + it.id">{{ prefix }}{{ it.id }}</li>
+      </ul>`);
+    await tick();
+    const before = [...document.querySelectorAll('li')];
+    root.__ctx.scope.prefix = 'b';
+    await tick();
+    const after = [...document.querySelectorAll('li')];
+    expect(after.map((r) => r.textContent)).toEqual(['b1', 'b2']);
+    expect(after[0]).not.toBe(before[0]);
+  });
+
+  test('a moved row receives its new index, and destructured fields update', async () => {
+    const root = mount(`
+      <ul v-scope="{ items: [{ id: 1, t: 'a' }, { id: 2, t: 'b' }] }">
+        <li v-for="({ id, t }, i) in items" :key="id">{{ i }}{{ t }}</li>
+      </ul>`);
+    await tick();
+    const [a, b] = document.querySelectorAll('li');
+    root.__ctx.scope.items = [
+      { id: 2, t: 'B' },
+      { id: 1, t: 'A' },
+    ];
+    await tick();
+    const rows = [...document.querySelectorAll('li')];
+    expect(rows.map((r) => r.textContent)).toEqual(['0B', '1A']);
+    // moved, not recreated
+    expect(rows[0]).toBe(b);
+    expect(rows[1]).toBe(a);
+  });
+
+  test("changing one item leaves every other row's state alone", async () => {
+    const root = mount(`
+      <ul v-scope="{ items: [{ id: 1, t: 'a' }, { id: 2, t: 'b' }, { id: 3, t: 'c' }] }">
+        <li v-for="it in items" :key="it.id" v-scope="{ n: 0 }" @click="n++">{{ it.t }}{{ n }}</li>
+      </ul>`);
+    await tick();
+    for (const li of document.querySelectorAll('li'))
+      (li as HTMLElement).click();
+    await tick();
+    root.__ctx.scope.items[1].t = 'B';
+    await tick();
+    expect(
+      [...document.querySelectorAll('li')].map((r) => r.textContent)
+    ).toEqual(['a1', 'B1', 'c1']);
+  });
+});
