@@ -3,7 +3,7 @@ import { Block } from './block';
 import { Directive } from './directives';
 import { bindContextMethods, createContext } from './context';
 import { toDisplayString } from './directives/text';
-import { nextTick } from './scheduler';
+import { nextTick, stopEffect } from './scheduler';
 import { walk } from './walk';
 import {
   devtools,
@@ -304,6 +304,9 @@ export const createApp = (initialData?: any) => {
       if (el == null) {
         rootBlocks.forEach((block) => block.teardown());
         rootBlocks = [];
+        // the root $watch's effects sit on the app's own context, which no
+        // root block tears down
+        ctx.effects.splice(0).forEach(stopEffect);
         // A full unmount ends the app, so plugins go with it; unmount(el)
         // deliberately leaves them, since other regions still need them. The
         // install record is cleared so a later use() reinstalls rather than

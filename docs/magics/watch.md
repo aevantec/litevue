@@ -82,7 +82,7 @@ $watch('user.name', cb);               // called
 ## Behavior
 
 - Register it once — from `@mounted`, `v-effect` or a setup function. Calling it inside a template expression that re-renders registers a new watcher every time.
-- Watchers stop when their scope unmounts, or earlier when the returned function is called. Calling it twice is harmless.
+- Watchers stop when their scope unmounts, or earlier when the returned function is called. Calling it twice is harmless. A watcher on the root scope, from `app.scope.$watch()` or a mounted root without `v-scope`, belongs to the app and stops on a full `app.unmount()`.
 - Reactive reads inside the callback are not tracked, so the callback only runs when `source` changes.
 - A callback that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror). Other updates keep running, and the next change still receives the correct `oldValue`.
 
