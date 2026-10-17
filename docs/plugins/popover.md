@@ -20,6 +20,8 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 | `v-popover="expression"` | Shows the popover while truthy. Closing it natively, with Escape or a click outside, sets the expression to `false` |
 | `v-anchor.<placement>="element"` | Positions this element against `element`, usually a [`$refs`](/magics/refs) entry |
 
+`v-anchor` works on any element, not only a popover, and needs no `v-popover`. Its value is reactive: when the expression points at another element, the anchored element moves there. While the value is `null`, such as a `$refs` entry that has not rendered yet, the element is not anchored to anything.
+
 ### Placements
 
 `top`, `bottom` and `left`, `right`, each optionally followed by `-start` or `-end`: `bottom-start` sits below the anchor, aligned to its left edge. The default is `bottom`, centred.
@@ -75,8 +77,9 @@ The browser's own `popovertarget` toggles a popover with no expression at all. `
 - `v-popover` adds the `popover` attribute if the element has none, as `popover="auto"`. An auto popover closes others that are open, and closes on Escape or a click outside it.
 - The popover opens in the top layer, above everything else on the page, so no `z-index` is needed.
 - `v-anchor` flips to the opposite side when there is no room, keeping the offset. It does not slide along the edge to stay on screen.
-- Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open.
-- `v-anchor` sets `position: fixed` and clears the popover's default centring. On unmount, the element gets back the inline styles it had before, and the anchor loses its `anchor-name`.
+- Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open. An element that is not a popover is re-placed on every scroll and resize.
+- `v-anchor` sets `position: fixed` and clears the popover's default centring. On unmount, the element gets back the inline styles it had before.
+- Several elements can share one anchor, such as a tooltip and a menu on the same button. Each adds its own name to the anchor's `anchor-name` and removes only that name on unmount, so a name you set inline is kept.
 - Popovers are not modal. For a dialog that must keep focus inside, use `<dialog>` or [`v-trap`](/plugins/focus).
 
 ## Coming from Alpine

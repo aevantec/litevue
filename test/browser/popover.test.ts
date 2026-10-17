@@ -80,6 +80,22 @@ describe('v-anchor with CSS anchor positioning', () => {
     await open();
     near(rect('#pop').bottom, rect('button').top - 8);
   });
+
+  test('two elements anchored to one trigger are both placed against it', async () => {
+    await mount(`
+      <div v-scope>
+        <button ref="btn" style="margin: 200px 300px; width: 120px; height: 30px">menu</button>
+        <div id="above" v-anchor.top-start="$refs.btn" style="width: 80px; height: 50px"></div>
+        <div id="below" v-anchor.bottom-start="$refs.btn" style="width: 80px; height: 50px"></div>
+      </div>`);
+    await sleep(20);
+
+    const btn = rect('button');
+    near(rect('#above').bottom, btn.top);
+    near(rect('#above').left, btn.left);
+    near(rect('#below').top, btn.bottom);
+    near(rect('#below').left, btn.left);
+  });
 });
 
 describe('v-anchor without CSS anchor positioning', () => {
