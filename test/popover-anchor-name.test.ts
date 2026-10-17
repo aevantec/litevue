@@ -101,3 +101,29 @@ describe('v-anchor anchor-name', () => {
     expect(names(document.querySelector('#b')!)).toEqual([name]);
   });
 });
+
+describe('v-anchor position with CSS anchor positioning', () => {
+  test('an element that is not a popover is positioned absolutely', async () => {
+    await mount(`
+      <div v-scope>
+        <button ref="btn"></button>
+        <span id="badge" v-anchor="$refs.btn"></span>
+      </div>`);
+
+    expect(
+      (document.querySelector('#badge') as HTMLElement).style.position
+    ).toBe('absolute');
+  });
+
+  test('a popover stays fixed', async () => {
+    await mount(`
+      <div v-scope>
+        <button ref="btn"></button>
+        <div id="pop" popover v-anchor="$refs.btn"></div>
+      </div>`);
+
+    expect((document.querySelector('#pop') as HTMLElement).style.position).toBe(
+      'fixed'
+    );
+  });
+});
