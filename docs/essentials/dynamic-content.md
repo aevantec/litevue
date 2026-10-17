@@ -49,7 +49,9 @@ Replacing markup discards scope state, focus and scroll even when you unmount
 first. If the region is being re-rendered by a server, [`morph`](/plugins/morph)
 patches it in place instead and none of that is lost — see
 [Server-Driven HTML](/essentials/server-driven-html) for the whole loop, with
-recipes for htmx, Turbo and Unpoly.
+recipes for htmx, Turbo and Unpoly. To swap whole pages, the
+[navigate](/plugins/navigate) plugin morphs them and mounts and unmounts their
+scope roots for you.
 :::
 
 Unmounting removes the bindings, not the markup — the elements stay in the
