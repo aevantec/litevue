@@ -24,6 +24,12 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 
 `top`, `bottom` and `left`, `right`, each optionally followed by `-start` or `-end`: `bottom-start` sits below the anchor, aligned to its left edge. The default is `bottom`, centred.
 
+The placement is a modifier, so it is fixed when the element mounts. Each element below is anchored to the same box with a different placement:
+
+<<< ../.vitepress/demos/placements.html{html}
+
+<LiveDemo src="placements" plugins="popover" />
+
 ### Modifiers
 
 | Modifier | Meaning |
@@ -66,6 +72,7 @@ The browser's own `popovertarget` toggles a popover with no expression at all. `
 - `v-popover` adds the `popover` attribute if the element has none, as `popover="auto"`. An auto popover closes others that are open, and closes on Escape or a click outside it.
 - The popover opens in the top layer, above everything else on the page, so no `z-index` is needed.
 - `v-anchor` flips to the opposite side when there is no room, keeping the offset. It does not slide along the edge to stay on screen.
+- With CSS anchor positioning, the browser keeps a flipped side for as long as it still fits, even once the requested side has room again. A popover is placed afresh each time it opens, but an element that is always visible can stay flipped. To turn flipping off for it, add `position-try-fallbacks: none !important` to its CSS; the `!important` is needed to override the inline style `v-anchor` sets.
 - Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open.
 - `v-anchor` sets `position: fixed` and clears the popover's default centring. On unmount, the element gets back the inline styles it had before, and the anchor loses its `anchor-name`.
 - Popovers are not modal. For a dialog that must keep focus inside, use `<dialog>` or [`v-trap`](/plugins/focus).
