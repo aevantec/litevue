@@ -14,7 +14,7 @@ import { navigate } from '@aevantec/litevue/plugins/navigate';
 createApp().use(morphPlugin).use(navigate).mount();
 ```
 
-The plugin ships on its own (~2kb<!-- size:dist/plugins/navigate.iife.js --> gzipped) and is not part of the combined plugins bundle. It needs [morph](/plugins/morph) installed too, which it does not bundle, so a page already using morph carries one copy. From a CDN, load `dist/plugins/navigate.iife.js` after the core and morph; it defines `LiteVueNavigate`.
+The plugin ships on its own (~3kb<!-- size:dist/plugins/navigate.iife.js --> gzipped) and is not part of the combined plugins bundle. It needs [morph](/plugins/morph) installed too, which it does not bundle, so a page already using morph carries one copy. From a CDN, load `dist/plugins/navigate.iife.js` after the core and morph; it defines `LiteVueNavigate`.
 
 ## Options
 
@@ -30,6 +30,7 @@ createApp()
 | `target` | `'body'` | Selector of the region to update. The fetched page must contain it too |
 | `transition` | `false` | Run each navigation inside a [view transition](/plugins/morph#view-transitions) where supported |
 | `scroll` | `true` | Scroll to the top, or to the URL's `#hash`, after navigating |
+| `prefetch` | `false` | Fetch a link's page when the pointer rests on it or it receives focus, so the click renders without waiting. See [Prefetch](#prefetch) |
 
 ## What it intercepts
 
@@ -52,6 +53,29 @@ The browser keeps everything else:
 ```
 
 Mark links to files the same way, or with `download`. A same-origin link to a PDF or an image is fetched first; once the response turns out not to be HTML, the plugin stops downloading it and the browser loads the file again in full.
+
+## Prefetch
+
+With `prefetch: true`, the plugin starts fetching a link's page before it is clicked:
+
+- When the pointer rests on the link for 100ms, or the link receives focus. Moving away sooner fetches nothing, so a pointer crossing the page does not fetch every link it passes.
+- At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger.
+
+```js
+createApp().use(morphPlugin).use(navigate, { prefetch: true }).mount();
+```
+
+A click on that link then uses the response already on its way. One page is held at a time, for 10 seconds; any navigation to the same URL in that window uses it, except a `POST`. After that, or for another URL, the plugin fetches as usual.
+
+Prefetching considers the same links a click would, so a link the plugin leaves to the browser is never prefetched. Neither is a link to the current page. Mark a link `data-navigate="false"` to keep it from being fetched early, such as one whose `GET` has a side effect:
+
+```html
+<a href="/notifications/read-all" data-navigate="false">Mark all read</a>
+```
+
+A prefetch request sends `X-Sec-Purpose: prefetch` alongside `X-Requested-With: litevue`, so a server can skip it in analytics or answer it differently. A response the server sends to a prefetch is the page the user sees if they click, so it must be the same page a navigation would receive.
+
+A prefetch does not set the [loading state](#loading-state) and fires no events. A failed one is ignored; if the user then clicks, the navigation fails as any other would.
 
 ## Keeping state across pages
 
@@ -199,7 +223,8 @@ The plugin works like Turbo Drive or htmx's `hx-boost` on `<body>`: links and fo
 - The swap is a morph, not a replacement, so matching elements keep their scope, focus and state.
 - Both merge the head. Turbo removes a stylesheet the next page lacks only when it is marked `data-turbo-track="dynamic"`; here every unshared one is removed unless marked `data-navigate-preserve`, as with htmx's head-support extension.
 - Turbo reloads on changed assets only when they are marked `data-turbo-track="reload"`; here the marker is `data-navigate-track`.
-- There is no page cache, prefetching or frames. The busy state and the events let you add a progress indicator.
+- There is no page cache or frames. The busy state and the events let you add a progress indicator.
+- Prefetching is off by default. Turbo prefetches on hover unless a page opts out; here `prefetch: true` opts in, with the same 100ms pause and 10-second reuse window.
 
 ## Related
 
