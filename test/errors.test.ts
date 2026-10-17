@@ -345,3 +345,31 @@ describe('handler registry lifecycle', () => {
     expect(seen[0].info.source).toBe('plugin');
   });
 });
+
+describe('invalid selectors in markup', () => {
+  test('a v-teleport selector that does not parse is reported, and the rest binds', async () => {
+    const { root } = mount(
+      `<div v-scope="{ x: 1 }"><p id="t" v-teleport="#a[">t</p><b>{{ x }}</b></div>`
+    );
+    await tick();
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info.phase).toBe('directive');
+    expect(seen[0].info.source).toBe('v-teleport');
+    // left where it was written
+    expect(root.querySelector('#t')).not.toBe(null);
+    expect(root.querySelector('b')!.textContent).toBe('1');
+  });
+
+  test('a $template selector that does not parse is reported, and the rest binds', async () => {
+    const { root } = mount(
+      `<div v-scope="{ x: 1 }"><i v-scope="{ $template: '#t[' }"></i><b>{{ x }}</b></div>`
+    );
+    await tick();
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info.phase).toBe('directive');
+    expect(seen[0].info.source).toBe('v-scope');
+    expect(root.querySelector('b')!.textContent).toBe('1');
+  });
+});

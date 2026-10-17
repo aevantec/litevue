@@ -228,7 +228,9 @@ up once, when the element mounts, so it must already be in the document. See
 
 A `$template` beginning with `#` is read as a selector for a `<template>`
 element. When nothing matches, the element is left empty. Check the id, and
-that the `<template>` is in the document before the scope mounts. See
+that the `<template>` is in the document before the scope mounts. A selector
+that does not parse, such as `#card[`, is reported to `app.onError()` instead,
+with the same result. See
 [Reusable templates](/essentials/components#reusable-templates).
 
 ## Components

@@ -100,7 +100,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     // with them; removed from the target when the owning block unmounts.
     let teleportNext: ChildNode | null | undefined;
     if ((exp = checkAttr(el, 'v-teleport'))) {
-      const target = document.querySelector(exp);
+      const target = query(exp, el, 'v-teleport');
       if (target) {
         // hand the parent's child walk its original next sibling — after
         // the move, el.nextSibling points into the target instead
@@ -110,7 +110,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
         (el as any).__teleported = true;
         target.appendChild(el);
         ctx.cleanups.push(() => el.remove());
-      } else if (import.meta.env.DEV) {
+      } else if (import.meta.env.DEV && target === null) {
         console.error(`v-teleport target "${exp}" not found.`);
       }
     }
@@ -138,9 +138,10 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       }
     }
 
-    // v-once
-    const hasVOnce = checkAttr(el, 'v-once') != null;
-    if (hasVOnce) {
+    // v-once; restored on exit rather than cleared, so a nested v-once
+    // cannot end the region around it
+    const wasOnce = inOnce;
+    if (checkAttr(el, 'v-once') != null) {
       inOnce = true;
     }
 
@@ -171,9 +172,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       processDirective(el, name, value, ctx);
     }
 
-    if (hasVOnce) {
-      inOnce = false;
-    }
+    inOnce = wasOnce;
     return teleportNext;
   } else if (type === 3) {
     // Text
@@ -312,14 +311,26 @@ const applyDirective = (
   }
 };
 
+/**
+ * `querySelector` for a selector written in markup. One that does not parse is
+ * reported and yields undefined, rather than throwing out of `mount()`.
+ */
+const query = (sel: string, el: Element, source: string) => {
+  try {
+    return document.querySelector(sel);
+  } catch (e) {
+    handleError(e, { phase: 'directive', source, el, expression: sel });
+  }
+};
+
 const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
-    const templateEl = document.querySelector(template);
+    const templateEl = query(template, el, 'v-scope');
     // Returning matters in production, where the warning below is stripped:
     // without it a missing selector reaches `.content` and throws with no
     // diagnostic at all.
     if (!templateEl) {
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV && templateEl === null) {
         console.error(
           `template selector ${template} has no matching <template> element.`
         );

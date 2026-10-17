@@ -7,6 +7,7 @@ import {
   isPlainObject,
   hyphenate,
   camelize,
+  parseStringStyle,
 } from '@vue/shared';
 
 const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
@@ -20,9 +21,10 @@ export const bind: Directive<Element & { _class?: string | null }> = ({
 }) => {
   let prevValue: any;
 
-  // record static class; the attribute, since an SVG element's className is
-  // an SVGAnimatedString, not a string
-  if (arg === 'class') {
+  // record static class, for the object form too, and once: a second binding
+  // would read back the first one's classes. The attribute, since an SVG
+  // element's className is an SVGAnimatedString, not a string
+  if ((!arg || arg === 'class') && !('_class' in el)) {
     el._class = el.getAttribute('class');
   }
 
@@ -61,24 +63,18 @@ const setProp = (
       normalizeClass(el._class ? [el._class, value] : value) || ''
     );
   } else if (key === 'style') {
-    value = normalizeStyle(value);
+    // per property, never the whole attribute, so static styles and v-show's
+    // display survive the binding changing or clearing
     const { style } = el as HTMLElement;
-    if (!value) {
-      el.removeAttribute('style');
-    } else if (isString(value)) {
-      if (value !== prevValue) style.cssText = value;
-    } else {
-      for (const key in value) {
-        setStyle(style, key, value[key]);
-      }
-      if (prevValue && !isString(prevValue)) {
-        for (const key in prevValue) {
-          if (value[key] == null) {
-            setStyle(style, key, '');
-          }
-        }
-      }
+    const next = toStyle(value);
+    const prev = toStyle(prevValue);
+    for (const key in next) {
+      setStyle(style, key, next[key]);
     }
+    for (const key in prev) {
+      if (next[key] == null) setStyle(style, key, '');
+    }
+    if (!style.cssText) el.removeAttribute('style');
   } else if (
     !(el instanceof SVGElement) &&
     key in el &&
@@ -109,6 +105,11 @@ const setProp = (
     }
   }
 };
+
+const toStyle = (value: any): Record<string, any> =>
+  isString((value = normalizeStyle(value)))
+    ? parseStringStyle(value)
+    : value || {};
 
 const importantRE = /\s*!important$/;
 
