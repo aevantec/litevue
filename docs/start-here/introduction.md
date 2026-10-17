@@ -143,7 +143,7 @@ The core stays small because everything else is opt-in and separately bundled:
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
 | Core                              | ~10kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
-| [Plugins](/plugins/)              | ~4kb<!-- size:dist/litevue-plugins.iife.js --> (nine, combined) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
+| [Plugins](/plugins/)              | ~5kb<!-- size:dist/litevue-plugins.iife.js --> (nine, combined) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [popover](/plugins/popover)       | ~1kb<!-- size:dist/plugins/popover.iife.js --> | menus and tooltips; ships only on its own                         |
 | [navigate](/plugins/navigate)     | ~3kb<!-- size:dist/plugins/navigate.iife.js --> | page navigation without a full load; ships only on its own, needs morph |
 | [Devtools panel](/devtools/panel) | ~7kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |

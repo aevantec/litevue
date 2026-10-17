@@ -83,6 +83,21 @@ persistStore('cart', { storage: 'session' }); // sessionStorage instead
 ## Behavior
 
 - Registering a name again replaces the store and runs its `init()` again.
+- A store belongs to no app, so an error in `init()` does not reach [`app.onError()`](/essentials/error-handling#app-onerror). A throw comes out of the `store()` call, and an `async init()` that rejects is an unhandled rejection. Catch inside `init()` when it can fail:
+
+  ```js
+  store('session', {
+    user: null,
+    error: null,
+    async init() {
+      try {
+        this.user = await fetch('/api/me').then((r) => r.json());
+      } catch (e) {
+        this.error = e;
+      }
+    },
+  });
+  ```
 - A store registered after mount still reaches expressions that already reference it.
 - Getters are reactive but not cached; they run on every read. Use [`computed()`](/globals/computed) for expensive derivations.
 - Stores appear in the [inspector panel](/devtools/panel) under the Stores tab.

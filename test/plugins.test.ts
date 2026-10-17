@@ -161,6 +161,75 @@ describe('intersect plugin', () => {
     app.unmount();
     vi.unstubAllGlobals();
   });
+
+  // entries shaped as the spec delivers them: one on observe(), then one per
+  // threshold crossing, with isIntersecting true for any overlap at all
+  const observe = async (attr: string) => {
+    const instances: any[] = [];
+    class IOStub {
+      cb: any;
+      constructor(cb: any) {
+        this.cb = cb;
+        instances.push(this);
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('IntersectionObserver', IOStub);
+    document.body.innerHTML = `<div id="app" v-scope="{ runs: 0 }">
+      <div ${attr}="runs++"></div>
+    </div>`;
+    const { createApp, devtools } = await import('../src');
+    const app = createApp().use(intersect);
+    app.mount('#app');
+    await tick();
+    const scope = devtools.getScope(document.querySelector('#app')!)!;
+    const entry = (ratio: number) =>
+      instances[0].cb([
+        { isIntersecting: ratio > 0, intersectionRatio: ratio },
+      ]);
+    const done = () => {
+      app.unmount();
+      vi.unstubAllGlobals();
+    };
+    return { scope, entry, done };
+  };
+
+  test('.leave waits until the element has been in view', async () => {
+    const { scope, entry, done } = await observe('v-intersect.leave');
+    entry(0); // the initial entry, for an element below the fold
+    expect(scope.runs).toBe(0);
+    entry(0.5);
+    expect(scope.runs).toBe(0);
+    entry(0);
+    expect(scope.runs).toBe(1);
+    done();
+  });
+
+  test('.full runs only when the whole element is visible', async () => {
+    const { scope, entry, done } = await observe('v-intersect.full');
+    entry(0.5); // partly visible at mount
+    expect(scope.runs).toBe(0);
+    entry(1);
+    expect(scope.runs).toBe(1);
+    entry(0.6); // scrolled partly out again
+    expect(scope.runs).toBe(1);
+    entry(1);
+    expect(scope.runs).toBe(2);
+    done();
+  });
+
+  test('.full.leave runs once the element stops being fully visible', async () => {
+    const { scope, entry, done } = await observe('v-intersect.full.leave');
+    entry(0.5);
+    expect(scope.runs).toBe(0);
+    entry(1);
+    entry(0.6);
+    expect(scope.runs).toBe(1);
+    entry(0); // already left; leaving the viewport too is not a second leave
+    expect(scope.runs).toBe(1);
+    done();
+  });
 });
 
 describe('transition plugin', () => {
@@ -193,6 +262,64 @@ describe('transition plugin', () => {
     await sleep(20);
     expect(box.className).toBe('');
     app.unmount();
+  });
+
+  // as v-show does: showing restores the element's own inline display
+  test('keeps an inline display the author wrote', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ open: true }">
+      <div id="box" style="display: flex" v-transition="open"></div>
+    </div>`;
+    const { createApp } = await import('../src');
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const box = document.querySelector('#box') as HTMLElement;
+    expect(box.style.display).toBe('flex');
+
+    const scope = (document.querySelector('#app') as any).__ctx.scope;
+    scope.open = false;
+    await tick();
+    await sleep(20);
+    expect(box.style.display).toBe('none');
+
+    scope.open = true;
+    await tick();
+    expect(box.style.display).toBe('flex');
+    app.unmount();
+  });
+
+  // the end timer is cancelled on teardown, so nothing else would remove them
+  test('removes its classes when unmounted mid-transition', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ open: true }">
+      <div id="box" v-transition:fade="open"></div>
+    </div>`;
+    const { createApp } = await import('../src');
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const box = document.querySelector('#box') as HTMLElement;
+    const scope = (document.querySelector('#app') as any).__ctx.scope;
+    scope.open = false;
+    await tick();
+    expect(box.classList.contains('fade-leave-active')).toBe(true);
+
+    app.unmount();
+    expect(box.className).toBe('');
+  });
+
+  test('removes its classes when unmounted mid-enter in unmount mode', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ open: true }">
+      <p id="row" v-if="open" v-transition:fade></p>
+    </div>`;
+    const { createApp } = await import('../src');
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const row = document.querySelector('#row') as HTMLElement;
+    expect(row.classList.contains('fade-enter-active')).toBe(true);
+
+    app.unmount();
+    expect(row.className).toBe('');
   });
 });
 

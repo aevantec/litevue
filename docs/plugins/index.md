@@ -30,7 +30,7 @@ createApp().use(mask).mount();
 | [resize](/plugins/resize) | `v-resize` | Reacting to an element's size, or the window's |
 | [transition](/plugins/transition) | `v-transition` | Enter and leave animations |
 
-The combined bundle holds every plugin except popover and navigate: all nine together are ~4kb<!-- size:dist/litevue-plugins.iife.js --> gzipped. Popover and navigate ship only on their own, so pages that do not use them never pay for them.
+The combined bundle holds every plugin except popover and navigate: all nine together are ~5kb<!-- size:dist/litevue-plugins.iife.js --> gzipped. Popover and navigate ship only on their own, so pages that do not use them never pay for them.
 
 ## Installing
 

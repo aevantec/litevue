@@ -11,12 +11,17 @@ import type { Plugin } from '../../app';
  */
 export const intersect: Plugin = (app) => {
   app.directive('intersect', ({ el, get, modifiers }) => {
+    // isIntersecting is true for any overlap whatever the threshold, and the
+    // first entry arrives on observe(), so track the state and act on changes
+    let seen = false;
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          const hit = modifiers?.leave
-            ? !entry.isIntersecting
+          const now = modifiers?.full
+            ? entry.intersectionRatio >= 1
             : entry.isIntersecting;
+          const hit = modifiers?.leave ? seen && !now : now && !seen;
+          seen = now;
           if (hit) {
             get();
             if (modifiers?.once) observer.disconnect();
