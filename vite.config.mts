@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import tailwindcss from '@tailwindcss/vite';
 import { trimReactivity } from './trim-reactivity.mts';
 
 // `--mode dev-bundle` builds the published development files: warnings kept,
@@ -7,7 +8,12 @@ import { trimReactivity } from './trim-reactivity.mts';
 export default defineConfig(({ command, mode }) => {
   const dev = mode === 'dev-bundle';
   return {
-    plugins: [trimReactivity()],
+    // Tailwind styles the dev server's page index only; the library build has
+    // no CSS
+    plugins: [
+      trimReactivity(),
+      ...(command === 'serve' ? [tailwindcss()] : []),
+    ],
     // pre-bundling runs esbuild, which skips plugin transforms
     optimizeDeps: { exclude: ['@vue/reactivity'] },
     // vite 3+ preserves process.env.NODE_ENV in lib builds, but the

@@ -1,0 +1,12 @@
+/* compiled by @tailwindcss/vite in the dev server only; the pages in the frame
+   keep their own styles, so nothing here reaches them */
+@import 'tailwindcss' source(none);
+@source '../index.html';
+@source './';
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --color-brand-500: #42b883;
+  --color-brand-600: #33a06f;
+}
