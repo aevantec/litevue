@@ -19,8 +19,11 @@ export const collapse: Plugin = (app) => {
     // Restored on teardown: app.unmount(el) leaves the element in the
     // document, so a style left behind keeps acting on it — a region
     // collapsed at unmount would stay at height 0 with nothing to reopen it.
-    const owned = ['overflow', 'height', 'transition'] as const;
+    const owned = ['overflow', 'height', 'transition', 'visibility'] as const;
     const before = owned.map((k) => elem.style[k]);
+    // a height of 0 leaves content in the tab order and the accessibility tree
+    const hide = (hidden: boolean) =>
+      (elem.style.visibility = hidden ? 'hidden' : before[3]);
     elem.style.overflow = 'hidden';
     let first = true;
     let seq = 0;
@@ -41,12 +44,15 @@ export const collapse: Plugin = (app) => {
       if (first) {
         first = false;
         if (!show) elem.style.height = '0px';
-        // enable the transition only after the initial state is applied
+        hide(!show);
+        // enable the transition only after the initial state is applied;
+        // visibility switches at the end of a collapse, at the start of an expand
         later(() => {
-          elem.style.transition = `height ${duration}ms ease`;
+          elem.style.transition = `height ${duration}ms ease, visibility ${duration}ms`;
         });
         return;
       }
+      hide(!show);
       if (show) {
         elem.style.height = elem.scrollHeight + 'px';
         later(() => {

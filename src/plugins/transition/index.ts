@@ -83,20 +83,23 @@ export const transition: Plugin = (app) => {
       return () => {
         live = false;
         clearTimeout(endTimer);
+        clear();
         delete (elem as any).__leave;
       };
     }
 
+    // as v-show does, so showing restores an inline display such as flex
+    const display = elem.style.display;
     effect(() => {
       const show = !!get();
       if (first) {
         first = false;
-        elem.style.display = show ? '' : 'none';
+        elem.style.display = show ? display : 'none';
         if (show && modifiers?.appear) run('enter');
         return;
       }
       if (show) {
-        elem.style.display = '';
+        elem.style.display = display;
         run('enter');
       } else {
         run('leave', () => {
@@ -105,8 +108,10 @@ export const transition: Plugin = (app) => {
       }
     });
 
-    // the expression form returned nothing, so a transition still running when
-    // the region unmounted kept its timer
-    return () => clearTimeout(endTimer);
+    // the end timer is what removes the classes, so cancelling it must too
+    return () => {
+      clearTimeout(endTimer);
+      clear();
+    };
   });
 };

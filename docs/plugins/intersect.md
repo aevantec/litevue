@@ -22,7 +22,7 @@ createApp({ seen: false }).use(intersect).mount();
 | Modifier | Meaning |
 | --- | --- |
 | `.once` | Stop observing after the first run |
-| `.leave` | Run when the element leaves the viewport instead |
+| `.leave` | Run when the element leaves the viewport instead. An element that starts out of view runs nothing until it has been in view |
 | `.full` | Only when the whole element is visible |
 
 ## Examples
@@ -42,7 +42,8 @@ createApp({ seen: false }).use(intersect).mount();
 
 - Backed by one `IntersectionObserver` per element, relative to the viewport.
 - The observer disconnects when the element unmounts.
-- Modifiers combine: `.once.full` runs once, the first time the element is fully visible.
+- Modifiers combine: `.once.full` runs once, the first time the element is fully visible, and `.full.leave` runs when an element that was fully visible stops being so.
+- An element taller than the viewport is never fully visible, so `.full` never runs for it.
 - To leave a whole region unbound until it scrolls into view, use [`v-scope.visible`](/directives/v-scope#mounting-on-demand) instead; it needs no plugin.
 
 ## Related
