@@ -108,3 +108,49 @@ describe('v-focus', () => {
     expect(document.activeElement).toBe(other);
   });
 });
+
+describe('v-trap', () => {
+  // the trap wraps only from the last element it counts; one the browser
+  // skips would let Tab leave the dialog
+  test('wraps from the last visible field past hidden ones', async () => {
+    document.body.innerHTML = `
+      <div id="app" v-scope="{ on: true }">
+        <div v-trap="on">
+          <button id="first">first</button>
+          <input id="last" />
+          <button style="display: none">gone</button>
+          <div style="visibility: hidden"><button>invisible</button></div>
+          <button v-show="false">shown never</button>
+        </div>
+      </div>`;
+    const app = createApp().use(focus);
+    app.mount('#app');
+    await tick(5);
+
+    const last = document.getElementById('last')!;
+    last.focus();
+    const e = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    last.dispatchEvent(e);
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+    app.unmount();
+  });
+
+  test("focuses a details element's summary", async () => {
+    document.body.innerHTML = `
+      <div id="app" v-scope="{ on: true }">
+        <div v-trap="on">
+          <details><summary id="s">More</summary>text</details>
+        </div>
+      </div>`;
+    const app = createApp().use(focus);
+    app.mount('#app');
+    await tick(5);
+    expect(document.activeElement!.id).toBe('s');
+    app.unmount();
+  });
+});
