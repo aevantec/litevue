@@ -728,6 +728,148 @@ describe('navigate: loading state', () => {
   });
 });
 
+describe('navigate: prefetch', () => {
+  const PAUSE = 120;
+  const fire = (el: Element, type: string) =>
+    el.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+  const purposes = () =>
+    fetchMock.mock.calls.map(
+      ([, init]) => (init?.headers as any)?.['X-Sec-Purpose'] ?? 'navigate'
+    );
+
+  test('is off unless asked for', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>');
+
+    fire(document.querySelector('a')!, 'pointerover');
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('hovering a link fetches it, and a click uses that response', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    fire(a, 'pointerover');
+    await sleep(PAUSE);
+    expect(purposes()).toEqual(['prefetch']);
+
+    click(a);
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+  });
+
+  test('leaving before the pause fetches nothing', async () => {
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    fire(a, 'pointerover');
+    fire(a, 'pointerout');
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('pointerdown and keyboard focus prefetch too', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>',
+      {
+        prefetch: true,
+      }
+    );
+
+    fire(document.querySelector('#a')!, 'pointerdown');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    (document.querySelector('#b') as HTMLElement).focus();
+    await sleep(PAUSE);
+
+    expect(fetchMock.mock.calls.map(([url]) => new URL(url).pathname)).toEqual([
+      '/a',
+      '/b',
+    ]);
+  });
+
+  test('skips links a click would leave to the browser, and the current page', async () => {
+    await start(
+      `<a href="/off" data-navigate="false">off</a>
+       <a href="/file.csv" download>file</a>
+       <a href="https://example.com/x">away</a>
+       <a href="/x" target="_blank">tab</a>
+       <a href="#top">top</a>
+       <a href="/">here</a><main></main>`,
+      { prefetch: true }
+    );
+
+    document.querySelectorAll('a').forEach((a) => fire(a, 'pointerdown'));
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('a click on another link fetches its own page', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>',
+      {
+        prefetch: true,
+      }
+    );
+
+    fire(document.querySelector('#a')!, 'pointerdown');
+    click(document.querySelector('#b')!);
+    await settle();
+
+    expect(purposes()).toEqual(['prefetch', 'navigate']);
+    expect(document.querySelector('main')!.textContent).toBe('b');
+  });
+
+  test('a prefetch older than ten seconds is fetched again', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1_000);
+    fire(document.querySelector('a')!, 'pointerdown');
+
+    now.mockReturnValue(12_000);
+    click(document.querySelector('a')!);
+    await settle();
+    now.mockRestore();
+
+    expect(purposes()).toEqual(['prefetch', 'navigate']);
+  });
+
+  test('a prefetch that fails is not an unhandled rejection', async () => {
+    // no reply for /gone, so fetch rejects
+    await start('<a href="/gone">gone</a><main></main>', { prefetch: true });
+
+    fire(document.querySelector('a')!, 'pointerdown');
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('unmounting stops prefetching', async () => {
+    const app = await start('<a href="/two">two</a><main></main>', {
+      prefetch: true,
+    });
+    app.unmount();
+    current = undefined;
+
+    fire(document.querySelector('a')!, 'pointerdown');
+    fire(document.querySelector('a')!, 'pointerover');
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe('navigate: history', () => {
   test('back re-fetches the previous page and restores its scroll', async () => {
     replies['/'] = {
