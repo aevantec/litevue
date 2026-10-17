@@ -235,12 +235,6 @@ h1 .VPBadge {
   color: var(--vp-c-text-2);
   font-size: 13px;
 }
-/* the demos show the placement asked for: Chromium keeps a flip made while
-   the demo was off screen, even once the requested side fits again */
-.live-demo-body .placement-demo .anchor-badge,
-.live-demo-body .anchor-demo .anchor-badge {
-  position-try-fallbacks: none !important;
-}
 .live-demo-body .anchor-badge {
   padding: 2px 8px;
   border-radius: 6px;
