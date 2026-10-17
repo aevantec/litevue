@@ -88,8 +88,9 @@ export const transition: Plugin = (app) => {
       };
     }
 
-    // as v-show does, so showing restores an inline display such as flex
-    const display = elem.style.display;
+    // as v-show does, so showing restores an inline display such as flex,
+    // but not a none that only hid the element until mount
+    const display = elem.style.display == 'none' ? '' : elem.style.display;
     effect(() => {
       const show = !!get();
       if (first) {

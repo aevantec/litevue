@@ -362,3 +362,41 @@ describe('v-bind and style objects mutated in place', () => {
     expect(($('i') as HTMLElement).style.width).toBe('10px');
   });
 });
+
+describe('v-show over an inline display: none', () => {
+  test('shows when true, hides again when false', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ on: true }">
+        <p style="display: none" v-show="on">x</p>
+        <button @click="on = !on"></button>
+      </div>`
+    );
+    expect($('p').style.display).toBe('');
+    $('button').click();
+    await tick();
+    expect($('p').style.display).toBe('none');
+  });
+
+  test('keeps any other inline display', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ on: true }"><p style="display: flex" v-show="on">x</p></div>`
+    );
+    expect($('p').style.display).toBe('flex');
+  });
+});
+
+describe('v-model with no value', () => {
+  test('undefined and null render an empty input, and a value can follow', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ form: { b: null } }">
+        <input id="a" v-model="form.a" /><textarea v-model="form.b"></textarea>
+        <button @click="form.a = 'x'"></button>
+      </div>`
+    );
+    expect(($('#a') as HTMLInputElement).value).toBe('');
+    expect(($('textarea') as HTMLTextAreaElement).value).toBe('');
+    $('button').click();
+    await tick();
+    expect(($('#a') as HTMLInputElement).value).toBe('x');
+  });
+});

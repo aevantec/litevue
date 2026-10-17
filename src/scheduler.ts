@@ -16,7 +16,8 @@ const stopped = new WeakSet<object>();
 /** Stops an effect and remembers that it is stopped. Use instead of `stop`. */
 export const stopEffect = (runner: ReactiveEffectRunner) => {
   stopped.add(runner);
-  stop(runner);
+  // under v-once an effect is a plain queued function, with nothing to stop
+  if (runner.effect) stop(runner);
 };
 
 let queued = false;

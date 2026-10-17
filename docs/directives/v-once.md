@@ -26,7 +26,7 @@ No value, argument or modifiers.
 
 ## Behavior
 
-- Applies to the element and its whole subtree.
+- Applies to the element and its whole subtree. A `v-once` nested inside another changes nothing; the whole outer region stays static.
 - Event listeners inside still work; only rendering is frozen.
 - Use it for content that is static after the first render, to skip tracking it.
 

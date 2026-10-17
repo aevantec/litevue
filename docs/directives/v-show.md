@@ -36,7 +36,7 @@ finishes — do not put both directives on one element.
 
 ## Behavior
 
-- Hiding sets inline `display: none`; showing restores the element's previous inline value.
+- Hiding sets inline `display: none`; showing restores the element's previous inline value. An initial `style="display: none"` is treated as hiding the element until mount, so showing clears it rather than restoring it.
 - The subtree stays mounted. Effects, watchers and listeners keep running, and no lifecycle hooks fire on toggle.
 - Cheaper than [`v-if`](/directives/v-if) for frequent toggles, but the hidden content is still in the DOM and still reachable.
 - Needs a real element. Use `v-if` on a `<template>`.

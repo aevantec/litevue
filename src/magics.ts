@@ -51,6 +51,5 @@ export const createWatch =
       }
       init = true;
     });
-    // inside v-once the effect ran once and is a plain function, not a runner
-    return () => runner.effect && stopEffect(runner);
+    return () => stopEffect(runner);
   };
