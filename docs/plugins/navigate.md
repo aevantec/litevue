@@ -71,6 +71,10 @@ Two pages whose `<main v-scope="…">` has no `id`, or the same one, are matched
 
 To keep a client-only element that the next page does not contain, such as a toast or a chat widget, mark it `data-morph-preserve`, as with [morph](/plugins/morph#a-widget-the-client-owns).
 
+### Stores live across pages
+
+A [store](/globals/store) belongs to the app, not to a page, so its state survives every navigation. That suits state the whole site shares, such as a cart or a signed-in user. State that belongs to one page belongs in that page's `v-scope`, which starts fresh when the page's root is replaced.
+
 ## Forms
 
 A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
@@ -78,6 +82,22 @@ A `GET` form navigates to its `action` with the fields as the query string. A `P
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
 While a form's `POST` is in flight, further submits of that form are ignored, so a double click sends one request. A `GET` form submitted again restarts with the newer values, so a search always shows the latest query.
+
+## Loading state
+
+While a navigation is in flight, `<html>` carries `aria-busy="true"`, and so does the form that started it. Both are removed when the new page is in place or the navigation fails. Style the wait with CSS:
+
+```css
+html[aria-busy='true'] {
+  cursor: progress;
+}
+
+form[aria-busy='true'] button {
+  opacity: 0.6;
+}
+```
+
+`aria-busy` also tells assistive technology that the region is updating. When one navigation replaces another, the busy state passes to the newer one, so it never flickers off in between.
 
 ## The head
 
@@ -112,7 +132,7 @@ Each fires on `document`, with `event.detail.url`:
 
 | Event | When |
 | --- | --- |
-| `navigate:before` | Before fetching. Call `preventDefault()` to cancel and leave the browser to it |
+| `navigate:before` | Before fetching. For a link or a form, call `preventDefault()` to stay on the current page. Back and forward have already changed the URL, so they cannot be cancelled |
 | `navigate:after` | After the new page is in place |
 | `navigate:error` | When a navigation fails; `detail.error` says why. A `GET` then falls back to a full load |
 
@@ -120,6 +140,28 @@ Each fires on `document`, with `event.detail.url`:
 document.addEventListener('navigate:before', () => progress.start());
 document.addEventListener('navigate:after', () => progress.done());
 ```
+
+### Unsaved changes
+
+`beforeunload` does not fire for a navigation that stays on the page. To warn before leaving a form with unsaved changes, cancel `navigate:before`, and keep `beforeunload` for a full load or a closed tab:
+
+```js
+let dirty = false;
+form.addEventListener('input', () => (dirty = true));
+form.addEventListener('submit', () => (dirty = false));
+
+document.addEventListener('navigate:before', (event) => {
+  if (dirty && !confirm('Leave without saving your changes?')) {
+    event.preventDefault();
+  }
+});
+
+addEventListener('beforeunload', (event) => {
+  if (dirty) event.preventDefault();
+});
+```
+
+Back and forward cannot be held this way, since the URL has already changed when `navigate:before` fires.
 
 ## Behavior
 
@@ -130,12 +172,25 @@ document.addEventListener('navigate:after', () => progress.done());
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
-- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount. There is no page cache.
+- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
+- There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
 - On full unmount, the plugin stops intercepting and removes its live region.
 
 ## Security
 
 Morph initialises the directives in the markup it inserts, so a navigation evaluates expressions from the fetched page. That trusts the page as much as a full load of it would, and no more: the plugin fetches only same-origin URLs, checks the final URL after redirects, accepts only `text/html`, and never runs `<script>` elements from the response. Inline event handler attributes in the response do run, as on a full load. See [Security](/start-here/security#morph-and-server-rendered-updates).
+
+### CSRF tokens
+
+The head merge replaces a `<meta name="csrf-token">` whose value changed, and a hidden token field in a form is patched like any other markup. Code that read the token once at start-up keeps the old value, so read it when sending each request:
+
+```js
+const csrf = () => document.querySelector('meta[name="csrf-token"]').content;
+```
+
+### Content Security Policy
+
+A nonce is valid only for the response that issued it. A fetched page's inline `<style nonce="…">` carries its own response's nonce, which the current page's policy does not allow, so the browser blocks it. Load page styles from stylesheets with `<link>`, which a `style-src 'self'` policy allows without a nonce. Fetched `<script>` elements never run, so their nonces do not matter.
 
 ## Coming from Turbo or htmx
 
@@ -144,7 +199,7 @@ The plugin works like Turbo Drive or htmx's `hx-boost` on `<body>`: links and fo
 - The swap is a morph, not a replacement, so matching elements keep their scope, focus and state.
 - Both merge the head. Turbo removes a stylesheet the next page lacks only when it is marked `data-turbo-track="dynamic"`; here every unshared one is removed unless marked `data-navigate-preserve`, as with htmx's head-support extension.
 - Turbo reloads on changed assets only when they are marked `data-turbo-track="reload"`; here the marker is `data-navigate-track`.
-- There is no page cache, prefetching, progress bar or frames. The events let you add a progress bar.
+- There is no page cache, prefetching or frames. The busy state and the events let you add a progress indicator.
 
 ## Related
 

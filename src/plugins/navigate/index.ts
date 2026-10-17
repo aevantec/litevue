@@ -115,6 +115,13 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   let controller: AbortController | undefined;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
+  // the document, and the form that started it, while a request is in flight;
+  // a newer navigation takes the state over from an older one
+  let busy: Element[] = [];
+  const setBusy = (els: Element[]) => {
+    busy.forEach((el) => el.removeAttribute('aria-busy'));
+    (busy = els).forEach((el) => el.setAttribute('aria-busy', 'true'));
+  };
   // the browser would restore scroll onto the outgoing page before the next
   // one arrives; navigate restores it after rendering instead
   const restoration = history.scrollRestoration;
@@ -173,10 +180,17 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     emit('after', { url: url.href });
   };
 
-  const go = async (href: string, init: RequestInit = {}, y?: number) => {
-    if (!emit('before', { url: href }, true)) return;
+  const go = async (
+    href: string,
+    init: RequestInit = {},
+    form?: Element,
+    y?: number
+  ) => {
+    // back and forward have already changed the URL, so they cannot be undone
+    if (!emit('before', { url: href }, y == null)) return;
     controller?.abort();
     const c = (controller = new AbortController());
+    setBusy([document.documentElement, form!].filter(Boolean));
     const post = init.method === 'POST';
     // remembered so back can restore it
     if (y == null) history.replaceState({ ...history.state, y: scrollY }, '');
@@ -233,6 +247,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       emit('error', { url: href, error });
       // replaying a POST as a GET would be wrong; the form stays as it was
       if (!post) location.assign(href);
+    } finally {
+      c === controller && setBusy([]);
     }
   };
 
@@ -273,19 +289,23 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // the server would get both: aborting a request does not unsend it
       if (posting.has(form)) return;
       posting.add(form);
-      return go(url.href, {
-        method: 'POST',
-        body: type === 'multipart/form-data' ? data : encode(data),
-      }).finally(() => posting.delete(form));
+      return go(
+        url.href,
+        {
+          method: 'POST',
+          body: type === 'multipart/form-data' ? data : encode(data),
+        },
+        form
+      ).finally(() => posting.delete(form));
     }
     url.search = encode(data).toString();
-    go(url.href);
+    go(url.href, {}, form);
   };
 
   const onPop = (e: PopStateEvent) => {
     // a hash change within the rendered page is the browser's
     if (pathOf(location) === rendered) return;
-    go(location.href, {}, e.state?.y || 0);
+    go(location.href, {}, undefined, e.state?.y || 0);
   };
 
   document.addEventListener('click', onClick);
@@ -297,6 +317,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     document.removeEventListener('submit', onSubmit);
     removeEventListener('popstate', onPop);
     history.scrollRestoration = restoration;
+    setBusy([]);
     status.remove();
   };
 };
