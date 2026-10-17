@@ -20,9 +20,17 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 | `v-popover="expression"` | Shows the popover while truthy. Closing it natively, with Escape or a click outside, sets the expression to `false` |
 | `v-anchor.<placement>="element"` | Positions this element against `element`, usually a [`$refs`](/magics/refs) entry |
 
+`v-anchor` works on any element, not only a popover, and needs no `v-popover`. Its value is reactive: when the expression points at another element, the anchored element moves there. While the value is `null`, such as a `$refs` entry that has not rendered yet, the element is not anchored to anything.
+
 ### Placements
 
 `top`, `bottom` and `left`, `right`, each optionally followed by `-start` or `-end`: `bottom-start` sits below the anchor, aligned to its left edge. The default is `bottom`, centred.
+
+The placement is a modifier, so it is fixed when the element mounts. Each element below is anchored to the same box with a different placement:
+
+<<< ../.vitepress/demos/placements.html{html}
+
+<LiveDemo src="placements" plugins="popover" />
 
 ### Modifiers
 
@@ -32,32 +40,23 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 
 ## Examples
 
-### Menu
+### Menu and tooltip
 
-```html
-<div v-scope="{ open: false }">
-  <button ref="trigger" @click="open = !open">Account</button>
-  <nav v-popover="open" v-anchor.bottom-start.offset-4="$refs.trigger">
-    <a href="/profile">Profile</a>
-    <a href="/settings">Settings</a>
-  </nav>
-</div>
-```
+<<< ../.vitepress/demos/popover.html{html}
+
+<LiveDemo src="popover" plugins="popover" />
 
 Escape, a click outside and a second click on the trigger all close the menu, and `open` follows. Focus returns to the trigger when the menu closes.
 
-### Tooltip
-
-```html
-<span v-scope="{ tip: false }">
-  <button ref="help" @mouseenter="tip = true" @mouseleave="tip = false">?</button>
-  <span popover="manual" v-popover="tip" v-anchor.top.offset-6="$refs.help">
-    Saved drafts expire after 30 days.
-  </span>
-</span>
-```
-
 `popover="manual"` keeps the tooltip from closing a menu that is already open, and from closing on a click elsewhere.
+
+### Anchoring any element
+
+`v-anchor` needs no popover. Here a plain element follows whichever button the expression points at:
+
+<<< ../.vitepress/demos/anchor.html{html}
+
+<LiveDemo src="anchor" plugins="popover" />
 
 ### Without state
 
@@ -75,8 +74,9 @@ The browser's own `popovertarget` toggles a popover with no expression at all. `
 - `v-popover` adds the `popover` attribute if the element has none, as `popover="auto"`. An auto popover closes others that are open, and closes on Escape or a click outside it.
 - The popover opens in the top layer, above everything else on the page, so no `z-index` is needed.
 - `v-anchor` flips to the opposite side when there is no room, keeping the offset. It does not slide along the edge to stay on screen.
-- Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open.
-- `v-anchor` sets `position: fixed` and clears the popover's default centring. On unmount, the element gets back the inline styles it had before, and the anchor loses its `anchor-name`.
+- Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open. An element that is not a popover is re-placed on every scroll and resize.
+- `v-anchor` sets `position: fixed` on a popover and clears its default centring. Where CSS anchor positioning is supported, an element that is not a popover gets `position: absolute` instead, so it stays placed correctly while the page scrolls; an ancestor with `overflow: hidden` can clip it, which a popover avoids through the top layer. On unmount, the element gets back the inline styles it had before.
+- Several elements can share one anchor, such as a tooltip and a menu on the same button. Each adds its own name to the anchor's `anchor-name` and removes only that name on unmount, so a name you set inline is kept.
 - Popovers are not modal. For a dialog that must keep focus inside, use `<dialog>` or [`v-trap`](/plugins/focus).
 
 ## Coming from Alpine

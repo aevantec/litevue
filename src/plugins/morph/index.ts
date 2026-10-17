@@ -87,12 +87,24 @@ const nearestCtx = (node: Node | null): Context | undefined => {
 };
 
 /**
+ * Disposal is per node, so any context can release any subtree. Outside every
+ * scope there is no parent context to ask, but a root inside the subtree has
+ * one; without this, its effects and listeners outlive it.
+ */
+const ctxIn = (n: any): Context | undefined =>
+  n.__ctx || [...(n.children || [])].map(ctxIn).find(Boolean);
+const release = (node: Node, ctx: Context | undefined) =>
+  (ctx || ctxIn(node))?.dispose?.(node);
+
+/**
  * Attributes the client owns, read from the *incoming* markup — it still
  * carries the directives the live DOM had stripped. `:class` there means the
  * live `class` is bound and must survive the server's static value.
  */
 const boundAttrs = (to: Element) => {
   const owned = new Set<string>();
+  // the user opens and closes these; showModal() sets open on a dialog too
+  if (to.matches('details,dialog')) owned.add('open');
   for (const { name } of to.attributes) {
     if (bindRE.test(name)) {
       // strip modifiers: :class.camel -> class
@@ -202,7 +214,7 @@ const replaceNode = (
   const fresh = to.cloneNode(true);
   if (opts.beforeNodeAdded?.(fresh) === false) return;
   // replaceChild detaches as surely as removeChild, so release first
-  ctx?.dispose?.(from);
+  release(from, ctx);
   from.parentNode!.replaceChild(fresh, from);
   opts.afterNodeRemoved?.(from);
   mountNew(fresh, ctx);
@@ -299,7 +311,7 @@ const patchChildren = (
     if (!preserved(oldChild, opts)) {
       // release what the subtree owned first: removeChild alone leaves its
       // effects live and still reacting
-      ctx?.dispose?.(oldChild);
+      release(oldChild, ctx);
       from.removeChild(oldChild);
       opts.afterNodeRemoved?.(oldChild);
     }

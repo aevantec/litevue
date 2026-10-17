@@ -1,0 +1,4 @@
+/* only page two links this; navigate adds it on arrival and drops it on leaving */
+#page-two h1 {
+  color: rebeccapurple;
+}

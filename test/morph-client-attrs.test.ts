@@ -152,3 +152,58 @@ describe('morph keeps attributes a directive wrote', () => {
     expect(el().hasAttribute('style')).toBe(false);
   });
 });
+
+describe('morph leaves open to the user on details and dialog', () => {
+  test('keeps a details the user opened open', async () => {
+    const html = `<section id="r"><details id="p"><summary>s</summary>x</details></section>`;
+    const r = await mount(html);
+    const details = el() as HTMLDetailsElement;
+    details.open = true;
+
+    morph(r, html);
+
+    expect(el()).toBe(details);
+    expect(details.open).toBe(true);
+  });
+
+  test('keeps a details the user closed closed', async () => {
+    const html = `<section id="r"><details id="p" open><summary>s</summary>x</details></section>`;
+    const r = await mount(html);
+    (el() as HTMLDetailsElement).open = false;
+
+    morph(r, html);
+
+    expect((el() as HTMLDetailsElement).open).toBe(false);
+  });
+
+  test('keeps an open dialog open', async () => {
+    const html = `<section id="r"><dialog id="p">hi</dialog></section>`;
+    const r = await mount(html);
+    el().setAttribute('open', '');
+
+    morph(r, html);
+
+    expect(el().hasAttribute('open')).toBe(true);
+  });
+
+  test('a details the server adds takes its open state from the markup', async () => {
+    const r = await mount(`<section id="r"></section>`);
+
+    morph(
+      r,
+      `<section id="r"><details id="p" open><summary>s</summary>x</details></section>`
+    );
+
+    expect((el() as HTMLDetailsElement).open).toBe(true);
+  });
+
+  test('the server still owns open on other elements', async () => {
+    const html = `<section id="r"><div id="p"></div></section>`;
+    const r = await mount(html);
+    el().setAttribute('open', '');
+
+    morph(r, html);
+
+    expect(el().hasAttribute('open')).toBe(false);
+  });
+});

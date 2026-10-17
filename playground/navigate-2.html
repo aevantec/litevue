@@ -1,0 +1,53 @@
+<meta charset="utf-8" />
+<title>Navigate: page two</title>
+
+<meta name="description" content="Navigate demo, page two" />
+<link rel="stylesheet" href="./navigate-2.css" />
+<script type="module" src="./navigate.js"></script>
+
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 640px;
+    margin: 24px auto;
+  }
+  nav a {
+    margin-right: 12px;
+  }
+  #player {
+    padding: 8px;
+    border: 1px solid #888;
+  }
+  .spacer {
+    height: 1200px;
+  }
+</style>
+
+<nav id="nav">
+  <a href="navigate.html">Page one</a>
+  <a href="navigate-2.html">Page two</a>
+  <a href="navigate-2.html#bottom">Page two, bottom</a>
+  <a href="navigate.html" data-navigate="false">Page one (full load)</a>
+</nav>
+
+<!-- the same id on both pages, so it is kept: its count survives navigation -->
+<aside id="player" v-scope="{ seconds: 0, playing: false }">
+  <button @click="playing = !playing">{{ playing ? 'Pause' : 'Play' }}</button>
+  <span v-effect="playing && setTimeout(() => seconds++, 1000), seconds"
+    >{{ seconds }}s</span
+  >
+  <input placeholder="type, then navigate" />
+</aside>
+
+<main id="page-two" v-scope="{ items: ['a', 'b'] }">
+  <h1>Page two</h1>
+  <p>Query: <b v-text="location.search || '(none)'"></b></p>
+  <ul>
+    <li v-for="item in items" :key="item">{{ item }}</li>
+  </ul>
+  <button @click="items.push('c')">Add</button>
+  <div class="spacer"></div>
+  <h2 id="bottom">Bottom</h2>
+</main>
+
+<p id="log"></p>

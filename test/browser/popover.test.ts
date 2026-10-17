@@ -80,6 +80,45 @@ describe('v-anchor with CSS anchor positioning', () => {
     await open();
     near(rect('#pop').bottom, rect('button').top - 8);
   });
+
+  test('two elements anchored to one trigger are both placed against it', async () => {
+    await mount(`
+      <div v-scope>
+        <button ref="btn" style="margin: 200px 300px; width: 120px; height: 30px">menu</button>
+        <div id="above" v-anchor.top-start="$refs.btn" style="width: 80px; height: 50px"></div>
+        <div id="below" v-anchor.bottom-start="$refs.btn" style="width: 80px; height: 50px"></div>
+      </div>`);
+    await sleep(20);
+
+    const btn = rect('button');
+    near(rect('#above').bottom, btn.top);
+    near(rect('#above').left, btn.left);
+    near(rect('#below').top, btn.bottom);
+    near(rect('#below').left, btn.left);
+  });
+});
+
+describe('v-anchor on an element that is not a popover', () => {
+  test('keeps its placement when laid out while its anchor is scrolled away', async () => {
+    scrollTo(0, 0);
+    await mount(`
+      <div v-scope>
+        <div style="height: 2500px"></div>
+        <button ref="btn" style="margin-left: 300px; width: 120px; height: 30px">anchor</button>
+        <span id="below" v-anchor.bottom-start="$refs.btn" style="width: 80px; height: 20px"></span>
+        <span id="above" v-anchor.top-start="$refs.btn" style="width: 80px; height: 20px"></span>
+        <div style="height: 2500px"></div>
+      </div>`);
+    await sleep(20);
+
+    document.querySelector('button')!.scrollIntoView({ block: 'center' });
+    await sleep(50);
+
+    const btn = rect('button');
+    near(rect('#below').top, btn.bottom);
+    near(rect('#above').bottom, btn.top);
+    scrollTo(0, 0);
+  });
 });
 
 describe('v-anchor without CSS anchor positioning', () => {

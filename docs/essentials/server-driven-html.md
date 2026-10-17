@@ -86,6 +86,22 @@ morph(document.querySelector('#cart'), html);
 changes only what differs. An input the user is typing in keeps its value, its
 caret position and its focus, because the element is never removed.
 
+Here `#cart` is not inside a `v-scope`; `mount()` found the scope roots within
+it. Morph still releases any root it removes, but a `v-scope` it adds has no
+mounted scope to join, so it stays inert until you mount it:
+
+```js
+morph(cart, html);
+cart
+  .querySelectorAll('[v-scope]:not([v-scope] [v-scope])')
+  .forEach((el) => app.mount(el));
+```
+
+Mounting consumes a root's `v-scope` attribute, so the selector finds only the
+roots morph added, and the `:not()` skips scopes nested inside them, which
+mounting their parent covers. A region that sits inside a mounted `v-scope`
+needs none of this: morph mounts new scopes there itself.
+
 Forms follow the same pattern: the server re-renders the form with its
 validation errors, and morph patches it in. See
 [server-rendered forms](/essentials/forms#server-rendered-forms-with-morph).
@@ -113,6 +129,26 @@ mounted. LiteVue warns about this in development.
 To bring a region back, insert fresh markup and mount that, or morph the region
 from server HTML. Both give the walker directives to find.
 :::
+
+## Whole-page navigation
+
+To move between server-rendered pages without a full load, use the
+[navigate](/plugins/navigate) plugin. It intercepts same-origin links and forms,
+fetches the next page, merges its `<head>` and morphs its `<body>` into the
+current one, so a layout the pages share keeps its state. It mounts and
+unmounts scope roots itself, and handles history, scroll, focus and a route
+announcement.
+
+```js
+import { morphPlugin } from '@aevantec/litevue/plugins/morph';
+import { navigate } from '@aevantec/litevue/plugins/navigate';
+
+createApp().use(morphPlugin).use(navigate).mount();
+```
+
+It does what Turbo Drive or htmx's `hx-boost` would, without a second library
+reconciling the same nodes. If you already use one of those, the recipes below
+connect it to LiteVue instead.
 
 ## Recipes
 
@@ -227,7 +263,8 @@ remember.
 
 ## Next
 
-Learn how patching works, and what the client owns, in [morph](/plugins/morph).
-For mounting and unmounting regions in detail, see
+Learn how patching works, and what the client owns, in [morph](/plugins/morph),
+and how whole pages are swapped in [navigate](/plugins/navigate). For mounting
+and unmounting regions in detail, see
 [Dynamic Content](/essentials/dynamic-content); for why injected markup is inert
 by default, see [Security](/start-here/security).

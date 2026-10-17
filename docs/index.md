@@ -42,10 +42,10 @@ features:
       monitoring in production.
   - title: Plugin system
     details:
-      app.use() with typed plugins. Ten first-party plugins cover
+      app.use() with typed plugins. Eleven first-party plugins cover
       intersect, persist, focus (+trap), collapse, mask, morph, media, resize,
-      transition and popover — including leave animations that v-if waits
-      for. Each loads on its own.
+      transition, popover and navigate — including leave animations that v-if
+      waits for. Each loads on its own.
   - title: Safe with dynamic content
     details:
       Injected markup stays inert until you explicitly initialize it — HTML
