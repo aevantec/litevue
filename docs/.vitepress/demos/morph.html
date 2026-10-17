@@ -1,0 +1,20 @@
+<div v-scope>
+  <form ref="form" @submit.prevent="$morph($refs.form, $refs.server.innerHTML)">
+    <label>Name <input name="name" autocomplete="off" /></label>
+    <button>Save with morph</button>
+  </form>
+  <button
+    @click="$refs.form.innerHTML = $refs.server.content.firstElementChild.innerHTML"
+  >
+    Save with innerHTML
+  </button>
+
+  <!-- the server's response: the same form, with a message added -->
+  <template ref="server">
+    <form>
+      <label>Name <input name="name" autocomplete="off" /></label>
+      <p class="saved">Saved. The server re-rendered this form.</p>
+      <button>Save with morph</button>
+    </form>
+  </template>
+</div>

@@ -1,0 +1,9 @@
+<div class="anchor-demo" v-scope="{ at: 'one' }">
+  <button ref="one" @click="at = 'one'">One</button>
+  <button ref="two" @click="at = 'two'">Two</button>
+  <button ref="three" @click="at = 'three'">Three</button>
+
+  <span class="anchor-badge" v-anchor.bottom-start.offset-6="$refs[at]">
+    anchored to {{ at }}
+  </span>
+</div>

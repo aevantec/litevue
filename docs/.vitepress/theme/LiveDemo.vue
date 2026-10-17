@@ -19,6 +19,11 @@ const setups = import.meta.glob('../demos/*.setup.ts') as Record<
   () => Promise<{ data?: any; run?: () => void | Promise<void> }>
 >;
 
+// standalone plugins, such as popover, sit outside the combined bundle
+const standalone = import.meta.glob(
+  '../../../src/plugins/*/index.ts'
+) as Record<string, () => Promise<Record<string, any>>>;
+
 const props = defineProps<{
   src: string;
   // plugin names to install, e.g. plugins="focus,transition"
@@ -43,8 +48,10 @@ onMounted(async () => {
   const instance = createApp(setup?.data);
   if (props.plugins) {
     const all = await import('../../../src/plugins');
-    for (const name of props.plugins.split(',')) {
-      const plugin = (all as Record<string, any>)[name.trim()];
+    for (const name of props.plugins.split(',').map((n) => n.trim())) {
+      const own = standalone[`../../../src/plugins/${name}/index.ts`];
+      const plugin =
+        (all as Record<string, any>)[name] ?? (own && (await own())[name]);
       if (plugin) instance.use(plugin);
     }
   }
