@@ -20,6 +20,7 @@ type Reply = {
   status?: number;
   type?: string;
   url?: string;
+  cancel?: () => void;
 };
 
 let replies: Record<string, Reply>;
@@ -42,6 +43,7 @@ const respond = (url: string, init?: RequestInit) => {
       'content-type': r.type ?? 'text/html; charset=utf-8',
     }),
     text: () => Promise.resolve(r.body),
+    body: { cancel: r.cancel ?? (() => Promise.resolve()) },
   });
 };
 
@@ -101,6 +103,15 @@ afterEach(() => {
 });
 
 describe('navigate: links', () => {
+  test('leaves a link inside SVG to the browser', async () => {
+    await start('<svg><a href="/x"><text>x</text></a></svg><main></main>');
+
+    click(document.querySelector('text')!);
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('fetches a same-origin link, morphs the body and pushes the URL', async () => {
     replies['/about'] = {
       body: page(
@@ -449,7 +460,9 @@ describe('navigate: forms', () => {
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.method).toBe('POST');
-    expect((init.body as FormData).get('t')).toBe('x');
+    // url-encoded, as the browser sends a form without an enctype
+    expect(init.body).toBeInstanceOf(URLSearchParams);
+    expect((init.body as URLSearchParams).get('t')).toBe('x');
     expect(location.pathname).toBe('/done');
     expect(document.querySelector('main')!.textContent).toBe('saved');
   });
@@ -509,6 +522,47 @@ describe('navigate: forms', () => {
       'name is required'
     );
     expect(location.pathname).toBe('/');
+  });
+
+  test('posts a multipart form as FormData', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post" enctype="multipart/form-data"><input name="t" value="x"><button>Save</button></form><main></main>`
+    );
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
+    expect((init.body as FormData).get('t')).toBe('x');
+  });
+
+  test('a GET form sends a file input as its file name', async () => {
+    replies['/search'] = { body: page('Search', '<main>results</main>') };
+    await start(
+      `<form action="/search"><input type="file" name="f"><input name="q" value="cats"><button>Go</button></form><main></main>`
+    );
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      ORIGIN + '/search?f=&q=cats'
+    );
+  });
+
+  test('leaves a text/plain form to the browser', async () => {
+    await start(
+      `<form action="/a" method="post" enctype="text/plain"><button id="a">a</button></form>
+       <form action="/b" method="post"><button id="b" formenctype="text/plain">b</button></form>`
+    );
+    for (const id of ['#a', '#b']) {
+      (document.querySelector(id) as HTMLElement).click();
+    }
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('leaves a form with a target or a dialog method to the browser', async () => {
@@ -637,6 +691,19 @@ describe('navigate: falls back to a full load', () => {
 
     expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
     expect(document.querySelector('main')!.textContent).toBe('Home');
+  });
+
+  test('stops downloading a response that is not HTML before loading it', async () => {
+    const cancel = vi.fn(() => Promise.resolve());
+    replies['/report.pdf'] = { body: '%PDF', type: 'application/pdf', cancel };
+    await start('<a href="/report.pdf">report</a><main>Home</main>');
+    stubLocation();
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(cancel).toHaveBeenCalled();
+    expect(assign).toHaveBeenCalledWith(ORIGIN + '/report.pdf');
   });
 
   test('on a network error, and reports navigate:error', async () => {

@@ -41,6 +41,8 @@ The browser keeps everything else:
 - Clicks with Ctrl, Cmd, Shift or Alt held, and middle clicks
 - Links and forms with a `target` other than `_self`, and links with `download`
 - Links to another origin, and `#hash` links within the current page
+- Links inside SVG
+- `POST` forms with `enctype="text/plain"`
 - `<form method="dialog">`
 - A click or submit that another handler already cancelled with `preventDefault()`
 - Anything inside an element with `data-navigate="false"`
@@ -48,6 +50,8 @@ The browser keeps everything else:
 ```html
 <a href="/export.csv" data-navigate="false">Download</a>
 ```
+
+Mark links to files the same way, or with `download`. A same-origin link to a PDF or an image is fetched first; once the response turns out not to be HTML, the plugin stops downloading it and the browser loads the file again in full.
 
 ## Keeping state across pages
 
@@ -69,7 +73,7 @@ To keep a client-only element that the next page does not contain, such as a toa
 
 ## Forms
 
-A `GET` form navigates to its `action` with the fields as the query string. A `POST` form sends its fields as `FormData` and follows the server's redirect, so the URL ends on the page the server sent you to. The submit button's `name` and `value`, and its `formaction`, `formmethod` and `formtarget`, are honored.
+A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
