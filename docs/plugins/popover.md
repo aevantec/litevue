@@ -75,7 +75,7 @@ The browser's own `popovertarget` toggles a popover with no expression at all. `
 - The popover opens in the top layer, above everything else on the page, so no `z-index` is needed.
 - `v-anchor` flips to the opposite side when there is no room, keeping the offset. It does not slide along the edge to stay on screen.
 - Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open. An element that is not a popover is re-placed on every scroll and resize.
-- `v-anchor` sets `position: fixed` and clears the popover's default centring. On unmount, the element gets back the inline styles it had before.
+- `v-anchor` sets `position: fixed` on a popover and clears its default centring. Where CSS anchor positioning is supported, an element that is not a popover gets `position: absolute` instead, so it stays placed correctly while the page scrolls; an ancestor with `overflow: hidden` can clip it, which a popover avoids through the top layer. On unmount, the element gets back the inline styles it had before.
 - Several elements can share one anchor, such as a tooltip and a menu on the same button. Each adds its own name to the anchor's `anchor-name` and removes only that name on unmount, so a name you set inline is kept.
 - Popovers are not modal. For a dialog that must keep focus inside, use `<dialog>` or [`v-trap`](/plugins/focus).
 
