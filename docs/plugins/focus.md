@@ -46,7 +46,7 @@ createApp({ editing: false, open: false }).use(focus).mount();
 - `v-focus` with a constant `true` works as an autofocus.
 - When `v-trap` activates, focus moves to the first focusable child. Tab and Shift+Tab wrap at the edges, and focus that strays outside is pulled back in.
 - When it deactivates, focus returns to the element that had it before.
-- Focusable means links, buttons, form fields, `details` and elements with a non-negative `tabindex`.
+- Focusable means what Tab reaches: links, buttons, form fields, a `<details>` element's `<summary>`, media with `controls`, `contenteditable` elements and elements with a non-negative `tabindex`. Hidden inputs, disabled fields, `tabindex="-1"`, and anything hidden with `display: none`, `visibility: hidden` or `v-show`, inside a closed `<details>` or under `inert` are skipped, so Tab cannot leave the trap past them.
 
 ## Related
 
