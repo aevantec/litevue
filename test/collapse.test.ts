@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'vitest';
 import { createApp } from '../src';
 import { collapse } from '../src/plugins';
-import { tick } from './utils';
+import { sleep, tick } from './utils';
 
 /**
  * `v-collapse` animates height, which means writing inline `overflow`,
@@ -78,5 +78,32 @@ describe('v-collapse', () => {
     await tick();
 
     expect(panel().style.overflow).toBe('visible');
+  });
+
+  // a height of 0 still leaves the content in the tab order and the
+  // accessibility tree; visibility takes it out of both
+  test('hides collapsed content from Tab and assistive technology', async () => {
+    const root = await mount(
+      `<div v-scope="{ open: false }"><div id="p" v-collapse.duration-10="open"><a href="#">x</a></div></div>`
+    );
+    expect(panel().style.visibility).toBe('hidden');
+    // the transition is enabled a task after the initial state
+    await sleep(0);
+
+    root.__ctx.scope.open = true;
+    await tick();
+    expect(panel().style.visibility).toBe('');
+
+    root.__ctx.scope.open = false;
+    await tick();
+    expect(panel().style.visibility).toBe('hidden');
+    // hidden only once the height reaches 0, since visibility animates
+    // discretely alongside it
+    expect(panel().style.transition).toContain('visibility 10ms');
+
+    app.unmount();
+    app = null;
+    await tick();
+    expect(panel().style.visibility).toBe('');
   });
 });
