@@ -35,6 +35,19 @@ const OPPOSITE: Record<string, string> = {
 
 let count = 0;
 
+// anchor-name is a list: a trigger can anchor several elements, and may carry
+// a name of the author's own
+const setName = (el: HTMLElement | undefined, name: string, on: boolean) => {
+  if (!el) return;
+  const names = el.style
+    .getPropertyValue('anchor-name')
+    .split(/\s*,\s*/)
+    .filter((n) => n && n !== name);
+  on && names.push(name);
+  // an empty value removes the property
+  el.style.setProperty('anchor-name', names.join());
+};
+
 /** Script placement for engines without anchor positioning: flip, then align. */
 const place = (
   float: HTMLElement,
@@ -120,12 +133,12 @@ export const popover: Plugin = (app) => {
         'flip-block, flip-inline'
       );
       effect(() => {
-        target?.style.removeProperty('anchor-name');
+        setName(target, name, false);
         target = get();
-        target?.style.setProperty('anchor-name', name);
+        setName(target, name, true);
       });
       return () => {
-        target?.style.removeProperty('anchor-name');
+        setName(target, name, false);
         float.style.cssText = before;
       };
     }
