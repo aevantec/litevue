@@ -27,6 +27,11 @@ const isLocal = (url: URL) => url.origin === location.origin;
 const pathOf = (url: { pathname: string; search: string }) =>
   url.pathname + url.search;
 const optedOut = (el: Element) => !!el.closest('[data-navigate="false"]');
+// as the browser encodes a form that is not multipart: a file goes as its name
+const encode = (data: FormData) =>
+  new URLSearchParams(
+    [...data].map(([k, v]) => [k, (v as File).name ?? v] as [string, string])
+  );
 const emit = (name: string, detail: object, cancelable = false) =>
   document.dispatchEvent(
     new CustomEvent('navigate:' + name, { detail, cancelable })
@@ -198,6 +203,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         !isLocal(url) ||
         (!res.ok && !post)
       ) {
+        // the full load fetches it again; stop downloading this copy
+        res.body?.cancel();
         throw new Error(`cannot render ${res.status} from ${url.href}`);
       }
       const html = await res.text();
@@ -232,8 +239,10 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const onClick = (e: MouseEvent) => {
     if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey) return;
     if (e.shiftKey || e.altKey) return;
-    const a = (e.target as Element).closest?.('a[href]') as HTMLAnchorElement;
-    if (!a || optedOut(a) || a.hasAttribute('download')) return;
+    const a = (e.target as Element).closest?.('a[href]');
+    // an SVG link's target and href are not strings; the browser keeps it
+    if (!(a instanceof HTMLAnchorElement)) return;
+    if (optedOut(a) || a.hasAttribute('download')) return;
     if (a.target && a.target !== '_self') return;
     const url = new URL(a.href, location.href);
     if (!isLocal(url)) return;
@@ -250,7 +259,10 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       by?.getAttribute('form' + name) || form.getAttribute(name);
     const method = (attr('method') || 'get').toLowerCase();
     const where = attr('target');
+    const type = attr('enctype');
     if (e.defaultPrevented || method === 'dialog' || optedOut(form)) return;
+    // text/plain is a debugging format; fetch cannot send it as the browser does
+    if (type === 'text/plain') return;
     if (where && where !== '_self') return;
     const url = new URL(attr('action') || location.href, location.href);
     if (!isLocal(url)) return;
@@ -261,11 +273,12 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // the server would get both: aborting a request does not unsend it
       if (posting.has(form)) return;
       posting.add(form);
-      return go(url.href, { method: 'POST', body: data }).finally(() =>
-        posting.delete(form)
-      );
+      return go(url.href, {
+        method: 'POST',
+        body: type === 'multipart/form-data' ? data : encode(data),
+      }).finally(() => posting.delete(form));
     }
-    url.search = new URLSearchParams(data as any).toString();
+    url.search = encode(data).toString();
     go(url.href);
   };
 

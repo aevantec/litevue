@@ -488,3 +488,30 @@ describe('the scale is page-wide', () => {
     warn.mockRestore();
   });
 });
+
+describe('raw query subscriptions', () => {
+  const live = () => lists.filter((l) => l.listeners.size > 0).length;
+
+  test('a query built from a changing value does not grow without bound', () => {
+    for (let px = 1; px <= 500; px++) mq.match(`(min-width: ${px}px)`);
+
+    expect(live()).toBeLessThan(100);
+  });
+
+  test('a query still being read keeps its subscription', async () => {
+    let wide = false;
+    watch(() => {
+      wide = mq.match('(min-width: 1500px)');
+    });
+    for (let px = 1; px <= 500; px++) {
+      mq.match(`(min-width: ${px}px)`);
+      // the effect reads its query again whenever any media query changes
+      if (px % 50 === 0) mq.match('(min-width: 1500px)');
+    }
+
+    setWidth(1600);
+    await tick();
+
+    expect(wide).toBe(true);
+  });
+});
