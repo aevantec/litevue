@@ -73,7 +73,7 @@ Prefetching considers the same links a click would, so a link the plugin leaves 
 <a href="/notifications/read-all" data-navigate="false">Mark all read</a>
 ```
 
-A prefetch request sends `X-Sec-Purpose: prefetch` alongside `X-Requested-With: litevue`, so a server can skip it in analytics or answer it differently. A response the server sends to a prefetch is the page the user sees if they click, so it must be the same page a navigation would receive.
+A prefetch request sends `X-Sec-Purpose: prefetch` alongside `X-Requested-With: litevue`, so a server can leave it out of analytics or give it a lower priority. The response is the page the user sees if they click, so it must be the same page a navigation would receive.
 
 A prefetch does not set the [loading state](#loading-state) and fires no events. A failed one is ignored; if the user then clicks, the navigation fails as any other would.
 
