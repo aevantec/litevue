@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.14](https://github.com/aevantec/litevue/compare/v0.5.13...v0.5.14) (2026-10-17)
+
+
+### Bug Fixes
+
+* **plugins:** format v-mask's initial model value and keep the caret in place ([#195](https://github.com/aevantec/litevue/issues/195)) ([40a35df](https://github.com/aevantec/litevue/commit/40a35dfcab1d2efa0dd1775255a6ef9a03082261))
+* **plugins:** hide collapsed content, keep v-transition's display, and time v-intersect's modifiers ([#194](https://github.com/aevantec/litevue/issues/194)) ([2432634](https://github.com/aevantec/litevue/commit/243263460b602eb4eaf6f62dafba8cbfafb1e643))
+* **plugins:** wrap v-trap from the last element Tab reaches ([#193](https://github.com/aevantec/litevue/issues/193)) ([d8e08fd](https://github.com/aevantec/litevue/commit/d8e08fdc959b60ab477574752d45e06a9e4b67b1))
+
 ## [0.5.13](https://github.com/aevantec/litevue/compare/v0.5.12...v0.5.13) (2026-10-17)
 
 
