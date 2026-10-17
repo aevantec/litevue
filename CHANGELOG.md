@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.13](https://github.com/aevantec/litevue/compare/v0.5.12...v0.5.13) (2026-10-17)
+
+
+### Behavior changes
+
+* A navigate `POST` is URL-encoded unless the form has `enctype="multipart/form-data"`, as a full load sends it; a file input in a URL-encoded form sends its file name. A `text/plain` form is no longer intercepted, so the browser submits it with a full load ([#186](https://github.com/aevantec/litevue/issues/186))
+* `navigate:before` is no longer cancelable on back and forward, since the URL has already changed when it fires; `preventDefault()` there has no effect. Cancelling a link or a form still keeps the user on the current page ([#187](https://github.com/aevantec/litevue/issues/187))
+
+
+### Features
+
+* **plugins:** mark navigate's pending navigation with aria-busy ([#187](https://github.com/aevantec/litevue/issues/187)) ([f67177c](https://github.com/aevantec/litevue/commit/f67177c59cb1023f0e8808f60094eda9f0d98319))
+* **plugins:** prefetch navigate links on hover, focus or pointerdown ([#188](https://github.com/aevantec/litevue/issues/188)) ([005aa02](https://github.com/aevantec/litevue/commit/005aa02c6a86a541cf0ed6c3d25967d35e29ccda))
+
+
+### Bug Fixes
+
+* **plugins:** encode navigate forms as the browser does, and cap media's query lists ([#186](https://github.com/aevantec/litevue/issues/186)) ([48ec1b9](https://github.com/aevantec/litevue/commit/48ec1b9e5ebf42ef727282827907671c4242f690))
+
 ## [0.5.12](https://github.com/aevantec/litevue/compare/v0.5.11...v0.5.12) (2026-10-17)
 
 
