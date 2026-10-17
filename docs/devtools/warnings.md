@@ -282,6 +282,17 @@ Morph reuses live elements by key. When two siblings share a key, only the last
 is reusable, and the other loses its node and its scope state. Keys must be
 unique within their parent. See [morph keys](/plugins/morph#keys).
 
+### navigate: the morph plugin is missing
+
+```
+[navigate] needs the morph plugin: app.use(morphPlugin).use(navigate)
+```
+
+Navigate morphs each page into the current one, and morph is not bundled with
+it. Without morph, every navigation fails: a link or a `GET` form falls back to
+a full load, and a `POST` form stays as it was, each firing `navigate:error`.
+Install morph before navigate. See [navigate](/plugins/navigate).
+
 ### persist: a missing key
 
 `v-persist` needs a storage key, from its value or the element's `id`. Without
