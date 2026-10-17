@@ -12,10 +12,10 @@
     "dist/plugins/morph.iife.js": 1450,
     "dist/plugins/navigate.iife.js": 2250,
     "dist/plugins/persist.iife.js": 820,
-    "dist/plugins/popover.iife.js": 1100,
+    "dist/plugins/popover.iife.js": 1150,
     "dist/plugins/resize.iife.js": 380,
     "dist/plugins/transition.iife.js": 760
   },
-  "//plugins": "morph raised from 1400 to 1450, and the combined plugins bundle from 4400 to 4450, when morph learned to release scope roots it removes outside every mounted scope (ISSUE-0032): about 40 bytes, and the alternative was leaking effects, listeners and devtools entries. navigate raised from 1900 to 2100 when it learned to merge the head (US-0033): 186 bytes, and without it a page-specific stylesheet never loaded after navigating. Raised again to 2250 for the audit fixes (ISSUE-0034): manual scroll restoration, the saved position over the hash, one POST per form at a time, autofocus, and keeping a stylesheet's own onload; 89 bytes.",
+  "//plugins": "morph raised from 1400 to 1450, and the combined plugins bundle from 4400 to 4450, when morph learned to release scope roots it removes outside every mounted scope (ISSUE-0032): about 40 bytes, and the alternative was leaking effects, listeners and devtools entries. navigate raised from 1900 to 2100 when it learned to merge the head (US-0033): 186 bytes, and without it a page-specific stylesheet never loaded after navigating. Raised again to 2250 for the audit fixes (ISSUE-0034): manual scroll restoration, the saved position over the hash, one POST per form at a time, autofocus, and keeping a stylesheet's own onload; 89 bytes. popover raised from 1100 to 1150 when v-anchor learned to share a trigger's anchor-name (ISSUE-0035): 27 bytes, and without it a second element anchored to the same trigger lost its anchor.",
   "//devtools": "The devtools ceiling is looser than the others on purpose. This bundle is development-only and never loads in production, so its bytes cost a visitor nothing — and the panel's usability is the entire reason it exists. Raised from 5600 to 6000 when docking landed, from 6000 to 6500 when state search and a collapsible scope tree landed, from 6500 to 6800 for per-mode resize handles, and from 6800 to 7200 for the plugins view, to leave room for the panel to keep improving rather than making every UI change a budget negotiation."
 }

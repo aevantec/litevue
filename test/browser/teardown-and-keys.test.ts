@@ -142,4 +142,22 @@ describe('keyed reconciliation against a live DOM', () => {
     expect(root.querySelector('#b')).toBe(b);
     expect(b.scrollTop).toBe(220);
   });
+
+  test('a modal dialog stays open and modal through a morph', async () => {
+    const html = `<section id="r"><dialog id="d"><button>ok</button></dialog><p>before</p></section>`;
+    document.body.innerHTML = `<div id="root" v-scope>${html}</div>`;
+    const root = document.body.querySelector('#root') as HTMLElement;
+    createApp().use(morphPlugin).mount(root);
+    await tick(6);
+    const dialog = root.querySelector('#d') as HTMLDialogElement;
+    dialog.showModal();
+
+    morph(document.querySelector('#r')!, html.replace('before', 'after'));
+    await tick(8);
+
+    expect(root.querySelector('p')!.textContent).toBe('after');
+    expect(root.querySelector('#d')).toBe(dialog);
+    expect(dialog.open).toBe(true);
+    expect(dialog.matches(':modal')).toBe(true);
+  });
 });

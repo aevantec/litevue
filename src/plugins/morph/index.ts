@@ -103,6 +103,8 @@ const release = (node: Node, ctx: Context | undefined) =>
  */
 const boundAttrs = (to: Element) => {
   const owned = new Set<string>();
+  // the user opens and closes these; showModal() sets open on a dialog too
+  if (to.matches('details,dialog')) owned.add('open');
   for (const { name } of to.attributes) {
     if (bindRE.test(name)) {
       // strip modifiers: :class.camel -> class

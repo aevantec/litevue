@@ -192,6 +192,7 @@ still carries the directives:
 | `v-*`, `:` and `@` attributes | Never adds them to a live element |
 | `:class` | Leaves the live `class` alone |
 | `v-model` | Leaves `value` and `checked` alone |
+| `<details>` or `<dialog>` | Leaves `open` alone, so one the user opened stays open |
 | `v-bind` with an object | Updates the attributes the server sends, and removes none |
 | Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
@@ -202,6 +203,7 @@ still carries the directives:
 - That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
+- The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
 - On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
 - A removed element's scope is released with it, inside a mounted scope or outside every one: its effects stop and its listeners are removed. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
