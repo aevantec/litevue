@@ -20,6 +20,7 @@ type Reply = {
   status?: number;
   type?: string;
   url?: string;
+  cancel?: () => void;
 };
 
 let replies: Record<string, Reply>;
@@ -42,6 +43,7 @@ const respond = (url: string, init?: RequestInit) => {
       'content-type': r.type ?? 'text/html; charset=utf-8',
     }),
     text: () => Promise.resolve(r.body),
+    body: { cancel: r.cancel ?? (() => Promise.resolve()) },
   });
 };
 
@@ -101,6 +103,15 @@ afterEach(() => {
 });
 
 describe('navigate: links', () => {
+  test('leaves a link inside SVG to the browser', async () => {
+    await start('<svg><a href="/x"><text>x</text></a></svg><main></main>');
+
+    click(document.querySelector('text')!);
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('fetches a same-origin link, morphs the body and pushes the URL', async () => {
     replies['/about'] = {
       body: page(
@@ -382,6 +393,47 @@ describe('navigate: links', () => {
 });
 
 describe('navigate: events', () => {
+  test('cancelling navigate:before keeps a link on the current page', async () => {
+    await start('<a href="/two">Two</a><main>One</main>');
+    const cancel = (e: Event) => e.preventDefault();
+    document.addEventListener('navigate:before', cancel);
+
+    const e = click(document.querySelector('a')!);
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    // the browser does not follow it either
+    expect(e.defaultPrevented).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(location.pathname).toBe('/');
+  });
+
+  test('back and forward cannot be cancelled: the URL has already changed', async () => {
+    replies['/'] = {
+      body: page('Home', '<a href="/two">Two</a><main>Home</main>'),
+    };
+    replies['/two'] = {
+      body: page('Two', '<a href="/">Home</a><main>Two</main>'),
+    };
+    await start('<a href="/two">Two</a><main>Home</main>');
+    click(document.querySelector('a')!);
+    await settle();
+    const seen: boolean[] = [];
+    const cancel = (e: Event) => {
+      seen.push(e.cancelable);
+      e.preventDefault();
+    };
+    document.addEventListener('navigate:before', cancel);
+
+    history.replaceState(history.state, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { y: 0 } }));
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    expect(seen).toEqual([false]);
+    expect(document.querySelector('main')!.textContent).toBe('Home');
+  });
+
   test('navigate:before can cancel; navigate:after reports the URL', async () => {
     replies['/two'] = { body: page('Two', '<main>Two</main>') };
     await start('<a href="/two">Two</a><main></main>');
@@ -449,7 +501,9 @@ describe('navigate: forms', () => {
 
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.method).toBe('POST');
-    expect((init.body as FormData).get('t')).toBe('x');
+    // url-encoded, as the browser sends a form without an enctype
+    expect(init.body).toBeInstanceOf(URLSearchParams);
+    expect((init.body as URLSearchParams).get('t')).toBe('x');
     expect(location.pathname).toBe('/done');
     expect(document.querySelector('main')!.textContent).toBe('saved');
   });
@@ -511,6 +565,47 @@ describe('navigate: forms', () => {
     expect(location.pathname).toBe('/');
   });
 
+  test('posts a multipart form as FormData', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post" enctype="multipart/form-data"><input name="t" value="x"><button>Save</button></form><main></main>`
+    );
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
+    expect((init.body as FormData).get('t')).toBe('x');
+  });
+
+  test('a GET form sends a file input as its file name', async () => {
+    replies['/search'] = { body: page('Search', '<main>results</main>') };
+    await start(
+      `<form action="/search"><input type="file" name="f"><input name="q" value="cats"><button>Go</button></form><main></main>`
+    );
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(String(fetchMock.mock.calls[0][0])).toBe(
+      ORIGIN + '/search?f=&q=cats'
+    );
+  });
+
+  test('leaves a text/plain form to the browser', async () => {
+    await start(
+      `<form action="/a" method="post" enctype="text/plain"><button id="a">a</button></form>
+       <form action="/b" method="post"><button id="b" formenctype="text/plain">b</button></form>`
+    );
+    for (const id of ['#a', '#b']) {
+      (document.querySelector(id) as HTMLElement).click();
+    }
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('leaves a form with a target or a dialog method to the browser', async () => {
     await start(
       `<form action="/x" target="_blank"><button id="a">a</button></form>
@@ -520,6 +615,256 @@ describe('navigate: forms', () => {
       (document.querySelector(id) as HTMLElement).click();
     }
     await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('navigate: loading state', () => {
+  // keeps the next fetch pending until release() is called
+  const hold = () => {
+    let release!: () => void;
+    fetchMock.mockImplementationOnce(
+      (url: string, init?: RequestInit) =>
+        new Promise((r) => (release = () => r(respond(url, init))))
+    );
+    return () => release();
+  };
+  const html = document.documentElement;
+
+  test('marks the document busy while a navigation is in flight', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main>one</main>');
+    const release = hold();
+
+    click(document.querySelector('a')!);
+    await settle();
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await settle();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+  });
+
+  test('marks the submitting form busy too', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post"><button>Save</button></form><main></main>`
+    );
+    const form = document.querySelector('form')!;
+    const release = hold();
+
+    document.querySelector('button')!.click();
+    await settle();
+    expect(form.getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await settle();
+    expect(form.hasAttribute('aria-busy')).toBe(false);
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('clears the busy state when a navigation fails', async () => {
+    await start(
+      `<form action="/missing" method="post"><button>Save</button></form><main></main>`
+    );
+    const errors: Event[] = [];
+    document.addEventListener('navigate:error', (e) => errors.push(e));
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(errors).toHaveLength(1);
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('form')!.hasAttribute('aria-busy')).toBe(
+      false
+    );
+  });
+
+  test('stays busy until the newer of two navigations finishes', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>'
+    );
+    hold();
+    const releaseB = hold();
+
+    click(document.querySelector('#a')!);
+    click(document.querySelector('#b')!);
+    await settle();
+    // the first was cancelled; the second still holds the page busy
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    releaseB();
+    await settle();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('a cancelled navigate:before leaves nothing busy', async () => {
+    await start('<a href="/two">two</a><main></main>');
+    const cancel = (e: Event) => e.preventDefault();
+    document.addEventListener('navigate:before', cancel);
+
+    click(document.querySelector('a')!);
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('unmounting clears the busy state', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    const app = await start('<a href="/two">two</a><main>one</main>');
+    hold();
+
+    click(document.querySelector('a')!);
+    await settle();
+    app.unmount();
+    current = undefined;
+
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+});
+
+describe('navigate: prefetch', () => {
+  const PAUSE = 120;
+  const fire = (el: Element, type: string) =>
+    el.dispatchEvent(new MouseEvent(type, { bubbles: true }));
+  const purposes = () =>
+    fetchMock.mock.calls.map(
+      ([, init]) => (init?.headers as any)?.['X-Sec-Purpose'] ?? 'navigate'
+    );
+
+  test('is off unless asked for', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>');
+
+    fire(document.querySelector('a')!, 'pointerover');
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('hovering a link fetches it, and a click uses that response', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    fire(a, 'pointerover');
+    await sleep(PAUSE);
+    expect(purposes()).toEqual(['prefetch']);
+
+    click(a);
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+  });
+
+  test('leaving before the pause fetches nothing', async () => {
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    fire(a, 'pointerover');
+    fire(a, 'pointerout');
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('pointerdown and keyboard focus prefetch too', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>',
+      {
+        prefetch: true,
+      }
+    );
+
+    fire(document.querySelector('#a')!, 'pointerdown');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    (document.querySelector('#b') as HTMLElement).focus();
+    await sleep(PAUSE);
+
+    expect(fetchMock.mock.calls.map(([url]) => new URL(url).pathname)).toEqual([
+      '/a',
+      '/b',
+    ]);
+  });
+
+  test('skips links a click would leave to the browser, and the current page', async () => {
+    await start(
+      `<a href="/off" data-navigate="false">off</a>
+       <a href="/file.csv" download>file</a>
+       <a href="https://example.com/x">away</a>
+       <a href="/x" target="_blank">tab</a>
+       <a href="#top">top</a>
+       <a href="/">here</a><main></main>`,
+      { prefetch: true }
+    );
+
+    document.querySelectorAll('a').forEach((a) => fire(a, 'pointerdown'));
+    await sleep(PAUSE);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('a click on another link fetches its own page', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>',
+      {
+        prefetch: true,
+      }
+    );
+
+    fire(document.querySelector('#a')!, 'pointerdown');
+    click(document.querySelector('#b')!);
+    await settle();
+
+    expect(purposes()).toEqual(['prefetch', 'navigate']);
+    expect(document.querySelector('main')!.textContent).toBe('b');
+  });
+
+  test('a prefetch older than ten seconds is fetched again', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1_000);
+    fire(document.querySelector('a')!, 'pointerdown');
+
+    now.mockReturnValue(12_000);
+    click(document.querySelector('a')!);
+    await settle();
+    now.mockRestore();
+
+    expect(purposes()).toEqual(['prefetch', 'navigate']);
+  });
+
+  test('a prefetch that fails is not an unhandled rejection', async () => {
+    // no reply for /gone, so fetch rejects
+    await start('<a href="/gone">gone</a><main></main>', { prefetch: true });
+
+    fire(document.querySelector('a')!, 'pointerdown');
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('unmounting stops prefetching', async () => {
+    const app = await start('<a href="/two">two</a><main></main>', {
+      prefetch: true,
+    });
+    app.unmount();
+    current = undefined;
+
+    fire(document.querySelector('a')!, 'pointerdown');
+    fire(document.querySelector('a')!, 'pointerover');
+    await sleep(PAUSE);
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -637,6 +982,19 @@ describe('navigate: falls back to a full load', () => {
 
     expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
     expect(document.querySelector('main')!.textContent).toBe('Home');
+  });
+
+  test('stops downloading a response that is not HTML before loading it', async () => {
+    const cancel = vi.fn(() => Promise.resolve());
+    replies['/report.pdf'] = { body: '%PDF', type: 'application/pdf', cancel };
+    await start('<a href="/report.pdf">report</a><main>Home</main>');
+    stubLocation();
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(cancel).toHaveBeenCalled();
+    expect(assign).toHaveBeenCalledWith(ORIGIN + '/report.pdf');
   });
 
   test('on a network error, and reports navigate:error', async () => {

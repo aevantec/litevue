@@ -69,6 +69,7 @@ let active = false;
 type Sub = { mql: MediaQueryList; off: () => void };
 let scaleSubs: Sub[] = [];
 const querySubs = new Map<string, Sub>();
+const MAX_QUERIES = 64;
 
 const supported = () =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function';
@@ -142,10 +143,16 @@ const trackAll = () => {
 const rawMatch = (query: string): boolean => {
   if (!supported()) return false;
   let sub = querySubs.get(query);
-  if (!sub) {
-    const mql = window.matchMedia(query);
-    sub = subscribe(mql, () => state.tick++);
-    querySubs.set(query, sub);
+  // re-inserted on every read, so the Map's first entry is the least recent
+  if (sub) querySubs.delete(query);
+  else sub = subscribe(window.matchMedia(query), () => state.tick++);
+  querySubs.set(query, sub);
+  // a query built from a changing value, such as a slider's, would otherwise
+  // keep one list per value it ever had
+  for (const [oldest, stale] of querySubs) {
+    if (querySubs.size <= MAX_QUERIES) break;
+    stale.off();
+    querySubs.delete(oldest);
   }
   return sub.mql.matches;
 };

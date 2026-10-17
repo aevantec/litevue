@@ -19,14 +19,25 @@ export interface NavigateOptions {
   transition?: boolean;
   /** Scroll to the top, or the URL's hash, after navigating. Default true. */
   scroll?: boolean;
+  /** Fetch a link on hover, focus or pointerdown, ahead of the click. */
+  prefetch?: boolean;
 }
 
 const STATUS_ID = 'litevue-navigate-status';
+// long enough to skip links the pointer only crosses
+const HOVER_DELAY = 100;
+// as Turbo: a prefetched page older than this is fetched again
+const PREFETCH_TTL = 10_000;
 
 const isLocal = (url: URL) => url.origin === location.origin;
 const pathOf = (url: { pathname: string; search: string }) =>
   url.pathname + url.search;
 const optedOut = (el: Element) => !!el.closest('[data-navigate="false"]');
+// as the browser encodes a form that is not multipart: a file goes as its name
+const encode = (data: FormData) =>
+  new URLSearchParams(
+    [...data].map(([k, v]) => [k, (v as File).name ?? v] as [string, string])
+  );
 const emit = (name: string, detail: object, cancelable = false) =>
   document.dispatchEvent(
     new CustomEvent('navigate:' + name, { detail, cancelable })
@@ -110,6 +121,18 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   let controller: AbortController | undefined;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
+  // the document, and the form that started it, while a request is in flight;
+  // a newer navigation takes the state over from an older one
+  let busy: Element[] = [];
+  // one page fetched ahead of a click, used by a click on the same URL
+  let pre: { href: string; at: number; res: Promise<Response> } | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const fresh = (href: string) =>
+    pre?.href === href && Date.now() - pre.at < PREFETCH_TTL;
+  const setBusy = (els: Element[]) => {
+    busy.forEach((el) => el.removeAttribute('aria-busy'));
+    (busy = els).forEach((el) => el.setAttribute('aria-busy', 'true'));
+  };
   // the browser would restore scroll onto the outgoing page before the next
   // one arrives; navigate restores it after rendering instead
   const restoration = history.scrollRestoration;
@@ -168,10 +191,17 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     emit('after', { url: url.href });
   };
 
-  const go = async (href: string, init: RequestInit = {}, y?: number) => {
-    if (!emit('before', { url: href }, true)) return;
+  const go = async (
+    href: string,
+    init: RequestInit = {},
+    form?: Element,
+    y?: number
+  ) => {
+    // back and forward have already changed the URL, so they cannot be undone
+    if (!emit('before', { url: href }, y == null)) return;
     controller?.abort();
     const c = (controller = new AbortController());
+    setBusy([document.documentElement, form!].filter(Boolean));
     const post = init.method === 'POST';
     // remembered so back can restore it
     if (y == null) history.replaceState({ ...history.state, y: scrollY }, '');
@@ -183,11 +213,14 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
           );
         throw new Error('navigate needs the morph plugin');
       }
-      const res = await fetch(href, {
-        ...init,
-        signal: c.signal,
-        headers: { 'X-Requested-With': 'litevue' },
-      });
+      const res = await (!init.method && fresh(href)
+        ? pre!.res
+        : fetch(href, {
+            ...init,
+            signal: c.signal,
+            headers: { 'X-Requested-With': 'litevue' },
+          }));
+      pre = undefined;
       const url = new URL(res.url || href);
       // response URLs drop the fragment; a redirect keeps the requested one
       url.hash ||= new URL(href).hash;
@@ -198,6 +231,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         !isLocal(url) ||
         (!res.ok && !post)
       ) {
+        // the full load fetches it again; stop downloading this copy
+        res.body?.cancel();
         throw new Error(`cannot render ${res.status} from ${url.href}`);
       }
       const html = await res.text();
@@ -226,22 +261,61 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       emit('error', { url: href, error });
       // replaying a POST as a GET would be wrong; the form stays as it was
       if (!post) location.assign(href);
+    } finally {
+      c === controller && setBusy([]);
     }
   };
 
-  const onClick = (e: MouseEvent) => {
-    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey) return;
-    if (e.shiftKey || e.altKey) return;
-    const a = (e.target as Element).closest?.('a[href]') as HTMLAnchorElement;
-    if (!a || optedOut(a) || a.hasAttribute('download')) return;
+  /** The URL a link leads to, when navigate would take it over. */
+  const linkTo = (e: Event) => {
+    const a = (e.target as Element).closest?.('a[href]');
+    // an SVG link's target and href are not strings; the browser keeps it
+    if (!(a instanceof HTMLAnchorElement)) return;
+    if (optedOut(a) || a.hasAttribute('download')) return;
     if (a.target && a.target !== '_self') return;
     const url = new URL(a.href, location.href);
     if (!isLocal(url)) return;
     // a jump within this page is the browser's
     if (url.hash && pathOf(url) === pathOf(location)) return;
+    return url;
+  };
+
+  const onClick = (e: MouseEvent) => {
+    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey) return;
+    if (e.shiftKey || e.altKey) return;
+    const url = linkTo(e);
+    if (!url) return;
     e.preventDefault();
     go(url.href);
   };
+
+  const prefetch = (e: Event) => {
+    const url = linkTo(e);
+    if (!url || pathOf(url) === rendered || fresh(url.href)) return;
+    pre = {
+      href: url.href,
+      at: Date.now(),
+      res: fetch(url.href, {
+        headers: { 'X-Requested-With': 'litevue', 'X-Sec-Purpose': 'prefetch' },
+      }),
+    };
+    // a click reports the failure; an unused prefetch fails quietly
+    pre.res.catch(() => {});
+  };
+  const onHover = (e: Event) => {
+    clearTimeout(timer);
+    timer = setTimeout(prefetch, HOVER_DELAY, e);
+  };
+  const onLeave = () => clearTimeout(timer);
+  const hovers: [string, (e: Event) => void][] = options.prefetch
+    ? [
+        ['pointerover', onHover],
+        ['focusin', onHover],
+        ['pointerout', onLeave],
+        ['focusout', onLeave],
+        ['pointerdown', prefetch],
+      ]
+    : [];
 
   const onSubmit = (e: SubmitEvent) => {
     const form = e.target as HTMLFormElement;
@@ -250,7 +324,10 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       by?.getAttribute('form' + name) || form.getAttribute(name);
     const method = (attr('method') || 'get').toLowerCase();
     const where = attr('target');
+    const type = attr('enctype');
     if (e.defaultPrevented || method === 'dialog' || optedOut(form)) return;
+    // text/plain is a debugging format; fetch cannot send it as the browser does
+    if (type === 'text/plain') return;
     if (where && where !== '_self') return;
     const url = new URL(attr('action') || location.href, location.href);
     if (!isLocal(url)) return;
@@ -261,29 +338,38 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // the server would get both: aborting a request does not unsend it
       if (posting.has(form)) return;
       posting.add(form);
-      return go(url.href, { method: 'POST', body: data }).finally(() =>
-        posting.delete(form)
-      );
+      return go(
+        url.href,
+        {
+          method: 'POST',
+          body: type === 'multipart/form-data' ? data : encode(data),
+        },
+        form
+      ).finally(() => posting.delete(form));
     }
-    url.search = new URLSearchParams(data as any).toString();
-    go(url.href);
+    url.search = encode(data).toString();
+    go(url.href, {}, form);
   };
 
   const onPop = (e: PopStateEvent) => {
     // a hash change within the rendered page is the browser's
     if (pathOf(location) === rendered) return;
-    go(location.href, {}, e.state?.y || 0);
+    go(location.href, {}, undefined, e.state?.y || 0);
   };
 
   document.addEventListener('click', onClick);
   document.addEventListener('submit', onSubmit);
+  hovers.forEach(([type, fn]) => document.addEventListener(type, fn));
   addEventListener('popstate', onPop);
   return () => {
     controller?.abort();
+    clearTimeout(timer);
     document.removeEventListener('click', onClick);
     document.removeEventListener('submit', onSubmit);
+    hovers.forEach(([type, fn]) => document.removeEventListener(type, fn));
     removeEventListener('popstate', onPop);
     history.scrollRestoration = restoration;
+    setBusy([]);
     status.remove();
   };
 };

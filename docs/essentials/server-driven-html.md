@@ -136,8 +136,9 @@ To move between server-rendered pages without a full load, use the
 [navigate](/plugins/navigate) plugin. It intercepts same-origin links and forms,
 fetches the next page, merges its `<head>` and morphs its `<body>` into the
 current one, so a layout the pages share keeps its state. It mounts and
-unmounts scope roots itself, and handles history, scroll, focus and a route
-announcement.
+unmounts scope roots itself, and handles history, scroll, focus, a route
+announcement and an `aria-busy` loading state. With `prefetch: true`, it
+fetches a link's page on hover or focus, before the click.
 
 ```js
 import { morphPlugin } from '@aevantec/litevue/plugins/morph';
