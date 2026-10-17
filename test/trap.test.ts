@@ -64,4 +64,36 @@ describe('v-trap (focus plugin)', () => {
     expect(document.activeElement).toBe(outside);
     app.unmount();
   });
+
+  // Tab only wraps when focus is on the last element the trap counts, so one
+  // Tab skips leaves focus on the real last element and lets it escape
+  test.each([
+    ['a hidden input', '<input type="hidden" name="csrf" value="x" />'],
+    ['tabindex="-1"', '<button tabindex="-1"></button>'],
+    ['a disabled fieldset', '<fieldset disabled><input /></fieldset>'],
+    ['inert content', '<div inert><button></button></div>'],
+  ])('wraps from the last field when %s follows it', async (_, after) => {
+    document.body.innerHTML = `<div id="app" v-scope="{ on: true }">
+        <div v-trap="on">
+          <button id="first"></button>
+          <input id="last" />
+          ${after}
+        </div>
+      </div>`;
+    const app = createApp().use(focusPlugin);
+    app.mount('#app');
+    await tick(5);
+
+    const last = document.getElementById('last')!;
+    last.focus();
+    const e = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      bubbles: true,
+      cancelable: true,
+    });
+    last.dispatchEvent(e);
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+    app.unmount();
+  });
 });
