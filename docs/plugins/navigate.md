@@ -119,7 +119,7 @@ document.addEventListener('navigate:after', () => progress.done());
 
 ## Behavior
 
-- Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load.
+- Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load. A server that returns a different response for them must also send `Vary: X-Requested-With`; otherwise a browser or proxy cache can serve that response to a full load of the same URL.
 - A navigation still in flight is cancelled when another starts.
 - The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element.
 - `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.

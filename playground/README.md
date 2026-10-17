@@ -7,6 +7,13 @@ Hand-driven pages for checking behavior in a real browser. They import from
 pnpm dev   # then open http://localhost:3000
 ```
 
+The dev server stops with an error when port 3000 is taken rather than moving
+to another port. Pass a free one instead:
+
+```bash
+pnpm dev --port 3002
+```
+
 `index.html` at the repo root links every page.
 
 ## What these are for
@@ -22,6 +29,7 @@ because jsdom has no layout engine, no real focus model, and no CSS transitions.
 | `mask.html` | caret position while typing into a masked input |
 | `devtools-panel.html` | the panel UI — hover highlight, pick mode, dragging, themes |
 | `devtools-dist.html` | the **built** bundle rather than source — the only check that `pnpm build` output actually runs |
+| `navigate.html`, `navigate-2.html` | history, scroll restoration on back, focus, stylesheet loading in the head |
 | `cloak.html`, `show.html`, `pre.html` | visual states |
 
 Automated coverage lives in [`../test/`](../test) and is what `pnpm test` runs.
