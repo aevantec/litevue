@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.12](https://github.com/aevantec/litevue/compare/v0.5.11...v0.5.12) (2026-10-17)
+
+
+### Features
+
+* **plugins:** add a navigate plugin for partial-page navigation ([#174](https://github.com/aevantec/litevue/issues/174)) ([4fb1750](https://github.com/aevantec/litevue/commit/4fb17506c0dddba82f5418f343974a5214e20e1a))
+* **plugins:** merge the head and widen the route announcer in navigate ([#176](https://github.com/aevantec/litevue/issues/176)) ([cfe0b9e](https://github.com/aevantec/litevue/commit/cfe0b9ea90e254e8486afd3430279c667a863dd8))
+
+
+### Bug Fixes
+
+* **plugins:** fix navigate's scroll on back, double POST, autofocus and stylesheet onload ([#177](https://github.com/aevantec/litevue/issues/177)) ([7ce68fe](https://github.com/aevantec/litevue/commit/7ce68feda9b1544c946981f702ed1440fa20694e))
+* **plugins:** keep open on details and dialog through a morph ([#181](https://github.com/aevantec/litevue/issues/181)) ([d028119](https://github.com/aevantec/litevue/commit/d028119cc0ed7404206b6eb5726abbfcc33f3834))
+* **plugins:** let several v-anchor elements share one trigger ([#180](https://github.com/aevantec/litevue/issues/180)) ([d723bf6](https://github.com/aevantec/litevue/commit/d723bf6637570e3c3f33958967c90f758627cc33))
+* **plugins:** position v-anchor elements that are not popovers absolutely ([#183](https://github.com/aevantec/litevue/issues/183)) ([988e5b9](https://github.com/aevantec/litevue/commit/988e5b92869749ddd3ab3f646241731540e49665))
+* **plugins:** release scope roots morph removes outside every mounted scope ([#175](https://github.com/aevantec/litevue/issues/175)) ([8c878f8](https://github.com/aevantec/litevue/commit/8c878f8beeb49746224c3b1c9357092c15155d70))
+
 ## [0.5.11](https://github.com/aevantec/litevue/compare/v0.5.10...v0.5.11) (2026-10-16)
 
 
