@@ -131,6 +131,9 @@ setDefaultStorage('session');
 - `persistStore()` restores immediately, so values an `init()` seeded are replaced by anything already saved.
 - A per-use storage beats the default. Call `setDefaultStorage()` before `persistStore()` and before mounting.
 - If a storage cannot be used — an unknown modifier, or `localStorage` blocked by the browser — the state still works, it is just not saved, and a development error explains why.
+- A write that fails, for example because storage is full, is skipped without an error, and the next change tries again. A saved value that cannot be parsed is ignored, so the state starts from its defaults.
+- Values round-trip through JSON. A `Date` comes back as a string, `Map` and `Set` come back as empty objects, and a class instance comes back as a plain object without its methods. Persist plain data, and convert on the way in and out.
+- Other tabs are not kept in sync. Each tab restores on load and then writes its own changes, so with the same page open twice, the last change in either tab is what the next load restores.
 - Stored values are plain JSON in the browser. Do not persist secrets to `localStorage`.
 
 ## Related
