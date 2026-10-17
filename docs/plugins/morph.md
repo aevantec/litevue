@@ -65,6 +65,12 @@ Morph keeps every node that still matches, so none of that is lost. It is the
 counterpart to [dynamic content](/essentials/dynamic-content): `mount()` adds
 new fragments, morph updates live ones.
 
+Type a name, open **More options** and press Enter. Then type again and use the innerHTML button. Both apply the same server response:
+
+<<< ../.vitepress/demos/morph.html{html}
+
+<LiveDemo src="morph" plugins="morphPlugin" />
+
 ### Keys
 
 Children are matched by key, so a reordered list moves its nodes rather than

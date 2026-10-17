@@ -26,6 +26,12 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 
 `top`, `bottom` and `left`, `right`, each optionally followed by `-start` or `-end`: `bottom-start` sits below the anchor, aligned to its left edge. The default is `bottom`, centred.
 
+The placement is a modifier, so it is fixed when the element mounts. Each element below is anchored to the same box with a different placement:
+
+<<< ../.vitepress/demos/placements.html{html}
+
+<LiveDemo src="placements" plugins="popover" />
+
 ### Modifiers
 
 | Modifier | Meaning |
@@ -34,32 +40,23 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 
 ## Examples
 
-### Menu
+### Menu and tooltip
 
-```html
-<div v-scope="{ open: false }">
-  <button ref="trigger" @click="open = !open">Account</button>
-  <nav v-popover="open" v-anchor.bottom-start.offset-4="$refs.trigger">
-    <a href="/profile">Profile</a>
-    <a href="/settings">Settings</a>
-  </nav>
-</div>
-```
+<<< ../.vitepress/demos/popover.html{html}
+
+<LiveDemo src="popover" plugins="popover" />
 
 Escape, a click outside and a second click on the trigger all close the menu, and `open` follows. Focus returns to the trigger when the menu closes.
 
-### Tooltip
-
-```html
-<span v-scope="{ tip: false }">
-  <button ref="help" @mouseenter="tip = true" @mouseleave="tip = false">?</button>
-  <span popover="manual" v-popover="tip" v-anchor.top.offset-6="$refs.help">
-    Saved drafts expire after 30 days.
-  </span>
-</span>
-```
-
 `popover="manual"` keeps the tooltip from closing a menu that is already open, and from closing on a click elsewhere.
+
+### Anchoring any element
+
+`v-anchor` needs no popover. Here a plain element follows whichever button the expression points at:
+
+<<< ../.vitepress/demos/anchor.html{html}
+
+<LiveDemo src="anchor" plugins="popover" />
 
 ### Without state
 

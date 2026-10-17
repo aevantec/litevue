@@ -1,0 +1,23 @@
+<div v-scope="{ open: false, tip: false }">
+  <button ref="trigger" @click="open = !open">Account</button>
+  <button
+    ref="help"
+    @mouseenter="tip = true"
+    @mouseleave="tip = false"
+    @focus="tip = true"
+    @blur="tip = false"
+  >
+    ?
+  </button>
+
+  <nav v-popover="open" v-anchor.bottom-start.offset-4="$refs.trigger">
+    <button @click="open = false">Profile</button>
+    <button @click="open = false">Settings</button>
+  </nav>
+
+  <span popover="manual" v-popover="tip" v-anchor.top.offset-6="$refs.help">
+    Saved drafts expire after 30 days.
+  </span>
+
+  <p>open: {{ open }}</p>
+</div>
