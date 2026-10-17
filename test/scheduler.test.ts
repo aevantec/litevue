@@ -100,11 +100,13 @@ describe('stopEffect and the queue', () => {
     expect(dropped).toHaveBeenCalledTimes(1);
   });
 
-  test('stopEffect requires a real runner, not any queued function', () => {
-    // documents a real constraint: it reaches through runner.effect, so the
-    // scheduler's contract is that only effects created by ctx.effect or
-    // watchEffect are passed to it
-    expect(() => stopEffect((() => {}) as any)).toThrow();
+  // under v-once, ctx.effect hands back the queued function itself
+  test('stopEffect accepts a plain queued function and skips it', async () => {
+    const job = vi.fn();
+    queueJob(job);
+    expect(() => stopEffect(job as any)).not.toThrow();
+    await Promise.resolve();
+    expect(job).not.toHaveBeenCalled();
   });
 });
 
