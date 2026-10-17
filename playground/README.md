@@ -14,7 +14,7 @@ to another port. Pass a free one instead:
 pnpm dev --port 3002
 ```
 
-`index.html` at the repo root links every page.
+The root page is an index of every example and playground page: a sidebar grouped by topic, with search (press `/`), and the selected page in a frame beside it. The toolbar reloads the page, opens it in its own tab, steps to the previous or next page, and switches the query flags a page reads, such as navigate's `?prefetch`. The address keeps the page, so a reload or a shared link returns to it. The index is styled with Tailwind, compiled by the dev server only; the pages in the frame keep their own styles.
 
 ## What these are for
 
@@ -39,4 +39,6 @@ only worth adding when a real browser is genuinely required.
 ## Adding a page
 
 Copy the smallest existing page that resembles what you need, import from
-`../src`, and add a link to the root `index.html` so it's discoverable.
+`../src`, and add an entry for it in `dev/pages.ts`, with a title, a one-line
+description, and `needsBuild` if it loads `dist/` files. `test/dev-pages.test.ts`
+fails when a page has no entry.
