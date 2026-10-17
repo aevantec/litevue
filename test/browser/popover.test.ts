@@ -98,6 +98,29 @@ describe('v-anchor with CSS anchor positioning', () => {
   });
 });
 
+describe('v-anchor on an element that is not a popover', () => {
+  test('keeps its placement when laid out while its anchor is scrolled away', async () => {
+    scrollTo(0, 0);
+    await mount(`
+      <div v-scope>
+        <div style="height: 2500px"></div>
+        <button ref="btn" style="margin-left: 300px; width: 120px; height: 30px">anchor</button>
+        <span id="below" v-anchor.bottom-start="$refs.btn" style="width: 80px; height: 20px"></span>
+        <span id="above" v-anchor.top-start="$refs.btn" style="width: 80px; height: 20px"></span>
+        <div style="height: 2500px"></div>
+      </div>`);
+    await sleep(20);
+
+    document.querySelector('button')!.scrollIntoView({ block: 'center' });
+    await sleep(50);
+
+    const btn = rect('button');
+    near(rect('#below').top, btn.bottom);
+    near(rect('#above').bottom, btn.top);
+    scrollTo(0, 0);
+  });
+});
+
 describe('v-anchor without CSS anchor positioning', () => {
   const noAnchors = () => {
     const supports = CSS.supports.bind(CSS);
