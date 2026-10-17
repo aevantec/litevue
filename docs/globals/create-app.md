@@ -32,7 +32,7 @@ createApp(data?: object | (() => object)): App
 
 | Member | Returns | Meaning |
 | --- | --- | --- |
-| `mount(target?)` | `App` | Mount every top-level `v-scope` under a selector or element, or the whole document. Call again to mount [new content](/essentials/dynamic-content) |
+| `mount(target?)` | `App` | Mount every top-level `v-scope` under a selector or element, or the whole document. Call again to mount [new content](/essentials/dynamic-content). A selector that matches no element returns `undefined` and mounts nothing |
 | `unmount(target?)` | — | Tear down everything, or only the regions at or inside `target` — see [Tearing a region down](/essentials/dynamic-content#tearing-a-region-down) |
 | `use(plugin, options?)` | `App` | Install a [plugin](/plugins/). Installing the same plugin twice does nothing |
 | `directive(name, def?)` | `App` / definition | Register a [custom directive](#custom-directives), or read one back |
