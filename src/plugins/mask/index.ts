@@ -37,13 +37,31 @@ export const mask: Plugin = (app) => {
   app.directive('mask', ({ el, exp }) => {
     const input = el as HTMLInputElement;
     const apply = () => {
-      const masked = format(input.value, exp);
-      if (masked !== input.value) input.value = masked;
+      const { value, selectionStart: at } = input;
+      const masked = format(value, exp);
+      if (masked === value) return false;
+      input.value = masked;
+      // rewriting value moves the caret to the end; put it back after the
+      // characters that were before it
+      if (at != null && document.activeElement === input) {
+        const to = format(value.slice(0, at), exp).length;
+        input.setSelectionRange(to, to);
+      }
+      return true;
     };
     // registered before v-model's deferred listener, so the model always
     // sees the masked value
     el.addEventListener('input', apply);
     apply();
-    return () => el.removeEventListener('input', apply);
+    // v-model writes its initial value after this runs; format that too, and
+    // tell the model
+    let live = true;
+    Promise.resolve().then(() => {
+      if (live && apply()) el.dispatchEvent(new Event('input'));
+    });
+    return () => {
+      live = false;
+      el.removeEventListener('input', apply);
+    };
   });
 };

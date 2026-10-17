@@ -1,8 +1,8 @@
 import type { Plugin } from '../../app';
 
 const FOCUSABLE =
-  'a[href], button, input, textarea, select, details, ' +
-  '[tabindex]:not([tabindex="-1"])';
+  'a[href],area[href],button,input:not([type=hidden]),select,textarea,' +
+  'summary,iframe,audio[controls],video[controls],[contenteditable],[tabindex]';
 
 /**
  * Focus utilities.
@@ -41,9 +41,13 @@ export const focus: Plugin = (app) => {
     let active = false;
     let prevFocus: Element | null = null;
 
+    // only what Tab reaches: the trap wraps from the last one it counts
     const focusables = () =>
       [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-        (e) => !e.hasAttribute('disabled')
+        (e: any) =>
+          e.tabIndex >= 0 &&
+          !e.matches(':disabled,[inert] *') &&
+          e.checkVisibility?.({ visibilityProperty: true }) !== false
       );
 
     const onKeydown = (e: KeyboardEvent) => {
