@@ -180,6 +180,10 @@ Without JavaScript the browser performs an ordinary submission. Once LiteVue has
 
 When the server renders the form, its validation errors can come back as HTML too. The server re-renders the form partial with the messages and the submitted values filled in, and morph patches the live form to match. Nothing about the error format lives in JavaScript.
 
+::: tip Plain forms with navigate
+With the [navigate](/plugins/navigate) plugin installed, a plain `<form method="post">` without `@submit.prevent` gets this behavior without the code below: a redirect navigates to the next page, and an error response such as a `422` is morphed in place, keeping the typed values and focus. See [navigate forms](/plugins/navigate#forms). The recipe below suits a form that posts to a partial endpoint, or a page without navigate.
+:::
+
 ```js
 // html-form.js
 import { morph } from '@aevantec/litevue/plugins';

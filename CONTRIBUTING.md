@@ -41,7 +41,7 @@ crashes outright when it meets a pnpm-created `node_modules`
 Common commands:
 
 ```bash
-pnpm dev        # manual test pages at localhost:3000
+pnpm dev        # manual test pages at localhost:3000 (--port <n> if it is taken)
 pnpm test       # vitest suite in jsdom (test/)
 pnpm test:watch # vitest in watch mode
 pnpm test:browser  # vitest suite in real Chromium (test/browser/)
