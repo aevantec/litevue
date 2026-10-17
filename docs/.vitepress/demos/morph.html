@@ -1,6 +1,10 @@
 <div v-scope>
   <form ref="form" @submit.prevent="$morph($refs.form, $refs.server.innerHTML)">
     <label>Name <input name="name" autocomplete="off" /></label>
+    <details>
+      <summary>More options</summary>
+      <p>Stays open through a morph.</p>
+    </details>
     <button>Save with morph</button>
   </form>
   <button
@@ -14,6 +18,10 @@
     <form>
       <label>Name <input name="name" autocomplete="off" /></label>
       <p class="saved">Saved. The server re-rendered this form.</p>
+      <details>
+        <summary>More options</summary>
+        <p>Stays open through a morph.</p>
+      </details>
       <button>Save with morph</button>
     </form>
   </template>
