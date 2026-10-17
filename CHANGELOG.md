@@ -3,6 +3,14 @@
 ## [0.5.12](https://github.com/aevantec/litevue/compare/v0.5.11...v0.5.12) (2026-10-17)
 
 
+### Behavior changes
+
+* A `v-scope` root that morph removes outside every mounted scope now stops: its effects, `.document`/`.window`/`.outside` listeners and devtools entry go with it. A new `v-scope` that such a morph adds stays inert until `app.mount(el)`; the navigate plugin mounts them itself ([#175](https://github.com/aevantec/litevue/issues/175))
+* Morph no longer adds or removes `open` on an existing `<details>` or `<dialog>`, so one the user opened stays open. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state ([#181](https://github.com/aevantec/litevue/issues/181))
+* With CSS anchor positioning, a `v-anchor` element that is not a popover uses `position: absolute` instead of `fixed`, so an ancestor with `overflow: hidden` can clip it. Popovers are unchanged ([#183](https://github.com/aevantec/litevue/issues/183))
+* `v-anchor` adds and removes only its own name in the trigger's `anchor-name`, so an inline name the author set is kept ([#180](https://github.com/aevantec/litevue/issues/180))
+
+
 ### Features
 
 * **plugins:** add a navigate plugin for partial-page navigation ([#174](https://github.com/aevantec/litevue/issues/174)) ([4fb1750](https://github.com/aevantec/litevue/commit/4fb17506c0dddba82f5418f343974a5214e20e1a))
