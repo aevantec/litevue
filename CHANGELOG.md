@@ -3,6 +3,14 @@
 ## [0.5.14](https://github.com/aevantec/litevue/compare/v0.5.13...v0.5.14) (2026-10-17)
 
 
+### Behavior changes
+
+* `v-mask` dispatches an `input` event on mount when it formats a prefilled `v-model` value, so the model holds the formatted value. An `@input` handler on the field runs once at mount in that case ([#195](https://github.com/aevantec/litevue/issues/195))
+* `v-intersect.full.leave` runs when an element stops being fully visible, rather than when it leaves the viewport. `.leave` no longer runs on mount for an element that starts out of view ([#194](https://github.com/aevantec/litevue/issues/194))
+* `v-collapse` sets `visibility: hidden` on collapsed content, so Tab skips it and screen readers do not read it; CSS that sets `visibility` on that element is overridden while it is collapsed ([#194](https://github.com/aevantec/litevue/issues/194))
+* `v-trap` counts only elements Tab reaches, so when it activates, focus can land on a different first element than before, for example past a hidden input ([#193](https://github.com/aevantec/litevue/issues/193))
+
+
 ### Bug Fixes
 
 * **plugins:** format v-mask's initial model value and keep the caret in place ([#195](https://github.com/aevantec/litevue/issues/195)) ([40a35df](https://github.com/aevantec/litevue/commit/40a35dfcab1d2efa0dd1775255a6ef9a03082261))
