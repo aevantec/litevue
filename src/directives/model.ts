@@ -145,7 +145,8 @@ export const model: Directive<
         return;
       }
       const curVal = el.value;
-      const newVal = get();
+      // `input.value = undefined` would show the text "undefined"
+      const newVal = get() ?? '';
       if (document.activeElement === el && resolveValue(curVal) === newVal) {
         return;
       }
