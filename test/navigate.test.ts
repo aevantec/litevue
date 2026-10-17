@@ -393,6 +393,47 @@ describe('navigate: links', () => {
 });
 
 describe('navigate: events', () => {
+  test('cancelling navigate:before keeps a link on the current page', async () => {
+    await start('<a href="/two">Two</a><main>One</main>');
+    const cancel = (e: Event) => e.preventDefault();
+    document.addEventListener('navigate:before', cancel);
+
+    const e = click(document.querySelector('a')!);
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    // the browser does not follow it either
+    expect(e.defaultPrevented).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(location.pathname).toBe('/');
+  });
+
+  test('back and forward cannot be cancelled: the URL has already changed', async () => {
+    replies['/'] = {
+      body: page('Home', '<a href="/two">Two</a><main>Home</main>'),
+    };
+    replies['/two'] = {
+      body: page('Two', '<a href="/">Home</a><main>Two</main>'),
+    };
+    await start('<a href="/two">Two</a><main>Home</main>');
+    click(document.querySelector('a')!);
+    await settle();
+    const seen: boolean[] = [];
+    const cancel = (e: Event) => {
+      seen.push(e.cancelable);
+      e.preventDefault();
+    };
+    document.addEventListener('navigate:before', cancel);
+
+    history.replaceState(history.state, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { y: 0 } }));
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    expect(seen).toEqual([false]);
+    expect(document.querySelector('main')!.textContent).toBe('Home');
+  });
+
   test('navigate:before can cancel; navigate:after reports the URL', async () => {
     replies['/two'] = { body: page('Two', '<main>Two</main>') };
     await start('<a href="/two">Two</a><main></main>');
@@ -576,6 +617,114 @@ describe('navigate: forms', () => {
     await settle();
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('navigate: loading state', () => {
+  // keeps the next fetch pending until release() is called
+  const hold = () => {
+    let release!: () => void;
+    fetchMock.mockImplementationOnce(
+      (url: string, init?: RequestInit) =>
+        new Promise((r) => (release = () => r(respond(url, init))))
+    );
+    return () => release();
+  };
+  const html = document.documentElement;
+
+  test('marks the document busy while a navigation is in flight', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main>one</main>');
+    const release = hold();
+
+    click(document.querySelector('a')!);
+    await settle();
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await settle();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+  });
+
+  test('marks the submitting form busy too', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post"><button>Save</button></form><main></main>`
+    );
+    const form = document.querySelector('form')!;
+    const release = hold();
+
+    document.querySelector('button')!.click();
+    await settle();
+    expect(form.getAttribute('aria-busy')).toBe('true');
+
+    release();
+    await settle();
+    expect(form.hasAttribute('aria-busy')).toBe(false);
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('clears the busy state when a navigation fails', async () => {
+    await start(
+      `<form action="/missing" method="post"><button>Save</button></form><main></main>`
+    );
+    const errors: Event[] = [];
+    document.addEventListener('navigate:error', (e) => errors.push(e));
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(errors).toHaveLength(1);
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('form')!.hasAttribute('aria-busy')).toBe(
+      false
+    );
+  });
+
+  test('stays busy until the newer of two navigations finishes', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>'
+    );
+    hold();
+    const releaseB = hold();
+
+    click(document.querySelector('#a')!);
+    click(document.querySelector('#b')!);
+    await settle();
+    // the first was cancelled; the second still holds the page busy
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    releaseB();
+    await settle();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('a cancelled navigate:before leaves nothing busy', async () => {
+    await start('<a href="/two">two</a><main></main>');
+    const cancel = (e: Event) => e.preventDefault();
+    document.addEventListener('navigate:before', cancel);
+
+    click(document.querySelector('a')!);
+    await settle();
+    document.removeEventListener('navigate:before', cancel);
+
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+  });
+
+  test('unmounting clears the busy state', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    const app = await start('<a href="/two">two</a><main>one</main>');
+    hold();
+
+    click(document.querySelector('a')!);
+    await settle();
+    app.unmount();
+    current = undefined;
+
+    expect(html.hasAttribute('aria-busy')).toBe(false);
   });
 });
 
