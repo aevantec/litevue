@@ -288,6 +288,23 @@ describe('transition plugin', () => {
     app.unmount();
   });
 
+  test('shows an element that starts with an inline display: none', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ open: false }">
+      <div id="box" style="display: none" v-transition="open"></div>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const box = document.querySelector('#box') as HTMLElement;
+    expect(box.style.display).toBe('none');
+
+    const scope = (document.querySelector('#app') as any).__ctx.scope;
+    scope.open = true;
+    await tick();
+    expect(box.style.display).toBe('');
+    app.unmount();
+  });
+
   // the end timer is cancelled on teardown, so nothing else would remove them
   test('removes its classes when unmounted mid-transition', async () => {
     document.body.innerHTML = `<div id="app" v-scope="{ open: true }">
