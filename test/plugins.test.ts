@@ -298,7 +298,6 @@ describe('transition plugin', () => {
     app.mount('#app');
     await tick();
     const box = document.querySelector('#box') as HTMLElement;
-    const row = document.querySelector('#row') as HTMLElement;
     const scope = (document.querySelector('#app') as any).__ctx.scope;
     scope.open = false;
     await tick();
