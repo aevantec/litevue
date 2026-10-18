@@ -55,8 +55,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
 
   const removeActiveBlock = () => {
     if (block) {
-      // a teleported root never took the anchor out, so its position is
-      // already held
       if (!anchor.parentNode) block.el.before(anchor);
       block.remove();
       block = undefined;

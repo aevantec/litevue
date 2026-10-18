@@ -15,8 +15,13 @@ export class Block {
   end?: Text;
   owned = false;
 
+  // a teleported root's marker: where the block sits among its siblings
   get el() {
-    return this.start || (this.template as Element);
+    return (
+      this.start ||
+      (this.template as any).__marker ||
+      (this.template as Element)
+    );
   }
 
   constructor(template: Element, parentCtx: Context, isRoot = false) {
@@ -66,9 +71,9 @@ export class Block {
         parent.insertBefore(this.start, this.end);
         parent.insertBefore(this.template, this.end);
       }
-    } else if (!(this.template as any).__teleported) {
-      // teleported roots already live under their target
-      parent.insertBefore(this.template, anchor);
+    } else {
+      // a teleported root already lives under its target; its marker moves
+      parent.insertBefore(this.el, anchor);
     }
 
     // Registered once, and only after insertion. A block detached wholesale
@@ -110,6 +115,7 @@ export class Block {
           parent.removeChild(this.template);
         }
       }
+      (this.template as any).__marker?.remove();
       this.teardown();
     };
     // Leave hooks (transition plugin, unmount mode) defer removal until every
