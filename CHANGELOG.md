@@ -3,6 +3,17 @@
 ## [0.5.15](https://github.com/aevantec/litevue/compare/v0.5.14...v0.5.15) (2026-10-18)
 
 
+### Behavior changes
+
+* An element with an initial inline `display: none` and `v-show` or `v-transition` now shows when the expression is truthy; previously it stayed hidden ([#202](https://github.com/aevantec/litevue/issues/202))
+* A text-like `v-model` field whose model is `undefined` is now empty instead of reading "undefined" ([#202](https://github.com/aevantec/litevue/issues/202))
+* `v-bind="{ class: … }"` merges with the static `class` instead of replacing it ([#203](https://github.com/aevantec/litevue/issues/203))
+* A string `:style` merges with the static `style` attribute instead of replacing it, and a falsy `:style` clears only the properties it set. A property set both statically and by the binding is cleared, not restored, when the binding drops it ([#203](https://github.com/aevantec/litevue/issues/203))
+* Content after a nested `v-once` inside another `v-once` no longer updates ([#203](https://github.com/aevantec/litevue/issues/203))
+* An invalid `v-teleport` or `$template` selector no longer throws from `mount()`; it is reported to `app.onError()` as a `directive` error ([#203](https://github.com/aevantec/litevue/issues/203))
+* A root-scope `$watch`, from `app.scope.$watch()` or a root without `v-scope`, no longer runs after `app.unmount()` ([#204](https://github.com/aevantec/litevue/issues/204))
+
+
 ### Bug Fixes
 
 * keep nested v-once static, keep static class and style under v-bind, report bad markup selectors ([#203](https://github.com/aevantec/litevue/issues/203)) ([48b6563](https://github.com/aevantec/litevue/commit/48b656311ee7373c8b66d29cfd7f996b0d2af140))
