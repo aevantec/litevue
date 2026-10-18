@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.15](https://github.com/aevantec/litevue/compare/v0.5.14...v0.5.15) (2026-10-18)
+
+
+### Bug Fixes
+
+* keep nested v-once static, keep static class and style under v-bind, report bad markup selectors ([#203](https://github.com/aevantec/litevue/issues/203)) ([48b6563](https://github.com/aevantec/litevue/commit/48b656311ee7373c8b66d29cfd7f996b0d2af140))
+* show elements that start with display: none, and leave unset v-model fields empty ([#202](https://github.com/aevantec/litevue/issues/202)) ([3f39ee1](https://github.com/aevantec/litevue/commit/3f39ee188b47ca8ecff9006c2a64bd7a65d95251))
+* stop root-scope watchers on a full unmount ([#204](https://github.com/aevantec/litevue/issues/204)) ([4857799](https://github.com/aevantec/litevue/commit/4857799b9ba739c705fc17e88c9fdcd7350a29de))
+
 ## [0.5.14](https://github.com/aevantec/litevue/compare/v0.5.13...v0.5.14) (2026-10-17)
 
 
