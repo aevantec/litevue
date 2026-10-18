@@ -63,6 +63,7 @@ so the model receives the masked string.
 
 ## Behavior
 
+- A model that is `null` or `undefined` renders an empty text field, so a field bound to a key that does not exist yet, such as `form.name` on `{ form: {} }`, starts blank.
 - `<input type="number">` casts to a number without needing `.number`.
 - Writes are batched with every other reactive update. Read the DOM after [`$nextTick`](/magics/next-tick).
 - `.fill` only seeds when the model is `null`, `undefined` or an empty string — it never overwrites existing state.

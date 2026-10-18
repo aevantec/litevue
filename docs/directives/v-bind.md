@@ -46,6 +46,10 @@ the attribute.
 
 `:class` accepts a string, an object or an array, and merges with the static
 `class` attribute, on SVG elements too. `:style` accepts a string, an object or an array of objects.
+It sets and clears only the properties it binds, so a static `style` attribute
+and `v-show`'s `display` are kept when the binding changes or becomes `null`.
+A property set both statically and by the binding belongs to the binding, and
+is cleared rather than restored when the binding drops it.
 
 ```html
 <span class="badge" :class="{ active: isOpen, muted: !enabled }"></span>
@@ -61,7 +65,8 @@ Style objects also take CSS custom properties and `!important`:
 ### Binding an object
 
 Without an argument, each key becomes an attribute. A key that disappears is
-removed, whether the object is replaced or the key is deleted from it:
+removed, whether the object is replaced or the key is deleted from it. A `class`
+or `style` key merges with the static attribute, as `:class` and `:style` do:
 
 ```html
 <input v-bind="{ id: fieldId, 'aria-invalid': hasError, placeholder }" />

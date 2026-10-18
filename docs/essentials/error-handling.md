@@ -43,7 +43,7 @@ They appear while you develop — automatically from npm with Vite or webpack 5,
 |---|---|
 | `expression` | a directive's expression or a `{{ }}` interpolation threw |
 | `handler` | a [`v-on`](/directives/v-on) handler threw, or its promise rejected |
-| `directive` | a directive's own setup threw |
+| `directive` | a directive's own setup threw, or a `v-teleport` or `$template` selector does not parse |
 | `compile` | the expression could not be parsed into a function at all |
 | `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect — or an effect was stopped for re-running 100 times in one update |
 | `teardown` | a [plugin's teardown](/plugins/authoring#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |

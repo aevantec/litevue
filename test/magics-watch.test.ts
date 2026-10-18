@@ -114,6 +114,22 @@ describe('$watch', () => {
     expect(track).not.toHaveBeenCalled();
   });
 
+  // the root $watch belongs to the app, not to any mounted region
+  test('a root-scope watcher stops on a full unmount', async () => {
+    const track = vi.fn();
+    const { app } = await mount(`<div @mounted="$watch('n', track)"></div>`, {
+      n: 1,
+      track,
+    });
+    await tick(8);
+    app.scope.$watch('n', track);
+
+    app.unmount();
+    app.scope.n = 99;
+    await tick(8);
+    expect(track).not.toHaveBeenCalled();
+  });
+
   test('returns a function that stops the watcher', async () => {
     const track = vi.fn();
     let stop: (() => void) | undefined;

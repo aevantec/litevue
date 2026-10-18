@@ -80,7 +80,7 @@ one of them has finished leaving:
 
 - Use it instead of `v-show`, not alongside it.
 - Durations are read from computed styles, including delays and keyframe animations.
-- In show/hide mode the element is hidden only after the leave transition ends. As with `v-show`, showing it restores its own inline `display`, such as `style="display: flex"`.
+- In show/hide mode the element is hidden only after the leave transition ends. As with `v-show`, showing it restores its own inline `display`, such as `style="display: flex"`, and an initial `display: none` is cleared rather than restored.
 - Unmounting mid-transition removes the transition classes, so the element is not left in its enter or leave styles.
 - Toggling mid-transition is safe; the interrupted transition settles cleanly.
 
