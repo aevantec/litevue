@@ -154,11 +154,16 @@ const ownsChildren = (to: Element) => {
 
 const patchAttrs = (from: Element, to: Element) => {
   const owned = boundAttrs(to);
+  // the keys a v-bind object last set, so the server's other attributes still
+  // update; Object() so a missing or non-object value owns nothing
+  const bound = Object((from as any).__bound);
 
   for (const { name, value } of [...to.attributes]) {
     // directives were stripped from the live element during walk; re-adding
     // them leaves inert markup, or double-binds on a later walk
-    if (dirRE.test(name) || owned.has(name)) continue;
+    if (dirRE.test(name) || owned.has(name) || name in bound) {
+      continue;
+    }
     if (from.getAttribute(name) !== value) from.setAttribute(name, value);
   }
 

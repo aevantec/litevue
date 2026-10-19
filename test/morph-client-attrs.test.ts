@@ -80,6 +80,45 @@ describe('morph keeps attributes a directive wrote', () => {
     expect(el().getAttribute('title')).toBe('x');
   });
 
+  // the server's static value of a key the object binds used to replace the
+  // bound one until the binding next changed
+  test.each([
+    [
+      'class',
+      `class="static" v-bind="{ class: on ? 'live' : '' }"`,
+      'static live',
+    ],
+    ['href', `href="/static" v-bind="{ href: on ? '/live' : null }"`, '/live'],
+    [
+      'style',
+      `style="color: red" v-bind="{ style: { fontWeight: on ? 'bold' : '' } }"`,
+      'color: red; font-weight: bold;',
+    ],
+  ])(
+    'v-bind with an object keeps a bound %s over its static value',
+    async (attr, attrs, live) => {
+      const html = `<section id="r" v-scope="{ on: true }"><a id="p" ${attrs}>hi</a></section>`;
+      const r = await mount(html);
+      expect(el().getAttribute(attr)).toBe(live);
+
+      morph(r, html);
+
+      expect(el().getAttribute(attr)).toBe(live);
+    }
+  );
+
+  test('a key the v-bind object dropped goes back to the server', async () => {
+    const html = `<section id="r" v-scope="{ attrs: { title: 'x' } }"><p id="p" title="static" v-bind="attrs">hi</p></section>`;
+    const r = await mount(html);
+    (r as any).__ctx.scope.attrs = {};
+    await tick();
+    expect(el().hasAttribute('title')).toBe(false);
+
+    morph(r, html);
+
+    expect(el().getAttribute('title')).toBe('static');
+  });
+
   test('v-collapse keeps a closed element closed', async () => {
     const html = `<section id="r" v-scope="{ open: false }"><div id="p" v-collapse="open">hi</div></section>`;
     const r = await mount(html);
@@ -205,5 +244,17 @@ describe('morph leaves open to the user on details and dialog', () => {
     morph(r, html);
 
     expect(el().hasAttribute('open')).toBe(false);
+  });
+});
+
+describe('morph with a v-bind that is not an object', () => {
+  test('patches the element without throwing', async () => {
+    const html = `<section id="r" v-scope><p id="p" title="a" v-bind="'oops'">hi</p></section>`;
+    const r = await mount(html);
+
+    expect(() =>
+      morph(r, html.replace('title="a"', 'title="b"'))
+    ).not.toThrow();
+    expect(el().getAttribute('title')).toBe('b');
   });
 });

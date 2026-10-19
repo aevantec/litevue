@@ -12,13 +12,9 @@ import {
 
 const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
 
-export const bind: Directive<Element & { _class?: string | null }> = ({
-  el,
-  get,
-  effect,
-  arg,
-  modifiers,
-}) => {
+export const bind: Directive<
+  Element & { _class?: string | null; __bound?: any }
+> = ({ el, get, effect, arg, modifiers }) => {
   let prevValue: any;
 
   // record static class, for the object form too, and once: a second binding
@@ -48,6 +44,8 @@ export const bind: Directive<Element & { _class?: string | null }> = ({
     // a copy, not the object: one mutated in place would otherwise be its own
     // previous value, and a deleted key would never be cleared
     prevValue = isPlainObject(value) ? { ...value } : value;
+    // the object form's keys, so morph knows which attributes it owns
+    if (!arg) el.__bound = prevValue;
   });
 };
 
