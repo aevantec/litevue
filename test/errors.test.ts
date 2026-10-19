@@ -285,6 +285,23 @@ describe('every construct reports where it came from', () => {
 });
 
 describe('handler registry lifecycle', () => {
+  // the registry was iterated live, so the splice shifted the next handler
+  // into the slot the loop had already visited
+  test('a handler that unregisters itself does not hide the error from the next', async () => {
+    document.body.innerHTML = `<div v-scope><b v-text="missing"></b></div>`;
+    const app = createApp();
+    const calls: string[] = [];
+    const off = app.onError(() => {
+      calls.push('once');
+      off();
+    });
+    app.onError(() => calls.push('always'));
+    app.mount(document.body.firstElementChild!);
+    await tick();
+
+    expect(calls).toEqual(['once', 'always']);
+  });
+
   test('a full unmount drops that app error handlers', async () => {
     let calls = 0;
     document.body.innerHTML = `<div id="a" v-scope="{}"></div>`;

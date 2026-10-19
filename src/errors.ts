@@ -8,7 +8,7 @@ export type ErrorPhase =
   | 'expression'
   /** inside a v-on handler, after the event fired */
   | 'handler'
-  /** a directive's own setup threw */
+  /** a directive's own setup threw, or a `v-teleport` or `$template` selector does not parse */
   | 'directive'
   /** the expression could not be compiled into a function at all */
   | 'compile'
@@ -128,8 +128,9 @@ const PHASES: Record<ErrorPhase, string> = {
 
 export const handleError = (err: unknown, info: ErrorInfo) => {
   // Handlers run first and in production too — this is where an app routes
-  // errors to monitoring. One throwing must not hide the original error.
-  for (const fn of handlers) {
+  // errors to monitoring. One throwing must not hide the original error. A
+  // copy, so a handler that unregisters itself cannot skip the next one.
+  for (const fn of [...handlers]) {
     try {
       fn(err, info);
     } catch (inner) {

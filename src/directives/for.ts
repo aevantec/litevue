@@ -226,7 +226,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
             }
           }
         }
-        nextBlocks.unshift((nextBlock = block));
+        // indexed, not unshift: the loop visits each index once, and unshift
+        // made a large update quadratic
+        nextBlocks[i] = nextBlock = block;
       }
       blocks = nextBlocks;
     }

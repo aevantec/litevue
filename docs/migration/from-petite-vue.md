@@ -44,6 +44,12 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - Vue's key aliases work — `.esc`, `.space`, `.up`, `.down`, `.delete` — and `.left` / `.right` filter arrow keys on keyboard events.
 - `v-html` renders `undefined` and `null` as empty; petite-vue writes the text `"undefined"`.
 - An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally.
+- `v-show` shows an element that starts with an inline `style="display: none"`; petite-vue restores that `none`, so the element never appears.
+- `v-model` on a field whose model is `undefined` renders it empty; petite-vue writes the text `"undefined"`.
+- `v-bind="{ class: … }"` merges with a static `class`, as `:class` does; petite-vue replaces it.
+- `:style` sets and clears only the properties it binds, so static inline styles survive; in petite-vue a string `:style` replaces the whole attribute and a falsy one removes it.
+- A `v-once` nested inside another keeps the whole outer region static; in petite-vue the content after the inner one stays reactive.
+- A `$template` selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the rest of the page still mounts; in petite-vue it throws out of `mount()`.
 - A getter in a `v-scope` object is not run at setup, so one that throws is reported where it is read; in petite-vue it stops the whole page from mounting.
 - The compiled-expression cache is bounded, so a page that morphs in server HTML with per-record data does not grow it for its whole life.
 - A `<select multiple>` model must be an array. petite-vue also reads a `Set`; LiteVue selects nothing for one and warns in the development build, since a `Set` cannot update reactively here. Convert with `[...set]`.
