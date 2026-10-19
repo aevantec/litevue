@@ -193,7 +193,7 @@ still carries the directives:
 | `:class` | Leaves the live `class` alone |
 | `v-model` | Leaves `value` and `checked` alone |
 | `<details>` or `<dialog>` | Leaves `open` alone, so one the user opened stays open |
-| `v-bind` with an object | Updates the attributes the server sends, and removes none |
+| `v-bind` with an object | Leaves alone the attributes the object currently binds, updates the others the server sends, and removes none |
 | Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
 | An element with `v-if` or `v-for` | Leaves the whole containing element alone |
