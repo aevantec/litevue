@@ -61,7 +61,7 @@ Full documentation lives in the **[docs site](https://litevue.dev/)** (source in
 
 ```sh
 pnpm install
-pnpm dev        # test pages at localhost:3000
+pnpm dev        # every example and playground page, at localhost:3000
 pnpm test       # vitest suite
 pnpm build      # core, devtools and plugin bundles, production and development
 pnpm docs:dev   # documentation site
