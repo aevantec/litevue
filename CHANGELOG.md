@@ -3,6 +3,15 @@
 ## [0.5.16](https://github.com/aevantec/litevue/compare/v0.5.15...v0.5.16) (2026-10-26)
 
 
+### Behavior changes
+
+* A teleported element is removed from its target when morph or navigate removes the markup it was written in, and morphing a region to the same markup no longer teleports a second copy. Each `v-teleport` element leaves an empty text node at its original position ([#209](https://github.com/aevantec/litevue/issues/209))
+* Morph no longer overwrites an attribute that a `v-bind` object currently binds with the server's static value; it still updates the element's other attributes ([#210](https://github.com/aevantec/litevue/issues/210))
+* An error reaches every `app.onError()` handler registered when it was raised, including when an earlier handler unregisters itself ([#211](https://github.com/aevantec/litevue/issues/211))
+* A throw from a `v-model` write, or from a handler or setter a directive compiled (`v-resize`, `v-popover`, custom directives using `get(code)`), is reported to `app.onError()` instead of escaping as an uncaught exception ([#213](https://github.com/aevantec/litevue/issues/213))
+* A `v-on` handler error's `info.source` is the attribute as written: `@click.right` rather than `@contextmenu`, `v-on:click` rather than `@click`. Plain `@click` is unchanged ([#213](https://github.com/aevantec/litevue/issues/213))
+
+
 ### Bug Fixes
 
 * deliver an error to every onError handler, and build v-for rows by index ([#211](https://github.com/aevantec/litevue/issues/211)) ([60a617b](https://github.com/aevantec/litevue/commit/60a617b0c4a374cc742ae9014fb1a351cad317df))
