@@ -9,7 +9,7 @@ import { checkAttr } from './utils';
 import { ref } from './directives/ref';
 import { Context, createScopedContext } from './context';
 import { registerScope } from './devtools';
-import { own, setOwner } from './ownership';
+import { disposeSubtree, own, setOwner } from './ownership';
 import { describeEl, handleError } from './errors';
 import { deferScope } from './lazy';
 
@@ -28,7 +28,7 @@ export let inOnce = false;
  * and via the node — and a second run would remove a listener the next mount
  * installed.
  */
-const addCleanup = (ctx: Context, cleanup: () => void) => {
+const addCleanup = (ctx: Context, cleanup: () => void, node?: Node) => {
   ctx.cleanups.push(cleanup);
   own(() => {
     const i = ctx.cleanups.indexOf(cleanup);
@@ -36,7 +36,7 @@ const addCleanup = (ctx: Context, cleanup: () => void) => {
       ctx.cleanups.splice(i, 1);
       cleanup();
     }
-  });
+  }, node);
 };
 
 // A deferred region walks after the original walk has reset inOnce, so it
@@ -105,11 +105,20 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
         // hand the parent's child walk its original next sibling — after
         // the move, el.nextSibling points into the target instead
         teleportNext = el.nextSibling;
-        // Block.insert must not pull a teleported block root back to the
-        // original position
-        (el as any).__teleported = true;
+        // A marker holds the original place, so disposing that subtree still
+        // reaches the element. A block root has no parent yet; Block.insert
+        // places its marker.
+        const marker = ((el as any).__marker = new Text(''));
+        el.before(marker);
         target.appendChild(el);
-        ctx.cleanups.push(() => el.remove());
+        addCleanup(
+          ctx,
+          () => {
+            disposeSubtree(el);
+            el.remove();
+          },
+          marker
+        );
       } else if (import.meta.env.DEV && target === null) {
         console.error(`v-teleport target "${exp}" not found.`);
       }
@@ -284,7 +293,32 @@ const applyDirective = (
   displayExp?: string
 ) => {
   const meta = { source, el, expression: displayExp };
-  const get = (e = exp) => evaluate(ctx.scope, e, el, meta);
+  const report = (err: unknown) =>
+    handleError(err, {
+      phase: 'handler',
+      source,
+      el,
+      expression: exp,
+      scope: ctx.scope,
+    });
+  // Code a directive compiles itself is a handler or setter, called later from
+  // an event or observer, outside evaluate's containment. Its calls report
+  // throws and rejections; `get()` of the directive's own value is untouched.
+  const get = (code?: string) => {
+    const value = evaluate(ctx.scope, code ?? exp, el, meta);
+    return code && typeof value == 'function'
+      ? (...args: any[]) => {
+          try {
+            const result = value(...args);
+            // only a real Promise: a thenable may be a lazy query builder
+            if (result instanceof Promise) result.catch(report);
+            return result;
+          } catch (err) {
+            report(err);
+          }
+        }
+      : value;
+  };
   // ctx.effect is passed through unwrapped: directives are applied while the
   // walk cursor still points at this element, so anything they create
   // synchronously is attributed correctly. v-effect is the one exception and

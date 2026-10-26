@@ -159,3 +159,25 @@ describe('v-for keys stay reactive', () => {
     ).toEqual(['a1', 'B1', 'c1']);
   });
 });
+
+describe('a keyed update that moves, inserts and removes at once', () => {
+  test('renders the new order and reuses the surviving rows', async () => {
+    const root = mount(`
+      <div v-scope="{ items: [1, 2, 3, 4, 5] }">
+        <i v-for="n in items" :key="n">{{ n }}</i>
+      </div>`);
+    await tick();
+    const before = new Map(
+      [...document.querySelectorAll('i')].map((i) => [i.textContent, i])
+    );
+
+    root.__ctx.scope.items = [5, 6, 3, 1, 7];
+    await tick();
+
+    const after = [...document.querySelectorAll('i')];
+    expect(after.map((i) => i.textContent)).toEqual(['5', '6', '3', '1', '7']);
+    for (const kept of ['5', '3', '1']) {
+      expect(after.find((i) => i.textContent === kept)).toBe(before.get(kept));
+    }
+  });
+});
