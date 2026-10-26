@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createApp } from '../src';
 import type { ErrorInfo } from '../src';
 import { clearErrorHandlers } from '../src/errors';
+import { resize } from '../src/plugins/resize';
 import { tick } from './utils';
 
 let seen: { err: unknown; info: ErrorInfo }[] = [];
@@ -388,5 +389,56 @@ describe('invalid selectors in markup', () => {
     expect(seen[0].info.phase).toBe('directive');
     expect(seen[0].info.source).toBe('v-scope');
     expect(root.querySelector('b')!.textContent).toBe('1');
+  });
+});
+
+// compiled once and called later from an event or observer, so a throw used to
+// escape as an uncaught exception that onError never saw
+describe('handlers compiled by a directive', () => {
+  test('a v-model write that throws is reported', async () => {
+    const { root } = mount(
+      `<div v-scope="{}"><input v-model="form.name" /></div>`
+    );
+    await tick();
+    seen = [];
+    const input = root.querySelector('input')!;
+    input.value = 'x';
+
+    expect(() => input.dispatchEvent(new Event('input'))).not.toThrow();
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info).toMatchObject({
+      phase: 'handler',
+      source: 'v-model',
+      expression: 'form.name',
+      el: input,
+    });
+  });
+
+  test('a v-resize handler that throws is reported', async () => {
+    document.body.innerHTML = `<div v-scope="{ n: 0 }"><p v-resize.window="n++ && missing()"></p></div>`;
+    const app = createApp().use(resize);
+    app.onError((err, info) => seen.push({ err, info }));
+    app.mount(document.body.firstElementChild!);
+    await tick();
+
+    expect(() => window.dispatchEvent(new Event('resize'))).not.toThrow();
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info).toMatchObject({
+      phase: 'handler',
+      source: 'v-resize.window',
+    });
+    app.unmount();
+  });
+
+  test("get() leaves the directive's own function value as it is", async () => {
+    let got: unknown;
+    document.body.innerHTML = `<div v-scope><i v-probe="fn"></i></div>`;
+    // root methods are bound, so the scope's copy is the value to compare
+    const app = createApp({ fn: () => 1 }).directive('probe', ({ get }) => {
+      got = get();
+    });
+    app.mount(document.body.firstElementChild!);
+
+    expect(got).toBe(app.scope.fn);
   });
 });

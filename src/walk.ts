@@ -293,7 +293,32 @@ const applyDirective = (
   displayExp?: string
 ) => {
   const meta = { source, el, expression: displayExp };
-  const get = (e = exp) => evaluate(ctx.scope, e, el, meta);
+  const report = (err: unknown) =>
+    handleError(err, {
+      phase: 'handler',
+      source,
+      el,
+      expression: exp,
+      scope: ctx.scope,
+    });
+  // Code a directive compiles itself is a handler or setter, called later from
+  // an event or observer, outside evaluate's containment. Its calls report
+  // throws and rejections; `get()` of the directive's own value is untouched.
+  const get = (code?: string) => {
+    const value = evaluate(ctx.scope, code ?? exp, el, meta);
+    return code && typeof value == 'function'
+      ? (...args: any[]) => {
+          try {
+            const result = value(...args);
+            // only a real Promise: a thenable may be a lazy query builder
+            if (result instanceof Promise) result.catch(report);
+            return result;
+          } catch (err) {
+            report(err);
+          }
+        }
+      : value;
+  };
   // ctx.effect is passed through unwrapped: directives are applied while the
   // walk cursor still points at this element, so anything they create
   // synchronously is attributed correctly. v-effect is the one exception and
