@@ -1,7 +1,6 @@
 import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
-import { handleError } from '../errors';
 import { warnOnce } from '../warn';
 
 /**
@@ -62,7 +61,7 @@ const keyAliases: Record<string, string> = {
 const nonKeyModifierRE =
   /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
-export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
+export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   if (!arg) {
     if (import.meta.env.DEV) {
       console.error(`v-on="obj" syntax is not supported in LiteVue.`);
@@ -74,36 +73,13 @@ export const on: Directive = ({ el, get, ctx, exp, arg, modifiers }) => {
   // can be reported. Statement lists like `a++; b++` keep the block form.
   // `await` makes the handler async; handlers without it stay synchronous.
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
-  const raw = simplePathRE.test(exp)
+  // compiled code, so get() hands back a handler that reports its own throws
+  // and rejections
+  let handler = simplePathRE.test(exp)
     ? get(`(e => ${exp}(e))`)
     : isExpression(exp)
       ? get(`(${a}$event => (${exp}))`)
       : get(`(${a}$event => { ${exp} })`);
-
-  // The event fires long after get() returned, so the evaluator's try/catch
-  // no longer applies; without this, throws go unattributed and rejections
-  // are silent.
-  let handler = (...args: any[]) => {
-    try {
-      const result = raw(...args);
-      // only a real Promise: a query builder is a thenable with no .catch,
-      // and would run its query if its then were called on its behalf
-      if (result instanceof Promise) result.catch(fail);
-      return result;
-    } catch (e) {
-      fail(e);
-    }
-  };
-
-  function fail(e: unknown) {
-    handleError(e, {
-      phase: 'handler',
-      source: `@${arg}`,
-      expression: exp,
-      el,
-      scope: ctx.scope,
-    });
-  }
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
