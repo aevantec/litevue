@@ -81,7 +81,7 @@ app.directive('uppercase', ({ el, get, effect }) => {
 | Context field | Meaning |
 | --- | --- |
 | `el` | The element |
-| `get(exp?)` | Evaluate the directive's expression, or another one, in its scope |
+| `get(exp?)` | Evaluate the directive's expression, or another one, in its scope. A function compiled from your own `exp`, such as a handler or setter, comes back wrapped, so a throw or rejection when you call it later is reported to [`app.onError()`](/essentials/error-handling#app-onerror) |
 | `effect(fn)` | Run `fn` reactively; stopped automatically on unmount |
 | `exp` | The raw expression text |
 | `arg` | The argument: `foo` in `v-name:foo` |
