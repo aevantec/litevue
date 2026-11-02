@@ -47,8 +47,11 @@ export const createContext = (parent?: Context): Context => {
         queueJob(fn);
         return fn as any;
       }
+      // Lazy, and run once registered: a first run that throws has already
+      // subscribed, so without a runner the next write threw at the writer.
       const e: ReactiveEffectRunner = rawEffect(fn, {
         scheduler: () => queueJob(e),
+        lazy: true,
       });
       ctx.effects.push(e);
       // Also owned by the walked node, so detaching it alone releases the
@@ -58,6 +61,7 @@ export const createContext = (parent?: Context): Context => {
         stopEffect(e);
         remove(ctx.effects, e);
       });
+      e();
       return e;
     },
   };
