@@ -2,15 +2,26 @@ import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
 import { warnOnce } from '../warn';
+import { EVAL_CACHE_LIMIT } from '../eval';
 
 /**
  * Can `exp` stand as a single expression, or is it a statement list?
  * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
  */
-const expressionCache: Record<string, boolean> = Object.create(null);
+let expressionCache: Record<string, boolean> = Object.create(null);
+let cachedExpressions = 0;
+
+/** For tests: how many handler expressions are memoised. */
+export const expressionCacheSize = () => cachedExpressions;
+
 const isExpression = (exp: string) => {
   const hit = expressionCache[exp];
   if (hit !== undefined) return hit;
+  // bounded like the evaluator's cache, which morph-streamed handlers grow
+  if (++cachedExpressions > EVAL_CACHE_LIMIT) {
+    expressionCache = Object.create(null);
+    cachedExpressions = 1;
+  }
   try {
     new Function(`return (${exp})`);
     return (expressionCache[exp] = true);
