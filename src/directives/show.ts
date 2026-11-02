@@ -1,10 +1,13 @@
 import { Directive } from '.';
 
-export const show: Directive<HTMLElement> = ({ el, get, effect }) => {
-  // an initial none only hides the element until mount; restoring it would
-  // keep the element hidden for good
-  const initialDisplay = el.style.display == 'none' ? '' : el.style.display;
+export const show: Directive<
+  HTMLElement & { _vod?: string; _vsh?: boolean }
+> = ({ el, get, effect }) => {
+  // the display to show again, which :style updates; an initial none only
+  // hides the element until mount, and restoring it would hide it for good
+  el._vod = el.style.display == 'none' ? '' : el.style.display;
   effect(() => {
-    el.style.display = get() ? initialDisplay : 'none';
+    el._vsh = !get();
+    el.style.display = el._vsh ? 'none' : el._vod!;
   });
 };

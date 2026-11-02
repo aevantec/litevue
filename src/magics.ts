@@ -1,5 +1,5 @@
 import { pauseTracking, resetTracking } from '@vue/reactivity';
-import { remove } from '@vue/shared';
+import { hasChanged, remove } from '@vue/shared';
 import type { Context } from './context';
 import { stopEffect } from './scheduler';
 
@@ -40,7 +40,8 @@ export const createWatch =
       const previous = oldValue;
       // recorded first, so a callback that throws cannot leave it stale
       oldValue = value;
-      if (init ? value !== previous : options?.immediate) {
+      // Object.is, as Vue: a value that stays NaN has not changed
+      if (init ? hasChanged(value, previous) : options?.immediate) {
         // don't let reads inside the callback become dependencies; the
         // finally matters, since a paused tracker stays paused page-wide
         pauseTracking();
