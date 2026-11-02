@@ -1,4 +1,4 @@
-import { NOOP } from '@vue/shared';
+import { NOOP, remove } from '@vue/shared';
 import type { Context } from './context';
 import { own } from './ownership';
 
@@ -84,6 +84,10 @@ export const deferScope = (
     walk(el, ctx, once);
   });
   ctx.cleanups.push(dispose);
-  own(dispose);
+  // out of ctx.cleanups too, or it keeps a region morph removed reachable
+  own(() => {
+    remove(ctx.cleanups, dispose);
+    dispose();
+  });
   return true;
 };

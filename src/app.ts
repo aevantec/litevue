@@ -1,4 +1,5 @@
 import { reactive } from '@vue/reactivity';
+import { remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
 import { bindContextMethods, createContext } from './context';
@@ -21,7 +22,7 @@ import { SCOPE_SELECTOR } from './lazy';
 // DEV: elements this app has already walked, so a second mount of the same
 // element can say why nothing happened. Weak, and never read in production.
 const mountedRoots = new WeakSet<Element>();
-import { disposeSubtree } from './ownership';
+import { disposeSubtree, own } from './ownership';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]/\\]/g, '\\$&');
@@ -290,6 +291,10 @@ export const createApp = (initialData?: any) => {
         // appended, not assigned: mount() may be called repeatedly, and
         // unmount() must reach every root, not just the last batch
         rootBlocks.push(block);
+        // a root that morph removes leaves the list too, not only on unmount
+        own(() => remove(rootBlocks, block), el);
+        // forgotten on teardown, so morph cannot bind new markup to it
+        block.ctx.cleanups.push(() => delete (el as any).__ctx);
       }
       return this;
     },
