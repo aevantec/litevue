@@ -41,7 +41,7 @@ The browser keeps everything else:
 
 - Clicks with Ctrl, Cmd, Shift or Alt held, and middle clicks
 - Links and forms with a `target` other than `_self`, and links with `download`
-- Links to another origin, and `#hash` links within the current page
+- Links to another origin, and `#hash` links within the current page, including `href="#"`
 - Links inside SVG
 - `POST` forms with `enctype="text/plain"`
 - `<form method="dialog">`
@@ -105,6 +105,8 @@ A `GET` form navigates to its `action` with the fields as the query string. A `P
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
+When the server redirects a `POST` to a page the plugin cannot render, such as one on another origin, that page loads in full: following the redirect is a `GET`, so nothing is sent twice. A `POST` answered with a file, such as a CSV export, cannot be loaded that way. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
+
 While a form's `POST` is in flight, further submits of that form are ignored, so a double click sends one request. A `GET` form submitted again restarts with the newer values, so a search always shows the latest query.
 
 ## Loading state
@@ -158,7 +160,7 @@ Each fires on `document`, with `event.detail.url`:
 | --- | --- |
 | `navigate:before` | Before fetching. For a link or a form, call `preventDefault()` to stay on the current page. Back and forward have already changed the URL, so they cannot be cancelled |
 | `navigate:after` | After the new page is in place |
-| `navigate:error` | When a navigation fails; `detail.error` says why. A `GET` then falls back to a full load |
+| `navigate:error` | When a navigation fails; `detail.error` says why. A `GET`, or a `POST` the server redirected, then falls back to a full load |
 
 ```js
 document.addEventListener('navigate:before', () => progress.start());
@@ -191,12 +193,12 @@ Back and forward cannot be held this way, since the URL has already changed when
 
 - Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load. A server that returns a different response for them must also send `Vary: X-Requested-With`; otherwise a browser or proxy cache can serve that response to a full load of the same URL.
 - A navigation still in flight is cancelled when another starts.
-- The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element.
+- The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element. A `POST` falls back only when the server redirected it; see [Forms](#forms).
 - `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
-- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
+- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
 - There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
 - On full unmount, the plugin stops intercepting and removes its live region.
 

@@ -28,6 +28,9 @@ const STATUS_ID = 'litevue-navigate-status';
 const HOVER_DELAY = 100;
 // as Turbo: a prefetched page older than this is fetched again
 const PREFETCH_TTL = 10_000;
+// scrolling must pause this long before its position is saved: Safari throws
+// past 100 history writes in 10 seconds
+const SCROLL_SAVE_DELAY = 150;
 
 const isLocal = (url: URL) => url.origin === location.origin;
 const pathOf = (url: { pathname: string; search: string }) =>
@@ -38,6 +41,9 @@ const encode = (data: FormData) =>
   new URLSearchParams(
     [...data].map(([k, v]) => [k, (v as File).name ?? v] as [string, string])
   );
+// remembered on the current entry, so back and forward can restore it
+const saveScroll = () =>
+  history.replaceState({ ...history.state, y: scrollY }, '');
 const emit = (name: string, detail: object, cancelable = false) =>
   document.dispatchEvent(
     new CustomEvent('navigate:' + name, { detail, cancelable })
@@ -129,6 +135,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     | { href: string; at: number; c: AbortController; res: Promise<Response> }
     | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let saving: ReturnType<typeof setTimeout> | undefined;
   const fresh = (href: string) =>
     pre?.href === href && Date.now() - pre.at < PREFETCH_TTL;
   const setBusy = (els: Element[]) => {
@@ -210,8 +217,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     const c = (controller = p ? p.c : new AbortController());
     setBusy([document.documentElement, form!].filter(Boolean));
     const post = init.method === 'POST';
-    // remembered so back can restore it
-    if (y == null) history.replaceState({ ...history.state, y: scrollY }, '');
+    let res: Response | undefined;
+    if (y == null) saveScroll();
     try {
       if (!app.scope.$morph) {
         import.meta.env.DEV &&
@@ -220,7 +227,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
           );
         throw new Error('navigate needs the morph plugin');
       }
-      const res = await (p
+      res = await (p
         ? p.res
         : fetch(href, {
             ...init,
@@ -256,17 +263,19 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
+      const push = res.ok && y == null;
       const run = () =>
-        c === controller &&
-        show(from, doc, url, res.ok && y == null, dropOld, y);
+        c === controller && show(from, doc, url, push, dropOld, y);
       options.transition && document.startViewTransition
         ? document.startViewTransition(run)
         : run();
     } catch (error) {
       if (c.signal.aborted) return;
       emit('error', { url: href, error });
-      // replaying a POST as a GET would be wrong; the form stays as it was
+      // replaying a POST as a GET would be wrong, so the form stays as it was;
+      // a redirect, though, already leads to a GET
       if (!post) location.assign(href);
+      else if (res?.redirected) location.assign(res.url);
     } finally {
       c === controller && setBusy([]);
     }
@@ -281,8 +290,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     if (a.target && a.target !== '_self') return;
     const url = new URL(a.href, location.href);
     if (!isLocal(url)) return;
-    // a jump within this page is the browser's
-    if (url.hash && pathOf(url) === pathOf(location)) return;
+    // a jump within this page is the browser's; href="#" has an empty hash
+    if (url.href.includes('#') && pathOf(url) === pathOf(location)) return;
     return url;
   };
 
@@ -361,7 +370,14 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     go(url.href, {}, form);
   };
 
+  const onScroll = () => {
+    clearTimeout(saving);
+    saving = setTimeout(saveScroll, SCROLL_SAVE_DELAY);
+  };
+
   const onPop = (e: PopStateEvent) => {
+    // the browser has moved to another entry; a pending save would land there
+    clearTimeout(saving);
     // a hash change within the rendered page is the browser's
     if (pathOf(location) === rendered) return;
     go(location.href, {}, undefined, e.state?.y || 0);
@@ -371,7 +387,10 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   document.addEventListener('submit', onSubmit);
   hovers.forEach(([type, fn]) => document.addEventListener(type, fn));
   addEventListener('popstate', onPop);
+  addEventListener('scroll', onScroll);
   return () => {
+    clearTimeout(saving);
+    removeEventListener('scroll', onScroll);
     controller?.abort();
     pre?.c.abort();
     clearTimeout(timer);
