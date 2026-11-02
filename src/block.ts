@@ -5,15 +5,16 @@ import { stopEffect } from './scheduler';
 import { own } from './ownership';
 
 export class Block {
-  template: Element | DocumentFragment;
-  ctx: Context;
-  key?: any;
-  parentCtx?: Context;
+  // `declare`: assigned in the constructor or later, so no field initializers
+  declare template: Element | DocumentFragment;
+  declare ctx: Context;
+  declare key?: any;
+  declare parentCtx?: Context;
 
-  isFragment: boolean;
-  start?: Text;
-  end?: Text;
-  owned = false;
+  declare isFragment: boolean;
+  declare start?: Text;
+  declare end?: Text;
+  declare owned?: boolean;
 
   // a teleported root's marker: where the block sits among its siblings
   get el() {

@@ -1,3 +1,5 @@
+import { NOOP } from '@vue/shared';
+
 export type DevtoolsEvent =
   | 'scope:mount'
   | 'scope:unmount'
@@ -107,15 +109,13 @@ const emit = (event: DevtoolsEvent, ...args: any[]) => {
   listeners[event].forEach((fn) => fn(...args));
 };
 
-const noop = () => {};
-
 export const registerScope = (
   el: Element,
   scope: Record<string, any>,
   exp?: string,
   name?: string
 ): (() => void) => {
-  if (isDisabled()) return noop;
+  if (isDisabled()) return NOOP;
   scopes.set(el, scope);
   if (exp) exps.set(el, exp);
   if (name) names.set(el, name);

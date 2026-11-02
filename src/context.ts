@@ -104,15 +104,17 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   // cannot fall them through to the parent
   hide(mergedScope, '$watch', createWatch(scopedCtx));
   hide(mergedScope, '$id', createId());
-  bindContextMethods(reactiveProxy);
+  // keys read off the raw scope: through the proxy, Object.keys tracks it, and
+  // a v-for mounting rows inside its effect picked up one dependency per row
+  bindContextMethods(reactiveProxy, mergedScope);
   return scopedCtx;
 };
 
 // Read from the descriptor, not the property: reading runs every getter,
 // outside any error containment, so one throwing getter aborted the mount.
-export const bindContextMethods = (scope: Record<string, any>) => {
-  for (const key of Object.keys(scope)) {
-    const fn = Object.getOwnPropertyDescriptor(scope, key)!.value;
+export const bindContextMethods = (scope: Record<string, any>, raw = scope) => {
+  for (const key of Object.keys(raw)) {
+    const fn = Object.getOwnPropertyDescriptor(raw, key)!.value;
     if (typeof fn === 'function') {
       scope[key] = fn.bind(scope);
     }

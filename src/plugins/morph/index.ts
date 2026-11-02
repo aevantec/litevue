@@ -158,7 +158,7 @@ const patchAttrs = (from: Element, to: Element) => {
   // update; Object() so a missing or non-object value owns nothing
   const bound = Object((from as any).__bound);
 
-  for (const { name, value } of [...to.attributes]) {
+  for (const { name, value } of to.attributes) {
     // directives were stripped from the live element during walk; re-adding
     // them leaves inert markup, or double-binds on a later walk
     if (dirRE.test(name) || owned.has(name) || name in bound) {

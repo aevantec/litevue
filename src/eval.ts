@@ -1,3 +1,4 @@
+import { NOOP } from '@vue/shared';
 import { handleError, type ErrorInfo } from './errors';
 
 // Bounded: morph can stream server HTML whose expressions inline per-record
@@ -62,6 +63,6 @@ const toFunction = (exp: string, el?: Node, meta?: EvalMeta): Function => {
       source: meta?.source,
       el: meta?.el ?? el,
     });
-    return () => {};
+    return NOOP;
   }
 };
