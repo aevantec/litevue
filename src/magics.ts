@@ -1,4 +1,5 @@
 import { pauseTracking, resetTracking } from '@vue/reactivity';
+import { remove } from '@vue/shared';
 import type { Context } from './context';
 import { stopEffect } from './scheduler';
 
@@ -51,5 +52,9 @@ export const createWatch =
       }
       init = true;
     });
-    return () => stopEffect(runner);
+    // out of ctx.effects too, or each stopped watcher stays until unmount
+    return () => {
+      stopEffect(runner);
+      remove(ctx.effects, runner);
+    };
   };

@@ -1,3 +1,5 @@
+import { remove } from '@vue/shared';
+
 /**
  * Per-node disposal.
  *
@@ -35,6 +37,10 @@ export const own = (dispose: Disposer, node = owner) => {
   if (list) list.push(dispose);
   else owned.set(node, [dispose]);
 };
+
+/** Withdraws a disposer from `node`, for an owner that removes it itself. */
+export const disown = (dispose: Disposer, node: Node) =>
+  remove(owned.get(node) || [], dispose);
 
 /**
  * Disposes `node` and its subtree. Safe on an unowned node, and idempotent —

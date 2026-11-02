@@ -310,6 +310,9 @@ const applyDirective = (
     const value = evaluate(ctx.scope, code ?? exp, el, meta);
     return code && typeof value == 'function'
       ? (...args: any[]) => {
+          // owned by the element, as in the walk: a $watch started here
+          // stops when the element goes, not only on a full unmount
+          const previous = setOwner(el);
           try {
             const result = value(...args);
             // only a real Promise: a thenable may be a lazy query builder
@@ -317,6 +320,8 @@ const applyDirective = (
             return result;
           } catch (err) {
             report(err);
+          } finally {
+            setOwner(previous);
           }
         }
       : value;

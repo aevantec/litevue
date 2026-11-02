@@ -3,7 +3,7 @@ import { evaluate } from '../eval';
 import { checkAttr } from '../utils';
 import { Context } from '../context';
 import type { ReactiveEffectRunner } from '@vue/reactivity';
-import { own, setOwner } from '../ownership';
+import { disown, own, setOwner } from '../ownership';
 import { stopEffect } from '../scheduler';
 
 interface Branch {
@@ -56,6 +56,8 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const removeActiveBlock = () => {
     if (block) {
       if (!anchor.parentNode) block.el.before(anchor);
+      // removal disposes the block's nodes, which must not stop this effect
+      disown(stopBranches, block.el);
       block.remove();
       block = undefined;
     }
