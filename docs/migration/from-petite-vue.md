@@ -38,6 +38,7 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - `v-for` and `v-if` work as direct children of a `<template v-if>` or `<template v-for>`; petite-vue throws.
 - An update made while others are being applied is no longer lost — for example, `{{ a }}-{{ x }}` beside a `v-effect` that sets `x` from `a`.
 - `:title="null"` removes the attribute, as Vue does; petite-vue writes the text `"null"` on any name the element has as a property.
+- `:readonly="false"` leaves the field editable, as Vue does; petite-vue writes `readonly="false"`, which makes it read-only. The same holds for `novalidate`, `formnovalidate`, `allowfullscreen` and `playsinline`.
 - `v-model.trim.number` yields a number; in petite-vue `.trim` disables `.number`.
 - Keys deleted from an object bound with `v-bind="obj"` or `:style="obj"` are cleared, not only keys missing from a replacement object.
 - A static `class` on an SVG element survives `:class`; petite-vue renders `class="baseVal animVal …"`.
