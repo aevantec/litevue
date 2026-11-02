@@ -39,17 +39,20 @@ const addCleanup = (ctx: Context, cleanup: () => void, node?: Node) => {
   }, node);
 };
 
-// A deferred region walks after the original walk has reset inOnce, so it
-// carries the value it was deferred under.
-const walkDeferred = (node: Node, ctx: Context, once: boolean) => {
+// Work that runs after the walk has reset inOnce (a deferred region, a job
+// queued under v-once, a v-effect on nextTick) carries the value it began under.
+export const withOnce = (once: boolean, fn: () => unknown) => {
   const previous = inOnce;
   inOnce = once;
   try {
-    walk(node, ctx);
+    fn();
   } finally {
     inOnce = previous;
   }
 };
+
+const walkDeferred = (node: Node, ctx: Context, once: boolean) =>
+  withOnce(once, () => walk(node, ctx));
 
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
   // Own what this node acquires, so a subtree removed on its own can be
