@@ -2,7 +2,7 @@ import { Context, createContext } from './context';
 import { walk } from './walk';
 import { remove } from '@vue/shared';
 import { stopEffect } from './scheduler';
-import { own } from './ownership';
+import { disposeSubtree, own } from './ownership';
 
 export class Block {
   // `declare`: assigned in the constructor or later, so no field initializers
@@ -109,11 +109,15 @@ export class Block {
           while (node) {
             next = node.nextSibling;
             parent.removeChild(node);
+            disposeSubtree(node);
             if (node === this.end) break;
             node = next;
           }
         } else {
           parent.removeChild(this.template);
+          // what handlers created after the walk is owned by nodes, not by
+          // this block's context, so teardown alone would leave it running
+          disposeSubtree(this.template);
         }
       }
       (this.template as any).__marker?.remove();
