@@ -75,7 +75,8 @@ A failure is contained to the thing that failed:
 - A failing `v-scope` falls back to an empty scope rather than taking the mount down with it. A getter that throws is reported where it is read.
 - Two effects that keep writing state the other reads are stopped after 100 re-runs in one update and reported, instead of freezing the page.
 - A handler that throws does not stop later events from firing.
-- A `$watch` callback or `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page.
+- A `$watch` callback or `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page. The same holds when it throws the first time it runs, as with `{ immediate: true }`, and for a custom directive's effect.
+- A `v-for` that destructures a `null` or `undefined` item, as in `{ id } in items`, renders that row with empty values.
 
 That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.
 
