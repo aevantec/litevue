@@ -117,12 +117,14 @@ describe('v-resize.window', () => {
       `<div v-scope="{ n: 0 }"><div v-resize.window="n++"></div></div>`
     );
     await tick();
-    const settled = (root as any).__ctx.scope.n;
+    // read first: unmount forgets the element's stashed context
+    const scope = (root as any).__ctx.scope;
+    const settled = scope.n;
     app.unmount();
     (window as any).innerWidth = 300;
     window.dispatchEvent(new Event('resize'));
     await tick();
-    expect((root as any).__ctx.scope.n).toBe(settled);
+    expect(scope.n).toBe(settled);
   });
 });
 
@@ -190,10 +192,12 @@ describe('v-resize.visual', () => {
       `<div v-scope="{ n: 0 }"><div v-resize.visual="n++"></div></div>`
     );
     await tick();
-    const settled = (root as any).__ctx.scope.n;
+    // read first: unmount forgets the element's stashed context
+    const scope = (root as any).__ctx.scope;
+    const settled = scope.n;
     app.unmount();
     view.dispatchEvent(new Event('resize'));
     await tick();
-    expect((root as any).__ctx.scope.n).toBe(settled);
+    expect(scope.n).toBe(settled);
   });
 });

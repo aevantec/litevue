@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createApp, devtools, reactive, store, watchEffect } from '../src';
 import { mount, tick } from './utils';
+import { addErrorHandler } from '../src/errors';
 
 describe('watchEffect', () => {
   test('runs immediately and re-runs when reactive state changes', async () => {
@@ -128,5 +129,30 @@ describe('watchEffect', () => {
     expect(observed).toEqual(['0', '1']);
     stop();
     app.unmount();
+  });
+});
+
+// It used to stay subscribed with no runner, so every later change reported
+// an error, and the caller had no stop function to end it.
+describe('a first run that throws', () => {
+  test('reaches the caller and leaves nothing running', async () => {
+    const errors: unknown[] = [];
+    const off = addErrorHandler((e) => errors.push(e));
+    const state = reactive({ n: 0 });
+    let runs = 0;
+
+    expect(() =>
+      watchEffect(() => {
+        state.n;
+        runs++;
+        throw new Error('first');
+      })
+    ).toThrow('first');
+
+    state.n++;
+    await tick();
+    expect(runs).toBe(1);
+    expect(errors).toEqual([]);
+    off();
   });
 });

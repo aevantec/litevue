@@ -8,7 +8,7 @@ import { Block } from './block';
 import { Directive } from './directives';
 import { createId, createWatch } from './magics';
 import { queueJob, stampJob, stopEffect } from './scheduler';
-import { inOnce } from './walk';
+import { inOnce, withOnce } from './walk';
 import { own } from './ownership';
 export interface Context {
   scope: Record<string, any>;
@@ -44,8 +44,10 @@ export const createContext = (parent?: Context): Context => {
     cleanups: [],
     effect: (fn) => {
       if (inOnce) {
-        queueJob(fn);
-        return fn as any;
+        // still once when it runs: v-if and v-for build their content here
+        const job = () => withOnce(true, fn);
+        queueJob(job);
+        return job as any;
       }
       // Lazy, and run once registered: a first run that throws has already
       // subscribed, so without a runner the next write threw at the writer.

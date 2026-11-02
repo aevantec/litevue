@@ -27,6 +27,7 @@ No value, argument or modifiers.
 ## Behavior
 
 - Applies to the element and its whole subtree. A `v-once` nested inside another changes nothing; the whole outer region stays static.
+- The subtree includes content that `v-if` and `v-for` render, and `v-effect`, which runs once. A condition or list inside is evaluated at mount and not again.
 - Event listeners inside still work; only rendering is frozen.
 - Use it for content that is static after the first render, to skip tracking it.
 
