@@ -39,6 +39,7 @@ const respond = (url: string, init?: RequestInit) => {
     status: r.status ?? 200,
     // like real fetch, the response URL never carries the fragment
     url: (r.url ?? new URL(url, ORIGIN).href).split('#')[0],
+    redirected: r.url != null,
     headers: new Headers({
       'content-type': r.type ?? 'text/html; charset=utf-8',
     }),
@@ -379,6 +380,18 @@ describe('navigate: links', () => {
     expect(after).toHaveBeenCalledOnce();
     document.removeEventListener('navigate:after', after);
     delete (document as any).startViewTransition;
+  });
+
+  test('leaves a link to "#" to the browser', async () => {
+    replies['/'] = {
+      body: page('Home', '<a href="#">top</a><main>Home</main>'),
+    };
+    await start('<a href="#">top</a><main>Home</main>');
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('stops intercepting once the app unmounts', async () => {
@@ -871,6 +884,9 @@ describe('navigate: prefetch', () => {
 });
 
 describe('navigate: history', () => {
+  // longer than the plugin's wait for scrolling to stop
+  const SAVE_PAUSE = 250;
+
   test('back re-fetches the previous page and restores its scroll', async () => {
     replies['/'] = {
       body: page('Home', '<a href="/two">Two</a><main>Home</main>'),
@@ -921,6 +937,64 @@ describe('navigate: history', () => {
 
     expect(window.scrollTo).toHaveBeenLastCalledWith(0, 500);
     expect(into).not.toHaveBeenCalled();
+  });
+
+  test('forward returns to where the user left the page', async () => {
+    replies['/'] = {
+      body: page('Home', '<a href="/two">Two</a><main>Home</main>'),
+    };
+    replies['/two'] = {
+      body: page('Two', '<a href="/">Home</a><main>Two</main>'),
+    };
+    await start('<a href="/two">Two</a><main>Home</main>');
+    let y = 0;
+    Object.defineProperty(window, 'scrollY', {
+      get: () => y,
+      configurable: true,
+    });
+
+    click(document.querySelector('a')!);
+    await settle();
+    // the user reads /two down to 500, then goes back and forward again
+    y = 500;
+    window.dispatchEvent(new Event('scroll'));
+    await sleep(SAVE_PAUSE);
+    history.back();
+    await sleep(20);
+    await settle();
+    y = 0;
+    history.forward();
+    await sleep(20);
+    await settle();
+
+    expect(location.pathname).toBe('/two');
+    expect(window.scrollTo).toHaveBeenLastCalledWith(0, 500);
+  });
+
+  test('a scroll just before back is not saved on the entry it lands on', async () => {
+    replies['/'] = {
+      body: page('Home', '<a href="/two">Two</a><main>Home</main>'),
+    };
+    replies['/two'] = {
+      body: page('Two', '<a href="/">Home</a><main>Two</main>'),
+    };
+    await start('<a href="/two">Two</a><main>Home</main>');
+    let y = 0;
+    Object.defineProperty(window, 'scrollY', {
+      get: () => y,
+      configurable: true,
+    });
+
+    click(document.querySelector('a')!);
+    await settle();
+    y = 500;
+    window.dispatchEvent(new Event('scroll'));
+    history.back();
+    await sleep(SAVE_PAUSE);
+    await settle();
+
+    expect(location.pathname).toBe('/');
+    expect(history.state.y).toBe(0);
   });
 
   test('ignores a popstate that only changes the hash', async () => {
@@ -1043,6 +1117,36 @@ describe('navigate: falls back to a full load', () => {
     await settle();
 
     expect(assign).toHaveBeenCalledWith(ORIGIN + '/x');
+  });
+
+  test('a POST redirected to another origin loads where it led', async () => {
+    replies['/pay'] = {
+      body: page('Checkout', '<main>pay</main>'),
+      url: 'https://pay.example.com/checkout/1',
+    };
+    await start(
+      '<form action="/pay" method="post"><button>Pay</button></form><main>Cart</main>'
+    );
+    stubLocation();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    // a GET of the redirect target; the POST itself is never replayed
+    expect(assign).toHaveBeenCalledWith('https://pay.example.com/checkout/1');
+  });
+
+  test('a POST answered with a file is not replayed', async () => {
+    replies['/export'] = { body: 'a,b', type: 'text/csv' };
+    await start(
+      '<form action="/export" method="post"><button>Export</button></form><main>Report</main>'
+    );
+    stubLocation();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(assign).not.toHaveBeenCalled();
   });
 
   test('without the morph plugin installed', async () => {
