@@ -37,6 +37,73 @@ describe('preserve', () => {
     expect(root.querySelector('#other')!.textContent).toBe('b');
   });
 
+  // Unkeyed, a preserved node used to be matched by position like any other:
+  // it swallowed the server's node of another tag, or was patched with it.
+  test.each([
+    [
+      'another tag',
+      '<aside data-morph-preserve>toast</aside><p>one</p>',
+      'aside',
+    ],
+    [
+      'the same tag',
+      '<div data-morph-preserve>toast</div><div>one</div>',
+      'div',
+    ],
+  ])(
+    'an unkeyed preserved node ahead of %s keeps its place',
+    async (_, live, tag) => {
+      mount(`<div id="root" v-scope><section id="r">${live}</section></div>`);
+      await tick(6);
+      const toast = region().firstElementChild!;
+
+      morph(region(), `<section id="r"><${tag}>two</${tag}></section>`);
+      await tick(6);
+
+      expect(region().firstElementChild).toBe(toast);
+      expect(toast.textContent).toBe('toast');
+      expect(region().children).toHaveLength(2);
+      expect(region().lastElementChild!.textContent).toBe('two');
+    }
+  );
+
+  test('an unkeyed preserved node between others keeps its place', async () => {
+    mount(
+      `<div id="root" v-scope><section id="r"><p>a</p><aside data-morph-preserve>toast</aside><p>b</p></section></div>`
+    );
+    await tick(6);
+    const toast = region().querySelector('aside')!;
+
+    morph(region(), `<section id="r"><p>A</p><p>B</p><p>C</p></section>`);
+    await tick(6);
+
+    expect([...region().children].map((el) => el.textContent)).toEqual([
+      'A',
+      'toast',
+      'B',
+      'C',
+    ]);
+    expect(region().querySelector('aside')).toBe(toast);
+  });
+
+  test('an unkeyed preserved node the server also sends is patched', async () => {
+    mount(
+      `<div id="root" v-scope><section id="r"><aside data-morph-preserve class="old">x</aside><p>a</p></section></div>`
+    );
+    await tick(6);
+    const aside = region().querySelector('aside')!;
+
+    morph(
+      region(),
+      `<section id="r"><aside data-morph-preserve class="new">y</aside><p>b</p></section>`
+    );
+    await tick(6);
+
+    expect(region().querySelector('aside')).toBe(aside);
+    expect(aside.className).toBe('new');
+    expect(region().children).toHaveLength(2);
+  });
+
   test('the preserve option does the same programmatically', async () => {
     mount(
       `<div id="root" v-scope><section id="r"><div id="widget">w</div><span>a</span></section></div>`
