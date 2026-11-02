@@ -163,9 +163,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
         warnOnce(
           `for-dup-key:${exp}`,
           `v-for="${exp}" produced a duplicate :key ${JSON.stringify(dup)}. ` +
-            `Keys must be unique among siblings — with a repeat, one item's ` +
-            `element and its scope state are silently dropped. Key by ` +
-            `something stable and unique, such as a record id.`
+            `Keys must be unique among siblings — with a repeat, the earlier ` +
+            `item is rebuilt on every update, losing its element and scope ` +
+            `state. Key by something stable and unique, such as a record id.`
         );
       }
 
@@ -195,7 +195,10 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       mounted = true;
     } else {
       for (let i = 0; i < blocks.length; i++) {
-        if (!keyToIndexMap.has(blocks[i].key)) {
+        const key = blocks[i].key;
+        // a row whose key repeated is not the one the map kept, and nothing
+        // would claim it, so it goes like a dropped key
+        if (!keyToIndexMap.has(key) || prevKeyToIndexMap.get(key) !== i) {
           blocks[i].remove();
         }
       }
@@ -206,6 +209,8 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       while (i--) {
         const row = rows[i];
         const oldIndex = prevKeyToIndexMap.get(row.key);
+        // claimed once: a key repeated in the new list mounts a fresh row
+        prevKeyToIndexMap.delete(row.key);
         const ref = nextBlock ? nextBlock.el : anchor;
         let block;
         if (oldIndex == null) {
