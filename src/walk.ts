@@ -142,11 +142,18 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       (el as any).__ctx = ctx;
       // via addCleanup, not ctx.cleanups: the devtools registry is a strong
       // Map keyed by Element, so a scope root morphed away without
-      // deregistering leaks the element and its scope for the page's life
-      addCleanup(
-        ctx,
-        registerScope(el, ctx.scope, exp || undefined, name || undefined)
+      // deregistering leaks the element and its scope for the page's life.
+      // The stash goes too, or morph binds later markup to the dead scope.
+      const deregister = registerScope(
+        el,
+        ctx.scope,
+        exp || undefined,
+        name || undefined
       );
+      addCleanup(ctx, () => {
+        deregister();
+        delete (el as any).__ctx;
+      });
       if (scope.$template) {
         resolveTemplate(el, scope.$template);
       }

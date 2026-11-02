@@ -105,11 +105,13 @@ describe('$watch', () => {
       { track }
     );
     await tick(8);
+    // read first: unmount forgets the element's stashed context
+    const scope = (root as any).__ctx.scope;
 
     app.unmount(root);
     await tick(8);
 
-    (root as any).__ctx.scope.n = 99;
+    scope.n = 99;
     await tick(8);
     expect(track).not.toHaveBeenCalled();
   });
