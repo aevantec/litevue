@@ -855,6 +855,63 @@ describe('navigate: prefetch', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  test('a double click on a prefetched link renders the page once', async () => {
+    const html = page('Two', '<main>two</main>');
+    // a real Response, whose body can be read only once
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response(html, { headers: { 'content-type': 'text/html' } })
+      )
+    );
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const error = vi.fn();
+    document.addEventListener('navigate:error', error);
+    const a = document.querySelector('a')!;
+
+    fire(a, 'pointerdown');
+    click(a);
+    fire(a, 'pointerdown');
+    click(a);
+    await settle();
+    await sleep(10);
+    document.removeEventListener('navigate:error', error);
+
+    expect(error).not.toHaveBeenCalled();
+    expect(document.querySelector('main')!.textContent).toBe('two');
+  });
+
+  const prefetchSignals = () =>
+    fetchMock.mock.calls
+      .filter(([, init]) => (init?.headers as any)?.['X-Sec-Purpose'])
+      .map(([, init]) => init!.signal as AbortSignal);
+
+  test('a prefetch replaced by another is aborted', async () => {
+    replies['/a'] = { body: page('A', '<main>a</main>') };
+    replies['/b'] = { body: page('B', '<main>b</main>') };
+    await start(
+      '<a id="a" href="/a">a</a><a id="b" href="/b">b</a><main></main>',
+      { prefetch: true }
+    );
+
+    fire(document.querySelector('#a')!, 'pointerdown');
+    fire(document.querySelector('#b')!, 'pointerdown');
+
+    expect(prefetchSignals().map((s) => s.aborted)).toEqual([true, false]);
+  });
+
+  test('unmounting aborts a pending prefetch', async () => {
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    const app = await start('<a href="/two">two</a><main></main>', {
+      prefetch: true,
+    });
+    fire(document.querySelector('a')!, 'pointerdown');
+
+    app.unmount();
+    current = undefined;
+
+    expect(prefetchSignals()[0].aborted).toBe(true);
+  });
+
   test('unmounting stops prefetching', async () => {
     const app = await start('<a href="/two">two</a><main></main>', {
       prefetch: true,
