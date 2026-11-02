@@ -106,7 +106,8 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const data: any = {};
     if (destructureBindings) {
       destructureBindings.forEach(
-        (b, i) => (data[b] = value[isArrayDestructure ? i : b])
+        // a null item renders empty, rather than throwing out of mount()
+        (b, i) => (data[b] = value?.[isArrayDestructure ? i : b])
       );
     } else {
       data[valueExp] = value;

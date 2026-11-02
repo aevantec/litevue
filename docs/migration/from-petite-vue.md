@@ -49,7 +49,8 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - `v-bind="{ class: … }"` merges with a static `class`, as `:class` does; petite-vue replaces it.
 - `:style` sets and clears only the properties it binds, so static inline styles survive; in petite-vue a string `:style` replaces the whole attribute and a falsy one removes it.
 - A `v-once` nested inside another keeps the whole outer region static; in petite-vue the content after the inner one stays reactive.
-- A `$template` selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the rest of the page still mounts; in petite-vue it throws out of `mount()`.
+- A `$template` selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the rest of the page still mounts; in petite-vue it throws out of `mount()`. A selector that names an element other than a `<template>` leaves the region empty instead of throwing.
+- A `v-for` that destructures a `null` item, as in `{ id } in items`, renders that row empty; in petite-vue it throws out of `mount()`.
 - A getter in a `v-scope` object is not run at setup, so one that throws is reported where it is read; in petite-vue it stops the whole page from mounting.
 - The compiled-expression cache is bounded, so a page that morphs in server HTML with per-record data does not grow it for its whole life.
 - A `<select multiple>` model must be an array. petite-vue also reads a `Set`; LiteVue selects nothing for one and warns in the development build, since a `Set` cannot update reactively here. Convert with `[...set]`.
