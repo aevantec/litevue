@@ -1,3 +1,4 @@
+import { NOOP } from '@vue/shared';
 import type { Context } from './context';
 import { own } from './ownership';
 
@@ -30,7 +31,7 @@ const arm = (el: Element, mode: LazyMode, fire: () => void): (() => void) => {
     stop();
     fire();
   };
-  let stop = () => {};
+  let stop = NOOP;
 
   // without IntersectionObserver (jsdom, an app's own test suite) .visible
   // mounts like .idle rather than throwing mid-walk

@@ -202,28 +202,23 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       const nextBlocks: Block[] = [];
       let i = rows.length;
       let nextBlock: Block | undefined;
-      let prevMovedBlock: Block | undefined;
       while (i--) {
         const row = rows[i];
         const oldIndex = prevKeyToIndexMap.get(row.key);
+        const ref = nextBlock ? nextBlock.el : anchor;
         let block;
         if (oldIndex == null) {
           // new
-          block = mountBlock(row, nextBlock ? nextBlock.el : anchor);
+          block = mountBlock(row, ref);
         } else {
           // update
           block = blocks[oldIndex];
           Object.assign(block.ctx.scope, row.data);
-          if (oldIndex !== i) {
-            // moved
-            if (
-              blocks[oldIndex + 1] !== nextBlock ||
-              // If the next has moved, it must move too
-              prevMovedBlock === nextBlock
-            ) {
-              prevMovedBlock = block;
-              block.insert(parent(), nextBlock ? nextBlock.el : anchor);
-            }
+          // Rows after this one are in place, so move it only if it is not
+          // already right before its successor. Asked of the DOM, since a
+          // removed neighbour shifts the index without the node moving.
+          if (oldIndex !== i && (block.end || block.el).nextSibling !== ref) {
+            block.insert(parent(), ref);
           }
         }
         // indexed, not unshift: the loop visits each index once, and unshift

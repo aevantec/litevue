@@ -21,10 +21,10 @@ export const stopEffect = (runner: ReactiveEffectRunner) => {
 };
 
 let queued = false;
-const queue: Function[] = [];
+// A Set: O(1) dedupe. A job is deleted as it starts, so re-queueing one that
+// already ran appends it again, and iteration visits re-added entries.
+const queue = new Set<Function>();
 const p = Promise.resolve();
-// position of the running job, or -1 outside a flush
-let flushIndex = -1;
 
 // A job re-run this often in one flush is in a loop with another; Vue's cap.
 const MAX_RUNS = 100;
@@ -34,7 +34,7 @@ export const nextTick = (fn: () => void) => p.then(fn);
 export const queueJob = (job: Function) => {
   // Deduplicated against pending jobs only: one that already ran this flush
   // must run again, or the state it read since changed under it goes stale.
-  if (!queue.includes(job, flushIndex + 1)) queue.push(job);
+  queue.add(job);
   if (!queued) {
     queued = true;
     nextTick(flushJobs);
@@ -43,8 +43,8 @@ export const queueJob = (job: Function) => {
 
 const flushJobs = () => {
   const runs = new Map<Function, number>();
-  for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
-    const job = queue[flushIndex];
+  for (const job of queue) {
+    queue.delete(job);
     // Skip effects stopped between queueing and flushing: `stop()` only
     // clears tracking, so a queued runner would still fire one last write
     // into markup that is meant to be inert.
@@ -75,8 +75,6 @@ const flushJobs = () => {
       handleError(e, { phase: 'effect' });
     }
   }
-  queue.length = 0;
-  flushIndex = -1;
   queued = false;
   emitFlush();
 };

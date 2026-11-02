@@ -67,6 +67,8 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
   if (type === 1) {
     // Element
     const el = node as Element;
+    // every check below reads an attribute; most markup carries none
+    if (!el.hasAttributes()) return walkChildren(el, ctx);
     if (el.hasAttribute('v-pre')) {
       return;
     }
