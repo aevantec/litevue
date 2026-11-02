@@ -65,7 +65,7 @@ With `prefetch: true`, the plugin starts fetching a link's page before it is cli
 createApp().use(morphPlugin).use(navigate, { prefetch: true }).mount();
 ```
 
-A click on that link then uses the response already on its way. One page is held at a time, for 10 seconds; any navigation to the same URL in that window uses it, except a `POST`. After that, or for another URL, the plugin fetches as usual.
+A click on that link then uses the response already on its way. One page is held at a time, for 10 seconds; any navigation to the same URL in that window uses it, except a `POST`. After that, or for another URL, the plugin fetches as usual. A held page is used once: a second click on the link fetches it again. A prefetch that is replaced by another, or that a navigation elsewhere leaves unused, is cancelled, as is one still pending when the app unmounts.
 
 Prefetching considers the same links a click would, so a link the plugin leaves to the browser is never prefetched. Neither is a link to the current page. Mark a link `data-navigate="false"` to keep it from being fetched early, such as one whose `GET` has a side effect:
 

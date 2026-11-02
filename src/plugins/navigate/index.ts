@@ -131,7 +131,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   // a newer navigation takes the state over from an older one
   let busy: Element[] = [];
   // one page fetched ahead of a click, used by a click on the same URL
-  let pre: { href: string; at: number; res: Promise<Response> } | undefined;
+  let pre:
+    | { href: string; at: number; c: AbortController; res: Promise<Response> }
+    | undefined;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let saving: ReturnType<typeof setTimeout> | undefined;
   const fresh = (href: string) =>
@@ -206,8 +208,13 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   ) => {
     // back and forward have already changed the URL, so they cannot be undone
     if (!emit('before', { url: href }, y == null)) return;
+    // Taken before awaiting, so a second click cannot read the same body; a
+    // prefetch not used is aborted.
+    const p = !init.method && fresh(href) ? pre : pre?.c.abort();
+    pre = undefined;
     controller?.abort();
-    const c = (controller = new AbortController());
+    // a used prefetch is this navigation's request, aborted with it
+    const c = (controller = p ? p.c : new AbortController());
     setBusy([document.documentElement, form!].filter(Boolean));
     const post = init.method === 'POST';
     let res: Response | undefined;
@@ -220,14 +227,13 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
           );
         throw new Error('navigate needs the morph plugin');
       }
-      res = await (!init.method && fresh(href)
-        ? pre!.res
+      res = await (p
+        ? p.res
         : fetch(href, {
             ...init,
             signal: c.signal,
             headers: { 'X-Requested-With': 'litevue' },
           }));
-      pre = undefined;
       const url = new URL(res.url || href);
       // response URLs drop the fragment; a redirect keeps the requested one
       url.hash ||= new URL(href).hash;
@@ -301,10 +307,14 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const prefetch = (e: Event) => {
     const url = linkTo(e);
     if (!url || pathOf(url) === rendered || fresh(url.href)) return;
+    pre?.c.abort();
+    const c = new AbortController();
     pre = {
       href: url.href,
       at: Date.now(),
+      c,
       res: fetch(url.href, {
+        signal: c.signal,
         headers: { 'X-Requested-With': 'litevue', 'X-Sec-Purpose': 'prefetch' },
       }),
     };
@@ -382,6 +392,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     clearTimeout(saving);
     removeEventListener('scroll', onScroll);
     controller?.abort();
+    pre?.c.abort();
     clearTimeout(timer);
     document.removeEventListener('click', onClick);
     document.removeEventListener('submit', onSubmit);
