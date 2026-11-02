@@ -368,17 +368,18 @@ const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = query(template, el, 'v-scope');
     // Returning matters in production, where the warning below is stripped:
-    // without it a missing selector reaches `.content` and throws with no
-    // diagnostic at all.
-    if (!templateEl) {
-      if (import.meta.env.DEV && templateEl === null) {
+    // without it a missing selector, or one naming an element that is not a
+    // <template>, reaches `.content` and throws out of mount().
+    if (!(templateEl instanceof HTMLTemplateElement)) {
+      // undefined: the selector did not parse, which query() reported
+      if (import.meta.env.DEV && templateEl !== undefined) {
         console.error(
           `template selector ${template} has no matching <template> element.`
         );
       }
       return;
     }
-    el.appendChild((templateEl as HTMLTemplateElement).content.cloneNode(true));
+    el.appendChild(templateEl.content.cloneNode(true));
     return;
   }
   el.innerHTML = template;

@@ -33,8 +33,14 @@ Bind an attribute or DOM property to an expression.
 | Anything else | Assigned to the property | Written as a string |
 
 A name is treated as a property when the element has one by that name. SVG
-elements, and `type`, `form`, `list`, `spellcheck` and `draggable`, always use
-the attribute.
+elements, and `type`, `form`, `list`, `spellcheck`, `draggable` and `translate`,
+always use the attribute.
+
+Some boolean attributes have a camel-cased property, so the lowercase name in
+markup does not match it: `readonly`, `novalidate`, `formnovalidate`,
+`allowfullscreen` and `playsinline`. These are set as an empty attribute when
+the value is truthy or `''`, and removed when it is falsy, so
+`:readonly="false"` leaves the field editable.
 
 ## Examples
 
@@ -84,7 +90,7 @@ can come from an expression:
 ## Behavior
 
 - Dynamic argument names such as `:[name]` are not supported.
-- For boolean attributes that are not properties, bind `null` to remove the attribute, since `false` is written as the string `"false"`: `:aria-hidden="open ? null : 'true'"`.
+- For other attributes that are not properties, bind `null` to remove the attribute, since `false` is written as the string `"false"`: `:aria-hidden="open ? null : 'true'"`.
 - `:value` also stores the raw value on the element, so [`v-model`](/directives/v-model) can read non-string option and checkbox values.
 - Checkboxes read `:true-value` and `:false-value` as values rather than attributes — see `v-model`.
 
