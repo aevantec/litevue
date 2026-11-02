@@ -384,3 +384,32 @@ describe('morph', () => {
     expect(root.querySelector('p')!.textContent).toBe('after');
   });
 });
+
+describe('morph with an HTML string', () => {
+  test('one element is the outer element', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="r" class="a">x</section></div>`
+    );
+    const r = root.querySelector('#r')!;
+
+    morph(r, '<section id="r" class="b">y</section>');
+
+    expect(root.querySelector('#r')).toBe(r);
+    expect(r.className).toBe('b');
+    expect(r.textContent).toBe('y');
+  });
+
+  // an element beside text used to be taken as the outer element, so the
+  // target was replaced and the text dropped
+  test('one element beside text is inner content', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="r">x</section></div>`
+    );
+    const r = root.querySelector('#r')!;
+
+    morph(r, 'Hello <b>world</b>');
+
+    expect(r.isConnected).toBe(true);
+    expect(r.innerHTML).toBe('Hello <b>world</b>');
+  });
+});

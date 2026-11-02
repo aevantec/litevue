@@ -25,7 +25,7 @@ morph(from: Element, to: Element | string, options?: MorphOptions): Element
 | Parameter | Meaning |
 | --- | --- |
 | `from` | The live element to update |
-| `to` | The new markup for that element, as an HTML string or an element |
+| `to` | The new markup for that element, as an HTML string or an element. A string that is a single element is that element's outer HTML; any other string, such as an element beside text, is its new content |
 
 Returns `from` — the same node, which keeps its scope.
 
@@ -111,6 +111,12 @@ server render. Protect both its existence and its contents:
 | Present in the new HTML | Attributes and children left alone | Attributes and children patched |
 | Absent from it | Removed | Kept |
 | A different tag at that position | Replaced | Kept |
+
+Without an `id` or other key, a preserved element is matched by position. It
+counts as present when the new HTML's node at that position is also marked
+`data-morph-preserve`; otherwise it keeps its place and the server's nodes fill
+the positions around it, so a toast prepended by the client does not take the
+place of the page's first element.
 
 The programmatic forms decide per element:
 
