@@ -68,7 +68,7 @@ stop();
 
 ## Behavior
 
-- The first run is synchronous, inside the `watchEffect` call. A throw there reaches your code.
+- The first run is synchronous, inside the `watchEffect` call. A throw there reaches your code, and the effect is stopped, since no stop function was returned.
 - Re-runs are batched: several changes in one tick cause one run, after the DOM has updated — so reading elements inside is safe.
 - A re-run that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and does not stop other updates on the page.
 - Unlike `@vue/reactivity`'s low-level `effect`, it never runs mid-update.
