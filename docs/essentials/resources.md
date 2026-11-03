@@ -90,7 +90,7 @@ createApp({ createResource, getJSON }).mount();
 </section>
 ```
 
-`@unmounted` matters on pages that replace regions, such as a [morph](/plugins/morph) or an htmx swap. Without it, a request started by a removed region still completes, and its reply is written to state that nothing displays.
+`@unmounted` matters on pages that replace regions, such as a [morph](/plugins/morph), or an htmx swap with the [unmount hook](/essentials/server-driven-html#htmx) in place. Without it, a request started by a removed region still completes, and its reply is written to state that nothing displays.
 
 ## Re-fetch when a parameter changes
 

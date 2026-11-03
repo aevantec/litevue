@@ -25,7 +25,7 @@ morph(from: Element, to: Element | string, options?: MorphOptions): Element
 | Parameter | Meaning |
 | --- | --- |
 | `from` | The live element to update |
-| `to` | The new markup for that element, as an HTML string or an element |
+| `to` | The new markup for that element, as an HTML string or an element. A string that is a single element is that element's outer HTML; any other string, such as an element beside text, is its new content |
 
 Returns `from` — the same node, which keeps its scope.
 
@@ -111,6 +111,12 @@ server render. Protect both its existence and its contents:
 | Present in the new HTML | Attributes and children left alone | Attributes and children patched |
 | Absent from it | Removed | Kept |
 | A different tag at that position | Replaced | Kept |
+
+Without an `id` or other key, a preserved element is matched by position. It
+counts as present when the new HTML's node at that position is also marked
+`data-morph-preserve`; otherwise it keeps its place and the server's nodes fill
+the positions around it, so a toast prepended by the client does not take the
+place of the page's first element.
 
 The programmatic forms decide per element:
 
@@ -200,7 +206,7 @@ still carries the directives:
 | Anything else | Patches it to match, and removes attributes the server dropped |
 
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
-- That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you.
+- That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you. A region torn down with `app.unmount(el)` counts as outside every scope, so markup morphed into it is not bound to the scope it had.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
 - The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.

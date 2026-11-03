@@ -417,6 +417,18 @@ describe('configuration', () => {
     warn.mockRestore();
   });
 
+  test('a scale key named like an alias is used as that key', () => {
+    // the documented custom scale: its own `tablet` is not the `md` alias
+    mq.configure({ breakpoints: { phone: 480, tablet: 820, laptop: 1180 } });
+    setWidth(900);
+
+    expect(mq.breakpoint).toBe('tablet');
+    expect(mq.atLeast('tablet')).toBe(true);
+    expect(mq({ base: 'a', tablet: 'b', laptop: 'c' })).toBe('b');
+    setWidth(700);
+    expect(mq.atLeast('tablet')).toBe(false);
+  });
+
   test('configure re-runs readers even when the breakpoint name is unchanged', async () => {
     setWidth(980);
     const seen: boolean[] = [];
@@ -486,6 +498,52 @@ describe('the scale is page-wide', () => {
       'a second app installed media'
     );
     warn.mockRestore();
+  });
+});
+
+describe('unmounting an app', () => {
+  const live = () => lists.filter((l) => l.listeners.size > 0).length;
+
+  test("another app's breakpoint keeps following the viewport", async () => {
+    document.body.innerHTML =
+      '<div id="a"><b v-text="$mqBreakpoint"></b></div><div id="b"></div>';
+    const a = createApp().use(media);
+    a.mount('#a');
+    apps.push(a);
+    const b = createApp().use(media);
+    b.mount('#b');
+    await tick();
+    expect(document.querySelector('b')!.textContent).toBe('lg');
+
+    b.unmount();
+    setWidth(500);
+    await tick();
+
+    expect(document.querySelector('b')!.textContent).toBe('base');
+  });
+
+  test('mq read outside any app keeps following the viewport', async () => {
+    const seen: string[] = [];
+    watch(() => void seen.push(mq.breakpoint));
+    const { app } = mountWith('<div></div>');
+    app.unmount();
+    await tick();
+
+    setWidth(500);
+    await tick();
+
+    expect(seen.at(-1)).toBe('base');
+  });
+
+  test('the last app gives the subscriptions back when nothing reads mq', async () => {
+    const { app } = mountWith('<div><b v-text="$mqBreakpoint"></b></div>');
+    await tick();
+    expect(live()).toBeGreaterThan(0);
+
+    app.unmount();
+    await tick();
+
+    expect(live()).toBe(0);
   });
 });
 

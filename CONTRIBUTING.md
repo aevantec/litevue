@@ -9,7 +9,7 @@ a pull request, and how releases work.
 
 Before proposing a feature, it helps to know what `litevue` is trying to be:
 
-- **Small.** The core is ~10kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
+- **Small.** The core is ~11kb<!-- size:dist/litevue.iife.js --> gzipped. Bundle size is a feature, not an
   afterthought — a change that grows it needs to earn the bytes.
 - **Vue-aligned.** Syntax and semantics should match standard Vue wherever
   possible, so code can graduate to full Vue with minimal friction.
@@ -99,13 +99,18 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    pnpm lint
    pnpm test
    pnpm test:browser
+   pnpm check:docs-versions
    pnpm build
    pnpm check:size
    pnpm check:bundles
    pnpm check:dist-runtime
+   pnpm check:docs-sizes
    ```
 
-   The last three read what `pnpm build` wrote, so they come after it.
+   The checks after `pnpm build` read what it wrote, so they come after it.
+   `check:docs-sizes` compares the sizes the documentation states with the
+   built bundles, and `check:docs-versions` checks that pinned versions in the
+   documentation match `package.json`.
    `check:dist-runtime` runs the built bundles in jsdom — the test suite imports
    `src/`, and a change only the build makes is invisible to it.
 
@@ -125,7 +130,7 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
      real bugs.
 
    The style categories were tried and rejected: they flag `__ctx`, `__leave`
-   and `__LITEVUE_DEVTOOLS__`, which are deliberate internal markers, and
+   and `__LITE_VUE_DEVTOOLS__`, which are deliberate internal markers, and
    sequential `await`s in tests, which are ordering rather than an oversight.
 
    `pnpm test:browser` needs the Chromium build once per machine:

@@ -24,7 +24,7 @@ createApp({ open: false }).use(transition).mount();
 
 | Modifier | Meaning |
 | --- | --- |
-| `.appear` | Also animate the first render |
+| `.appear` | Also animate the first render in show/hide mode. With `v-if` or `v-for`, every insertion animates, including the first |
 
 ### Classes
 

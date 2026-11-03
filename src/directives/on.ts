@@ -2,15 +2,26 @@ import { Directive } from '.';
 import { hyphenate } from '@vue/shared';
 import { nextTick } from '../scheduler';
 import { warnOnce } from '../warn';
+import { EVAL_CACHE_LIMIT } from '../eval';
 
 /**
  * Can `exp` stand as a single expression, or is it a statement list?
  * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
  */
-const expressionCache: Record<string, boolean> = Object.create(null);
+let expressionCache: Record<string, boolean> = Object.create(null);
+let cachedExpressions = 0;
+
+/** For tests: how many handler expressions are memoised. */
+export const expressionCacheSize = () => cachedExpressions;
+
 const isExpression = (exp: string) => {
   const hit = expressionCache[exp];
   if (hit !== undefined) return hit;
+  // bounded like the evaluator's cache, which morph-streamed handlers grow
+  if (++cachedExpressions > EVAL_CACHE_LIMIT) {
+    expressionCache = Object.create(null);
+    cachedExpressions = 1;
+  }
   try {
     new Function(`return (${exp})`);
     return (expressionCache[exp] = true);
@@ -18,6 +29,10 @@ const isExpression = (exp: string) => {
     return (expressionCache[exp] = false);
   }
 };
+
+// an arrow or function expression is the handler itself, as in Vue
+const fnExpRE =
+  /^\s*(async\s*)?(\([^)]*?\)|[\w$]+)\s*=>|^\s*(async\s+)?function\b/;
 
 // same as vue 2
 const simplePathRE =
@@ -75,11 +90,12 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
   // compiled code, so get() hands back a handler that reports its own throws
   // and rejections
-  let handler = simplePathRE.test(exp)
-    ? get(`(e => ${exp}(e))`)
-    : isExpression(exp)
-      ? get(`(${a}$event => (${exp}))`)
-      : get(`(${a}$event => { ${exp} })`);
+  let handler =
+    simplePathRE.test(exp) || fnExpRE.test(exp)
+      ? get(`(e => (${exp})(e))`)
+      : isExpression(exp)
+        ? get(`(${a}$event => (${exp}))`)
+        : get(`(${a}$event => { ${exp} })`);
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
@@ -196,6 +212,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
           return;
         }
       }
+      // here rather than natively, so an event a guard rejects keeps it
+      if (modifiers.once) target.removeEventListener(event, handler, modifiers);
       return invoke(e);
     };
   }
@@ -207,7 +225,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       ? document
       : el;
   const event = arg;
-  target.addEventListener(event, handler, modifiers);
+  target.addEventListener(event, handler, { ...modifiers, once: false });
   // Element listeners are removed too. They once died with the element, but
   // app.unmount(el) tears down a region that stays in the document, where a
   // live handler would keep mutating inert state.

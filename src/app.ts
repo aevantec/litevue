@@ -1,7 +1,8 @@
 import { reactive } from '@vue/reactivity';
+import { remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
-import { bindContextMethods, createContext } from './context';
+import { bindContextMethods, createContext, hide } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick, stopEffect } from './scheduler';
 import { walk } from './walk';
@@ -18,10 +19,11 @@ import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
 import { SCOPE_SELECTOR } from './lazy';
 
-// DEV: elements this app has already walked, so a second mount of the same
-// element can say why nothing happened. Weak, and never read in production.
-const mountedRoots = new WeakSet<Element>();
-import { disposeSubtree } from './ownership';
+// DEV: each mounted root's first child after the walk, so a second mount of
+// unreplaced markup can say why nothing bound. Weak, and never read in
+// production.
+const mountedRoots = new WeakMap<Element, ChildNode | null>();
+import { disposeSubtree, own } from './ownership';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]/\\]/g, '\\$&');
@@ -104,13 +106,14 @@ export const createApp = (initialData?: any) => {
     }
   }
 
-  // global internal helpers
-  ctx.scope.$s = toDisplayString;
-  ctx.scope.$nextTick = nextTick;
-  ctx.scope.$refs = Object.create(null);
-  ctx.scope.$store = stores;
-  ctx.scope.$watch = createWatch(ctx);
-  ctx.scope.$id = createId();
+  // global internal helpers, hidden as a v-scope's are, so serializing the
+  // root ({{ $data }}) yields only the app's own state
+  hide(ctx.scope, '$s', toDisplayString);
+  hide(ctx.scope, '$nextTick', nextTick);
+  hide(ctx.scope, '$refs', Object.create(null));
+  hide(ctx.scope, '$store', stores);
+  hide(ctx.scope, '$watch', createWatch(ctx));
+  hide(ctx.scope, '$id', createId());
   // non-enumerable so serializing a scope ({{ $data }}, devtools previews)
   // doesn't recurse into the self-reference
   Object.defineProperty(ctx.scope, '$root', {
@@ -262,7 +265,7 @@ export const createApp = (initialData?: any) => {
           // Walking consumes directives — each one is removed as it binds.
           // A second mount therefore walks a stripped tree and binds nothing:
           // an inert region that looks mounted.
-          if (mountedRoots.has(el)) {
+          if (mountedRoots.has(el) && mountedRoots.get(el) === el.firstChild) {
             warn(
               `mount() was called again on an element that has already been ` +
                 `mounted, so its directives were consumed by the first walk ` +
@@ -270,11 +273,11 @@ export const createApp = (initialData?: any) => {
                 `insert fresh markup and mount that instead.`
             );
           }
-          mountedRoots.add(el);
         }
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);
+        import.meta.env.DEV && mountedRoots.set(el, el.firstChild);
         // a root without v-scope gets no stashed context during walk; seed
         // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
@@ -290,6 +293,10 @@ export const createApp = (initialData?: any) => {
         // appended, not assigned: mount() may be called repeatedly, and
         // unmount() must reach every root, not just the last batch
         rootBlocks.push(block);
+        // a root that morph removes leaves the list too, not only on unmount
+        own(() => remove(rootBlocks, block), el);
+        // forgotten on teardown, so morph cannot bind new markup to it
+        block.ctx.cleanups.push(() => delete (el as any).__ctx);
       }
       return this;
     },

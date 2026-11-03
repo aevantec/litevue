@@ -158,7 +158,7 @@ const patchAttrs = (from: Element, to: Element) => {
   // update; Object() so a missing or non-object value owns nothing
   const bound = Object((from as any).__bound);
 
-  for (const { name, value } of [...to.attributes]) {
+  for (const { name, value } of to.attributes) {
     // directives were stripped from the live element during walk; re-adding
     // them leaves inert markup, or double-binds on a later walk
     if (dirRE.test(name) || owned.has(name) || name in bound) {
@@ -296,6 +296,12 @@ const patchChildren = (
         insert(newChild);
       }
     } else if (oldChild && keyOf(oldChild) == null) {
+      // A preserved node the server did not send stays where it is, and the
+      // server's node goes to the next position rather than into it.
+      if (preserved(oldChild, opts) && !preserved(newChild, opts)) {
+        oldChild = oldChild.nextSibling;
+        continue;
+      }
       // unkeyed on both sides: match by position
       const nextOld = oldChild.nextSibling;
       patchNode(oldChild, newChild, ctx, opts);
@@ -336,12 +342,12 @@ export const morph = (
   let target: Element | null;
   if (typeof to === 'string') {
     // parsed in a <template> so table rows, <li> and <option> survive; a
-    // single-element fragment is the outer target
+    // lone element is the outer target, but not one beside text
     const holder = document.createElement('template');
     holder.innerHTML = to.trim();
     const content = holder.content;
     target =
-      content.childElementCount === 1
+      content.childNodes.length === 1 && content.firstElementChild
         ? content.firstElementChild
         : (() => {
             const wrapper = from.cloneNode(false) as Element;

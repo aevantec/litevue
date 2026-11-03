@@ -7,21 +7,54 @@ import type { Plugin } from 'vite';
 const COLLECTION_CASES =
   /case "Map":\s*case "Set":\s*case "WeakMap":\s*case "WeakSet":\s*return 2[^;]*;/;
 
+type Cut = [what: string, pattern: RegExp | string, replacement: string];
+
+const REACTIVITY_CUTS: Cut[] = [
+  ['collection cases', COLLECTION_CASES, ''],
+  ['mutable collection handlers', 'mutableCollectionHandlers,', 'null,'],
+  ['readonly collection handlers', 'readonlyCollectionHandlers,', 'null,'],
+  // with collections cut, no target is a Map and nothing triggers "clear"
+  ['isMap(target)', /isMap\(target\)/g, 'false'],
+  ['the "clear" trigger', /if \(type === "clear"\) \{[^}]*\} else /, ''],
+  // a Vue <= 3.3 shim on computed refs; nothing here reads _dirty
+  [
+    'the _dirty polyfill',
+    /\/\/ #region polyfill _dirty[^]*?\/\/ #endregion/,
+    '',
+  ],
+];
+
+// @vue/shared builds its string caches with unannotated calls, so an unused
+// one (toHandlerKey, capitalize) survives tree-shaking
+const SHARED_CUTS: Cut[] = [
+  [
+    'cacheStringFunction calls',
+    /= cacheStringFunction\(/g,
+    '= /* @__PURE__ */ cacheStringFunction(',
+  ],
+];
+
+// A cut that no longer matches means a new Vue changed the source: fail the
+// build rather than ship what the cut was meant to remove, or a half-cut.
+const apply = (code: string, cuts: Cut[], pkg: string) =>
+  cuts.reduce((out, [what, pattern, replacement]) => {
+    const next = out.replace(pattern, replacement);
+    if (next === out) {
+      throw new Error(`trim-reactivity: ${what} not found in ${pkg}`);
+    }
+    return next;
+  }, code);
+
 export const trimReactivity = (): Plugin => ({
   name: 'trim-reactivity',
   enforce: 'pre',
   transform(code, id) {
-    if (!id.split('?')[0].endsWith('reactivity.esm-bundler.js')) return;
-    if (!COLLECTION_CASES.test(code)) {
-      // A new @vue/reactivity changed the source: fail rather than ship
-      // collections that reach a missing handler.
-      throw new Error(
-        'trim-reactivity: collection cases not found in @vue/reactivity'
-      );
+    const file = id.split('?')[0];
+    if (file.endsWith('shared.esm-bundler.js')) {
+      return apply(code, SHARED_CUTS, '@vue/shared');
     }
-    return code
-      .replace(COLLECTION_CASES, '')
-      .replace('mutableCollectionHandlers,', 'null,')
-      .replace('readonlyCollectionHandlers,', 'null,');
+    if (file.endsWith('reactivity.esm-bundler.js')) {
+      return apply(code, REACTIVITY_CUTS, '@vue/reactivity');
+    }
   },
 });

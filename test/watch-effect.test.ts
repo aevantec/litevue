@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { createApp, devtools, reactive, store, watchEffect } from '../src';
 import { mount, tick } from './utils';
+import { addErrorHandler } from '../src/errors';
 
 describe('watchEffect', () => {
   test('runs immediately and re-runs when reactive state changes', async () => {
@@ -128,5 +129,75 @@ describe('watchEffect', () => {
     expect(observed).toEqual(['0', '1']);
     stop();
     app.unmount();
+  });
+});
+
+// It used to stay subscribed with no runner, so every later change reported
+// an error, and the caller had no stop function to end it.
+describe('a first run that throws', () => {
+  test('reaches the caller and leaves nothing running', async () => {
+    const errors: unknown[] = [];
+    const off = addErrorHandler((e) => errors.push(e));
+    const state = reactive({ n: 0 });
+    let runs = 0;
+
+    expect(() =>
+      watchEffect(() => {
+        state.n;
+        runs++;
+        throw new Error('first');
+      })
+    ).toThrow('first');
+
+    state.n++;
+    await tick();
+    expect(runs).toBe(1);
+    expect(errors).toEqual([]);
+    off();
+  });
+});
+
+describe('watchEffect runs after the bindings it reads', () => {
+  test('even a binding created after the effect first re-ran', async () => {
+    document.body.innerHTML = `<div v-scope><template v-if="show"><span>{{ n }}</span></template></div>`;
+    const app = createApp({ n: 0, show: false });
+    app.mount(document.body.firstElementChild as Element);
+    await tick();
+    const seen: (string | undefined)[] = [];
+    const stop = watchEffect(() => {
+      void app.scope.n;
+      seen.push(document.querySelector('span')?.textContent);
+    });
+
+    app.scope.n = 1;
+    await tick();
+    app.scope.show = true;
+    await tick();
+    app.scope.n = 2;
+    await tick();
+    stop();
+    app.unmount();
+
+    expect(seen.at(-1)).toBe('2');
+  });
+
+  test('when created before the app mounts', async () => {
+    const state = reactive({ n: 0 });
+    const seen: (string | undefined)[] = [];
+    const stop = watchEffect(() => {
+      void state.n;
+      seen.push(document.querySelector('b')?.textContent);
+    });
+    document.body.innerHTML = `<div v-scope><b>{{ state.n }}</b></div>`;
+    const app = createApp({ state });
+    app.mount(document.body.firstElementChild as Element);
+    await tick();
+
+    state.n = 1;
+    await tick();
+    stop();
+    app.unmount();
+
+    expect(seen.at(-1)).toBe('1');
   });
 });

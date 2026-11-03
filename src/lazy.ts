@@ -1,3 +1,4 @@
+import { NOOP, remove } from '@vue/shared';
 import type { Context } from './context';
 import { own } from './ownership';
 
@@ -30,7 +31,7 @@ const arm = (el: Element, mode: LazyMode, fire: () => void): (() => void) => {
     stop();
     fire();
   };
-  let stop = () => {};
+  let stop = NOOP;
 
   // without IntersectionObserver (jsdom, an app's own test suite) .visible
   // mounts like .idle rather than throwing mid-walk
@@ -83,6 +84,10 @@ export const deferScope = (
     walk(el, ctx, once);
   });
   ctx.cleanups.push(dispose);
-  own(dispose);
+  // out of ctx.cleanups too, or it keeps a region morph removed reachable
+  own(() => {
+    remove(ctx.cleanups, dispose);
+    dispose();
+  });
   return true;
 };

@@ -4,7 +4,7 @@ title: Installing Plugins
 
 # Installing Plugins <Badge type="section" text="Plugin" />
 
-Every first-party plugin ships three ways — as part of the bundle, as its own npm subpath, and as its own standalone file for a `<script>` tag. None of them add weight to the [core](/start-here/installation).
+Every first-party plugin ships as its own npm subpath and as its own standalone file for a `<script>` tag, and every one except popover and navigate is also part of the combined bundle. None of them add weight to the [core](/start-here/installation).
 
 ## Installing a single plugin
 
@@ -61,8 +61,9 @@ With `<script>` tags the trade is real, because each standalone file carries its
 
 ## Installing every plugin
 
-There are seven, and each has to be passed to `use()` individually — loading a
-bundle defines the exports, it does not register anything.
+The combined bundle holds nine, and each has to be passed to `use()`
+individually — loading a bundle defines the exports, it does not register
+anything. Popover and navigate are not in it; load each on its own.
 
 ::: code-group
 
@@ -173,7 +174,7 @@ jsDelivr serves the same files — swap the host for `https://cdn.jsdelivr.net/n
 
 ## Development builds
 
-The plugins with development checks — media, morph and persist — ship `.dev`
+The plugins with development checks — media, morph, navigate and persist — ship `.dev`
 files beside their production ones, as does the combined bundle. From npm the
 `development` export condition picks them automatically, exactly as for the
 core. From a CDN, swap the file name while you develop:

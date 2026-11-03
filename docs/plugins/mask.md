@@ -44,7 +44,7 @@ Every other character is a literal, inserted for the user.
 
 - Literals appear as they are reached: typing `12` into `(999) 999-9999` shows `(12`, not `(12) `.
 - [`v-model`](/directives/v-model) receives the formatted value. Its initial value is formatted on mount too, and the model is updated to match.
-- Editing in the middle of the value keeps the caret where it was, after the characters before it.
+- Editing in the middle of the value keeps the caret where it was, after the characters before it. Literals before the next slot count as before it, so deleting the first digit of `(123) 456` leaves the caret after the `(`.
 - A value set from a script after mount is not formatted until the next input. Set it already formatted, or as the user would type it and dispatch an `input` event.
 - Masking formats input; it does not validate it. Check the value before submitting.
 

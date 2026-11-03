@@ -15,7 +15,7 @@ Listen to the special `mounted` and `unmounted` events on any element:
 ```
 
 - `@mounted` fires after the element is compiled and inserted (next tick).
-- `@unmounted` fires when the owning block is torn down — for example when a [`v-if`](/directives/v-if) branch switches or the app unmounts.
+- `@unmounted` fires when the owning block is torn down — for example when a [`v-if`](/directives/v-if) branch switches, the app or that region is unmounted, or [morph](/plugins/morph) removes the element.
 - Inside a region deferred with [`v-scope.visible`, `.idle` or `.interaction`](/directives/v-scope#mounting-on-demand), `@mounted` fires when that region mounts, not at page load.
 - With a [leave transition](/plugins/transition#with-v-if-and-v-for), `@unmounted` waits until the animation finishes.
 

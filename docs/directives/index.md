@@ -71,7 +71,7 @@ for what each one can see:
 2. `v-scope.visible`, `.idle` or `.interaction` — the whole element waits for its trigger, then continues from step 3
 3. `v-if`
 4. `v-for`
-5. `v-scope`, then `ref`
+5. `v-teleport`, then `v-scope`, then `v-once`, then `ref`
 6. The element's children
 7. Bindings and other directives, in attribute order
 8. `v-model`, so it sees any `:value` binding

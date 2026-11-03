@@ -25,7 +25,13 @@ let target = registry;
 if (import.meta.env.DEV) {
   target = new Proxy(registry, {
     get(obj, key: string | symbol, receiver) {
-      if (typeof key === 'string' && !key.startsWith('__') && !(key in obj)) {
+      // toJSON: serializing a scope reads it, and it is never a store
+      if (
+        typeof key === 'string' &&
+        !key.startsWith('__') &&
+        key !== 'toJSON' &&
+        !(key in obj)
+      ) {
         setTimeout(() => {
           if (key in obj) return;
           warnOnce(

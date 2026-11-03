@@ -39,17 +39,20 @@ const addCleanup = (ctx: Context, cleanup: () => void, node?: Node) => {
   }, node);
 };
 
-// A deferred region walks after the original walk has reset inOnce, so it
-// carries the value it was deferred under.
-const walkDeferred = (node: Node, ctx: Context, once: boolean) => {
+// Work that runs after the walk has reset inOnce (a deferred region, a job
+// queued under v-once, a v-effect on nextTick) carries the value it began under.
+export const withOnce = (once: boolean, fn: () => unknown) => {
   const previous = inOnce;
   inOnce = once;
   try {
-    walk(node, ctx);
+    fn();
   } finally {
     inOnce = previous;
   }
 };
+
+const walkDeferred = (node: Node, ctx: Context, once: boolean) =>
+  withOnce(once, () => walk(node, ctx));
 
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
   // Own what this node acquires, so a subtree removed on its own can be
@@ -67,6 +70,8 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
   if (type === 1) {
     // Element
     const el = node as Element;
+    // every check below reads an attribute; most markup carries none
+    if (!el.hasAttributes()) return walkChildren(el, ctx);
     if (el.hasAttribute('v-pre')) {
       return;
     }
@@ -137,11 +142,18 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       (el as any).__ctx = ctx;
       // via addCleanup, not ctx.cleanups: the devtools registry is a strong
       // Map keyed by Element, so a scope root morphed away without
-      // deregistering leaks the element and its scope for the page's life
-      addCleanup(
-        ctx,
-        registerScope(el, ctx.scope, exp || undefined, name || undefined)
+      // deregistering leaks the element and its scope for the page's life.
+      // The stash goes too, or morph binds later markup to the dead scope.
+      const deregister = registerScope(
+        el,
+        ctx.scope,
+        exp || undefined,
+        name || undefined
       );
+      addCleanup(ctx, () => {
+        deregister();
+        delete (el as any).__ctx;
+      });
       if (scope.$template) {
         resolveTemplate(el, scope.$template);
       }
@@ -308,6 +320,9 @@ const applyDirective = (
     const value = evaluate(ctx.scope, code ?? exp, el, meta);
     return code && typeof value == 'function'
       ? (...args: any[]) => {
+          // owned by the element, as in the walk: a $watch started here
+          // stops when the element goes, not only on a full unmount
+          const previous = setOwner(el);
           try {
             const result = value(...args);
             // only a real Promise: a thenable may be a lazy query builder
@@ -315,6 +330,8 @@ const applyDirective = (
             return result;
           } catch (err) {
             report(err);
+          } finally {
+            setOwner(previous);
           }
         }
       : value;
@@ -361,17 +378,18 @@ const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = query(template, el, 'v-scope');
     // Returning matters in production, where the warning below is stripped:
-    // without it a missing selector reaches `.content` and throws with no
-    // diagnostic at all.
-    if (!templateEl) {
-      if (import.meta.env.DEV && templateEl === null) {
+    // without it a missing selector, or one naming an element that is not a
+    // <template>, reaches `.content` and throws out of mount().
+    if (!(templateEl instanceof HTMLTemplateElement)) {
+      // undefined: the selector did not parse, which query() reported
+      if (import.meta.env.DEV && templateEl !== undefined) {
         console.error(
           `template selector ${template} has no matching <template> element.`
         );
       }
       return;
     }
-    el.appendChild((templateEl as HTMLTemplateElement).content.cloneNode(true));
+    el.appendChild(templateEl.content.cloneNode(true));
     return;
   }
   el.innerHTML = template;

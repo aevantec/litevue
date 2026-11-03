@@ -4,7 +4,7 @@ title: Introduction
 
 # Introduction <Badge type="section" text="Start Here" />
 
-**LiteVue** is a ~10kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
+**LiteVue** is a ~11kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
 
 It is a maintained fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You, continuing from 0.4.1 with devtools, transitions, a plugin system, a global store, and additional directives — while keeping the original goal of staying as close to standard Vue as the format allows.
 
@@ -33,7 +33,7 @@ This is roughly how Vue 1 worked, and it is a genuinely better fit for the "spri
 
 ## Reactivity is the real Vue
 
-LiteVue is not a Vue look-alike with its own reactivity implementation. It depends on **`@vue/reactivity`** — the exact package that powers Vue 3 — so proxies, dependency tracking, effect scheduling, computed getters, and batching all behave the way they do in Vue:
+LiteVue is not a Vue look-alike with its own reactivity implementation. It depends on **`@vue/reactivity`** — the exact package that powers Vue 3 — so proxies, dependency tracking and computed getters are Vue's own, and updates are batched and ordered as they are in Vue:
 
 ```js
 import { createApp, reactive } from '@aevantec/litevue';
@@ -79,7 +79,7 @@ Deliberate divergences, all stemming from the absence of a component system:
 | Custom directives                    | a different, simpler interface — see [`app.directive()`](/globals/create-app#custom-directives) |
 | Scopes                               | inherit through a prototype chain; writes to inherited keys fall through to the owning parent   |
 | [`ref`](/directives/ref) in `v-for` | per row: each row's `$refs` holds its own element, and the parent sees none — no array          |
-| [`$watch`](/magics/watch)            | `immediate` and a stop function, but no `deep` option; a path compares by identity              |
+| [`$watch`](/magics/watch)            | `immediate` and a stop function, but no `deep` option; values compare with `Object.is`          |
 | [`v-model`](/directives/v-model) on `<select multiple>` | an array only; Vue also accepts a `Set`                                  |
 
 ## What's not supported
@@ -119,7 +119,7 @@ The migration path is deliberately short: because the template syntax matches, m
 
 ## Comparison with Alpine
 
-LiteVue addresses a similar scope to [Alpine](https://alpinejs.dev), with two differences in emphasis: it's **about half the size**, and it's **Vue-compatible by policy**.
+LiteVue addresses a similar scope to [Alpine](https://alpinejs.dev), with two differences in emphasis: it's **considerably smaller**, and it's **Vue-compatible by policy**.
 
 Alpine resembles Vue but is free to diverge where that serves its own goals — and it does, in a number of places. LiteVue treats alignment with standard Vue as a constraint, so that graduating to Vue later involves as little friction as possible. Practically, the feature sets are now comparable: see the full [directive-by-directive cheatsheet](/migration/from-alpine).
 
@@ -142,7 +142,7 @@ The core stays small because everything else is opt-in and separately bundled:
 
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
-| Core                              | ~10kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
+| Core                              | ~11kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
 | [Plugins](/plugins/)              | ~5kb<!-- size:dist/litevue-plugins.iife.js --> (nine, combined) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [popover](/plugins/popover)       | ~1kb<!-- size:dist/plugins/popover.iife.js --> | menus and tooltips; ships only on its own                         |
 | [navigate](/plugins/navigate)     | ~3kb<!-- size:dist/plugins/navigate.iife.js --> | page navigation without a full load; ships only on its own, needs morph |

@@ -10,7 +10,11 @@ import {
   parseStringStyle,
 } from '@vue/shared';
 
-const forceAttrRE = /^(spellcheck|draggable|form|list|type)$/;
+const forceAttrRE = /^(spellcheck|draggable|translate|form|list|type)$/;
+// booleans whose property is camel-cased (readOnly), so markup's lowercase
+// name misses it and lands on the attribute path
+const booleanAttrRE =
+  /^(readonly|novalidate|formnovalidate|allowfullscreen|playsinline)$/;
 
 export const bind: Directive<
   Element & { _class?: string | null; __bound?: any }
@@ -37,7 +41,8 @@ export const bind: Directive<
       }
       for (const key in prevValue) {
         if (!value || !(key in value)) {
-          setProp(el, key, null);
+          // with its old value, so a dropped style clears what it set
+          setProp(el, key, null, prevValue[key]);
         }
       }
     }
@@ -72,6 +77,14 @@ const setProp = (
     for (const key in prev) {
       if (next[key] == null) setStyle(style, key, '');
     }
+    // as in Vue: while v-show hides the element it keeps display, and a bound
+    // display, or none once the binding drops it, is what it shows again
+    if ('_vod' in el) {
+      if ('display' in next || 'display' in prev) {
+        (el as any)._vod = style.display;
+      }
+      if ((el as any)._vsh) style.display = 'none';
+    }
     if (!style.cssText) el.removeAttribute('style');
   } else if (
     !(el instanceof SVGElement) &&
@@ -96,10 +109,16 @@ const setProp = (
       (el as any)._trueValue = value;
     } else if (key === 'false-value') {
       (el as any)._falseValue = value;
-    } else if (value != null) {
-      el.setAttribute(key, value);
     } else {
-      el.removeAttribute(key);
+      if (booleanAttrRE.test(key)) {
+        // present or absent, never "false"; '' counts as present, as in Vue
+        value = value || value === '' ? '' : null;
+      }
+      if (value != null) {
+        el.setAttribute(key, value);
+      } else {
+        el.removeAttribute(key);
+      }
     }
   }
 };

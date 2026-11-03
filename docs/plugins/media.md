@@ -193,8 +193,9 @@ mq.configure({ breakpoints: { ...defaultBreakpoints, xs: 420 } }); // add one
 - A missing map, such as `null` while data loads, returns the fallback in every build.
 - The scale is shared by every app on the page. A second app passing a different scale replaces the first, and development warns.
 - `configure()` is safe at any time; anything already on screen updates.
-- `$mqDevice` and the `mobile` / `tablet` / `desktop` aliases are defined by `md` and `lg`. A custom scale without those keys falls back to the default widths, with a development warning.
+- `$mqDevice` and the `tablet` and `desktop` aliases are defined by `md` and `lg`. A scale key with the same name as an alias, such as `tablet`, is used as that key. With a custom scale that lacks `md` or `lg`, `$mqDevice` falls back to the default widths with a development warning, and the aliases no longer resolve: a map key or `$mqAtLeast()` that uses them is ignored, with a warning.
 - One `MediaQueryList` per breakpoint serves the whole page. Each distinct `match()` string, and each off-scale `atLeast()` width, adds one more. The 64 most recently read are kept; older ones are released, so a query built from a changing value, such as a slider's, cannot grow without bound.
+- Unmounting an app releases those subscriptions. Another app on the page, or `mq` read outside any app, keeps following the viewport: its next read subscribes again.
 - The server sent HTML without knowing the viewport, so the first frame can show the wrong branch. Above the fold, pair it with [`v-cloak`](/directives/v-cloak).
 - Without `matchMedia`, as on a server, every helper reports `base` and `false` rather than throwing.
 

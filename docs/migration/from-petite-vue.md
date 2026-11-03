@@ -4,7 +4,7 @@ title: Migrating from petite-vue
 
 # Migrating from petite-vue <Badge type="section" text="Migration" />
 
-LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Everything petite-vue does still works — the changes below are the full migration surface.
+LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Almost everything petite-vue does works unchanged. The two exceptions, a `Set` model on `<select multiple>` and the new reserved scope keys, are listed below with the other changes.
 
 ## Package and globals
 
@@ -21,35 +21,42 @@ LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained 
 
 ## Lifecycle hook rename
 
-`@vue:mounted` / `@vue:unmounted` are now `@mounted` / `@unmounted`. The old prefixed names still work but log a deprecation warning in dev:
+`@vue:mounted` / `@vue:unmounted` are now `@mounted` / `@unmounted`. The old prefixed names still work but warn in the development build:
 
 ```diff
 - <div v-if="show" @vue:mounted="setup" @vue:unmounted="teardown"></div>
 + <div v-if="show" @mounted="setup" @unmounted="teardown"></div>
 ```
 
-This also un-breaks petite-vue-era code written for v0.3 and earlier, which used the bare names.
+This also restores petite-vue code written for v0.3 and earlier, which used the unprefixed names.
 
 ## Behavioral fixes you inherit
 
-- The scoped-context write trap no longer recurses with modern `@vue/reactivity` (petite-vue 0.4.1 breaks on fresh installs).
-- Published TypeScript types actually resolve (petite-vue shipped types referencing a devDependency).
-- `mount()` can be called repeatedly on one app; `unmount()` tears down every batch instead of only the last, and `unmount(el)` tears down a single region.
+- The scoped-context write trap no longer recurses with modern `@vue/reactivity` (petite-vue 0.4.1 fails with current `@vue/reactivity` versions).
+- Published TypeScript types resolve; petite-vue's types reference a devDependency.
+- `mount()` can be called repeatedly on one app; `unmount()` tears down every batch instead of only the last, and `unmount(el)` tears down only the regions at or inside `el`.
 - `v-for` and `v-if` work as direct children of a `<template v-if>` or `<template v-for>`; petite-vue throws.
 - An update made while others are being applied is no longer lost — for example, `{{ a }}-{{ x }}` beside a `v-effect` that sets `x` from `a`.
+- Updates run parents first, as in Vue. Clearing `item` and closing the `v-if` that shows `{{ item.title }}` in the same tick no longer reports a `TypeError`; petite-vue re-renders the content before removing it.
 - `:title="null"` removes the attribute, as Vue does; petite-vue writes the text `"null"` on any name the element has as a property.
+- `:readonly="false"` leaves the field editable, as Vue does; petite-vue writes `readonly="false"`, which makes it read-only. The same holds for `novalidate`, `formnovalidate`, `allowfullscreen` and `playsinline`.
 - `v-model.trim.number` yields a number; in petite-vue `.trim` disables `.number`.
 - Keys deleted from an object bound with `v-bind="obj"` or `:style="obj"` are cleared, not only keys missing from a replacement object.
 - A static `class` on an SVG element survives `:class`; petite-vue renders `class="baseVal animVal …"`.
 - Vue's key aliases work — `.esc`, `.space`, `.up`, `.down`, `.delete` — and `.left` / `.right` filter arrow keys on keyboard events.
 - `v-html` renders `undefined` and `null` as empty; petite-vue writes the text `"undefined"`.
-- An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally.
+- An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally. An empty `v-else-if=""` is a false branch; petite-vue ends the chain there and renders every element after it.
+- An arrow or function expression as a handler, such as `@click="() => n++"`, is called with the event, as in Vue; petite-vue creates the function and never calls it.
 - `v-show` shows an element that starts with an inline `style="display: none"`; petite-vue restores that `none`, so the element never appears.
 - `v-model` on a field whose model is `undefined` renders it empty; petite-vue writes the text `"undefined"`.
 - `v-bind="{ class: … }"` merges with a static `class`, as `:class` does; petite-vue replaces it.
 - `:style` sets and clears only the properties it binds, so static inline styles survive; in petite-vue a string `:style` replaces the whole attribute and a falsy one removes it.
 - A `v-once` nested inside another keeps the whole outer region static; in petite-vue the content after the inner one stays reactive.
-- A `$template` selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the rest of the page still mounts; in petite-vue it throws out of `mount()`.
+- A `$template` selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the rest of the page still mounts; in petite-vue it throws out of `mount()`. A selector that names an element other than a `<template>` adds nothing to the region instead of throwing.
+- A `v-for` with a repeated `:key` rebuilds the earlier row on each update; in petite-vue that row is left in the page and can no longer be removed.
+- `.once` counts only calls the other modifiers let through, so `@click.self.once` survives clicks on child elements; in petite-vue the first event removes the listener even when a modifier rejected it.
+- A `<select v-model>` shows the selected value even when its options render after the model, for example from a request; petite-vue shows whichever option the browser selects, usually the first. Checkboxes and radios likewise re-sync when their bound `:value` changes.
+- A `v-for` that destructures a `null` item, as in `{ id } in items`, renders that row empty; in petite-vue it throws out of `mount()`.
 - A getter in a `v-scope` object is not run at setup, so one that throws is reported where it is read; in petite-vue it stops the whole page from mounting.
 - The compiled-expression cache is bounded, so a page that morphs in server HTML with per-record data does not grow it for its whole life.
 - A `<select multiple>` model must be an array. petite-vue also reads a `Set`; LiteVue selects nothing for one and warns in the development build, since a `Set` cannot update reactively here. Convert with `[...set]`.
@@ -57,11 +64,11 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 
 ## Everything new is opt-in
 
-The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions — no petite-vue template needs to change to adopt litevue.
+The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions. Adopting LiteVue needs no template changes beyond the two exceptions above.
 
-Four later additions are worth knowing about specifically, because petite-vue has no equivalent and each addresses something you probably worked around:
+Four later additions are worth knowing about specifically, because petite-vue has no equivalent and each replaces a workaround petite-vue requires:
 
-- [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings evaluated three times per update, with no memoized option.
+- [`computed()`](/globals/computed) gives you **cached** derived state. Scope getters are reactive in petite-vue too, but they re-run on every read — so a getter read by three bindings is evaluated three times per update, with no memoized option.
 - [Lazy mounting](/directives/v-scope#mounting-on-demand) — `v-scope.visible`, `.idle` and `.interaction` — leaves a region unbound until it is needed. Previously every scope on the page paid its setup cost at load, and deferring one meant wiring up an `IntersectionObserver` and a manual `mount()` yourself.
 - The [morph plugin](/plugins/morph) updates a live region from new server HTML **in place**. Previously the only option was replacing the markup and re-mounting, which resets scope state and loses focus, caret and scroll.
-- An [event handler can `await`](/directives/v-on#async-handlers), as in `@click="result = await save()"`. In petite-vue that handler fails to compile, so the usual workaround was `save().then((r) => (result = r))`.
+- An [event handler can `await`](/directives/v-on#async-handlers), as in `@click="result = await save()"`. In petite-vue that handler fails to compile, so the result has to be assigned in `save().then((r) => (result = r))`.

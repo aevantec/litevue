@@ -7,8 +7,8 @@ import { hasOwn, remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
 import { createId, createWatch } from './magics';
-import { queueJob, stopEffect } from './scheduler';
-import { inOnce } from './walk';
+import { queueJob, stampJob, stopEffect } from './scheduler';
+import { inOnce, withOnce } from './walk';
 import { own } from './ownership';
 export interface Context {
   scope: Record<string, any>;
@@ -44,12 +44,16 @@ export const createContext = (parent?: Context): Context => {
     cleanups: [],
     effect: (fn) => {
       if (inOnce) {
-        queueJob(fn);
-        return fn as any;
+        // still once when it runs: v-if and v-for build their content here
+        const job = () => withOnce(true, fn);
+        queueJob(job);
+        return job as any;
       }
-      const e: ReactiveEffectRunner = rawEffect(fn, {
-        scheduler: () => queueJob(e),
-      });
+      // Lazy, and run once registered: a first run that throws has already
+      // subscribed, so without a runner the next write threw at the writer.
+      const e: ReactiveEffectRunner = stampJob(
+        rawEffect(fn, { scheduler: () => queueJob(e), lazy: true })
+      );
       ctx.effects.push(e);
       // Also owned by the walked node, so detaching it alone releases the
       // effect. Both halves matter: stopping without removing would leave a
@@ -58,6 +62,7 @@ export const createContext = (parent?: Context): Context => {
         stopEffect(e);
         remove(ctx.effects, e);
       });
+      e();
       return e;
     },
   };
@@ -69,7 +74,7 @@ export const createContext = (parent?: Context): Context => {
  * another must copy the user's data and leave these alone. v-for does exactly
  * that on every update, which reset each row's $id and wiped its $refs.
  */
-const hide = (scope: any, key: string, value: any) =>
+export const hide = (scope: any, key: string, value: any) =>
   Object.defineProperty(scope, key, {
     value,
     writable: true,
@@ -104,15 +109,17 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   // cannot fall them through to the parent
   hide(mergedScope, '$watch', createWatch(scopedCtx));
   hide(mergedScope, '$id', createId());
-  bindContextMethods(reactiveProxy);
+  // keys read off the raw scope: through the proxy, Object.keys tracks it, and
+  // a v-for mounting rows inside its effect picked up one dependency per row
+  bindContextMethods(reactiveProxy, mergedScope);
   return scopedCtx;
 };
 
 // Read from the descriptor, not the property: reading runs every getter,
 // outside any error containment, so one throwing getter aborted the mount.
-export const bindContextMethods = (scope: Record<string, any>) => {
-  for (const key of Object.keys(scope)) {
-    const fn = Object.getOwnPropertyDescriptor(scope, key)!.value;
+export const bindContextMethods = (scope: Record<string, any>, raw = scope) => {
+  for (const key of Object.keys(raw)) {
+    const fn = Object.getOwnPropertyDescriptor(raw, key)!.value;
     if (typeof fn === 'function') {
       scope[key] = fn.bind(scope);
     }

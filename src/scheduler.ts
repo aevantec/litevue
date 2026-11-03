@@ -20,21 +20,32 @@ export const stopEffect = (runner: ReactiveEffectRunner) => {
   if (runner.effect) stop(runner);
 };
 
+export type Job = Function & { i?: number };
+
 let queued = false;
-const queue: Function[] = [];
+let uid = 0;
+// A Set: O(1) dedupe. A job is deleted as it starts, so re-queueing one that
+// already ran adds it again, for the next round of the flush.
+const queue = new Set<Job>();
 const p = Promise.resolve();
-// position of the running job, or -1 outside a flush
-let flushIndex = -1;
 
 // A job re-run this often in one flush is in a loop with another; Vue's cap.
 const MAX_RUNS = 100;
 
 export const nextTick = (fn: () => void) => p.then(fn);
 
-export const queueJob = (job: Function) => {
+/**
+ * Stamps a job with its creation order, which the flush runs in. An effect
+ * stamped as it is created sorts before the children its first run creates.
+ */
+export const stampJob = <T extends Job>(job: T) => ((job.i = uid++), job);
+
+export const queueJob = (job: Job) => {
+  // unstamped jobs take their place as they are first queued
+  job.i ?? stampJob(job);
   // Deduplicated against pending jobs only: one that already ran this flush
   // must run again, or the state it read since changed under it goes stale.
-  if (!queue.includes(job, flushIndex + 1)) queue.push(job);
+  queue.add(job);
   if (!queued) {
     queued = true;
     nextTick(flushJobs);
@@ -43,40 +54,42 @@ export const queueJob = (job: Function) => {
 
 const flushJobs = () => {
   const runs = new Map<Function, number>();
-  for (flushIndex = 0; flushIndex < queue.length; flushIndex++) {
-    const job = queue[flushIndex];
-    // Skip effects stopped between queueing and flushing: `stop()` only
-    // clears tracking, so a queued runner would still fire one last write
-    // into markup that is meant to be inert.
-    if (stopped.has(job)) continue;
-    const n = (runs.get(job) || 0) + 1;
-    runs.set(job, n);
-    // Skipping the looping job is enough: it stops re-queueing its partner,
-    // and unrelated jobs later in the flush still run.
-    if (n > MAX_RUNS) {
-      handleError(
-        Error(
-          import.meta.env.DEV
-            ? `an effect re-ran ${MAX_RUNS} times in one update and was ` +
-                `stopped. Two effects are probably each writing state the ` +
-                `other reads; derive one from the other with a getter or ` +
-                `computed() instead.`
-            : 'update loop'
-        ),
-        { phase: 'effect' }
-      );
-      continue;
-    }
-    // Contained: a throw escaping the loop leaves `queued` set, so no flush
-    // is ever scheduled again and the whole page stops updating.
-    try {
-      job();
-    } catch (e) {
-      handleError(e, { phase: 'effect' });
+  // Rounds in creation order: a parent closing a v-if, or shrinking a v-for,
+  // stops the child effects before they re-render data that is gone.
+  while (queue.size) {
+    for (const job of [...queue].sort((a, b) => a.i! - b.i!)) {
+      queue.delete(job);
+      // Skip effects stopped between queueing and flushing: `stop()` only
+      // clears tracking, so a queued runner would still fire one last write
+      // into markup that is meant to be inert.
+      if (stopped.has(job)) continue;
+      const n = (runs.get(job) || 0) + 1;
+      runs.set(job, n);
+      // Skipping the looping job is enough: it stops re-queueing its partner,
+      // and unrelated jobs later in the flush still run.
+      if (n > MAX_RUNS) {
+        handleError(
+          Error(
+            import.meta.env.DEV
+              ? `an effect re-ran ${MAX_RUNS} times in one update and was ` +
+                  `stopped. Two effects are probably each writing state the ` +
+                  `other reads; derive one from the other with a getter or ` +
+                  `computed() instead.`
+              : 'update loop'
+          ),
+          { phase: 'effect' }
+        );
+        continue;
+      }
+      // Contained: a throw escaping the loop leaves `queued` set, so no flush
+      // is ever scheduled again and the whole page stops updating.
+      try {
+        job();
+      } catch (e) {
+        handleError(e, { phase: 'effect' });
+      }
     }
   }
-  queue.length = 0;
-  flushIndex = -1;
   queued = false;
   emitFlush();
 };

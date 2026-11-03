@@ -61,7 +61,7 @@ removed from it when the condition turns false.
 - A false branch is removed from the DOM. Its effects and listeners stop, and [`@unmounted`](/essentials/lifecycle) fires; showing it again builds it fresh, so any state inside it resets.
 - `v-if` is processed before `v-for` on the same element, so it cannot read the loop variable. Move the condition to an inner element or filter the list.
 - For frequent toggles where state should survive, use [`v-show`](/directives/v-show).
-- An empty `v-if=""` is false, and warns in the [development build](/devtools/warnings#an-empty-v-if).
+- An empty `v-if=""` or `v-else-if=""` is false, and warns in the [development build](/devtools/warnings#an-empty-v-if). An empty `v-else-if` is a false branch, not a `v-else`, so the branches after it still apply.
 
 ## Related
 

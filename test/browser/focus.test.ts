@@ -38,6 +38,24 @@ describe('focus survives node movement', () => {
     expect(after.value).toBe('typed');
   });
 
+  // every later row used to be re-inserted, which blurs the focused one
+  test('removing the first row keeps focus in a later row', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ items: [1, 2, 3, 4] }">
+         <ul><li v-for="i in items" :key="i"><input :data-k="i"></li></ul>
+       </div>`
+    );
+    await tick(6);
+
+    const third = root.querySelector('[data-k="3"]') as HTMLInputElement;
+    third.focus();
+
+    (root as any).__ctx.scope.items = [2, 3, 4];
+    await tick(8);
+
+    expect(document.activeElement).toBe(third);
+  });
+
   test('morphing around a focused field leaves it focused and uncleared', async () => {
     document.body.innerHTML = `<div id="root" v-scope="{ n: 0 }">
          <section id="r"><span id="before">a</span><input id="keep"></section>

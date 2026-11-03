@@ -135,7 +135,7 @@ What each part does:
 - **`isDirty`** is `true` once any field differs from its initial value. Here it keeps the button disabled until something has been typed. It compares top-level fields with `!==`, so a field holding an object or array needs its own comparison.
 - **A second submit is ignored** while the first is in flight. The helper does not abort and resend, as the [resource recipe](/essentials/resources) does for reads, because aborting a `POST` does not undo it on the server. Resending could create the record twice.
 - **`cancel()`** aborts the request and reports nothing, and `processing` returns to `false`. The server may still have acted on the request, so treat a cancel as "stop waiting", not "undo".
-- **`@unmounted`** cancels a request still in flight when the form is removed, for example by a [morph](/plugins/morph) or an htmx swap.
+- **`@unmounted`** cancels a request still in flight when the form is removed, for example by a [morph](/plugins/morph), or by an htmx swap with the [unmount hook](/essentials/server-driven-html#htmx) in place.
 
 ## Cross-site request forgery
 
@@ -262,7 +262,7 @@ How each response is handled:
 
 Keep three things in mind:
 
-- **Use `v-show`, not `v-if`, inside the form.** Morph leaves alone any element that contains a `v-if` or `v-for`, because LiteVue owns that markup. A `v-if` anywhere in the form would make every morph skip the whole form. See the [morph behavior table](/plugins/morph#behavior).
+- **Use `v-show`, not `v-if`, inside the form.** Morph leaves the contents of an element alone when one of its children has a `v-if` or `v-for`, because LiteVue owns that markup. A `v-if` placed directly inside the form would make every morph skip the whole form. See the [morph behavior table](/plugins/morph#behavior).
 - **Return the partial, not the whole page,** when the request carries `X-Requested-With: XMLHttpRequest`. Most frameworks can render a fragment for these requests.
 - **`fetch` follows redirects itself,** so `response.redirected` reports a redirect after it has happened. The final page is requested twice, once by `fetch` and again by `location.assign()`. Where that matters, have the server answer these requests with a `204` and a header naming the next URL, and navigate to it.
 

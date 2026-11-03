@@ -28,10 +28,10 @@ reported in every build. See [Error handling](/essentials/error-handling).
 <li v-for="row in rows" :key="row.id">{{ row.name }}</li>
 ```
 
-If two rows produce the same key, the later one wins the element and the earlier
-row loses both its node and any state held on it — a focused input, a scroll
-offset, an open `<details>`. Reconciliation looks like it worked; an item simply
-vanishes.
+If two rows produce the same key, the later one keeps the element across
+updates and the earlier one is rebuilt on every update, losing any state held
+on it — a focused input, a scroll offset, an open `<details>`. Every row still
+renders, but the list behaves as if the earlier one had no key.
 
 Key by something that identifies the item and is unique among its siblings, such
 as a record id. An array index is not a key: it changes when the list does,
@@ -110,7 +110,9 @@ app.mount(el); // nothing is bound
 
 The DOM is the template here, so a region cannot be re-activated in place. To
 bring one back, insert fresh markup and mount that — which is what
-[morph](/plugins/morph) does. Mounting *new* markup into an existing app is
+[morph](/plugins/morph) does. Replacing an element's content, as in
+`container.innerHTML = markup` after `unmount(container)`, counts as fresh
+markup, and mounting it again does not warn. Mounting *new* markup into an existing app is
 unaffected and remains the documented way to
 [initialize dynamic content](/essentials/dynamic-content).
 
@@ -120,7 +122,7 @@ unaffected and remains the documented way to
 app.mount('#ap'); // mount: selector #ap has no matching element.
 ```
 
-Nothing is mounted or torn down, and the call returns `undefined` rather than
+Nothing is mounted or torn down. `mount()` returns `undefined` rather than
 the app, so a chained call after it throws. Check the selector, and that the script runs after the element exists — a script in
 `<head>` without `defer` runs before the body is parsed.
 
@@ -165,8 +167,9 @@ whose plugin was not installed with `app.use()` before `mount()`.
 ### An empty `v-if`
 
 An empty or blank `v-if=""` is read as false: the element does not render, and
-a following `v-else-if` or `v-else` is evaluated as usual. The empty attribute
-is usually a template that lost its condition during editing.
+a following `v-else-if` or `v-else` is evaluated as usual. An empty
+`v-else-if=""` is read as false the same way, and warns too. The empty
+attribute is usually a template that lost its condition during editing.
 
 ### An invalid `v-for` expression
 
@@ -227,8 +230,9 @@ up once, when the element mounts, so it must already be in the document. See
 ```
 
 A `$template` beginning with `#` is read as a selector for a `<template>`
-element. When nothing matches, the element is left empty. Check the id, and
-that the `<template>` is in the document before the scope mounts. A selector
+element. When nothing matches, or the match is another kind of element such
+as a `<div>`, nothing is added to the element. Check the id, and that the
+`<template>` is in the document before the scope mounts. A selector
 that does not parse, such as `#card[`, is reported to `app.onError()` instead,
 with the same result. See
 [Reusable templates](/essentials/components#reusable-templates).

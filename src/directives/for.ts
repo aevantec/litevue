@@ -106,7 +106,8 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const data: any = {};
     if (destructureBindings) {
       destructureBindings.forEach(
-        (b, i) => (data[b] = value[isArrayDestructure ? i : b])
+        // a null item renders empty, rather than throwing out of mount()
+        (b, i) => (data[b] = value?.[isArrayDestructure ? i : b])
       );
     } else {
       data[valueExp] = value;
@@ -162,9 +163,9 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
         warnOnce(
           `for-dup-key:${exp}`,
           `v-for="${exp}" produced a duplicate :key ${JSON.stringify(dup)}. ` +
-            `Keys must be unique among siblings — with a repeat, one item's ` +
-            `element and its scope state are silently dropped. Key by ` +
-            `something stable and unique, such as a record id.`
+            `Keys must be unique among siblings — with a repeat, the earlier ` +
+            `item is rebuilt on every update, losing its element and scope ` +
+            `state. Key by something stable and unique, such as a record id.`
         );
       }
 
@@ -194,7 +195,10 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       mounted = true;
     } else {
       for (let i = 0; i < blocks.length; i++) {
-        if (!keyToIndexMap.has(blocks[i].key)) {
+        const key = blocks[i].key;
+        // a row whose key repeated is not the one the map kept, and nothing
+        // would claim it, so it goes like a dropped key
+        if (!keyToIndexMap.has(key) || prevKeyToIndexMap.get(key) !== i) {
           blocks[i].remove();
         }
       }
@@ -202,28 +206,25 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       const nextBlocks: Block[] = [];
       let i = rows.length;
       let nextBlock: Block | undefined;
-      let prevMovedBlock: Block | undefined;
       while (i--) {
         const row = rows[i];
         const oldIndex = prevKeyToIndexMap.get(row.key);
+        // claimed once: a key repeated in the new list mounts a fresh row
+        prevKeyToIndexMap.delete(row.key);
+        const ref = nextBlock ? nextBlock.el : anchor;
         let block;
         if (oldIndex == null) {
           // new
-          block = mountBlock(row, nextBlock ? nextBlock.el : anchor);
+          block = mountBlock(row, ref);
         } else {
           // update
           block = blocks[oldIndex];
           Object.assign(block.ctx.scope, row.data);
-          if (oldIndex !== i) {
-            // moved
-            if (
-              blocks[oldIndex + 1] !== nextBlock ||
-              // If the next has moved, it must move too
-              prevMovedBlock === nextBlock
-            ) {
-              prevMovedBlock = block;
-              block.insert(parent(), nextBlock ? nextBlock.el : anchor);
-            }
+          // Rows after this one are in place, so move it only if it is not
+          // already right before its successor. Asked of the DOM, since a
+          // removed neighbour shifts the index without the node moving.
+          if (oldIndex !== i && (block.end || block.el).nextSibling !== ref) {
+            block.insert(parent(), ref);
           }
         }
         // indexed, not unshift: the loop visits each index once, and unshift
