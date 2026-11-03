@@ -1,4 +1,4 @@
-import { isArray, looseEqual, looseIndexOf, toNumber } from '@vue/shared';
+import { isArray, looseEqual, looseIndexOf, looseToNumber } from '@vue/shared';
 import { Directive } from '.';
 import { listen } from '../utils';
 import { warnOnce } from '../warn';
@@ -9,6 +9,8 @@ export const model: Directive<
   const type = el.type;
   const assign = get(`(val) => { ${exp} = val }`);
   const { trim, number = type === 'number', lazy, fill } = modifiers || {};
+  // as Vue: what does not parse, such as "" or "abc", stays a string
+  const cast = (val: string) => (number ? looseToNumber(val) : val);
 
   // Collected so teardown can remove them: app.unmount(el) leaves elements in
   // the document, so a surviving listener would still write to a dead scope.
@@ -16,17 +18,23 @@ export const model: Directive<
   const on = (event: string, handler: any) =>
     off.push(listen(el, event, handler));
 
+  // writes the control's state to the model, and renders the model onto it
+  let update: () => void;
+  let render: () => void;
+  let isText = false;
+
   if (el.tagName === 'SELECT') {
     const sel = el as HTMLSelectElement;
-    on('change', () => {
-      const selectedVal = Array.prototype.filter
-        .call(sel.options, (o: HTMLOptionElement) => o.selected)
-        .map((o: HTMLOptionElement) =>
-          number ? toNumber(getValue(o)) : getValue(o)
-        );
-      assign(sel.multiple ? selectedVal : selectedVal[0]);
-    });
-    effect(() => {
+    on(
+      'change',
+      (update = () => {
+        const selectedVal = Array.prototype.filter
+          .call(sel.options, (o: HTMLOptionElement) => o.selected)
+          .map((o: HTMLOptionElement) => cast(getValue(o)));
+        assign(sel.multiple ? selectedVal : selectedVal[0]);
+      })
+    );
+    render = () => {
       const value = get();
       const isMultiple = sel.multiple;
       if (import.meta.env.DEV && isMultiple && !isArray(value)) {
@@ -55,28 +63,30 @@ export const model: Directive<
       if (!isMultiple && sel.selectedIndex !== -1) {
         sel.selectedIndex = -1;
       }
-    });
+    };
   } else if (type === 'checkbox') {
-    on('change', () => {
-      const modelValue = get();
-      const checked = (el as HTMLInputElement).checked;
-      if (isArray(modelValue)) {
-        const elementValue = getValue(el);
-        const index = looseIndexOf(modelValue, elementValue);
-        const found = index !== -1;
-        if (checked && !found) {
-          assign(modelValue.concat(elementValue));
-        } else if (!checked && found) {
-          const filtered = [...modelValue];
-          filtered.splice(index, 1);
-          assign(filtered);
+    on(
+      'change',
+      (update = () => {
+        const modelValue = get();
+        const checked = (el as HTMLInputElement).checked;
+        if (isArray(modelValue)) {
+          const elementValue = getValue(el);
+          const index = looseIndexOf(modelValue, elementValue);
+          const found = index !== -1;
+          if (checked && !found) {
+            assign(modelValue.concat(elementValue));
+          } else if (!checked && found) {
+            const filtered = [...modelValue];
+            filtered.splice(index, 1);
+            assign(filtered);
+          }
+        } else {
+          assign(getCheckboxValue(el as HTMLInputElement, checked));
         }
-      } else {
-        assign(getCheckboxValue(el as HTMLInputElement, checked));
-      }
-    });
-
-    effect(() => {
+      })
+    );
+    render = () => {
       const value = get();
       if (isArray(value)) {
         (el as HTMLInputElement).checked =
@@ -87,21 +97,18 @@ export const model: Directive<
           getCheckboxValue(el as HTMLInputElement, true)
         );
       }
-    });
+    };
   } else if (type === 'radio') {
-    on('change', () => {
-      assign(getValue(el));
-    });
-    effect(() => {
+    on('change', (update = () => assign(getValue(el))));
+    render = () => {
       (el as HTMLInputElement).checked = looseEqual(get(), getValue(el));
-    });
+    };
   } else {
     // text-like
+    isText = true;
     // trim first, then convert, as in Vue: .trim.number yields a number
-    const resolveValue = (val: string) => {
-      if (trim) val = val.trim();
-      return number ? toNumber(val) : val;
-    };
+    const resolveValue = (val: string) => cast(trim ? val.trim() : val);
+    update = () => assign(resolveValue(el.value));
 
     // .debounce[-ms]: rate-limit assignments from input events
     let write = assign;
@@ -132,15 +139,7 @@ export const model: Directive<
       });
     }
 
-    // .fill: seed empty model state from the input's initial value
-    if (fill) {
-      const cur = get();
-      if ((cur == null || cur === '') && el.value) {
-        assign(resolveValue(el.value));
-      }
-    }
-
-    effect(() => {
+    render = () => {
       if ((el as any).composing) {
         return;
       }
@@ -153,7 +152,29 @@ export const model: Directive<
       if (curVal !== newVal) {
         el.value = newVal;
       }
-    });
+    };
+  }
+
+  // .fill: seed an empty model from the control's initial state — a radio's
+  // only if checked, a select's not from an empty placeholder
+  if (fill) {
+    const cur = get();
+    if (
+      (cur == null || cur === '') &&
+      el.value &&
+      (type !== 'radio' || (el as HTMLInputElement).checked)
+    ) {
+      update();
+    }
+  }
+
+  const sync = effect(render);
+  // A select's options, or a checkbox's or radio's :value, can change without
+  // the model doing so; both show up as DOM mutations, so re-render on those.
+  if (!isText) {
+    const observer = new MutationObserver(() => sync());
+    observer.observe(el, { attributes: true, childList: true, subtree: true });
+    off.push(() => observer.disconnect());
   }
 
   return () => off.forEach((remove) => remove());

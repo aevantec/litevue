@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 import { createApp, devtools } from '../src';
 import { focus as focusPlugin } from '../src/plugins';
 import { tick } from './utils';
@@ -95,5 +95,109 @@ describe('v-trap (focus plugin)', () => {
     expect(e.defaultPrevented).toBe(true);
     expect(document.activeElement!.id).toBe('first');
     app.unmount();
+  });
+});
+
+describe('v-trap: where Tab can leave', () => {
+  const tab = (target: Element, shiftKey = false) => {
+    const e = new KeyboardEvent('keydown', {
+      key: 'Tab',
+      shiftKey,
+      bubbles: true,
+      cancelable: true,
+    });
+    target.dispatchEvent(e);
+    return e;
+  };
+  const $ = (id: string) => document.getElementById(id) as HTMLElement;
+
+  let app: ReturnType<typeof createApp> | undefined;
+  const start = async (html: string) => {
+    document.body.innerHTML = html;
+    app = createApp().use(focusPlugin);
+    app.mount('#app');
+    await tick(5);
+  };
+  afterEach(() => {
+    app?.unmount();
+    app = undefined;
+    document.body.innerHTML = '';
+  });
+
+  test('Tab from the checked radio of a trailing group wraps', async () => {
+    // Tab reaches a group through its checked radio, and leaves it from there
+    await start(`<div id="app" v-scope>
+        <div v-trap="true">
+          <button id="first"></button>
+          <input type="radio" name="size" id="s" />
+          <input type="radio" name="size" id="m" checked />
+          <input type="radio" name="size" id="l" />
+        </div>
+      </div>`);
+    $('m').focus();
+
+    const e = tab($('m'));
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+  });
+
+  test('Shift+Tab wraps onto the checked radio of a trailing group', async () => {
+    await start(`<div id="app" v-scope>
+        <div v-trap="true">
+          <button id="first"></button>
+          <input type="radio" name="size" id="s" />
+          <input type="radio" name="size" id="m" checked />
+          <input type="radio" name="size" id="l" />
+        </div>
+      </div>`);
+    $('first').focus();
+
+    tab($('first'), true);
+
+    expect(document.activeElement!.id).toBe('m');
+  });
+
+  test('Shift+Tab from the focused container wraps to the last', async () => {
+    await start(`<button id="outside"></button>
+      <div id="app" v-scope>
+        <div id="dialog" tabindex="-1" v-trap="true">
+          <button id="first"></button>
+          <button id="last"></button>
+        </div>
+      </div>`);
+    $('dialog').focus();
+
+    const e = tab($('dialog'), true);
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('last');
+  });
+
+  test('only the most recently activated of nested traps handles Tab', async () => {
+    // a confirm opened inside a modal, at the start of it
+    await start(`<div id="app" v-scope="{ inner: false }">
+        <button id="open" @click="inner = true"></button>
+        <div v-trap="true">
+          <div v-trap="inner">
+            <button id="inner-first"></button>
+            <button id="inner-last" @click="inner = false"></button>
+          </div>
+          <button id="outer-last"></button>
+        </div>
+      </div>`);
+    $('open').click();
+    await tick(5);
+    expect(document.activeElement!.id).toBe('inner-first');
+
+    tab($('inner-first'), true);
+    expect(document.activeElement!.id).toBe('inner-last');
+
+    // closed again, the outer trap handles Tab once more
+    $('inner-last').click();
+    await tick(5);
+    $('outer-last').focus();
+    tab($('outer-last'));
+    expect(document.activeElement!.id).toBe('inner-first');
   });
 });

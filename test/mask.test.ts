@@ -96,4 +96,32 @@ describe('v-mask plugin', () => {
     expect(input.selectionStart).toBe(11);
     app.unmount();
   });
+
+  test('keeps the caret after a leading literal when the first slot is deleted', async () => {
+    document.body.innerHTML = `<div id="app" v-scope>
+      <input v-mask="(999) 999-9999" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    input.focus();
+    type(input, '(123) 456');
+
+    // Backspace after the 1: the browser leaves "(23) 456" with the caret at 1
+    input.value = '(23) 456';
+    input.setSelectionRange(1, 1);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(input.value).toBe('(234) 56');
+    expect(input.selectionStart).toBe(1);
+
+    // Backspace after a literal-led slot: the caret stays after the "-"
+    type(input, '(555) 129-4567');
+    input.value = '(555) 129-567';
+    input.setSelectionRange(10, 10);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(input.value).toBe('(555) 129-567');
+    expect(input.selectionStart).toBe(10);
+    app.unmount();
+  });
 });
