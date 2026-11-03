@@ -15,8 +15,17 @@ import { queueJob, stopEffect } from './scheduler';
  * Returns a stop function. Nothing stops it automatically.
  */
 export const watchEffect = (fn: () => void): (() => void) => {
-  let runner: ReactiveEffectRunner;
-  // first run is synchronous here; the scheduler only handles re-triggers
-  runner = rawEffect(fn, { scheduler: () => queueJob(runner) });
+  const runner: ReactiveEffectRunner = rawEffect(fn, {
+    scheduler: () => queueJob(runner),
+    lazy: true,
+  });
+  // First run synchronous, as documented. One that throws has already
+  // subscribed, and the caller gets no stop function, so stop it here.
+  try {
+    runner();
+  } catch (e) {
+    stopEffect(runner);
+    throw e;
+  }
   return () => stopEffect(runner);
 };

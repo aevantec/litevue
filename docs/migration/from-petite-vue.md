@@ -37,6 +37,7 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - `mount()` can be called repeatedly on one app; `unmount()` tears down every batch instead of only the last, and `unmount(el)` tears down a single region.
 - `v-for` and `v-if` work as direct children of a `<template v-if>` or `<template v-for>`; petite-vue throws.
 - An update made while others are being applied is no longer lost — for example, `{{ a }}-{{ x }}` beside a `v-effect` that sets `x` from `a`.
+- Updates run parents first, as in Vue. Clearing `item` and closing the `v-if` that shows `{{ item.title }}` in the same tick no longer reports a `TypeError`; petite-vue re-renders the content before removing it.
 - `:title="null"` removes the attribute, as Vue does; petite-vue writes the text `"null"` on any name the element has as a property.
 - `:readonly="false"` leaves the field editable, as Vue does; petite-vue writes `readonly="false"`, which makes it read-only. The same holds for `novalidate`, `formnovalidate`, `allowfullscreen` and `playsinline`.
 - `v-model.trim.number` yields a number; in petite-vue `.trim` disables `.number`.
