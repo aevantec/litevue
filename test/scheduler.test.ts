@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { nextTick, reactive, watchEffect } from '../src';
 import { queueJob, stopEffect } from '../src/scheduler';
+import { addErrorHandler } from '../src/errors';
 import { mount, tick } from './utils';
 
 /**
@@ -225,5 +226,58 @@ describe('re-queueing during a flush', () => {
     queueJob(bystander);
     await tick(3);
     expect(bystander).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('parents before children', () => {
+  // Clearing data and closing what shows it in one tick is common ("clear
+  // the selection, close the modal"); a child run first reads the cleared data.
+  const errorsDuring = async (html: string, data: any, change: () => void) => {
+    const errors: unknown[] = [];
+    const off = addErrorHandler((e) => void errors.push(e));
+    const { app } = await mount(html, data);
+    change.call(app);
+    await tick();
+    off();
+    return errors;
+  };
+
+  test('closing a v-if does not first re-render the content it removes', async () => {
+    const state = reactive<any>({ open: true, item: { title: 'a' } });
+    const errors = await errorsDuring(
+      `<div v-scope><div v-if="state.open">{{ state.item.title }}</div></div>`,
+      { state },
+      () => {
+        state.item = null;
+        state.open = false;
+      }
+    );
+    expect(errors).toEqual([]);
+  });
+
+  test('shrinking a v-for does not first re-render the row it removes', async () => {
+    const state = reactive<any>({
+      ids: [1, 2],
+      users: { 1: { name: 'a' }, 2: { name: 'b' } },
+    });
+    const errors = await errorsDuring(
+      `<ul v-scope><li v-for="id in state.ids">{{ state.users[id].name }}</li></ul>`,
+      { state },
+      () => {
+        delete state.users[2];
+        state.ids = [1];
+      }
+    );
+    expect(errors).toEqual([]);
+  });
+
+  test('plain jobs still run in the order they were queued', async () => {
+    const order: number[] = [];
+    const first = () => order.push(1);
+    const second = () => order.push(2);
+    queueJob(second);
+    queueJob(first);
+    await tick(3);
+    expect(order).toEqual([2, 1]);
   });
 });

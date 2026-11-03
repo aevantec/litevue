@@ -195,6 +195,7 @@ mq.configure({ breakpoints: { ...defaultBreakpoints, xs: 420 } }); // add one
 - `configure()` is safe at any time; anything already on screen updates.
 - `$mqDevice` and the `mobile` / `tablet` / `desktop` aliases are defined by `md` and `lg`. A custom scale without those keys falls back to the default widths, with a development warning.
 - One `MediaQueryList` per breakpoint serves the whole page. Each distinct `match()` string, and each off-scale `atLeast()` width, adds one more. The 64 most recently read are kept; older ones are released, so a query built from a changing value, such as a slider's, cannot grow without bound.
+- Unmounting an app releases those subscriptions. Another app on the page, or `mq` read outside any app, keeps following the viewport: its next read subscribes again.
 - The server sent HTML without knowing the viewport, so the first frame can show the wrong branch. Above the fold, pair it with [`v-cloak`](/directives/v-cloak).
 - Without `matchMedia`, as on a server, every helper reports `base` and `false` rather than throwing.
 

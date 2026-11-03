@@ -7,8 +7,8 @@ import { hasOwn, remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
 import { createId, createWatch } from './magics';
-import { queueJob, stopEffect } from './scheduler';
-import { inOnce } from './walk';
+import { queueJob, stampJob, stopEffect } from './scheduler';
+import { inOnce, withOnce } from './walk';
 import { own } from './ownership';
 export interface Context {
   scope: Record<string, any>;
@@ -44,15 +44,16 @@ export const createContext = (parent?: Context): Context => {
     cleanups: [],
     effect: (fn) => {
       if (inOnce) {
-        queueJob(fn);
-        return fn as any;
+        // still once when it runs: v-if and v-for build their content here
+        const job = () => withOnce(true, fn);
+        queueJob(job);
+        return job as any;
       }
       // Lazy, and run once registered: a first run that throws has already
       // subscribed, so without a runner the next write threw at the writer.
-      const e: ReactiveEffectRunner = rawEffect(fn, {
-        scheduler: () => queueJob(e),
-        lazy: true,
-      });
+      const e: ReactiveEffectRunner = stampJob(
+        rawEffect(fn, { scheduler: () => queueJob(e), lazy: true })
+      );
       ctx.effects.push(e);
       // Also owned by the walked node, so detaching it alone releases the
       // effect. Both halves matter: stopping without removing would leave a

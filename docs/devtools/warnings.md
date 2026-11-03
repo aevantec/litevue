@@ -28,10 +28,10 @@ reported in every build. See [Error handling](/essentials/error-handling).
 <li v-for="row in rows" :key="row.id">{{ row.name }}</li>
 ```
 
-If two rows produce the same key, the later one wins the element and the earlier
-row loses both its node and any state held on it — a focused input, a scroll
-offset, an open `<details>`. Reconciliation looks like it worked; an item simply
-vanishes.
+If two rows produce the same key, the later one keeps the element across
+updates and the earlier one is rebuilt on every update, losing any state held
+on it — a focused input, a scroll offset, an open `<details>`. Every row still
+renders, but the list behaves as if the earlier one had no key.
 
 Key by something that identifies the item and is unique among its siblings, such
 as a record id. An array index is not a key: it changes when the list does,
