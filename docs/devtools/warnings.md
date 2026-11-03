@@ -110,7 +110,9 @@ app.mount(el); // nothing is bound
 
 The DOM is the template here, so a region cannot be re-activated in place. To
 bring one back, insert fresh markup and mount that — which is what
-[morph](/plugins/morph) does. Mounting *new* markup into an existing app is
+[morph](/plugins/morph) does. Replacing an element's content, as in
+`container.innerHTML = markup` after `unmount(container)`, counts as fresh
+markup, and mounting it again does not warn. Mounting *new* markup into an existing app is
 unaffected and remains the documented way to
 [initialize dynamic content](/essentials/dynamic-content).
 
@@ -165,8 +167,9 @@ whose plugin was not installed with `app.use()` before `mount()`.
 ### An empty `v-if`
 
 An empty or blank `v-if=""` is read as false: the element does not render, and
-a following `v-else-if` or `v-else` is evaluated as usual. The empty attribute
-is usually a template that lost its condition during editing.
+a following `v-else-if` or `v-else` is evaluated as usual. An empty
+`v-else-if=""` is read as false the same way, and warns too. The empty
+attribute is usually a template that lost its condition during editing.
 
 ### An invalid `v-for` expression
 

@@ -34,10 +34,17 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     elseExp = null;
     if (
       checkAttr(elseEl, 'v-else') === '' ||
-      (elseExp = checkAttr(elseEl, 'v-else-if'))
+      (elseExp = checkAttr(elseEl, 'v-else-if')) != null
     ) {
+      if (import.meta.env.DEV && elseExp?.trim() === '') {
+        console.warn(`v-else-if expression cannot be empty.`);
+      }
       elseEl.remove();
-      branches.push({ exp: elseExp, el: elseEl });
+      // an empty v-else-if is false, as an empty v-if is, not a v-else
+      branches.push({
+        exp: elseExp == null ? elseExp : elseExp.trim() || '0',
+        el: elseEl,
+      });
     } else {
       break;
     }

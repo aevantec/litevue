@@ -42,9 +42,11 @@ export const mask: Plugin = (app) => {
       if (masked === value) return false;
       input.value = masked;
       // rewriting value moves the caret to the end; put it back after the
-      // characters that were before it
+      // characters that were before it, and past the literals before the next
+      // slot, which formatting that prefix leaves off
       if (at != null && document.activeElement === input) {
-        const to = format(value.slice(0, at), exp).length;
+        let to = format(value.slice(0, at), exp).length;
+        while (to < masked.length && !tokens[exp[to]]) to++;
         input.setSelectionRange(to, to);
       }
       return true;

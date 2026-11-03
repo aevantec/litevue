@@ -19,9 +19,10 @@ import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
 import { SCOPE_SELECTOR } from './lazy';
 
-// DEV: elements this app has already walked, so a second mount of the same
-// element can say why nothing happened. Weak, and never read in production.
-const mountedRoots = new WeakSet<Element>();
+// DEV: each mounted root's first child after the walk, so a second mount of
+// unreplaced markup can say why nothing bound. Weak, and never read in
+// production.
+const mountedRoots = new WeakMap<Element, ChildNode | null>();
 import { disposeSubtree, own } from './ownership';
 
 const escapeRegex = (str: string) =>
@@ -263,7 +264,7 @@ export const createApp = (initialData?: any) => {
           // Walking consumes directives — each one is removed as it binds.
           // A second mount therefore walks a stripped tree and binds nothing:
           // an inert region that looks mounted.
-          if (mountedRoots.has(el)) {
+          if (mountedRoots.has(el) && mountedRoots.get(el) === el.firstChild) {
             warn(
               `mount() was called again on an element that has already been ` +
                 `mounted, so its directives were consumed by the first walk ` +
@@ -271,11 +272,11 @@ export const createApp = (initialData?: any) => {
                 `insert fresh markup and mount that instead.`
             );
           }
-          mountedRoots.add(el);
         }
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const block = new Block(el, ctx, true);
+        import.meta.env.DEV && mountedRoots.set(el, el.firstChild);
         // a root without v-scope gets no stashed context during walk; seed
         // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
