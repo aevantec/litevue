@@ -26,6 +26,7 @@ The handler can be:
 | Expression | `@click="count++"` | `$event` |
 | Call | `@click="select(item, $event)"` | Whatever you pass |
 | Statements | `@click="a++; b++"` | `$event` |
+| Function | `@click="(e) => select(e.target)"` | The first argument |
 
 ### Event modifiers
 
@@ -34,7 +35,7 @@ The handler can be:
 | `.prevent` | Call `event.preventDefault()` |
 | `.stop` | Call `event.stopPropagation()` |
 | `.self` | Only when the event started on this element, not a child |
-| `.once` | Remove the listener after the first call |
+| `.once` | Remove the listener after the first call that the other modifiers let through |
 | `.capture` | Listen in the capture phase |
 | `.passive` | Mark the listener passive |
 

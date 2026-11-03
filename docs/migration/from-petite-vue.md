@@ -45,7 +45,8 @@ This also un-breaks petite-vue-era code written for v0.3 and earlier, which used
 - A static `class` on an SVG element survives `:class`; petite-vue renders `class="baseVal animVal …"`.
 - Vue's key aliases work — `.esc`, `.space`, `.up`, `.down`, `.delete` — and `.left` / `.right` filter arrow keys on keyboard events.
 - `v-html` renders `undefined` and `null` as empty; petite-vue writes the text `"undefined"`.
-- An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally.
+- An empty `v-if=""` renders nothing; petite-vue renders the element unconditionally. An empty `v-else-if=""` is a false branch; petite-vue ends the chain there and renders every element after it.
+- An arrow or function expression as a handler, such as `@click="() => n++"`, is called with the event, as in Vue; petite-vue creates the function and never calls it.
 - `v-show` shows an element that starts with an inline `style="display: none"`; petite-vue restores that `none`, so the element never appears.
 - `v-model` on a field whose model is `undefined` renders it empty; petite-vue writes the text `"undefined"`.
 - `v-bind="{ class: … }"` merges with a static `class`, as `:class` does; petite-vue replaces it.

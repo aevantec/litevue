@@ -77,6 +77,12 @@ const setProp = (
     for (const key in prev) {
       if (next[key] == null) setStyle(style, key, '');
     }
+    // as in Vue: while v-show hides the element it keeps display, and a bound
+    // display is what it shows again
+    if ('_vod' in el) {
+      if ('display' in next) (el as any)._vod = style.display;
+      if ((el as any)._vsh) style.display = 'none';
+    }
     if (!style.cssText) el.removeAttribute('style');
   } else if (
     !(el instanceof SVGElement) &&

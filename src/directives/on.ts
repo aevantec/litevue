@@ -30,6 +30,10 @@ const isExpression = (exp: string) => {
   }
 };
 
+// an arrow or function expression is the handler itself, as in Vue
+const fnExpRE =
+  /^\s*(async\s*)?(\([^)]*?\)|[\w$]+)\s*=>|^\s*(async\s+)?function\b/;
+
 // same as vue 2
 const simplePathRE =
   /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
@@ -86,11 +90,12 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
   // compiled code, so get() hands back a handler that reports its own throws
   // and rejections
-  let handler = simplePathRE.test(exp)
-    ? get(`(e => ${exp}(e))`)
-    : isExpression(exp)
-      ? get(`(${a}$event => (${exp}))`)
-      : get(`(${a}$event => { ${exp} })`);
+  let handler =
+    simplePathRE.test(exp) || fnExpRE.test(exp)
+      ? get(`(e => (${exp})(e))`)
+      : isExpression(exp)
+        ? get(`(${a}$event => (${exp}))`)
+        : get(`(${a}$event => { ${exp} })`);
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
@@ -207,6 +212,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
           return;
         }
       }
+      // here rather than natively, so an event a guard rejects keeps it
+      if (modifiers.once) target.removeEventListener(event, handler, modifiers);
       return invoke(e);
     };
   }
@@ -218,7 +225,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       ? document
       : el;
   const event = arg;
-  target.addEventListener(event, handler, modifiers);
+  target.addEventListener(event, handler, { ...modifiers, once: false });
   // Element listeners are removed too. They once died with the element, but
   // app.unmount(el) tears down a region that stays in the document, where a
   // live handler would keep mutating inert state.
