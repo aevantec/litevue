@@ -20,7 +20,7 @@ export const stopEffect = (runner: ReactiveEffectRunner) => {
   if (runner.effect) stop(runner);
 };
 
-type Job = Function & { i?: number };
+export type Job = Function & { i?: number };
 
 let queued = false;
 let uid = 0;
