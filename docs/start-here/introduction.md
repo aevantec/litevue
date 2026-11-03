@@ -4,7 +4,7 @@ title: Introduction
 
 # Introduction <Badge type="section" text="Start Here" />
 
-**LiteVue** is a ~10kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
+**LiteVue** is a ~11kb<!-- size:dist/litevue.iife.js --> distribution of Vue's template syntax designed for _progressive enhancement_: adding interactivity to HTML that a server already rendered, without a build step, a virtual DOM, or a single-page-app architecture.
 
 It is a maintained fork of [petite-vue](https://github.com/vuejs/petite-vue) by Evan You, continuing from 0.4.1 with devtools, transitions, a plugin system, a global store, and additional directives — while keeping the original goal of staying as close to standard Vue as the format allows.
 
@@ -142,7 +142,7 @@ The core stays small because everything else is opt-in and separately bundled:
 
 | Bundle                            | Size (gzipped) | Contents                                                            |
 | --------------------------------- | -------------- | ------------------------------------------------------------------- |
-| Core                              | ~10kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
+| Core                              | ~11kb<!-- size:dist/litevue.iife.js --> | reactivity, directives, [store](/globals/store), [magics](/magics/) |
 | [Plugins](/plugins/)              | ~5kb<!-- size:dist/litevue-plugins.iife.js --> (nine, combined) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [popover](/plugins/popover)       | ~1kb<!-- size:dist/plugins/popover.iife.js --> | menus and tooltips; ships only on its own                         |
 | [navigate](/plugins/navigate)     | ~3kb<!-- size:dist/plugins/navigate.iife.js --> | page navigation without a full load; ships only on its own, needs morph |

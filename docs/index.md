@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: LiteVue
-  text: Vue's template syntax in ~10kb
+  text: Vue's template syntax in ~11kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
   image:
     src: /logo.png
@@ -27,7 +27,7 @@ features:
       reconciliation, v-model, and more.
   - title: Tiny and dependency-light
     details:
-      ~10kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~5kb<!-- size:dist/litevue-plugins.iife.js --> for the nine in the combined bundle) and devtools (~7kb<!-- size:dist/litevue-devtools.iife.js -->)
+      ~11kb<!-- size:dist/litevue.iife.js --> gzipped core. Plugins (~5kb<!-- size:dist/litevue-plugins.iife.js --> for the nine in the combined bundle) and devtools (~7kb<!-- size:dist/litevue-devtools.iife.js -->)
       ship as separate opt-in bundles that add zero weight to the core, and
       a region can wait to mount until it is seen, idle or first used.
   - title: Built-in devtools
