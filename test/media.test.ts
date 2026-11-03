@@ -489,6 +489,52 @@ describe('the scale is page-wide', () => {
   });
 });
 
+describe('unmounting an app', () => {
+  const live = () => lists.filter((l) => l.listeners.size > 0).length;
+
+  test("another app's breakpoint keeps following the viewport", async () => {
+    document.body.innerHTML =
+      '<div id="a"><b v-text="$mqBreakpoint"></b></div><div id="b"></div>';
+    const a = createApp().use(media);
+    a.mount('#a');
+    apps.push(a);
+    const b = createApp().use(media);
+    b.mount('#b');
+    await tick();
+    expect(document.querySelector('b')!.textContent).toBe('lg');
+
+    b.unmount();
+    setWidth(500);
+    await tick();
+
+    expect(document.querySelector('b')!.textContent).toBe('base');
+  });
+
+  test('mq read outside any app keeps following the viewport', async () => {
+    const seen: string[] = [];
+    watch(() => void seen.push(mq.breakpoint));
+    const { app } = mountWith('<div></div>');
+    app.unmount();
+    await tick();
+
+    setWidth(500);
+    await tick();
+
+    expect(seen.at(-1)).toBe('base');
+  });
+
+  test('the last app gives the subscriptions back when nothing reads mq', async () => {
+    const { app } = mountWith('<div><b v-text="$mqBreakpoint"></b></div>');
+    await tick();
+    expect(live()).toBeGreaterThan(0);
+
+    app.unmount();
+    await tick();
+
+    expect(live()).toBe(0);
+  });
+});
+
 describe('raw query subscriptions', () => {
   const live = () => lists.filter((l) => l.listeners.size > 0).length;
 

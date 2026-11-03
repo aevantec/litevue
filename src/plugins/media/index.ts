@@ -307,9 +307,9 @@ export const mq: Mq = Object.defineProperties(mqFn as Mq, {
 });
 
 /**
- * Drops every live subscription; `activate()` rebuilds them on the next read,
- * so this is safe while something still holds `mq`. The scale is deliberately
- * left alone — a page that configured one still wants it.
+ * Drops every live subscription; `activate()` rebuilds them on the next read.
+ * The scale is deliberately left alone — a page that configured one still
+ * wants it.
  */
 const releaseSubscriptions = () => {
   scaleSubs.forEach((s) => s.off());
@@ -361,7 +361,11 @@ export const media: Plugin<MediaOptions> = (app, options) => {
     configurable: true,
   });
 
-  // Returned so app.unmount() can give the subscriptions back; without it the
-  // MediaQueryList listeners outlive every app. The next read rebuilds them.
-  return releaseSubscriptions;
+  // Returned so app.unmount() can give the subscriptions back. The readers
+  // are woken, since another app or a plain module may still read mq and only
+  // re-reads, rebuilding them, on a change; the unmounted app's are stopped.
+  return () => {
+    releaseSubscriptions();
+    state.tick++;
+  };
 };

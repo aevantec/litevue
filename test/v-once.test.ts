@@ -37,3 +37,35 @@ describe('v-if inside v-once', () => {
     app.unmount();
   });
 });
+
+// Their content is built by a job that ran after the walk had left the
+// v-once region, so it came out reactive.
+describe('v-once around directives that build later', () => {
+  test.each([
+    ['v-if', `<p v-if="true">{{ n }}</p>`, 'p'],
+    ['v-for', `<p v-for="i in 1">{{ n }}</p>`, 'p'],
+    ['<template v-if>', `<template v-if="true"><p>{{ n }}</p></template>`, 'p'],
+  ])('content under %s stays static', async (_, inner, sel) => {
+    const { $, root } = await mount(
+      `<div v-scope="{ n: 1 }"><div v-once>${inner}</div><b>{{ n }}</b></div>`
+    );
+    expect($(sel).textContent).toBe('1');
+
+    (root as any).__ctx.scope.n = 2;
+    await tick();
+    expect($(sel).textContent).toBe('1');
+    expect($('b').textContent).toBe('2');
+  });
+
+  test('a v-effect inside runs once', async () => {
+    const seen: number[] = [];
+    const { root } = await mount(
+      `<div v-scope="{ n: 1 }"><div v-once><i v-effect="seen.push(n)"></i></div></div>`,
+      { seen }
+    );
+    await tick(4);
+    (root as any).__ctx.scope.n = 2;
+    await tick(4);
+    expect(seen).toEqual([1]);
+  });
+});
