@@ -66,7 +66,7 @@ out before it is removed — see [transition](/plugins/transition#with-v-if-and-
 
 ## Behavior
 
-- With `:key`, a reorder moves the existing DOM nodes, so focus, input values and scroll position stay with their item. Without it, nodes are reused by position. The [devtools](/devtools/warnings) warn when an unkeyed list reorders or keys repeat.
+- With `:key`, a reorder moves the existing DOM nodes, so focus, input values and scroll position stay with their item. Without it, nodes are reused by position. The [development build](/devtools/warnings) warns when an unkeyed list reorders or keys repeat.
 - Array mutations (`push`, `splice`, `sort`, `reverse`, …) and replacing the array are both reactive.
 - `Map` and `Set` are not iterated. Spread one into an array — `v-for="[k, v] in [...map]"` — and note that changes to its contents are not tracked; see [reactive()](/globals/reactive#behavior).
 - `v-if` on the same element runs first and cannot see the loop variable — see [v-if](/directives/v-if#behavior).

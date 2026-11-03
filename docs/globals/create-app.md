@@ -84,7 +84,7 @@ app.directive('uppercase', ({ el, get, effect }) => {
 | `get(exp?)` | Evaluate the directive's expression, or another one, in its scope. A function compiled from your own `exp`, such as a handler or setter, comes back wrapped, so a throw or rejection when you call it later is reported to [`app.onError()`](/essentials/error-handling#app-onerror) |
 | `effect(fn)` | Run `fn` reactively; stopped automatically on unmount |
 | `exp` | The raw expression text |
-| `arg` | The argument: `foo` in `v-name:foo` |
+| `arg` | The argument: `foo` in `v-tooltip:foo` |
 | `modifiers` | An object of modifiers: `{ once: true }` for `.once` |
 | `ctx` | The internal context, including `ctx.scope` |
 
@@ -110,9 +110,9 @@ into state that is meant to be inert — even one bound to the element itself.
 ## Behavior
 
 - Several apps can share one page; each `mount()` target should be distinct.
-- Mount each element once. A second `mount()` on the same element does not re-activate it, and warns in development; to re-activate a region, insert fresh markup and mount that.
+- Mount each piece of markup once. Mounting an element again without replacing its contents binds nothing, and warns in development. To re-activate a region, unmount it, insert fresh markup, and mount again.
 - Mounting on the whole document with no `v-scope` walks every element; mark regions with `v-scope` instead.
-- Also exported: [`reactive()`](/globals/reactive), [`nextTick()`](/globals/next-tick), and the TypeScript types `App`, `Plugin<Options>`, `ComponentFactory`, `ErrorHandler`, `ErrorInfo` and `ErrorPhase`.
+- Every other export, including the TypeScript types, is listed under [Globals](/globals/).
 
 ## Related
 

@@ -40,7 +40,7 @@ For stores and custom storage, from `@aevantec/litevue/plugins`:
 
 ```ts
 persistStore(name: string, options?: {
-  key?: string;       // storage key; defaults to the store name
+  key?: string;       // stored as litevue:<key>; defaults to the store name
   keys?: string[];    // only these properties
   storage?: string | PersistStorage;
 }): () => void        // returns a function that stops persisting
@@ -130,7 +130,7 @@ setDefaultStorage('session');
 - Methods, getter-only properties and [`computed()`](/globals/computed) values are skipped, even when listed in `keys` — they cannot be assigned back.
 - `persistStore()` restores immediately, so values an `init()` seeded are replaced by anything already saved.
 - A per-use storage beats the default. Call `setDefaultStorage()` before `persistStore()` and before mounting.
-- If a storage cannot be used — an unknown modifier, or `localStorage` blocked by the browser — the state still works, it is just not saved, and a development error explains why.
+- If a storage cannot be used — an unknown modifier, or `localStorage` blocked by the browser — the state still works, it is just not saved. `persistStore()` and an unknown modifier log a development error explaining why; `v-persist` without a modifier on blocked `localStorage` logs nothing.
 - A write that fails, for example because storage is full, is skipped without an error, and the next change tries again. A saved value that cannot be parsed is ignored, so the state starts from its defaults.
 - Values round-trip through JSON. A `Date` comes back as a string, `Map` and `Set` come back as empty objects, and a class instance comes back as a plain object without its methods. Persist plain data, and convert on the way in and out.
 - Other tabs are not kept in sync. Each tab restores on load and then writes its own changes, so with the same page open twice, the last change in either tab is what the next load restores.

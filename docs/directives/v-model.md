@@ -34,7 +34,7 @@ selects, including `multiple`.
 | Modifier | Meaning |
 | --- | --- |
 | `.lazy` | Sync on `change` rather than `input` |
-| `.number` | Cast to a number; input that does not parse, including an empty field, stays a string |
+| `.number` | Cast with `parseFloat`, as Vue does, so `12px` becomes `12`; input that does not start with a number, including an empty field, stays a string |
 | `.trim` | Trim whitespace; with `.number`, the trimmed value is then cast |
 | `.debounce` / `.debounce-<ms>` | Delay writes from input events; default 250ms |
 | `.fill` | Seed an empty model from the control's initial value, checked state or selected option |
@@ -66,9 +66,9 @@ so the model receives the masked string.
 - A model that is `null` or `undefined` renders an empty text field, so a field bound to a key that does not exist yet, such as `form.name` on `{ form: {} }`, starts blank.
 - `<input type="number">` casts to a number without needing `.number`. Clearing it writes `''`, as in Vue, not `0`.
 - Writes are batched with every other reactive update. Read the DOM after [`$nextTick`](/magics/next-tick).
-- `.fill` only seeds when the model is `null`, `undefined` or an empty string — it never overwrites existing state. A radio seeds only when it is checked, and a select whose selected option has an empty `value`, such as a placeholder, seeds nothing.
+- `.fill` only seeds when the model is `null`, `undefined` or an empty string — it never overwrites existing state. A radio seeds only when it is checked, and a select whose selected option has an empty `value`, such as a placeholder, seeds nothing. An empty array is not empty for `.fill`, so a checkbox group or multiple select that starts as `[]` is not seeded; a multiple select that starts as `null` is seeded with the array of its selected options.
 - A pending `.debounce` is cancelled when the region unmounts, so a late write cannot land on a torn-down scope.
-- Radios and checkboxes re-sync on every update, since the browser retoggles them natively, and when their bound `:value` changes. A select re-syncs when its options change, so options rendered after the model, such as from a request, still show the selected value.
+- Radios and checkboxes re-sync whenever the model changes, and when their bound `:value` changes. A select re-syncs when its options change, so options rendered after the model, such as from a request, still show the selected value.
 
 ## Related
 

@@ -16,7 +16,7 @@ Bind an attribute or DOM property to an expression.
 | --- | --- |
 | `v-bind:name="expression"` | Bind one attribute or property |
 | `:name="expression"` | Shorthand for the above |
-| `v-bind="object"` | Bind every key of an object as an attribute |
+| `v-bind="object"` | Bind every key of an object, as `:name` would bind it |
 
 ### Modifiers
 
@@ -70,7 +70,8 @@ Style objects also take CSS custom properties and `!important`:
 
 ### Binding an object
 
-Without an argument, each key becomes an attribute. A key that disappears is
+Without an argument, each key is bound as `:name` would be, as a property or an
+attribute. A key that disappears is
 removed, whether the object is replaced or the key is deleted from it. A `class`
 or `style` key merges with the static attribute, as `:class` and `:style` do:
 

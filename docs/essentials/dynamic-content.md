@@ -44,6 +44,12 @@ Skipping the unmount is a leak rather than a tidiness problem: the old effects
 stay subscribed and keep writing to nodes that are no longer in the document,
 once more per replacement.
 
+Pass a container that holds the region, not the `v-scope` element itself. That
+element's `v-scope` attribute was consumed when it mounted, so after its
+contents are replaced it mounts without its own state. To replace a scope root,
+replace the element itself, for example with `replaceWith()`, and mount the new
+element.
+
 ::: tip Prefer morph for server-rendered updates
 Replacing markup discards scope state, focus and scroll even when you unmount
 first. If the region is being re-rendered by a server, [`morph`](/plugins/morph)
@@ -57,10 +63,10 @@ scope roots for you.
 Unmounting removes the bindings, not the markup — the elements stay in the
 document and remain fully usable; they are merely inert.
 
-::: warning Mounting the same element again does not re-bind it
+::: warning Mounting the same markup again does not re-bind it
 Walking an element consumes its directives: each `v-scope`, `@click` and `:bind`
-is removed from the DOM as it is bound. A second `mount()` therefore walks a
-stripped tree and binds nothing — no error, and a region that looks mounted but
+is removed from the DOM as it is bound. A second `mount()` on an element whose
+markup was not replaced therefore walks a stripped tree and binds nothing — no error, and a region that looks mounted but
 is inert. LiteVue [warns about this in
 development](/devtools/warnings#mounting-the-same-element-twice).
 
