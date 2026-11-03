@@ -74,7 +74,7 @@ export const createContext = (parent?: Context): Context => {
  * another must copy the user's data and leave these alone. v-for does exactly
  * that on every update, which reset each row's $id and wiped its $refs.
  */
-const hide = (scope: any, key: string, value: any) =>
+export const hide = (scope: any, key: string, value: any) =>
   Object.defineProperty(scope, key, {
     value,
     writable: true,
