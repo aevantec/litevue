@@ -156,3 +156,48 @@ describe('a first run that throws', () => {
     off();
   });
 });
+
+describe('watchEffect runs after the bindings it reads', () => {
+  test('even a binding created after the effect first re-ran', async () => {
+    document.body.innerHTML = `<div v-scope><template v-if="show"><span>{{ n }}</span></template></div>`;
+    const app = createApp({ n: 0, show: false });
+    app.mount(document.body.firstElementChild as Element);
+    await tick();
+    const seen: (string | undefined)[] = [];
+    const stop = watchEffect(() => {
+      void app.scope.n;
+      seen.push(document.querySelector('span')?.textContent);
+    });
+
+    app.scope.n = 1;
+    await tick();
+    app.scope.show = true;
+    await tick();
+    app.scope.n = 2;
+    await tick();
+    stop();
+    app.unmount();
+
+    expect(seen.at(-1)).toBe('2');
+  });
+
+  test('when created before the app mounts', async () => {
+    const state = reactive({ n: 0 });
+    const seen: (string | undefined)[] = [];
+    const stop = watchEffect(() => {
+      void state.n;
+      seen.push(document.querySelector('b')?.textContent);
+    });
+    document.body.innerHTML = `<div v-scope><b>{{ state.n }}</b></div>`;
+    const app = createApp({ state });
+    app.mount(document.body.firstElementChild as Element);
+    await tick();
+
+    state.n = 1;
+    await tick();
+    stop();
+    app.unmount();
+
+    expect(seen.at(-1)).toBe('1');
+  });
+});
