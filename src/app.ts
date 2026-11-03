@@ -2,7 +2,7 @@ import { reactive } from '@vue/reactivity';
 import { remove } from '@vue/shared';
 import { Block } from './block';
 import { Directive } from './directives';
-import { bindContextMethods, createContext } from './context';
+import { bindContextMethods, createContext, hide } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick, stopEffect } from './scheduler';
 import { walk } from './walk';
@@ -106,13 +106,14 @@ export const createApp = (initialData?: any) => {
     }
   }
 
-  // global internal helpers
-  ctx.scope.$s = toDisplayString;
-  ctx.scope.$nextTick = nextTick;
-  ctx.scope.$refs = Object.create(null);
-  ctx.scope.$store = stores;
-  ctx.scope.$watch = createWatch(ctx);
-  ctx.scope.$id = createId();
+  // global internal helpers, hidden as a v-scope's are, so serializing the
+  // root ({{ $data }}) yields only the app's own state
+  hide(ctx.scope, '$s', toDisplayString);
+  hide(ctx.scope, '$nextTick', nextTick);
+  hide(ctx.scope, '$refs', Object.create(null));
+  hide(ctx.scope, '$store', stores);
+  hide(ctx.scope, '$watch', createWatch(ctx));
+  hide(ctx.scope, '$id', createId());
   // non-enumerable so serializing a scope ({{ $data }}, devtools previews)
   // doesn't recurse into the self-reference
   Object.defineProperty(ctx.scope, '$root', {
