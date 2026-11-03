@@ -417,6 +417,18 @@ describe('configuration', () => {
     warn.mockRestore();
   });
 
+  test('a scale key named like an alias is used as that key', () => {
+    // the documented custom scale: its own `tablet` is not the `md` alias
+    mq.configure({ breakpoints: { phone: 480, tablet: 820, laptop: 1180 } });
+    setWidth(900);
+
+    expect(mq.breakpoint).toBe('tablet');
+    expect(mq.atLeast('tablet')).toBe(true);
+    expect(mq({ base: 'a', tablet: 'b', laptop: 'c' })).toBe('b');
+    setWidth(700);
+    expect(mq.atLeast('tablet')).toBe(false);
+  });
+
   test('configure re-runs readers even when the breakpoint name is unchanged', async () => {
     setWidth(980);
     const seen: boolean[] = [];
