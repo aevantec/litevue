@@ -3,6 +3,21 @@
 ## [0.5.17](https://github.com/aevantec/litevue/compare/v0.5.16...v0.5.17) (2026-11-03)
 
 
+### Behavior changes
+
+* `v-model.number` casts as Vue does: an empty or unparsable value stays a string, so clearing a number field gives `''` rather than `0`, and `12px` becomes `12` ([#237](https://github.com/aevantec/litevue/issues/237))
+* An arrow function or function expression in an event handler, such as `@click="() => n++"`, is called with the event, as in Vue. Before, it was created and discarded ([#238](https://github.com/aevantec/litevue/issues/238))
+* `.once` no longer uses the native listener option. It counts only calls that the other modifiers let through, so `@click.self.once` survives clicks on child elements ([#238](https://github.com/aevantec/litevue/issues/238))
+* `$watch` compares values with `Object.is`, as Vue does: `NaN` to `NaN` no longer calls the callback, and `0` to `-0` does ([#238](https://github.com/aevantec/litevue/issues/238))
+* An empty `v-else-if` is a false branch, with a development warning, rather than the end of the chain ([#238](https://github.com/aevantec/litevue/issues/238))
+* `v-show` keeps `display: none` while hiding even when `:style` sets `display`, and when shown uses the display `:style` currently binds, or the element's default once `:style` stops binding one ([#238](https://github.com/aevantec/litevue/issues/238)) ([#239](https://github.com/aevantec/litevue/issues/239))
+* Effects run parents first in an update, as in Vue, and `watchEffect` runs after the bindings in the same update. Code that relied on the old queue order may see side effects in a different order ([#230](https://github.com/aevantec/litevue/issues/230)) ([#241](https://github.com/aevantec/litevue/issues/241))
+* A `watchEffect` whose first run throws is stopped; the error still reaches the caller ([#227](https://github.com/aevantec/litevue/issues/227))
+* Root `$data` serializes only the app's state, without `$refs`, `$store`, `$watch` and the other built-in helpers ([#242](https://github.com/aevantec/litevue/issues/242))
+* navigate leaves `href="#"` links to the browser, and a `POST` redirected to a page it cannot render loads that page in full ([#232](https://github.com/aevantec/litevue/issues/232))
+* media: a custom scale key named like an alias, such as `tablet`, is used as that key instead of the alias ([#240](https://github.com/aevantec/litevue/issues/240))
+
+
 ### Bug Fixes
 
 * keep an effect live when its first run throws, and two mount crashes ([#223](https://github.com/aevantec/litevue/issues/223)) ([0513f74](https://github.com/aevantec/litevue/commit/0513f748263b34a21136c9edca7416f9a5653f98))
@@ -17,12 +32,12 @@
 * release regions that morph or unmount(el) removed ([#226](https://github.com/aevantec/litevue/issues/226)) ([2c0a161](https://github.com/aevantec/litevue/commit/2c0a161adff6f82d43a692f4b00b09169a10b4d4))
 * root $data serializes only the app's state ([#242](https://github.com/aevantec/litevue/issues/242)) ([18a761c](https://github.com/aevantec/litevue/commit/18a761c4de06e1daa4a7d38afa79f403a394a145))
 * run parent effects before their children in a flush ([#230](https://github.com/aevantec/litevue/issues/230)) ([d44ce18](https://github.com/aevantec/litevue/commit/d44ce182bf80e392a2b66c6c6c4be40a2fbf5076))
-* six directive edge cases from the audit ([#238](https://github.com/aevantec/litevue/issues/238)) ([96c43c4](https://github.com/aevantec/litevue/commit/96c43c4cef31766d09cf80012e4b318dee08ccde))
+* six directive edge cases: an empty `v-else-if`, `v-show` beside `:style`, arrow-function handlers, `.once` after other modifiers, `$watch` on `NaN`, and the documented remount recipe warning ([#238](https://github.com/aevantec/litevue/issues/238)) ([96c43c4](https://github.com/aevantec/litevue/commit/96c43c4cef31766d09cf80012e4b318dee08ccde))
 * stop :readonly="false" from making a field read-only ([#222](https://github.com/aevantec/litevue/issues/222)) ([1b8e962](https://github.com/aevantec/litevue/commit/1b8e962dacf8a329e5f390ff64e052ff3a7bcfef))
 * stop a $watch when the element that started it is removed ([#225](https://github.com/aevantec/litevue/issues/225)) ([685bfad](https://github.com/aevantec/litevue/commit/685bfaddee0201678db3860572d3bb284b5d78a3))
 * stop a repeated v-for key from leaving a row that can't be removed ([#228](https://github.com/aevantec/litevue/issues/228)) ([50170ab](https://github.com/aevantec/litevue/commit/50170ab29f2df09f6a7b65168e1de85c181ef1e3))
 * stop a watchEffect whose first run throws ([#227](https://github.com/aevantec/litevue/issues/227)) ([eb71b48](https://github.com/aevantec/litevue/commit/eb71b484d818ffde4b429aa5d0267f9328b897c5))
-* v-model casts numbers as Vue does and re-syncs when its control changes ([#237](https://github.com/aevantec/litevue/issues/237)) ([2f4eae3](https://github.com/aevantec/litevue/commit/2f4eae3acc2350838dab6202ce7dfa694a01adc3))
+* v-model casts numbers as Vue does; selects, checkboxes and radios re-sync when their options or `:value` change, and `.fill` seeds them ([#237](https://github.com/aevantec/litevue/issues/237)) ([2f4eae3](https://github.com/aevantec/litevue/commit/2f4eae3acc2350838dab6202ce7dfa694a01adc3))
 * v-show forgets a display that :style no longer binds ([#239](https://github.com/aevantec/litevue/issues/239)) ([03a8185](https://github.com/aevantec/litevue/commit/03a81857b0ef3887292c20c6227cc4cbef4b50fd))
 * watchEffect runs after every binding in a flush ([#241](https://github.com/aevantec/litevue/issues/241)) ([c9cf498](https://github.com/aevantec/litevue/commit/c9cf498f8f22fb146a0246c55d2a54ac74941ff4))
 
