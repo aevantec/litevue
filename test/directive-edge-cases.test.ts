@@ -53,6 +53,39 @@ describe('v-show with a bound display', () => {
   });
 });
 
+describe('v-show after :style drops display', () => {
+  test('shows the element with no display, not the one the binding dropped', async () => {
+    const { $, app } = await mount(
+      `<div v-scope><p v-show="on" :style="s">x</p></div>`,
+      { on: true, s: { display: 'flex' } as any }
+    );
+
+    app.scope.s = null;
+    await tick();
+    app.scope.on = false;
+    await tick();
+    app.scope.on = true;
+    await tick();
+
+    expect($('p').style.display).toBe('');
+  });
+
+  test('stays hidden when the binding drops display while hidden', async () => {
+    const { $, app } = await mount(
+      `<div v-scope><p v-show="on" :style="s">x</p></div>`,
+      { on: false, s: { display: 'flex' } as any }
+    );
+
+    app.scope.s = { color: 'red' };
+    await tick();
+    expect($('p').style.display).toBe('none');
+    app.scope.on = true;
+    await tick();
+
+    expect($('p').style.display).toBe('');
+  });
+});
+
 describe('function expressions as handlers', () => {
   test.each([
     ['an arrow', '() => n++'],
