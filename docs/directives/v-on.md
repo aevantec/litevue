@@ -47,7 +47,7 @@ The handler can be:
 | `.esc`, `.space`, `.up`, `.down`, `.left`, `.right`, `.delete` | Vue's aliases. `.delete` matches both Delete and Backspace |
 | `.ctrl`, `.shift`, `.alt`, `.meta` | Only while that key is held |
 | `.exact` | Only when no other system key is held |
-| `.left`, `.middle`, `.right` | On a mouse event, only for that button; `@click.right` listens for `contextmenu` |
+| `.left`, `.middle`, `.right` | On a mouse event, only for that button; `@click.right` listens for `contextmenu`, and `@click.middle` for `mouseup` |
 
 ### LiteVue modifiers
 
@@ -121,7 +121,7 @@ Return the promise, or `await` it, and a rejection is reported to
 ## Behavior
 
 - `.left` and `.right` depend on the event: arrow keys on `keydown` and `keyup`, mouse buttons on mouse events.
-- A modifier LiteVue does not recognise is ignored, and warns in the [development build](/start-here/installation#development-builds) — `@input.debounce.500ms` suggests `.debounce-500`.
+- On events other than `keydown`, `keyup` and `keypress`, a modifier LiteVue does not recognise is ignored, and warns in the [development build](/start-here/installation#development-builds) — `@input.debounce.500ms` suggests `.debounce-500`. On those keyboard events it is read as a key name, so `@keydown.debounce.500ms` runs only for a key named `500ms`, which means never.
 - `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
 - Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
 - A handler that throws is reported and does not stop later events.

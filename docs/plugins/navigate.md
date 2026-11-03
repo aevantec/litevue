@@ -29,7 +29,7 @@ createApp()
 | --- | --- | --- |
 | `target` | `'body'` | Selector of the region to update. The fetched page must contain it too |
 | `transition` | `false` | Run each navigation inside a [view transition](/plugins/morph#view-transitions) where supported |
-| `scroll` | `true` | Scroll to the top, or to the URL's `#hash`, after navigating |
+| `scroll` | `true` | Scroll to the top, or to the URL's `#hash`, after navigating, and restore the saved position on back and forward. `false` leaves scrolling to you in both cases |
 | `prefetch` | `false` | Fetch a link's page when the pointer rests on it or it receives focus, so the click renders without waiting. See [Prefetch](#prefetch) |
 
 ## What it intercepts
@@ -58,7 +58,7 @@ Mark links to files the same way, or with `download`. A same-origin link to a PD
 
 With `prefetch: true`, the plugin starts fetching a link's page before it is clicked:
 
-- When the pointer rests on the link for 100ms, or the link receives focus. Moving away sooner fetches nothing, so a pointer crossing the page does not fetch every link it passes.
+- When the pointer rests on the link, or focus stays on it, for 100ms. Moving away sooner fetches nothing, so a pointer crossing the page does not fetch every link it passes.
 - At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger.
 
 ```js
@@ -193,12 +193,12 @@ Back and forward cannot be held this way, since the URL has already changed when
 
 - Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load. A server that returns a different response for them must also send `Vary: X-Requested-With`; otherwise a browser or proxy cache can serve that response to a full load of the same URL.
 - A navigation still in flight is cancelled when another starts.
-- The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element. A `POST` falls back only when the server redirected it; see [Forms](#forms).
+- The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element, and when its tracked assets differ; see [Deploys](#deploys). A `POST` falls back only when the server redirected it; see [Forms](#forms).
 - `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
-- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
+- Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. With `scroll: false`, the plugin does not restore it. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
 - There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
 - On full unmount, the plugin stops intercepting and removes its live region.
 

@@ -44,9 +44,9 @@ createApp({ editing: false, open: false }).use(focus).mount();
 ## Behavior
 
 - `v-focus` with a constant `true` works as an autofocus.
-- When `v-trap` activates, focus moves to the first focusable child. Tab and Shift+Tab wrap at the edges, and focus that strays outside is pulled back in.
+- When `v-trap` activates, focus moves to the first focusable child. Tab and Shift+Tab wrap at the edges, and pressing Tab while focus is outside the trap moves it back to the first stop.
 - When it deactivates, focus returns to the element that had it before.
-- Focusable means what Tab reaches: links, buttons, form fields, a `<details>` element's `<summary>`, media with `controls`, `contenteditable` elements and elements with a non-negative `tabindex`. Hidden inputs, disabled fields, `tabindex="-1"`, and anything hidden with `display: none`, `visibility: hidden` or `v-show`, inside a closed `<details>` or under `inert` are skipped, so Tab cannot leave the trap past them.
+- Focusable means what Tab reaches: links and image-map areas with an `href`, buttons, form fields, a `<details>` element's `<summary>`, iframes, media with `controls`, `contenteditable` elements and elements with a non-negative `tabindex`. Hidden inputs, disabled fields, `tabindex="-1"`, and anything hidden with `display: none`, `visibility: hidden` or `v-show`, inside a closed `<details>` or under `inert` are skipped, so Tab cannot leave the trap past them.
 - A radio group counts as one stop, its checked radio or else its first, as Tab treats it. Shift+Tab from the trap element itself, when it holds focus through `tabindex="-1"`, wraps to the last stop.
 - Traps can nest, such as a confirmation inside a modal. Only the most recently activated trap handles Tab; when it deactivates, the one around it takes over again.
 

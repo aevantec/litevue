@@ -123,8 +123,8 @@ more per replacement.
 ::: warning A region cannot be re-activated in place
 Walking an element **consumes** its directives — each `v-scope`, `@click` and
 `:bind` is removed from the DOM as it is bound. Mounting the same element again
-therefore binds nothing at all: no error, and an inert region that looks
-mounted. LiteVue warns about this in development.
+**without replacing its markup** therefore binds nothing at all: no error, and
+an inert region that looks mounted. LiteVue warns about this in development.
 
 To bring a region back, insert fresh markup and mount that, or morph the region
 from server HTML. Both give the walker directives to find.

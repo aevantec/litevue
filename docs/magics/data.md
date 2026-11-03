@@ -24,7 +24,7 @@ $data: Record<string, any>
 
 ## Behavior
 
-- Serializing it includes only the scope's own state — not inherited parent state and not the `$` helpers.
+- Serializing it includes only the scope's own state — not inherited parent state and not the built-in `$` helpers. At the root, values a plugin adds are included, such as the media plugin's `$mqBreakpoint` and `$mqDevice`.
 - It is the live reactive object; writing to it updates the page.
 - Useful for debugging, and for sending a form's state with `fetch`.
 

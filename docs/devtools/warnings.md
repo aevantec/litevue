@@ -122,7 +122,7 @@ unaffected and remains the documented way to
 app.mount('#ap'); // mount: selector #ap has no matching element.
 ```
 
-Nothing is mounted or torn down, and the call returns `undefined` rather than
+Nothing is mounted or torn down. `mount()` returns `undefined` rather than
 the app, so a chained call after it throws. Check the selector, and that the script runs after the element exists — a script in
 `<head>` without `defer` runs before the body is parsed.
 
@@ -231,7 +231,7 @@ up once, when the element mounts, so it must already be in the document. See
 
 A `$template` beginning with `#` is read as a selector for a `<template>`
 element. When nothing matches, or the match is another kind of element such
-as a `<div>`, the element is left empty. Check the id, and that the
+as a `<div>`, nothing is added to the element. Check the id, and that the
 `<template>` is in the document before the scope mounts. A selector
 that does not parse, such as `#card[`, is reported to `app.onError()` instead,
 with the same result. See
