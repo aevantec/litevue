@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.5.17](https://github.com/aevantec/litevue/compare/v0.5.16...v0.5.17) (2026-11-03)
+
+
+### Bug Fixes
+
+* keep an effect live when its first run throws, and two mount crashes ([#223](https://github.com/aevantec/litevue/issues/223)) ([0513f74](https://github.com/aevantec/litevue/commit/0513f748263b34a21136c9edca7416f9a5653f98))
+* keep v-if, v-for and v-effect static inside v-once ([#229](https://github.com/aevantec/litevue/issues/229)) ([770203f](https://github.com/aevantec/litevue/commit/770203f468c498a288e369fd5e90125784b6ea4d))
+* **plugins:** a media scale key named like an alias is used as that key ([#240](https://github.com/aevantec/litevue/issues/240)) ([f8574c5](https://github.com/aevantec/litevue/commit/f8574c5de8c9470c21c361712706420bb391e065))
+* **plugins:** keep $mq following the viewport after an app unmounts ([#233](https://github.com/aevantec/litevue/issues/233)) ([6ae287d](https://github.com/aevantec/litevue/commit/6ae287ddb4e9d6b521f7ce74e77c0289654dd11c))
+* **plugins:** keep an unkeyed data-morph-preserve element in its place ([#224](https://github.com/aevantec/litevue/issues/224)) ([506895a](https://github.com/aevantec/litevue/commit/506895a682f6cb57200e8626b204cd9443fb9516))
+* **plugins:** keep Tab inside v-trap at radio groups, the container and nested traps ([#234](https://github.com/aevantec/litevue/issues/234)) ([09fd4a3](https://github.com/aevantec/litevue/commit/09fd4a3494b0da3025bbb52eba84e4d901b3b23b))
+* **plugins:** keep the v-mask caret past a leading literal ([#235](https://github.com/aevantec/litevue/issues/235)) ([c6338d3](https://github.com/aevantec/litevue/commit/c6338d34f0e8a28018fd5b54dce4cdff98bdcc60))
+* **plugins:** leave href="#" to the browser, load a redirected POST, keep forward's scroll ([#232](https://github.com/aevantec/litevue/issues/232)) ([599e211](https://github.com/aevantec/litevue/commit/599e21183b38d116c9a1eb05c19ec2fa1961f5c2))
+* **plugins:** use a prefetched page once, and abort unused prefetches ([#231](https://github.com/aevantec/litevue/issues/231)) ([2356ae3](https://github.com/aevantec/litevue/commit/2356ae3ce40c66cce704ebca31470b4a17fa3e5c))
+* release regions that morph or unmount(el) removed ([#226](https://github.com/aevantec/litevue/issues/226)) ([2c0a161](https://github.com/aevantec/litevue/commit/2c0a161adff6f82d43a692f4b00b09169a10b4d4))
+* root $data serializes only the app's state ([#242](https://github.com/aevantec/litevue/issues/242)) ([18a761c](https://github.com/aevantec/litevue/commit/18a761c4de06e1daa4a7d38afa79f403a394a145))
+* run parent effects before their children in a flush ([#230](https://github.com/aevantec/litevue/issues/230)) ([d44ce18](https://github.com/aevantec/litevue/commit/d44ce182bf80e392a2b66c6c6c4be40a2fbf5076))
+* six directive edge cases from the audit ([#238](https://github.com/aevantec/litevue/issues/238)) ([96c43c4](https://github.com/aevantec/litevue/commit/96c43c4cef31766d09cf80012e4b318dee08ccde))
+* stop :readonly="false" from making a field read-only ([#222](https://github.com/aevantec/litevue/issues/222)) ([1b8e962](https://github.com/aevantec/litevue/commit/1b8e962dacf8a329e5f390ff64e052ff3a7bcfef))
+* stop a $watch when the element that started it is removed ([#225](https://github.com/aevantec/litevue/issues/225)) ([685bfad](https://github.com/aevantec/litevue/commit/685bfaddee0201678db3860572d3bb284b5d78a3))
+* stop a repeated v-for key from leaving a row that can't be removed ([#228](https://github.com/aevantec/litevue/issues/228)) ([50170ab](https://github.com/aevantec/litevue/commit/50170ab29f2df09f6a7b65168e1de85c181ef1e3))
+* stop a watchEffect whose first run throws ([#227](https://github.com/aevantec/litevue/issues/227)) ([eb71b48](https://github.com/aevantec/litevue/commit/eb71b484d818ffde4b429aa5d0267f9328b897c5))
+* v-model casts numbers as Vue does and re-syncs when its control changes ([#237](https://github.com/aevantec/litevue/issues/237)) ([2f4eae3](https://github.com/aevantec/litevue/commit/2f4eae3acc2350838dab6202ce7dfa694a01adc3))
+* v-show forgets a display that :style no longer binds ([#239](https://github.com/aevantec/litevue/issues/239)) ([03a8185](https://github.com/aevantec/litevue/commit/03a81857b0ef3887292c20c6227cc4cbef4b50fd))
+* watchEffect runs after every binding in a flush ([#241](https://github.com/aevantec/litevue/issues/241)) ([c9cf498](https://github.com/aevantec/litevue/commit/c9cf498f8f22fb146a0246c55d2a54ac74941ff4))
+
+
+### Performance
+
+* move only out-of-place v-for rows, and trim the core bundle ([#221](https://github.com/aevantec/litevue/issues/221)) ([891bf16](https://github.com/aevantec/litevue/commit/891bf1632e4f27768e5d54232ee96ec6defd3bb3))
+
 ## [0.5.16](https://github.com/aevantec/litevue/compare/v0.5.15...v0.5.16) (2026-10-26)
 
 
