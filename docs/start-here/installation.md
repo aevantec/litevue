@@ -85,8 +85,8 @@ Development files are unminified and about twice the size of the production
 build, gzipped. Switch back to `litevue.iife.js` or `litevue.mjs` before you deploy.
 :::
 
-Plugins with development checks — media, morph and persist, and the combined
-plugins bundle — ship `.dev` files the same way. See
+Plugins with development checks — media, morph, navigate and persist, and the
+combined plugins bundle — ship `.dev` files the same way. See
 [Installing plugins](/plugins/installation#development-builds).
 
 ## Mount it yourself
