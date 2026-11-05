@@ -32,7 +32,7 @@ createApp(data?: object | (() => object)): App
 
 | Member | Returns | Meaning |
 | --- | --- | --- |
-| `mount(target?)` | `App` | Mount every top-level `v-scope` under a selector or element, or the whole document. Call again to mount [new content](/essentials/dynamic-content). A selector that matches no element returns `undefined` and mounts nothing |
+| `mount(target?)` | `App` | Mount a selector, an element or the whole document; see [what `mount()` binds](#what-mount-binds). Call again to mount [new content](/essentials/dynamic-content). A selector that matches no element returns `undefined` and mounts nothing |
 | `unmount(target?)` | — | Tear down everything, or only the regions at or inside `target` — see [Tearing a region down](/essentials/dynamic-content#tearing-a-region-down) |
 | `use(plugin, options?)` | `App` | Install a [plugin](/plugins/). Installing the same plugin twice does nothing |
 | `directive(name, def?)` | `App` / definition | Register a [custom directive](#custom-directives), or read one back |
@@ -88,6 +88,13 @@ app.directive('uppercase', ({ el, get, effect }) => {
 | `modifiers` | An object of modifiers: `{ once: true }` for `.once` |
 | `ctx` | The internal context, including `ctx.scope` |
 
+A custom directive cannot replace a built-in one. LiteVue always uses its own
+`v-bind`, `v-on`, `v-show`, `v-text`, `v-html`, `v-model` and `v-effect`, and it
+reads `v-scope`, `v-if`, `v-for`, `v-once`, `v-pre`, `v-cloak`, `v-teleport`
+and `v-name` before it looks up a registered directive.
+A directive registered under one of those names is stored but never runs, and
+the development build warns.
+
 ### Returning a cleanup
 
 Anything a directive sets up outside `effect` — a listener, an observer, a
@@ -106,6 +113,34 @@ app.directive('resize', ({ el, get }) => {
 region whose elements stay in the document. A listener left behind keeps firing
 into state that is meant to be inert — even one bound to the element itself.
 :::
+
+### What `mount()` binds
+
+`mount()` binds regions, not the whole target. It picks them in this order:
+
+1. A target that has `v-scope` itself is the only region.
+2. Otherwise, every `v-scope` inside the target that is not nested in another
+   one is a region, including deferred ones such as `v-scope.visible`.
+3. Only when the target contains no `v-scope` at all is the target itself
+   mounted, on the app's root scope.
+
+Markup inside the target but outside those regions is **not bound**. Here the
+first `{{ count }}` stays as raw text, because `#app` contains a `v-scope` and
+so is not itself a region:
+
+```html
+<div id="app">
+  <p>{{ count }}</p>
+  <div v-scope="{ n: 1 }">{{ n }} of {{ count }}</div>
+</div>
+```
+
+```js
+createApp({ count: 5 }).mount('#app');
+```
+
+To bind the whole of `#app`, put `v-scope` on `#app` itself. The region inside
+still sees `count`, because every region inherits the root scope.
 
 ## Behavior
 

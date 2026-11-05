@@ -28,6 +28,11 @@ The window below runs the real panel against a small sample app.
 The panel is a **side-effect import**: importing it mounts the inspector, and
 there is nothing to call.
 
+The module also exports `init()`, which the import has already run. Call it
+only when the panel loaded before LiteVue: the panel then finds no
+`window.__LITE_VUE__`, warns and builds nothing, and `init()` builds it once
+LiteVue has loaded. Once the panel exists, `init()` does nothing.
+
 ```js
 import { createApp } from '@aevantec/litevue';
 import '@aevantec/litevue/devtools';

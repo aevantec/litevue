@@ -25,6 +25,15 @@ state, events and timing.
 | [$dispatch](/magics/dispatch) | `(event, detail?) => boolean` | Fire a bubbling custom event |
 | [$id](/magics/id) | `(name?) => string` | A stable, unique id for accessibility attributes |
 
+### From plugins
+
+These exist only once their plugin is installed with `app.use()`.
+
+| Magic | Plugin | Purpose |
+| --- | --- | --- |
+| `$mq`, `$mqProps`, `$mqAtLeast`, `$mqMatch`, `$mqBreakpoint`, `$mqDevice` | [media](/plugins/media) | Values and checks that follow the viewport width |
+| `$morph` | [morph](/plugins/morph) | Patch an element to new HTML, keeping its state |
+
 ## In methods
 
 Methods declared in a scope are bound to it, so the same helpers are reachable
