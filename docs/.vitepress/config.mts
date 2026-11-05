@@ -85,7 +85,7 @@ export default defineConfig({
     ]);
   },
   themeConfig: {
-    logo: '/logo.png',
+    logo: '/logo-static.svg',
     nav: [
       { text: 'Start Here', link: '/start-here/introduction' },
       { text: 'Directives', link: '/directives/' },
