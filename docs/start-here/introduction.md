@@ -65,7 +65,7 @@ These work the way you'd expect coming from Vue, including modifiers and shortha
 | [`v-show`](/directives/v-show), [`v-text`](/directives/v-text), [`v-html`](/directives/v-html) |                                                                                |
 | [`v-pre`](/directives/v-pre), [`v-once`](/directives/v-once), [`v-cloak`](/directives/v-cloak) |                                                                                |
 | [`ref`](/directives/ref) template refs                                                         | exposed as [`$refs`](/magics/refs)                                             |
-| [`reactive()`](/globals/reactive), [`nextTick()`](/globals/next-tick)                          | re-exported from `@vue/reactivity`                                             |
+| [`reactive()`](/globals/reactive), [`nextTick()`](/globals/next-tick)                          | `reactive()` is re-exported from `@vue/reactivity`; `nextTick()` is LiteVue's own |
 
 ## What behaves differently
 
@@ -152,7 +152,9 @@ Devtools registration can also be [disabled entirely](/globals/devtools#disablin
 
 ## Browser support
 
-LiteVue targets modern evergreen browsers. It relies on ES2015+ (`Proxy` above all, which cannot be polyfilled), so **IE11 is not supported and cannot be**. If you need legacy browsers, use Vue 2 with its own build tooling.
+LiteVue targets modern evergreen browsers. The bundles are not transpiled, and the core uses ES2021 syntax, so it needs **Chrome and Edge 85, Firefox 79 or Safari 14** and later. The [focus](/plugins/focus) plugin uses `Array.prototype.at()`, which raises the floor to Chrome and Edge 92, Firefox 90 and Safari 15.4 for focus and for the combined plugins bundle that includes it.
+
+Reactivity is built on `Proxy`, which cannot be polyfilled, so **IE11 is not supported and cannot be**. If you need legacy browsers, use Vue 2 with its own build tooling.
 
 ## Next steps
 

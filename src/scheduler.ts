@@ -32,7 +32,8 @@ const p = Promise.resolve();
 // A job re-run this often in one flush is in a loop with another; Vue's cap.
 const MAX_RUNS = 100;
 
-export const nextTick = (fn: () => void) => p.then(fn);
+// The callback is optional: `await nextTick()` is the form the docs lead with.
+export const nextTick = (fn?: () => void): Promise<void> => p.then(fn);
 
 /**
  * Stamps a job with its creation order, which the flush runs in. An effect

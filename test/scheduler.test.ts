@@ -132,6 +132,16 @@ describe('nextTick', () => {
     await new Promise<void>((resolve) => nextTick(() => resolve()));
     expect(root.querySelector('b')!.textContent).toBe('42');
   });
+
+  // the form the docs lead with; the callback was once a required parameter
+  test('awaited with no callback, resolves after the DOM updates', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ n: 0 }"><b>{{ n }}</b></div>`
+    );
+    (root as any).__ctx.scope.n = 7;
+    await nextTick();
+    expect(root.querySelector('b')!.textContent).toBe('7');
+  });
 });
 
 describe('batching through the DOM', () => {

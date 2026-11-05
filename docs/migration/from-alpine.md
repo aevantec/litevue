@@ -40,7 +40,7 @@ One difference to change as you migrate:
 
 | Alpine | LiteVue | Why |
 | --- | --- | --- |
-| `.debounce.500ms`, `.throttle.750ms` | `.debounce-500`, `.throttle-750` | The Alpine form is ignored and the 250ms default applies; the development build warns |
+| `.debounce.500ms`, `.throttle.750ms` | `.debounce-500`, `.throttle-750` | On most events the Alpine form is ignored, the 250ms default applies and the development build warns. On `keydown`, `keyup` and `keypress`, `500ms` is read as a [key name](/directives/v-on#behavior), so the handler never runs and nothing warns |
 
 LiteVue adds [animation-event filters](/directives/v-on#sequencing-animations) Alpine doesn't have: `@transitionend.prop-opacity`, `@animationend.name-bounce`.
 
