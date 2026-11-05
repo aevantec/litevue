@@ -9,6 +9,10 @@ as a separate bundle (~7kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
 so it adds nothing to the core. Load it **after** the library, and **only during
 development**.
 
+The window below runs the real panel against a small sample app.
+
+<DevtoolsPreview />
+
 ## Load it with a script tag
 
 ```html
