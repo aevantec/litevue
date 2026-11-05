@@ -29,6 +29,7 @@ Render an element once per item in a list, object or range.
 | Attribute | Meaning |
 | --- | --- |
 | `:key="expression"` | A unique, stable identity per item. Recommended whenever the list can reorder |
+| `key="text"` | A literal string, the same for every row. Every row then shares one key, which the development build reports as a duplicate; use `:key` |
 
 ## Examples
 

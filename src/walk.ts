@@ -1,4 +1,8 @@
-import { builtInDirectives, Directive } from './directives';
+import {
+  builtInDirectives,
+  Directive,
+  structuralDirectives,
+} from './directives';
 import { _if } from './directives/if';
 import { _for } from './directives/for';
 import { bind } from './directives/bind';
@@ -274,14 +278,7 @@ const processDirective = (
     // in builtInDirectives, so listing only that map would have told the
     // reader that v-if and v-for do not exist.
     const known = [
-      'v-scope',
-      'v-if',
-      'v-for',
-      'v-once',
-      'v-pre',
-      'v-cloak',
-      'v-teleport',
-      'v-name',
+      ...structuralDirectives.map((d) => 'v-' + d),
       'ref',
       ...Object.keys(builtInDirectives).map((d) => 'v-' + d),
       ...Object.keys(ctx.dirs).map((d) => 'v-' + d),

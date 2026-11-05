@@ -92,6 +92,7 @@ A directive that sets anything up outside `effect()` needs its own cleanup too
 - After a full unmount, `use()` installs again rather than silently doing nothing.
 - A teardown that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror) and the others still run.
 - Directives register per app. Install the plugin before `mount()`, or its directives are unknown when the markup is walked.
+- A plugin cannot replace a built-in directive such as `v-show`; one registered under a built-in name never runs. See [Custom directives](/globals/create-app#custom-directives).
 - TypeScript: import the `App` and `Plugin<Options>` types from `@aevantec/litevue`.
 
 ## Related

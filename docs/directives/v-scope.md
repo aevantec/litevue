@@ -83,7 +83,7 @@ fold or behind a click, and hide their raw `{{ }}` with
 
 ## Behavior
 
-- With `createApp().mount()` or the `init` script attribute, every top-level `v-scope` becomes a root region.
+- With `createApp().mount()` or the `init` script attribute, every top-level `v-scope` becomes a root region. Markup outside those regions is not bound, unless the target contains no `v-scope` at all — see [what `mount()` binds](/globals/create-app#what-mount-binds).
 - A `'#id'` template is appended to the element's existing children; an HTML string replaces them.
 - If the expression throws, the region falls back to an empty scope and the rest of the page still mounts — see [Error handling](/essentials/error-handling).
 - On the same element as `v-for`, each row gets its own scope — see [v-for](/directives/v-for#per-row-state).

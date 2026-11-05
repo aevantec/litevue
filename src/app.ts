@@ -1,7 +1,7 @@
 import { reactive } from '@vue/reactivity';
 import { remove } from '@vue/shared';
 import { Block } from './block';
-import { Directive } from './directives';
+import { Directive, isBuiltInDirective } from './directives';
 import { bindContextMethods, createContext, hide } from './context';
 import { toDisplayString } from './directives/text';
 import { nextTick, stopEffect } from './scheduler';
@@ -137,6 +137,13 @@ export const createApp = (initialData?: any) => {
 
     directive(name: string, def?: Directive) {
       if (def) {
+        if (import.meta.env.DEV && isBuiltInDirective(name)) {
+          warn(
+            `app.directive("${name}") registered a directive that never ` +
+              `runs: v-${name} is built in, and LiteVue always uses its own ` +
+              `ahead of a registered one. Register it under another name.`
+          );
+        }
         ctx.dirs[name] = def;
         return this;
       } else {
