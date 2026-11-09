@@ -27,9 +27,11 @@ and [pnpm](https://pnpm.io). That floor is the toolchain's: jsdom 30 asks for
 as well. The published package supports Node 22 and later, which is what the `engines`
 field describes.
 
-The exact pnpm version is pinned in the `packageManager` field, and any recent pnpm
-switches to it on its own. Node 25 and later no longer ship Corepack, so
-`corepack enable` is an option only on Node 22 and 24.
+The exact pnpm version, currently 12, is pinned in the `packageManager` field. pnpm 11
+or later switches to it on its own. pnpm 10 cannot, because pnpm 12 is a native binary,
+and it fails with `ENOEXEC`; upgrade it first ([installation](https://pnpm.io/installation)).
+Node 25 and later no longer ship Corepack, so `corepack enable` is an option only on
+Node 22 and 24.
 
 ```bash
 git clone https://github.com/aevantec/litevue.git

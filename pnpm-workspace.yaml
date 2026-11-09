@@ -1,0 +1,5 @@
+# esbuild@0.21.5 arrives through VitePress's own Vite 5. Its build script only
+# checks the platform binary, which the optional dependency already supplies.
+# pnpm 10 skipped it silently; pnpm 12 fails the install until it is decided.
+allowBuilds:
+  esbuild: false
