@@ -111,14 +111,20 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    pnpm check:bundles
    pnpm check:dist-runtime
    pnpm check:docs-sizes
+   pnpm docs:build
+   pnpm lint:package
    ```
 
-   The checks after `pnpm build` read what it wrote, so they come after it.
+   This is the list CI runs. The checks after `pnpm build` read what it wrote,
+   so they come after it.
    `check:docs-sizes` compares the sizes the documentation states with the
    built bundles, and `check:docs-versions` checks that pinned versions in the
    documentation match `package.json`.
    `check:dist-runtime` runs the built bundles in jsdom — the test suite imports
    `src/`, and a change only the build makes is invisible to it.
+   `docs:build` builds the documentation site, which fails on a dead internal
+   link. `lint:package` runs publint and attw over a packed tarball, so every
+   entry point stays resolvable from both ESM and CJS.
 
    `pnpm lint` runs [oxlint](https://oxc.rs/docs/guide/usage/linter). It covers
    the ground between prettier and `tsc` — dead code, unusable regex escapes, a
@@ -128,7 +134,7 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    category, with two rules deliberately off:
 
    - **`no-unused-expressions`** — `cond && doThing()` is the house idiom here,
-     used throughout source and tests. Thirty hits, all intentional.
+     used throughout source and tests, and every occurrence is intentional.
    - **`unicorn/no-useless-spread`** — a false positive on *live* DOM
      collections. `walk.ts` and morph's `patchAttrs` iterate `el.attributes`
      while calling `removeAttribute`, so the spread is exactly what stops the

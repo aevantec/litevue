@@ -22,12 +22,18 @@ const read = (p) => readFileSync(resolve(root, p), 'utf8');
 // ~9kb<!-- size:dist/litevue.iife.js -->
 const CLAIM = /~(\d+)kb\*{0,2}<!--\s*size:(\S+?)\s*-->/g;
 
-// Two claims cannot carry a marker: the home page hero is YAML frontmatter,
-// and the site description becomes a meta tag, so an HTML comment would show
-// up verbatim in both. They are matched on a stable phrase instead. Anything
-// added here is still checked — the point is that no claim goes unchecked.
+// Three claims cannot carry a marker: the home page hero is YAML frontmatter,
+// the site description becomes a meta tag, and package.json is JSON that npm
+// shows as the package description. They are matched on a stable phrase
+// instead. Anything added here is still checked — the point is that no claim
+// goes unchecked.
 const CORE = 'dist/litevue.iife.js';
 const UNMARKABLE = [
+  {
+    file: 'package.json',
+    contains: "Vue's template syntax and reactivity in",
+    bundle: CORE,
+  },
   {
     file: 'docs/index.md',
     contains: "text: Vue's template syntax in",
@@ -57,6 +63,7 @@ const ANY_CLAIM = /~\d+kb/g;
 const files = [
   'README.md',
   'CONTRIBUTING.md',
+  'extension/README.md',
   '.github/PULL_REQUEST_TEMPLATE.md',
   '.github/ISSUE_TEMPLATE/feature_request.yml',
 ];
