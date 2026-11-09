@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitepress';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import { fileURLToPath } from 'url';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..');
@@ -11,6 +11,22 @@ const base = process.env.DOCS_BASE ?? '/';
 
 const hostname = 'https://litevue.dev';
 
+// The demos run LiteVue's development build, as a reader's own project does
+// while they learn it. A production docs build would otherwise strip the
+// DEV-only paths, which leaves the inspector panel preview with an empty
+// plugins view and the demos without the warnings the pages describe.
+// `pre`, so it runs before Vite's own replacement of import.meta.env.DEV.
+const srcDir = resolve(root, 'src') + sep;
+const DEV_FLAG = 'import.meta.env.DEV';
+const litevueDevBuild = {
+  name: 'litevue-dev-build',
+  enforce: 'pre' as const,
+  transform(code: string, id: string) {
+    if (!id.startsWith(srcDir) || !code.includes(DEV_FLAG)) return;
+    return { code: code.replaceAll(DEV_FLAG, 'true'), map: null };
+  },
+};
+
 export default defineConfig({
   // The plugins import the core by package name so the published bundles can
   // keep it external. Without this alias that specifier self-resolves through
@@ -21,6 +37,7 @@ export default defineConfig({
   // the other. vite.config.mts and vitest.config.mts already alias it; this is
   // the third build that needed to.
   vite: {
+    plugins: [litevueDevBuild],
     resolve: {
       alias: { '@aevantec/litevue': resolve(root, 'src/index.ts') },
     },
@@ -35,7 +52,12 @@ export default defineConfig({
   cleanUrls: true,
   // Now that there's a stable canonical domain, emit a sitemap — the docs are
   // the discovery path for this project, more so since the npm name is scoped.
-  sitemap: { hostname },
+  sitemap: {
+    hostname,
+    // the bare frame the inspector panel page embeds, not a page to land on
+    transformItems: (items) =>
+      items.filter((item) => !item.url.includes('devtools/preview')),
+  },
   markdown: {
     // A single theme instead of VitePress's light/dark pair, so snippets are
     // dark in both site themes. With a pair, Shiki emits --shiki-light and
@@ -85,7 +107,7 @@ export default defineConfig({
     ]);
   },
   themeConfig: {
-    logo: '/logo.png',
+    logo: '/logo-static.svg',
     nav: [
       { text: 'Start Here', link: '/start-here/introduction' },
       { text: 'Directives', link: '/directives/' },

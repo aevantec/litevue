@@ -225,6 +225,16 @@ import type { Plugin } from '@aevantec/litevue';
 import { persist, type PersistStorage } from '@aevantec/litevue/plugins/persist';
 ```
 
+| Subpath | Types |
+| --- | --- |
+| `…/plugins/media` | `MediaOptions` (the `use()` options), `Breakpoints`, `ResponsiveMap`, `Device` (`'mobile' \| 'tablet' \| 'desktop'`), `Mq` (the type of `mq`) |
+| `…/plugins/morph` | `MorphOptions` |
+| `…/plugins/navigate` | `NavigateOptions` (the `use()` options) |
+| `…/plugins/persist` | `PersistStorage` |
+
+The combined `@aevantec/litevue/plugins` entry re-exports the media, morph and
+persist types, matching the plugins it includes.
+
 ## Troubleshooting
 
 **`ReferenceError: LiteVue is not defined`** — a plugin script ran before the core. Move the core `<script>` above it.

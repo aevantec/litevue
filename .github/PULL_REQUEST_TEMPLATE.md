@@ -48,7 +48,8 @@
 
 <!--
   Before opening:
-    pnpm test · pnpm test:browser · pnpm tsc --noEmit · pnpm build
+    pnpm lint · pnpm test · pnpm test:browser · pnpm tsc --noEmit · pnpm build
+    (the full list CI runs is under "Making a change" in CONTRIBUTING.md)
     docs/ updated for anything user-facing
     a bug fix has a test that fails without it
     say so if this moves a bundle's size

@@ -788,7 +788,12 @@ const build = () => {
   devtools.on('flush', scheduleRender);
 };
 
+let isStarted = false;
+
+// Runs on import. Calling it again retries a panel that loaded before
+// LiteVue; once the panel is built or scheduled, a call does nothing.
 export const init = () => {
+  if (isStarted) return;
   const d = window.__LITE_VUE__;
   if (!d) {
     console.warn(
@@ -797,6 +802,7 @@ export const init = () => {
     );
     return;
   }
+  isStarted = true;
   devtools = d;
   document.body ? build() : addEventListener('DOMContentLoaded', build);
 };

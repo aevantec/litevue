@@ -179,8 +179,10 @@ createApp()
 mq.configure({ breakpoints: { phone: 480, tablet: 820, laptop: 1180 } });
 ```
 
-Markup then uses those keys: `$mqAtLeast('laptop')`. The new scale replaces the
-old one entirely; to adjust the defaults, spread them:
+Markup then uses those keys: `$mqAtLeast('laptop')`. A breakpoint of `0` or
+less is left out of the scale, since `base` already covers every width from
+zero. The new scale replaces the old one entirely; to adjust the defaults,
+spread them:
 
 ```js
 mq.configure({ breakpoints: { ...defaultBreakpoints, lg: 960 } }); // move one

@@ -103,6 +103,9 @@ persistStore('preferences'); // localStorage
 persistStore('wizard', { storage: 'session' }); // sessionStorage
 ```
 
+`localStorage` and `sessionStorage` are accepted as option values too, as
+aliases of `local` and `session`.
+
 ### Custom storage
 
 Anything with `getItem` and `setItem` works — an in-memory map, an IndexedDB

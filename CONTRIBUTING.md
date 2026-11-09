@@ -21,11 +21,17 @@ what it's there for, and a third-party plugin needs no permission from us.
 
 ## Getting set up
 
-Requires Node >= 20.19 and [pnpm](https://pnpm.io) 10 — the exact version is pinned in
-the `packageManager` field, so `corepack enable` gets you the right one. That floor is
-the toolchain's, not the library's: Vite 8 asks for `^20.19.0 || >=22.12.0`, and the
-config files use `import.meta.dirname`. The published package still supports Node >= 18,
-which is what the `engines` field describes.
+Requires Node 22.22.2 or later on the 22 line, 24.15 or later on the 24 line, or Node 26,
+and [pnpm](https://pnpm.io). That floor is the toolchain's: jsdom 30 asks for
+`^22.22.2 || ^24.15.0 || >=26.0.0`. CI runs on Node 26 and runs the unit tests on Node 22
+as well. The published package supports Node 22 and later, which is what the `engines`
+field describes.
+
+The exact pnpm version, currently 12, is pinned in the `packageManager` field. pnpm 11
+or later switches to it on its own. pnpm 10 cannot, because pnpm 12 is a native binary,
+and it fails with `ENOEXEC`; upgrade it first ([installation](https://pnpm.io/installation)).
+Node 25 and later no longer ship Corepack, so `corepack enable` is an option only on
+Node 22 and 24.
 
 ```bash
 git clone https://github.com/aevantec/litevue.git
@@ -105,14 +111,20 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    pnpm check:bundles
    pnpm check:dist-runtime
    pnpm check:docs-sizes
+   pnpm docs:build
+   pnpm lint:package
    ```
 
-   The checks after `pnpm build` read what it wrote, so they come after it.
+   This is the list CI runs. The checks after `pnpm build` read what it wrote,
+   so they come after it.
    `check:docs-sizes` compares the sizes the documentation states with the
    built bundles, and `check:docs-versions` checks that pinned versions in the
    documentation match `package.json`.
    `check:dist-runtime` runs the built bundles in jsdom — the test suite imports
    `src/`, and a change only the build makes is invisible to it.
+   `docs:build` builds the documentation site, which fails on a dead internal
+   link. `lint:package` runs publint and attw over a packed tarball, so every
+   entry point stays resolvable from both ESM and CJS.
 
    `pnpm lint` runs [oxlint](https://oxc.rs/docs/guide/usage/linter). It covers
    the ground between prettier and `tsc` — dead code, unusable regex escapes, a
@@ -122,7 +134,7 @@ asserted: transition feel, the devtools panel. Nothing there runs in CI; see
    category, with two rules deliberately off:
 
    - **`no-unused-expressions`** — `cond && doThing()` is the house idiom here,
-     used throughout source and tests. Thirty hits, all intentional.
+     used throughout source and tests, and every occurrence is intentional.
    - **`unicorn/no-useless-spread`** — a false positive on *live* DOM
      collections. `walk.ts` and morph's `patchAttrs` iterate `el.attributes`
      while calling `removeAttribute`, so the spread is exactly what stops the

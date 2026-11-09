@@ -25,6 +25,13 @@ updates:
           # group it arrived as a routine bump while reactivity stayed behind —
           # the exact version drift this project has already been bitten by.
           - '@vue/shared'
+      # vitest and @vitest/* pin each other's exact version as peers, so a
+      # major can only move them all at once. Ungrouped, Dependabot tried each
+      # alone, logged "No update possible", and Vitest 5 sat unseen for two
+      # months. Minor and patch still go through dev-dependencies above.
+      vitest:
+        patterns: ['vitest', '@vitest/*']
+        update-types: ['major']
     ignore:
       # @vue/reactivity is the only runtime dependency and is pinned to ~3.4.
       # Crossing its major is a breaking change for litevue, so it's a deliberate

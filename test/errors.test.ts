@@ -184,6 +184,20 @@ describe('developer-facing message', () => {
     expect(printed).toContain('v-text');
     expect(printed).toContain('app.use');
   });
+
+  // The parser lowercases attribute names, so these are the inherited
+  // Object members a template can actually reach.
+  test.each(['constructor', '__proto__'])(
+    'v-%s is unknown, not an inherited Object member',
+    async (name) => {
+      document.body.innerHTML = `<div v-scope="{}"><span v-${name}="x"></span></div>`;
+      createApp().mount(document.body.firstElementChild as HTMLElement);
+      await tick();
+
+      const printed = spy.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(printed).toContain(`unknown directive v-${name}`);
+    }
+  );
 });
 
 describe('every construct reports where it came from', () => {

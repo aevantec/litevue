@@ -197,3 +197,37 @@ describe('mount() with a selector that matches nothing', () => {
     expect(String(error.mock.calls[0]?.[0])).toContain('#no-such-region');
   });
 });
+
+describe('app.directive() with a built-in name', () => {
+  test('warns that a built-in name is never used, naming it', () => {
+    const warn = spy();
+    createApp().directive('show', () => {});
+    const hits = matching(warn, /v-show/);
+    expect(hits.length).toBe(1);
+    expect(hits[0]).toContain('is built in');
+  });
+
+  test('warns for a structural name that walk() consumes first', () => {
+    const warn = spy();
+    createApp().directive('for', () => {});
+    expect(matching(warn, /v-for/).length).toBe(1);
+  });
+
+  test('the built-in still runs, as before', async () => {
+    spy();
+    document.body.innerHTML = `<div id="builtin-show"><p v-show="false">x</p></div>`;
+    const custom = vi.fn();
+    createApp().directive('show', custom).mount('#builtin-show');
+    await tick();
+    expect(custom).not.toHaveBeenCalled();
+    expect(document.querySelector('p')!.style.display).toBe('none');
+  });
+
+  test('a name of its own registers without a warning', () => {
+    const warn = spy();
+    createApp().directive('tooltip', () => {});
+    // inherited Object members are not built-in directives
+    createApp().directive('toString', () => {});
+    expect(messages(warn)).toEqual([]);
+  });
+});

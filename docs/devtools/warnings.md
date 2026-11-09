@@ -239,6 +239,17 @@ with the same result. See
 
 ## Components
 
+### Registering a directive under a built-in name
+
+```js
+app.directive('show', ({ el, get }) => { /* … */ });
+```
+
+The directive is stored but never runs: LiteVue always uses its own `v-show`.
+The same holds for every built-in and structural directive, such as `v-model`,
+`v-if` and `v-for`. Register it under a name of its own. See
+[Custom directives](/globals/create-app#custom-directives).
+
 ### Registering a component name twice
 
 The second `app.component(name, …)` replaces the first. This is usually two

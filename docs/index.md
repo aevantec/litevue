@@ -6,7 +6,7 @@ hero:
   text: Vue's template syntax in ~11kb
   tagline: A petite-vue fork for progressive enhancement — now with devtools, transitions, plugins, and a global store.
   image:
-    src: /logo.png
+    src: /logo.svg
     alt: LiteVue
   actions:
     - theme: brand

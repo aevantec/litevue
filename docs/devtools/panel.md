@@ -9,6 +9,10 @@ as a separate bundle (~7kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
 so it adds nothing to the core. Load it **after** the library, and **only during
 development**.
 
+The window below runs the real panel against a small sample app.
+
+<DevtoolsPreview />
+
 ## Load it with a script tag
 
 ```html
@@ -23,6 +27,11 @@ development**.
 
 The panel is a **side-effect import**: importing it mounts the inspector, and
 there is nothing to call.
+
+The module also exports `init()`, which the import has already run. Call it
+only when the panel loaded before LiteVue: the panel then finds no
+`window.__LITE_VUE__`, warns and builds nothing, and `init()` builds it once
+LiteVue has loaded. Once the panel exists, `init()` does nothing.
 
 ```js
 import { createApp } from '@aevantec/litevue';
