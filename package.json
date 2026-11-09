@@ -264,11 +264,11 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@tailwindcss/vite": "4.3.3",
-    "@vitest/browser": "^4.1.11",
-    "@vitest/browser-playwright": "^4.1.11",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/browser": "^5.1.0",
+    "@vitest/browser-playwright": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.0",
     "@vue/shared": "~3.4.0",
-    "jsdom": "^30.0.1",
+    "jsdom": "^31.0.0",
     "oxlint": "^1.80.0",
     "playwright": "^1.62.1",
     "prettier": "^3.4.0",
@@ -278,7 +278,7 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitepress": "^1.6.4",
-    "vitest": "^4.1.11"
+    "vitest": "^5.1.0"
   },
   "contributors": [
     "Evan You (petite-vue, which this is forked from)"
