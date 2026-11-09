@@ -5,7 +5,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* require Node 22 or later, and run CI on Node 26 ([#251](https://github.com/aevantec/litevue/issues/251))
+* `engines.node` is now `>=22` (was `>=18`). Node 18 and 20 are end of life. Nothing changes at runtime, but installs with `engine-strict` enabled on Node 18 or 20 now fail. Upgrade to Node 22 or later ([#251](https://github.com/aevantec/litevue/issues/251)) ([185e51c](https://github.com/aevantec/litevue/commit/185e51cb99729e3b33189ec669e2d955480c242a))
 
 ### Bug Fixes
 
@@ -13,10 +13,6 @@
 * nextTick() can be awaited without a callback, and correct four docs statements ([#248](https://github.com/aevantec/litevue/issues/248)) ([9da52f2](https://github.com/aevantec/litevue/commit/9da52f2c79e445625eb2e96677d052956a22304b))
 * warn when a directive takes a built-in name, and document what the audit found undocumented ([#249](https://github.com/aevantec/litevue/issues/249)) ([1ab4780](https://github.com/aevantec/litevue/commit/1ab478012e945078b8fcc6e2cd8a67a45a63b99f))
 
-
-### Build
-
-* require Node 22 or later, and run CI on Node 26 ([#251](https://github.com/aevantec/litevue/issues/251)) ([185e51c](https://github.com/aevantec/litevue/commit/185e51cb99729e3b33189ec669e2d955480c242a))
 
 ## [0.5.17](https://github.com/aevantec/litevue/compare/v0.5.16...v0.5.17) (2026-11-03)
 
