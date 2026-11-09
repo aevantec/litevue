@@ -20,6 +20,9 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Node 25+ defines its own global localStorage, undefined without
+    // --localstorage-file, and it shadows jsdom's. Node 22 accepts the flag too.
+    execArgv: ['--no-experimental-webstorage'],
     setupFiles: ['./test/setup.ts'],
     include: ['test/**/*.test.ts'],
     coverage: {
