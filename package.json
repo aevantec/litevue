@@ -263,7 +263,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@vitest/browser": "^5.1.0",
     "@vitest/browser-playwright": "^5.1.0",
     "@vitest/coverage-v8": "^5.1.0",
@@ -273,7 +273,7 @@
     "playwright": "^1.62.1",
     "prettier": "^3.4.0",
     "publint": "^0.3.24",
-    "tailwindcss": "4.3.3",
+    "tailwindcss": "4.3.4",
     "terser": "^5.50.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
