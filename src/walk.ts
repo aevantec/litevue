@@ -3,6 +3,7 @@ import {
   Directive,
   structuralDirectives,
 } from './directives';
+import { hasOwn } from '@vue/shared';
 import { _if } from './directives/if';
 import { _for } from './directives/for';
 import { bind } from './directives/bind';
@@ -244,7 +245,7 @@ const processDirective = (
   exp: string,
   ctx: Context
 ) => {
-  let dir: Directive;
+  let dir: Directive | undefined;
   let arg: string | undefined;
   let modifiers: Record<string, true> | undefined;
   // the attribute as written, modifiers included: what diagnostics quote and
@@ -266,7 +267,13 @@ const processDirective = (
   } else {
     const argIndex = raw.indexOf(':');
     const dirName = argIndex > 0 ? raw.slice(2, argIndex) : raw.slice(2);
-    dir = builtInDirectives[dirName] || ctx.dirs[dirName];
+    // own keys only: a plain-object lookup would resolve v-constructor to
+    // the inherited Object member instead of reporting it as unknown
+    dir = hasOwn(builtInDirectives, dirName)
+      ? builtInDirectives[dirName]
+      : hasOwn(ctx.dirs, dirName)
+        ? ctx.dirs[dirName]
+        : undefined;
     arg = argIndex > 0 ? raw.slice(argIndex + 1) : undefined;
   }
   if (dir) {
