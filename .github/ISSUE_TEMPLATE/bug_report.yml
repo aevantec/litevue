@@ -27,9 +27,11 @@ body:
       options:
         - Script tag (CDN, IIFE build)
         - Script tag (CDN, .dev build)
+        - Script tag (CDN, one plugin from dist/plugins/*.iife.js)
         - Bundler (npm, ESM)
         - Bundler (npm, CJS / require)
         - '@aevantec/litevue/plugins'
+        - '@aevantec/litevue/plugins/<name> (one plugin)'
         - '@aevantec/litevue/devtools'
         - Browser extension
     validations:
