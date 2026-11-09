@@ -21,11 +21,15 @@ what it's there for, and a third-party plugin needs no permission from us.
 
 ## Getting set up
 
-Requires Node >= 20.19 and [pnpm](https://pnpm.io) 10 — the exact version is pinned in
-the `packageManager` field, so `corepack enable` gets you the right one. That floor is
-the toolchain's, not the library's: Vite 8 asks for `^20.19.0 || >=22.12.0`, and the
-config files use `import.meta.dirname`. The published package still supports Node >= 18,
-which is what the `engines` field describes.
+Requires Node 22.22.2 or later on the 22 line, 24.15 or later on the 24 line, or Node 26,
+and [pnpm](https://pnpm.io). That floor is the toolchain's: jsdom 30 asks for
+`^22.22.2 || ^24.15.0 || >=26.0.0`. CI runs on Node 26 and runs the unit tests on Node 22
+as well. The published package supports Node 22 and later, which is what the `engines`
+field describes.
+
+The exact pnpm version is pinned in the `packageManager` field, and any recent pnpm
+switches to it on its own. Node 25 and later no longer ship Corepack, so
+`corepack enable` is an option only on Node 22 and 24.
 
 ```bash
 git clone https://github.com/aevantec/litevue.git
