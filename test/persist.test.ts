@@ -75,6 +75,36 @@ describe('v-persist directive', () => {
     );
     app.unmount();
   });
+
+  // `k in saved` also matches Object.prototype members
+  test('restores only keys the saved object owns, not inherited ones', async () => {
+    localStorage.setItem('litevue:proto', JSON.stringify({ count: 2 }));
+    document.body.innerHTML = `<div id="a" v-scope="{ count: 0, valueOf: 'mine' }" v-persist="proto">
+      <span>{{ count }}/{{ valueOf }}</span>
+    </div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    await tick();
+    expect(document.querySelector('span')!.textContent).toBe('2/mine');
+    expect(saved('proto')).toEqual({ count: 2, valueOf: 'mine' });
+    app.unmount();
+  });
+
+  // the HTML parser lowercases attribute names, so firstName arrives as
+  // firstname and would otherwise persist nothing without a word
+  test('warns in development when a listed key is not in the scope', async () => {
+    const warnings: string[] = [];
+    const orig = console.warn;
+    console.warn = (...a: any[]) => warnings.push(a.join(' '));
+    document.body.innerHTML = `<div id="a" v-scope="{ firstName: '', age: 0 }" v-persist:firstName,age="person"></div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    console.warn = orig;
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('"firstname"');
+    expect(warnings[0]).toContain('lowercase');
+    app.unmount();
+  });
 });
 
 describe('persistStore()', () => {

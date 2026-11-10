@@ -51,7 +51,8 @@ const SNAPSHOT = `(() => {
   };
   const scopes = [...d.scopes.entries()].map(([el, scope]) => ({
     id: idOf(el),
-    label: d.names.get(el) || el.id || el.tagName.toLowerCase(),
+    // a form's controls named id or tagName shadow those properties
+    label: d.names.get(el) || el.getAttribute('id') || el.localName,
     exp: d.exps.get(el) || '',
     data: clone(scope, 4),
   }));

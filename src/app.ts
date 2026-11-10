@@ -200,9 +200,11 @@ export const createApp = (initialData?: any) => {
         const watched = import.meta.env.DEV && pluginsWatched();
         const dirsBefore = watched ? Object.keys(ctx.dirs) : [];
         const scopeBefore = watched ? Object.keys(ctx.scope) : [];
-        const teardown = (
-          typeof plugin === 'function' ? plugin : plugin.install
-        )(app, options);
+        // a method call, so an object plugin's install keeps `this`, as in Vue
+        const teardown =
+          typeof plugin === 'function'
+            ? plugin(app, options)
+            : plugin.install(app, options);
         if (typeof teardown === 'function') pluginTeardowns.push(teardown);
         if (watched) {
           const off = registerPlugin({

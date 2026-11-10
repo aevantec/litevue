@@ -125,6 +125,14 @@ describe('devtools: search within state', () => {
     setFilter('no-such-value');
     expect(shadow.querySelector('.tree .empty')).not.toBeNull();
   });
+
+  test('array positions are not matched as names', async () => {
+    const { setFilter, rows } = await boot(
+      `<div v-name="order" v-scope="{ rows: ['a', 'b'], qty: 1 }"><span>x</span></div>`
+    );
+    setFilter('1');
+    expect(rows().find((r) => r.name === 'order')!.hit).toBe('qty');
+  });
 });
 
 describe('devtools: the scope tree is a tree', () => {
