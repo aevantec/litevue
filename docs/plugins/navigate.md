@@ -101,7 +101,7 @@ A [store](/globals/store) belongs to the app, not to a page, so its state surviv
 
 ## Forms
 
-A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
+A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. The `enctype` value is matched without regard to case, as the browser matches it. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
@@ -131,7 +131,7 @@ The fetched page's `<head>` is merged into the current one, so each page keeps i
 
 - `<title>` is replaced.
 - `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
-- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up.
+- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up. A disabled stylesheet, or one with an empty or missing `href`, is added without waiting, since the browser does not load it.
 - Ones only the current page has are removed once the new page is in place.
 - `<script>` elements in the head are never added or removed, data islands included. A fetched page's executable scripts never run, and removing a script would not unload it. Place a data island that changes between pages in the body instead.
 
