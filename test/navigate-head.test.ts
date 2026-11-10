@@ -134,6 +134,33 @@ describe('navigate: head', () => {
     expect($head('[src="/two.js"]')).toBeNull();
   });
 
+  // The fetched page is parsed with scripting off, so <noscript> holds real
+  // elements there; in the live page, with scripting on, it is inert text.
+  test('never applies a style from a noscript in the next page', async () => {
+    reply = page(
+      '<noscript><style>.needs-js { display: none }</style></noscript>'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect(document.querySelectorAll('style')).toHaveLength(0);
+  });
+
+  test('never inserts the elements of a noscript in the next body', async () => {
+    reply = page(
+      '',
+      '<noscript><iframe src="/ns.html"></iframe></noscript><main>next</main>'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect(document.querySelector('iframe')).toBeNull();
+  });
+
   test('keeps an element marked data-navigate-preserve', async () => {
     reply = page('');
     await start('<style data-navigate-preserve>.injected {}</style>');
