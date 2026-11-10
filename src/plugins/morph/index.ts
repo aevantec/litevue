@@ -204,7 +204,9 @@ const patchNode = (
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
 
   patchAttrs(a, b);
-  if (!ownsChildren(b)) {
+  // a $template component's markup came from the client, so the server sends
+  // its root empty; only the live scope knows
+  if (!ownsChildren(b) && !(a as any).__ctx?.scope.$template) {
     patchChildren(a, b, (a as any).__ctx || ctx, opts);
   }
 };
