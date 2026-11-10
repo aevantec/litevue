@@ -129,12 +129,11 @@ export const persist: Plugin = (app) => {
       console.error(`v-persist needs a key: v-persist="my-key".`);
     }
 
-    let storage: PersistStorage | string | undefined;
-    for (const name in modifiers || {}) {
-      if (resolve(name)) {
-        storage = name;
-        break;
-      }
+    // named storages that all fail save nowhere: falling back to the default
+    // could put a secret in localStorage
+    let storage = modifiers ? undefined : resolve();
+    for (const name in modifiers) {
+      if ((storage = resolve(name))) break;
       if (import.meta.env.DEV) {
         console.error(
           `v-persist: unknown storage ".${name}" — use .local, .session, or ` +
@@ -150,7 +149,7 @@ export const persist: Plugin = (app) => {
           .filter(Boolean)
       : undefined;
 
-    sync(ctx.scope, key, keys, resolve(storage), effect);
+    sync(ctx.scope, key, keys, storage, effect);
   });
 };
 
