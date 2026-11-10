@@ -91,6 +91,8 @@ Morph matches elements by `id` first, then by position. A scope root with the sa
 
 ::: warning A page root needs its own id
 Two pages whose `<main v-scope="…">` has no `id`, or the same one, are matched by position. The second page's markup is patched into the first page's element, which keeps the first page's scope and data.
+
+The same applies when only the next page makes the element a scope root. Morph does not add `v-scope` or other directives to an element it keeps, and leaves its `{{ }}` text alone, so navigating from `<main>` to `<main v-scope="{ n: 2 }">` creates no scope: the element keeps the first page's content and is not reactive. Give each page's scope root a distinct `id`, or place scope roots inside layout elements rather than on them.
 :::
 
 To keep a client-only element that the next page does not contain, such as a toast or a chat widget, mark it `data-morph-preserve`, as with [morph](/plugins/morph#a-widget-the-client-owns).
