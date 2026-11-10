@@ -4,7 +4,7 @@ title: v-for
 
 # v-for <Badge type="section" text="Directive" />
 
-Render an element once per item in a list, object or range.
+Render an element once per item in a list, object, string or range.
 
 ```html
 <li v-for="todo in todos" :key="todo.id">{{ todo.text }}</li>
@@ -19,6 +19,7 @@ Render an element once per item in a list, object or range.
 | `(value, key) in object` | Object values with their key |
 | `(value, key, index) in object` | Object values with key and position |
 | `n in 10` | The numbers 1 to 10 |
+| `(char, index) in 'abc'` | The characters of a string, with their index |
 | `{ id, name } in items` | Array items, destructured |
 | `[first, second] in pairs` | Array items, array-destructured |
 

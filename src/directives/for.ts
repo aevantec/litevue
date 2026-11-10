@@ -1,4 +1,4 @@
-import { isArray, isObject } from '@vue/shared';
+import { isArray, isObject, isString } from '@vue/shared';
 import { Block } from '../block';
 import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
@@ -79,7 +79,8 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const map: KeyToIndexMap = new Map();
     const rows: Row[] = [];
 
-    if (isArray(source)) {
+    // a string iterates by character, as in Vue
+    if (isArray(source) || isString(source)) {
       for (let i = 0; i < source.length; i++) {
         rows.push(createRow(map, source[i], i));
       }

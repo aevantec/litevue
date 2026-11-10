@@ -87,6 +87,13 @@ describe('v-for', () => {
     expect(lis.map((li) => li.textContent)).toEqual(['c', 'b', 'a']);
     expect((lis[2] as any)._marker).toBe(true);
   });
+
+  test('iterates a string character by character, as Vue does', async () => {
+    const { $$ } = await mount(
+      `<div v-scope><i v-for="(c, i) in 'abc'">{{ i }}{{ c }}</i></div>`
+    );
+    expect($$('i').map((i) => i.textContent)).toEqual(['0a', '1b', '2c']);
+  });
 });
 
 describe('v-model', () => {
@@ -224,6 +231,32 @@ describe('v-text / v-html / v-pre', () => {
       `<div v-scope="{ n: 1 }"><span v-pre>{{ n }}</span></div>`
     );
     expect($('span').textContent).toBe('{{ n }}');
+  });
+});
+
+describe('interpolation display, as Vue', () => {
+  test('JSON for arrays and plain objects, String() for the rest', async () => {
+    const date = new Date(0);
+    const { $$ } = await mount(
+      `<div v-scope>
+        <i>{{ err }}</i><i>{{ date }}</i><i>{{ custom }}</i>
+        <i>{{ [1] }}</i><i>{{ { a: 1 } }}</i><i>{{ bare }}</i>
+      </div>`,
+      {
+        err: new Error('boom'),
+        date,
+        custom: { toString: () => 'custom' },
+        bare: Object.assign(Object.create(null), { a: 1 }),
+      }
+    );
+    expect($$('i').map((i) => i.textContent)).toEqual([
+      'Error: boom',
+      String(date),
+      'custom',
+      '[\n  1\n]',
+      '{\n  "a": 1\n}',
+      '{\n  "a": 1\n}',
+    ]);
   });
 });
 

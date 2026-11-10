@@ -98,4 +98,24 @@ describe('devtools labels a scope by its component', () => {
     expect(labels()).toContain('dotted');
     expect(labels()).not.toContain('Cart6');
   });
+
+  test('form controls named id or tagName do not replace the label', async () => {
+    const { labels } = await boot(
+      `<div id="host7"><form v-scope="{ a: 1 }"><input name="id"><input name="tagName"></form></div>`
+    );
+    // jsdom does not let named controls shadow a form's properties as
+    // browsers do, so the shadowing is reproduced by hand
+    const form = document.querySelector('#host7 form')!;
+    for (const name of ['id', 'tagName']) {
+      Object.defineProperty(form, name, {
+        value: form.querySelector(`[name=${name}]`),
+      });
+    }
+    const filter = [...document.body.children]
+      .find((el) => el.shadowRoot)!
+      .shadowRoot!.querySelector('.filter') as HTMLInputElement;
+    filter.value = 'form';
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(labels()).toContain('form');
+  });
 });
