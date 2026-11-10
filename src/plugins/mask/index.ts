@@ -6,7 +6,7 @@ const tokens: Record<string, RegExp> = {
   '*': /[a-zA-Z0-9]/,
 };
 
-const format = (value: string, mask: string) => {
+const format = (value: string, mask: string, end?: boolean) => {
   let out = '';
   let literals = '';
   let vi = 0;
@@ -15,7 +15,7 @@ const format = (value: string, mask: string) => {
     if (re) {
       // consume the next matching char, skipping non-matching input
       while (vi < value.length && !re.test(value[vi])) vi++;
-      if (vi >= value.length) break;
+      if (vi >= value.length) return out;
       // flush pending literals only when a real char follows them
       out += literals + value[vi++];
       literals = '';
@@ -24,7 +24,8 @@ const format = (value: string, mask: string) => {
       if (value[vi] === mask[mi]) vi++;
     }
   }
-  return out;
+  // every slot is filled: add the literals that close the mask
+  return end ? out + literals : out;
 };
 
 /**
@@ -36,9 +37,15 @@ const format = (value: string, mask: string) => {
 export const mask: Plugin = (app) => {
   app.directive('mask', ({ el, exp }) => {
     const input = el as HTMLInputElement;
-    const apply = () => {
+    const apply = (e?: Event) => {
       const { value, selectionStart: at } = input;
-      const masked = format(value, exp);
+      // not after a deletion, or Backspace over a trailing literal would
+      // only put it back
+      const masked = format(
+        value,
+        exp,
+        !(e as InputEvent)?.inputType?.startsWith('del')
+      );
       if (masked === value) return false;
       input.value = masked;
       // rewriting value moves the caret to the end; put it back after the
@@ -56,10 +63,13 @@ export const mask: Plugin = (app) => {
     el.addEventListener('input', apply);
     apply();
     // v-model writes its initial value after this runs; format that too, and
-    // tell the model
+    // tell the model, which listens for change instead when .lazy
     let live = true;
     Promise.resolve().then(() => {
-      if (live && apply()) el.dispatchEvent(new Event('input'));
+      if (live && apply()) {
+        el.dispatchEvent(new Event('input'));
+        el.dispatchEvent(new Event('change'));
+      }
     });
     return () => {
       live = false;
