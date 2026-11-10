@@ -5,6 +5,7 @@ import {
   isString,
   isArray,
   isPlainObject,
+  isObject,
   hyphenate,
   camelize,
   parseStringStyle,
@@ -19,7 +20,8 @@ const booleanAttrRE =
 export const bind: Directive<
   Element & { _class?: string | null; __bound?: any }
 > = ({ el, get, effect, arg, modifiers }) => {
-  let prevValue: any;
+  // a fresh object, so the first run always applies, even an undefined value
+  let prevValue: any = {};
 
   // record static class, for the object form too, and once: a second binding
   // would read back the first one's classes. The attribute, since an SVG
@@ -34,7 +36,12 @@ export const bind: Directive<
       if (modifiers?.camel) {
         arg = camelize(arg);
       }
-      setProp(el, arg, value, prevValue);
+      // As Vue: an unchanged value is not set again, since re-setting src
+      // restarts a video or reloads an iframe. An object may have changed in
+      // place, so it is always applied.
+      if (value !== prevValue || isObject(value)) {
+        setProp(el, arg, value, prevValue);
+      }
     } else {
       for (const key in value) {
         setProp(el, key, value[key], prevValue && prevValue[key]);

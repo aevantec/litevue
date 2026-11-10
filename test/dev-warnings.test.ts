@@ -116,6 +116,33 @@ describe('duplicate ref names', () => {
     expect(matching(warn, /claim ref=/)).toEqual([]);
   });
 
+  // the check reads $refs; a tracked read made the two claimants' effects
+  // re-run each other until the scheduler stopped them
+  test('two claimants settle on the last one without an update loop', async () => {
+    spy();
+    document.body.innerHTML = `<div v-scope><i ref="dup" id="one"></i><i ref="dup" id="two"></i></div>`;
+    const app = createApp();
+    const errors: unknown[] = [];
+    app.onError((e) => errors.push(e));
+    app.mount(document.body.firstElementChild!);
+    await tick(8);
+    expect(errors).toEqual([]);
+    expect(
+      devtools.getScope(document.body.firstElementChild!)!.$refs.dup.id
+    ).toBe('two');
+    app.unmount();
+  });
+
+  // refs are scoped: a nested v-scope has its own $refs over its parent's
+  test('a nested scope reusing a parent ref name does not warn', async () => {
+    const warn = spy();
+    await mount(
+      `<div v-scope><b ref="title"></b><section v-scope><i ref="title"></i></section></div>`
+    );
+    await tick(8);
+    expect(matching(warn, /claim ref=/)).toEqual([]);
+  });
+
   test('does not warn for distinct names', async () => {
     const warn = spy();
     await mount(`<div v-scope><input ref="first"><input ref="second"></div>`);
