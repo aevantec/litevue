@@ -46,6 +46,16 @@ describe('v-collapse', () => {
     expect(panel().style.height).toBe('0px');
   });
 
+  // re-running the expand would pin the height again while already open
+  test('leaves an expanded panel alone while the value stays truthy', async () => {
+    const root = await mount(
+      `<div v-scope="{ n: 1 }"><div id="p" v-collapse.duration-10="n > 0">x</div></div>`
+    );
+    root.__ctx.scope.n = 2;
+    await tick();
+    expect(panel().style.height).toBe('');
+  });
+
   test('hands the element back untouched on teardown', async () => {
     const root = await mount(
       `<div v-scope="{ open: true }"><div id="p" v-collapse.duration-10="open">x</div></div>`
