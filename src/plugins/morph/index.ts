@@ -42,6 +42,12 @@ export interface MorphOptions {
    * returns. Without the API it patches immediately, as if the option were off.
    */
   transition?: boolean;
+  /**
+   * Set `value`, `checked` and `selected` from the incoming markup, as a full
+   * load would, so typed text gives way to the server's. Fields the client
+   * binds, and `data-morph-skip` subtrees, keep theirs.
+   */
+  values?: boolean;
 }
 
 /**
@@ -52,6 +58,8 @@ export interface MorphOptions {
 const preserved = (node: Node, opts: MorphOptions) =>
   node.nodeType === 1 &&
   ((node as Element).hasAttribute('data-morph-preserve') ||
+    // a v-teleport element goes only with its marker, never with its target
+    (node as any).__marker ||
     !!opts.preserve?.(node as Element));
 
 const dirRE = /^(?:v-|:|@)/;
@@ -152,8 +160,26 @@ const ownsChildren = (to: Element) => {
   return false;
 };
 
-const patchAttrs = (from: Element, to: Element) => {
+// value, checked and selected, each read from its markup default (defaultValue
+// and so on); a select has no default value, its options carry it
+const FIELD_PROPS = ['Value', 'Checked', 'Selected'];
+
+const syncValues = (from: any, to: any, owned: Set<string>) => {
+  // an option's selection belongs to its select when the client binds that
+  const ctl = boundAttrs(to.closest('select') || to);
+  if (owned.has('*') || ctl.has('*') || ctl.has('value')) return;
+  for (const name of FIELD_PROPS) {
+    const prop = name.toLowerCase();
+    const init = 'default' + name;
+    if (!owned.has(prop) && init in from && from[prop] !== to[init]) {
+      from[prop] = to[init];
+    }
+  }
+};
+
+const patchAttrs = (from: Element, to: Element, values?: boolean) => {
   const owned = boundAttrs(to);
+  if (values) syncValues(from, to, owned);
   // the keys a v-bind object last set, so the server's other attributes still
   // update; Object() so a missing or non-object value owns nothing
   const bound = Object((from as any).__bound);
@@ -191,6 +217,8 @@ const patchNode = (
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
     if (isInterpolation(data, ctx)) return;
+    // an empty text is a v-teleport marker; replacing it removes its element
+    if (!(from as Text).data) return replaceNode(from, to, ctx, opts);
     if ((from as Text).data !== data) (from as Text).data = data;
     return;
   }
@@ -203,8 +231,13 @@ const patchNode = (
   if (a.tagName !== b.tagName) return replaceNode(from, to, ctx, opts);
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
 
-  patchAttrs(a, b);
-  if (!ownsChildren(b)) {
+  patchAttrs(a, b, opts.values);
+  // a template's markup lives in .content, out of patchChildren's reach; it
+  // holds no live bindings, so copying it wholesale loses nothing
+  if (a.tagName == 'TEMPLATE') a.innerHTML = b.innerHTML;
+  // a $template component's markup came from the client, so the server sends
+  // its root empty; only the live scope knows
+  if (!ownsChildren(b) && !(a as any).__ctx?.scope.$template) {
     patchChildren(a, b, (a as any).__ctx || ctx, opts);
   }
 };
@@ -231,6 +264,14 @@ const replaceNode = (
  * copy of the core into the plugins bundle.
  */
 const mountNew = (node: Node, ctx: Context | undefined) => {
+  // a lazy region still waiting walks this markup itself when it fires; a
+  // literal, since importing lazy.ts's selector costs the bundle more
+  if (
+    node.parentElement?.closest(
+      '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]'
+    )
+  )
+    return;
   const target = ctx || nearestCtx(node.parentNode);
   target?.walk?.(node, target);
 };
@@ -279,7 +320,13 @@ const patchChildren = (
     const nextNew = newChild.nextSibling;
     const wantKey = keyOf(newChild);
 
-    if (wantKey != null) {
+    if (
+      (oldChild as Text)?.data === '' &&
+      (newChild as Element).hasAttribute?.('v-teleport')
+    ) {
+      // the marker stands in for the element, which lives in its target
+      oldChild = oldChild!.nextSibling;
+    } else if (wantKey != null) {
       const match = keyed.get(wantKey);
       if (match) {
         // reuse the live node, moving it if the server reordered it

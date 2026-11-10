@@ -26,6 +26,8 @@ export const findInState = (scope: any, term: string) => {
     if (typeof value === 'object') {
       if (depth > 4 || seen.has(value)) return;
       seen.add(value);
+      // an index is not a name: searching 1 would find every two-item array
+      const named = !Array.isArray(value);
       for (const key of Object.keys(value)) {
         if (key[0] === '$') continue;
         let child: unknown;
@@ -37,7 +39,7 @@ export const findInState = (scope: any, term: string) => {
         }
         if (typeof child === 'function') continue;
         const here = path ? `${path}.${key}` : key;
-        if (key.toLowerCase().includes(term)) return here;
+        if (named && key.toLowerCase().includes(term)) return here;
         const hit = walk(child, here, depth + 1);
         if (hit) return hit;
       }
@@ -48,10 +50,39 @@ export const findInState = (scope: any, term: string) => {
   return walk(scope, '', 0);
 };
 
+export const isCollection = (v: unknown): v is Map<any, any> | Set<any> =>
+  v instanceof Map || v instanceof Set;
+
+/**
+ * JSON-style preview, cut at 60 characters. Built entry by entry and stopped
+ * at the limit, since it runs on every flush and a 20,000-row array would
+ * otherwise be serialised whole. The length cap also ends a cycle.
+ */
 export const fmt = (v: unknown) => {
-  let s: string;
+  let s = '';
+  const put = (v: any) => {
+    if (isCollection(v)) s += `${v.constructor.name}(${v.size})`;
+    else if (!v || typeof v !== 'object' || v.toJSON) {
+      s += JSON.stringify(v) ?? String(v);
+    } else {
+      const arr = Array.isArray(v);
+      s += arr ? '[' : '{';
+      let n = 0;
+      for (const k of arr ? v.keys() : Object.keys(v)) {
+        if (s.length > 60) break;
+        const c = v[k];
+        const skip = c === undefined || typeof c === 'function';
+        // JSON leaves these out of an object and writes null in an array
+        if (skip && !arr) continue;
+        if (n++) s += ',';
+        if (!arr) s += JSON.stringify(k) + ':';
+        skip ? (s += 'null') : put(c);
+      }
+      s += arr ? ']' : '}';
+    }
+  };
   try {
-    s = v === undefined ? 'undefined' : (JSON.stringify(v) ?? String(v));
+    put(v);
   } catch {
     s = String(v);
   }
@@ -92,8 +123,9 @@ export const isReadOnly = (desc?: PropertyDescriptor) => {
 };
 
 export const collectProps = (scope: Record<string, any>) => {
+  // judged from the descriptor: reading a getter here could throw
   const isData = (o: any, k: string) =>
-    k[0] !== '$' && typeof o[k] !== 'function';
+    k[0] !== '$' && typeof descriptorOf(o, k)?.value !== 'function';
   const own = Object.keys(scope).filter((k) => isData(scope, k));
   const seen = new Set(own);
   const inherited: string[] = [];

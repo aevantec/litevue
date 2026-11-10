@@ -200,6 +200,39 @@ describe('navigate: links', () => {
     expect(runs).toBe(before);
   });
 
+  // a teleport into the morphed target sits where no server markup matches it;
+  // it goes only with the markup it was written in
+  test.each([
+    [
+      'keeps a body teleport from a region both pages share',
+      '<main>B</main>',
+      1,
+    ],
+    ['removes it with a region the new page drops', '', 0],
+  ])('%s', async (_, keep, count) => {
+    const layout = `<a href="/b">B</a><aside id="player" v-scope="{ n: 1 }"><div class="mini" v-teleport="body">{{ n }}</div></aside>`;
+    replies['/b'] = {
+      body: page(
+        'B',
+        count ? layout + keep : '<a href="/">A</a><main>B</main>'
+      ),
+    };
+    await start(layout + '<main>A</main>');
+    const mini = document.querySelector('.mini')!;
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('B');
+    expect(document.querySelectorAll('.mini').length).toBe(count);
+    if (count) {
+      expect(document.querySelector('.mini')).toBe(mini);
+      (document.querySelector('#player') as any).__ctx.scope.n = 2;
+      await tick();
+      expect(mini.textContent).toBe('2');
+    }
+  });
+
   test('never inserts a script from the fetched page', async () => {
     replies['/s'] = {
       body: page('S', '<main>S</main><script>window.__ran = true</script>'),
@@ -211,6 +244,27 @@ describe('navigate: links', () => {
 
     expect(document.querySelector('script')).toBeNull();
     expect(document.querySelector('main')!.textContent).toBe('S');
+  });
+
+  test('keeps a data island and drops every script a browser would run', async () => {
+    const island = (n: number) =>
+      `<script type="application/json" id="data">{"n":${n}}</script>`;
+    replies['/s'] = {
+      body: page(
+        'S',
+        `<main>S</main>${island(2)}<script type="module">1</script>
+         <script type=" Text/JavaScript ">2</script><script type="">3</script>`
+      ),
+    };
+    await start(`<a href="/s">S</a><main>Home</main>${island(1)}`);
+    const live = document.getElementById('data');
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelectorAll('script')).toHaveLength(1);
+    expect(document.getElementById('data')).toBe(live);
+    expect(JSON.parse(live!.textContent!)).toEqual({ n: 2 });
   });
 
   test('morphs only the target when one is given', async () => {
@@ -578,6 +632,71 @@ describe('navigate: forms', () => {
     expect(location.pathname).toBe('/');
   });
 
+  const commentForm = `<form action="/comments" method="post"><input name="c"><button>Post</button></form><main></main>`;
+
+  test('a POST redirected back to the same page clears what was submitted', async () => {
+    replies['/comments'] = {
+      body: page('Comments', commentForm.replace('<main>', '<main>posted')),
+      url: ORIGIN + '/',
+    };
+    await start(commentForm);
+    const input = document.querySelector('input')!;
+    input.value = 'a comment';
+    input.focus();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('posted');
+    expect(input.value).toBe('');
+  });
+
+  test('a 422 keeps the typed text and the focus', async () => {
+    replies['/comments'] = {
+      status: 422,
+      body: page('Comments', commentForm.replace('<main>', '<main>too short')),
+    };
+    await start(commentForm);
+    const input = document.querySelector('input')!;
+    input.value = 'hi';
+    input.focus();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('too short');
+    expect(input.value).toBe('hi');
+    expect(document.activeElement).toBe(input);
+  });
+
+  test('a field on the next page does not inherit text from one in its position', async () => {
+    replies['/next'] = {
+      body: page('Next', '<a href="/next">next</a><input name="other">'),
+    };
+    await start('<a href="/next">next</a><input name="q">');
+    document.querySelector('input')!.value = 'typed';
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('input')!.name).toBe('other');
+    expect(document.querySelector('input')!.value).toBe('');
+  });
+
+  test('a v-model field keeps its state after a successful POST', async () => {
+    const form = `<form v-scope="{ c: 'draft' }" action="/comments" method="post"><input name="c" v-model="c"><button>Post</button></form>`;
+    replies['/comments'] = { body: page('Comments', form), url: ORIGIN + '/' };
+    await start(form);
+    const input = document.querySelector('input')!;
+    input.value = 'edited';
+    input.dispatchEvent(new Event('input'));
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(input.value).toBe('edited');
+  });
+
   test('posts a multipart form as FormData', async () => {
     replies['/save'] = { body: page('Saved', '<main>saved</main>') };
     await start(
@@ -617,6 +736,23 @@ describe('navigate: forms', () => {
     await settle();
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // enctype values are case-insensitive in HTML
+  test('reads an enctype written in upper case', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post" enctype="Multipart/Form-Data"><input name="t" value="x"><button id="a">a</button></form>
+       <form action="/b" method="post" enctype="TEXT/PLAIN"><button id="b">b</button></form><main></main>`
+    );
+    for (const id of ['#a', '#b']) {
+      (document.querySelector(id) as HTMLElement).click();
+    }
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
   });
 
   test('leaves a form with a target or a dialog method to the browser', async () => {

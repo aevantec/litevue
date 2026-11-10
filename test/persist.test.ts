@@ -75,6 +75,36 @@ describe('v-persist directive', () => {
     );
     app.unmount();
   });
+
+  // `k in saved` also matches Object.prototype members
+  test('restores only keys the saved object owns, not inherited ones', async () => {
+    localStorage.setItem('litevue:proto', JSON.stringify({ count: 2 }));
+    document.body.innerHTML = `<div id="a" v-scope="{ count: 0, valueOf: 'mine' }" v-persist="proto">
+      <span>{{ count }}/{{ valueOf }}</span>
+    </div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    await tick();
+    expect(document.querySelector('span')!.textContent).toBe('2/mine');
+    expect(saved('proto')).toEqual({ count: 2, valueOf: 'mine' });
+    app.unmount();
+  });
+
+  // the HTML parser lowercases attribute names, so firstName arrives as
+  // firstname and would otherwise persist nothing without a word
+  test('warns in development when a listed key is not in the scope', async () => {
+    const warnings: string[] = [];
+    const orig = console.warn;
+    console.warn = (...a: any[]) => warnings.push(a.join(' '));
+    document.body.innerHTML = `<div id="a" v-scope="{ firstName: '', age: 0 }" v-persist:firstName,age="person"></div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    console.warn = orig;
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('"firstname"');
+    expect(warnings[0]).toContain('lowercase');
+    app.unmount();
+  });
 });
 
 describe('persistStore()', () => {
@@ -283,5 +313,55 @@ describe('storage selection', () => {
     // the scope still works, it simply isn't persisted anywhere
     expect(document.querySelector('span')!.textContent).toBe('1');
     app.unmount();
+  });
+
+  // falling back to localStorage would put state there that the author meant
+  // to keep out of it, such as a token for an unregistered vault
+  test('an unknown storage modifier does not save to the default storage', async () => {
+    const orig = console.error;
+    console.error = () => {};
+    document.body.innerHTML = `<div id="a" v-scope="{ token: 'abc' }" v-persist.sesion="auth">
+      <button @click="token = 'rotated'"></button>
+    </div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    await tick();
+    console.error = orig;
+    (document.querySelector('button') as HTMLElement).click();
+    await tick();
+
+    expect(localStorage.getItem('litevue:auth')).toBeNull();
+    expect(sessionStorage.getItem('litevue:auth')).toBeNull();
+    app.unmount();
+  });
+
+  test('an unknown storage modifier does not restore from the default storage', async () => {
+    localStorage.setItem('litevue:auth', JSON.stringify({ token: 'stale' }));
+    const orig = console.error;
+    console.error = () => {};
+    document.body.innerHTML = `<div id="a" v-scope="{ token: 'fresh' }" v-persist.sesion="auth">
+      <span>{{ token }}</span>
+    </div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    await tick();
+    console.error = orig;
+
+    expect(document.querySelector('span')!.textContent).toBe('fresh');
+    app.unmount();
+  });
+
+  test('persistStore with an unknown storage name saves nowhere', async () => {
+    const errors: string[] = [];
+    const orig = console.error;
+    console.error = (...a: any[]) => errors.push(a.join(' '));
+    store('unsaved', { n: 0 });
+    persistStore('unsaved', { storage: 'unregistered' });
+    console.error = orig;
+    store('unsaved').n = 1;
+    await tick();
+
+    expect(errors.some((e) => e.includes('is not available'))).toBe(true);
+    expect(localStorage.getItem('litevue:unsaved')).toBeNull();
   });
 });

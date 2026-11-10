@@ -47,10 +47,9 @@ jobs:
           app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PLEASE_APP_KEY }}
 
-      # Held at v4 on purpose. v5 exists, but this action is the release path
-      # and nothing in CI exercises it — a break only shows up at the moment a
-      # release is being cut. Bump it on its own, deliberately, not alongside
-      # actions that a green CI run actually verifies.
+      # Bumped on its own, deliberately, never alongside other actions: this
+      # action is the release path and nothing in CI exercises it, so a break
+      # only shows up at the moment a release is being cut.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
@@ -82,7 +81,7 @@ jobs:
           ref: ${{ needs.release-please.outputs.tag }}
 
       # version comes from the packageManager field in package.json
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - uses: actions/setup-node@v7
         with:
@@ -106,6 +105,11 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # the guards CI runs on every PR; whatever reaches main is published
+      # even if CI on the promotion PR was red
+      - name: Check the built bundles
+        run: pnpm check:bundles && pnpm check:dist-runtime && pnpm check:size
 
       - name: Validate package
         run: pnpm lint:package

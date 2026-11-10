@@ -39,7 +39,9 @@ A scope key shadows a global of the same name, so a key called `name` or
 ## Interpolation
 
 `{{ }}` inserts a value as text, never as HTML. `null` and `undefined` render as
-empty, and objects as formatted JSON. For whole-element text or HTML, see
+empty, and arrays and plain objects as formatted JSON. Any other value is
+converted with `String()`, as in Vue, so an `Error` renders as `Error: message`
+and a `Date` as its date string. For whole-element text or HTML, see
 [`v-text`](/directives/v-text) and [`v-html`](/directives/v-html); for
 attributes, [`v-bind`](/directives/v-bind).
 
@@ -72,6 +74,12 @@ with [`v-cloak`](/directives/v-cloak):
 ## Keeping text uncompiled
 
 To show `{{ }}` literally — in a code sample, say — use [`v-pre`](/directives/v-pre).
+
+The contents of a `<script>` element are never interpolated, so a client-side
+template kept in `<script type="text/x-template">` inside a mounted region keeps
+its `{{ }}` placeholders as written. This matches Vue. The text of a `<style>`
+element is not exempt; add `v-pre` to a `<style>` element that contains the
+delimiters.
 
 ## Content Security Policy
 

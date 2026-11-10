@@ -186,8 +186,10 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       if (modifiers.outside && el.contains(e.target as Node)) {
         return;
       }
-      if ('key' in e && keyFilter.length) {
-        const key = hyphenate((e as KeyboardEvent).key);
+      // A key-less key event (Chrome's autofill keydown) matches no key, as
+      // in Vue; mouse events skip the filter so .left and .right still pass.
+      if (keyFilter.length && ('key' in e || e.type.startsWith('key'))) {
+        const key = hyphenate((e as KeyboardEvent).key || '');
         if (!keyFilter.some((k) => k === key || keyAliases[k] === key)) return;
       }
       for (const key in modifiers) {

@@ -91,6 +91,8 @@ Morph matches elements by `id` first, then by position. A scope root with the sa
 
 ::: warning A page root needs its own id
 Two pages whose `<main v-scope="…">` has no `id`, or the same one, are matched by position. The second page's markup is patched into the first page's element, which keeps the first page's scope and data.
+
+The same applies when only the next page makes the element a scope root. Morph does not add `v-scope` or other directives to an element it keeps, and leaves its `{{ }}` text alone, so navigating from `<main>` to `<main v-scope="{ n: 2 }">` creates no scope: the element keeps the first page's content and is not reactive. Give each page's scope root a distinct `id`, or place scope roots inside layout elements rather than on them.
 :::
 
 To keep a client-only element that the next page does not contain, such as a toast or a chat widget, mark it `data-morph-preserve`, as with [morph](/plugins/morph#a-widget-the-client-owns).
@@ -101,9 +103,11 @@ A [store](/globals/store) belongs to the app, not to a page, so its state surviv
 
 ## Forms
 
-A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
+A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. The `enctype` value is matched without regard to case, as the browser matches it. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
 
-When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL, so the typed values and focus survive as they do with [morph](/plugins/morph). A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
+After a successful response, the form shows what the server sent, as it would after a full load. When a comment form posts and the server redirects back to the same page, the comment box is empty again, and a field on the next page does not inherit text typed into the field in the same position. The plugin morphs with the [`values`](/plugins/morph#field-values) option to do this. Fields bound with `v-model`, `:value` or `:checked` keep their state, so reset that state to clear them. A field marked `data-morph-skip` keeps what the visitor typed, which suits a search box the visitor may still be typing in.
+
+When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL. The typed values survive, as they do with [morph](/plugins/morph), and focus stays on the field the visitor was in. A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
 When the server redirects a `POST` to a page the plugin cannot render, such as one on another origin, that page loads in full: following the redirect is a `GET`, so nothing is sent twice. A `POST` answered with a file, such as a CSV export, cannot be loaded that way. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
 
@@ -131,9 +135,9 @@ The fetched page's `<head>` is merged into the current one, so each page keeps i
 
 - `<title>` is replaced.
 - `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
-- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up.
+- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up. A disabled stylesheet, or one with an empty or missing `href`, is added without waiting, since the browser does not load it.
 - Ones only the current page has are removed once the new page is in place.
-- `<script>` elements are never added or removed. A fetched page's `<script>` elements never run, and removing a script would not unload it.
+- `<script>` elements in the head are never added or removed, data islands included. A fetched page's executable scripts never run, and removing a script would not unload it. Place a data island that changes between pages in the body instead.
 
 Mark an element `data-navigate-preserve` to keep it even when the next page lacks it, such as a stylesheet a client-side library injected:
 
@@ -194,13 +198,14 @@ Back and forward cannot be held this way, since the URL has already changed when
 - Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load. A server that returns a different response for them must also send `Vary: X-Requested-With`; otherwise a browser or proxy cache can serve that response to a full load of the same URL.
 - A navigation still in flight is cancelled when another starts.
 - The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element, and when its tracked assets differ; see [Deploys](#deploys). A `POST` falls back only when the server redirected it; see [Forms](#forms).
-- `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
+- Executable `<script>` elements in the fetched page, those with no `type`, a JavaScript type or `type="module"`, are dropped and never run. Any other `<script>`, such as a `type="application/json"` data island, is morphed like other content, so code that reads it after a navigation sees the new page's data. Inline event handler attributes such as `onclick` or `onload` do run, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
+- `<noscript>` elements in the fetched page are dropped, in the head and the body. With scripts enabled their content is inert, so a `<style>` or tracking `<iframe>` inside one never applies or loads, as on a full load.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
-- Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
+- After a successful response, focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none. After an error response rendered in place, focus stays where it was.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
 - Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. With `scroll: false`, the plugin does not restore it. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
 - There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
-- On full unmount, the plugin stops intercepting and removes its live region.
+- On full unmount, the plugin stops intercepting and removes its live region. A navigation still in flight, including one waiting on a stylesheet or a view transition, stops without rendering.
 
 ## Security
 
