@@ -38,7 +38,6 @@ export const transition: Plugin = (app) => {
     const name = arg || 'v';
     const cls = (phase: string) => `${name}-${phase}`;
     let seq = 0;
-    let first = true;
     // Tracked so teardown can cancel it: unmounting mid-transition left this
     // pending, stripping classes and running `done` for a dead directive.
     let endTimer: ReturnType<typeof setTimeout> | undefined;
@@ -78,8 +77,12 @@ export const transition: Plugin = (app) => {
       Promise.resolve().then(() => {
         if (live) run('enter');
       });
-      (elem as any).__leave = () =>
-        new Promise<void>((resolve) => run('leave', resolve));
+      // a leave begun in the insertion's own flush must not be overtaken by
+      // the enter, whose new seq would orphan the leave's resolve
+      (elem as any).__leave = () => {
+        live = false;
+        return new Promise<void>((resolve) => run('leave', resolve));
+      };
       return () => {
         live = false;
         clearTimeout(endTimer);
@@ -91,21 +94,24 @@ export const transition: Plugin = (app) => {
     // as v-show does, so showing restores an inline display such as flex,
     // but not a none that only hid the element until mount
     const display = elem.style.display == 'none' ? '' : elem.style.display;
+    // undefined until the first run, which applies the state without
+    // animating unless .appear is present
+    let shown: boolean | undefined;
     effect(() => {
       const show = !!get();
-      if (first) {
-        first = false;
-        elem.style.display = show ? display : 'none';
-        if (show && modifiers?.appear) run('enter');
-        return;
-      }
+      // like v-show, act only when truthiness changes
+      if (show === shown) return;
+      const animate = shown != null;
+      shown = show;
       if (show) {
         elem.style.display = display;
-        run('enter');
-      } else {
+        if (animate || modifiers?.appear) run('enter');
+      } else if (animate) {
         run('leave', () => {
           elem.style.display = 'none';
         });
+      } else {
+        elem.style.display = 'none';
       }
     });
 
