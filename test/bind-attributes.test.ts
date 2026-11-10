@@ -40,6 +40,21 @@ describe('v-bind boolean attributes with a camel-cased property', () => {
 });
 
 // translate is a boolean property, so 'no' would read as true, as Vue notes
+// Their width and height properties are numbers, so '50%' would become 0
+describe('v-bind width and height on media elements, as Vue', () => {
+  test.each(['img', 'video', 'canvas', 'source'])(
+    '<%s> keeps a percentage as the attribute',
+    async (tag) => {
+      const { $ } = await mount(
+        `<div v-scope><${tag} :width="'50%'" :height="'25%'"></div>`
+      );
+      const el = $(tag);
+      expect(el.getAttribute('width')).toBe('50%');
+      expect(el.getAttribute('height')).toBe('25%');
+    }
+  );
+});
+
 describe('v-bind translate', () => {
   test(':translate="\'no\'" writes translate="no"', async () => {
     const { $ } = await mount(`<div v-scope><p :translate="'no'"></p></div>`);

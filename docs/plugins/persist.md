@@ -26,6 +26,12 @@ createApp().use(persist).mount();
 The value is a literal key, not an expression, stored as `litevue:<key>`. With
 no value, the element's `id` is used.
 
+The HTML parser lowercases attribute names, so `v-persist:firstName` lists the
+key `firstname`, which does not match a `firstName` property. Name the
+properties you list in lowercase, or persist camelCase properties with
+`persistStore()` and its `keys` option. In development, a listed key that is
+not in the scope logs a warning.
+
 ### Modifiers
 
 | Modifier | Meaning |

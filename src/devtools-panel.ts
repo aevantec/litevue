@@ -30,6 +30,7 @@ import {
   findInState,
   fmt,
   h,
+  isCollection,
   isReadOnly,
   previewOf,
 } from './devtools-panel/values';
@@ -206,8 +207,9 @@ const componentOf = (el: Element) => {
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
   componentOf(el) ||
-  el.id ||
-  el.tagName.toLowerCase();
+  // a form's controls named id or tagName shadow those properties
+  el.getAttribute('id') ||
+  el.localName;
 
 const renderTabs = () => {
   const storeCount = devtools.stores ? devtools.stores.size : 0;
@@ -410,7 +412,9 @@ const addNode = (
   path: string,
   depth: number,
   cls: string,
-  ancestors: unknown[]
+  ancestors: unknown[],
+  // inside a derived value or a Map/Set copy, where an edit would be lost
+  ro?: boolean
 ) => {
   let v: any, threw;
   // a getter can throw while data loads; show it instead of losing the view
@@ -421,6 +425,8 @@ const addNode = (
   }
   const row = h('div', cls);
   row.style.paddingLeft = 8 + depth * 14 + 'px';
+  const desc = descriptorOf(container, key);
+  ro ||= isReadOnly(desc);
 
   if (v !== null && typeof v === 'object') {
     const circular = ancestors.indexOf(v) > -1;
@@ -440,14 +446,29 @@ const addNode = (
     appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
-      const keys = Object.keys(v);
+      // a Map or Set has no own keys, so its entries are listed from a copy
+      const coll = isCollection(v);
+      const src = coll
+        ? v instanceof Map
+          ? Object.fromEntries(v)
+          : [...v]
+        : v;
+      const keys = Object.keys(src);
       if (!keys.length) {
         const empty = h('div', 'muted', '(empty)');
         empty.style.paddingLeft = 22 + (depth + 1) * 14 + 'px';
         stateEl.appendChild(empty);
       }
       for (const k of keys) {
-        addNode(k, v, path + '.' + k, depth + 1, cls, ancestors.concat([v]));
+        addNode(
+          k,
+          src,
+          path + '.' + k,
+          depth + 1,
+          cls,
+          ancestors.concat([v]),
+          ro || coll
+        );
       }
     }
     return;
@@ -455,10 +476,9 @@ const addNode = (
 
   row.appendChild(h('span', 'spacer'));
   row.appendChild(h('span', 'key', key));
-  const desc = descriptorOf(container, key);
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
-  } else if (threw || isReadOnly(desc)) {
+  } else if (threw || ro) {
     // getter without a setter, or a computed(): an input here would silently
     // discard writes
     row.appendChild(h('span', 'preview', threw ? '(threw)' : fmt(v)));
@@ -786,7 +806,8 @@ const build = () => {
 
   devtools.on('scope:mount', scheduleRender);
   devtools.on('scope:unmount', (el: Element) => {
-    if (el === selected) selected = null;
+    // $scope too, or the console keeps the torn-down scope alive
+    if (el === selected) selected = (window as any).$scope = null;
     scheduleRender();
   });
   // guard for panels loaded against a core built before stores existed
