@@ -125,4 +125,13 @@ describe('createApp', () => {
     await tick();
     expect($('span').textContent).toBe('1');
   });
+
+  test('leaves the text of a script element alone', async () => {
+    const { $ } = await mount(
+      `<div v-scope><span>{{ name }}</span><script type="text/x-template">Hello {{ name }}</script></div>`,
+      { name: 'Ada' }
+    );
+    expect($('span').textContent).toBe('Ada');
+    expect($('script').textContent).toBe('Hello {{ name }}');
+  });
 });

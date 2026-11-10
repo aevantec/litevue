@@ -673,6 +673,23 @@ describe('navigate: forms', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // enctype values are case-insensitive in HTML
+  test('reads an enctype written in upper case', async () => {
+    replies['/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="/save" method="post" enctype="Multipart/Form-Data"><input name="t" value="x"><button id="a">a</button></form>
+       <form action="/b" method="post" enctype="TEXT/PLAIN"><button id="b">b</button></form><main></main>`
+    );
+    for (const id of ['#a', '#b']) {
+      (document.querySelector(id) as HTMLElement).click();
+    }
+    await settle();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
+  });
+
   test('leaves a form with a target or a dialog method to the browser', async () => {
     await start(
       `<form action="/x" target="_blank"><button id="a">a</button></form>
