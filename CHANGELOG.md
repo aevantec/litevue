@@ -3,6 +3,16 @@
 ## [0.6.1](https://github.com/aevantec/litevue/compare/v0.6.0...v0.6.1) (2026-11-10)
 
 
+### Behaviour changes
+
+None of these is breaking, but each changes what a page shows or receives:
+
+* After a successful navigation, form fields not bound to state show the values the server sent, as a full page load would. A form redirected back to its own page is cleared. A `422` keeps the typed values and focus. To keep a field's typed value, such as a search box, mark it `data-morph-skip` ([#284](https://github.com/aevantec/litevue/issues/284))
+* A masked input whose initial value needs formatting fires its own `@change` handler once at mount, as it already fired `@input` ([#280](https://github.com/aevantec/litevue/issues/280))
+* `{{ date }}` renders `String(date)` instead of the quoted ISO string, and an `Error` renders as its message instead of `{}`, as in Vue ([#278](https://github.com/aevantec/litevue/issues/278))
+* `{{ }}` inside a `<script>` element is left as written ([#277](https://github.com/aevantec/litevue/issues/277))
+
+
 ### Features
 
 * **plugins:** show the server's field values after a successful navigation, and keep focus on a 422 ([#284](https://github.com/aevantec/litevue/issues/284)) ([be1a7df](https://github.com/aevantec/litevue/commit/be1a7dfd884af479d64f65808cd124e263d0b439))
