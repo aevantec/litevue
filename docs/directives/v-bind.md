@@ -34,7 +34,9 @@ Bind an attribute or DOM property to an expression.
 
 A name is treated as a property when the element has one by that name. SVG
 elements, and `type`, `form`, `list`, `spellcheck`, `draggable` and `translate`,
-always use the attribute.
+always use the attribute. So do `width` and `height` on `img`, `video`, `canvas`
+and `source`, as in Vue: their properties hold numbers, so `:width="'50%'"`
+would otherwise become `0`.
 
 Some boolean attributes have a camel-cased property, so the lowercase name in
 markup does not match it: `readonly`, `novalidate`, `formnovalidate`,

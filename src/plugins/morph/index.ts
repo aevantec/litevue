@@ -208,6 +208,9 @@ const patchNode = (
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
 
   patchAttrs(a, b);
+  // a template's markup lives in .content, out of patchChildren's reach; it
+  // holds no live bindings, so copying it wholesale loses nothing
+  if (a.tagName == 'TEMPLATE') a.innerHTML = b.innerHTML;
   // a $template component's markup came from the client, so the server sends
   // its root empty; only the live scope knows
   if (!ownsChildren(b) && !(a as any).__ctx?.scope.$template) {
@@ -237,6 +240,14 @@ const replaceNode = (
  * copy of the core into the plugins bundle.
  */
 const mountNew = (node: Node, ctx: Context | undefined) => {
+  // a lazy region still waiting walks this markup itself when it fires; a
+  // literal, since importing lazy.ts's selector costs the bundle more
+  if (
+    node.parentElement?.closest(
+      '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]'
+    )
+  )
+    return;
   const target = ctx || nearestCtx(node.parentNode);
   target?.walk?.(node, target);
 };

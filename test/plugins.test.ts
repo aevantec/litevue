@@ -81,6 +81,18 @@ describe('plugin system', () => {
     expect(installs).toEqual({ fn: 1, obj: 1 });
     app.unmount();
   });
+
+  test('calls an object plugin install with the plugin as this', async () => {
+    const plugin = {
+      endpoint: '/api',
+      install(app: any) {
+        app.scope.$endpoint = this.endpoint;
+      },
+    };
+    const { createApp } = await import('../src');
+    const app = createApp().use(plugin);
+    expect(app.scope.$endpoint).toBe('/api');
+  });
 });
 
 describe('persist plugin', () => {

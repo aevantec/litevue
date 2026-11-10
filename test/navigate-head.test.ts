@@ -113,6 +113,23 @@ describe('navigate: head', () => {
     expect(main()).toBe('next');
   });
 
+  // browsers fire neither load nor error for these, so waiting would stall
+  test('does not wait for a disabled stylesheet or one without an href', async () => {
+    reply = page(
+      '<link rel="stylesheet" href="/off.css" disabled>' +
+        '<link rel="stylesheet" href="" id="empty">' +
+        '<link rel="stylesheet" id="none">'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect($head('[href="/off.css"]')).not.toBeNull();
+    expect($head('#empty')).not.toBeNull();
+    expect($head('#none')).not.toBeNull();
+  });
+
   test('adds and removes inline styles', async () => {
     reply = page('<style>main { color: red }</style>');
     await start('<style>main { color: blue }</style>');

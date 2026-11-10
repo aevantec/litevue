@@ -93,7 +93,9 @@ const sync = <T>(
     const saved = JSON.parse(storage.getItem(key) || 'null');
     if (saved) {
       for (const k of fields) {
-        if (k in saved) target[k] = saved[k];
+        // own keys only: `in` matches Object.prototype members like valueOf.
+        // Not Object.hasOwn, which would raise the documented browser floor
+        if ({}.hasOwnProperty.call(saved, k)) target[k] = saved[k];
       }
     }
   } catch {}
@@ -148,6 +150,19 @@ export const persist: Plugin = (app) => {
           .map((k) => k.trim())
           .filter(Boolean)
       : undefined;
+    // the HTML parser lowercases attribute names, so v-persist:firstName
+    // arrives as firstname and would otherwise persist nothing, silently
+    if (import.meta.env.DEV) {
+      for (const k of keys || []) {
+        if (!(k in ctx.scope)) {
+          console.warn(
+            `v-persist: "${k}" is not in the scope, so it is not persisted. ` +
+              `Attribute names are lowercase; list lowercase keys, or use ` +
+              `persistStore() with keys.`
+          );
+        }
+      }
+    }
 
     sync(ctx.scope, key, keys, storage, effect);
   });
