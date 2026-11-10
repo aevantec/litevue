@@ -203,7 +203,11 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
   } else if (type === 3) {
     // Text
     const data = (node as Text).data;
-    if (data.includes(ctx.delimiters[0])) {
+    // a script's text is code or a client-side template, never ours (as Vue)
+    if (
+      data.includes(ctx.delimiters[0]) &&
+      !(node.parentNode instanceof HTMLScriptElement)
+    ) {
       let segments: string[] = [];
       let lastIndex = 0;
       let match;

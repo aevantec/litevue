@@ -73,6 +73,12 @@ with [`v-cloak`](/directives/v-cloak):
 
 To show `{{ }}` literally — in a code sample, say — use [`v-pre`](/directives/v-pre).
 
+The contents of a `<script>` element are never interpolated, so a client-side
+template kept in `<script type="text/x-template">` inside a mounted region keeps
+its `{{ }}` placeholders as written. This matches Vue. The text of a `<style>`
+element is not exempt; add `v-pre` to a `<style>` element that contains the
+delimiters.
+
 ## Content Security Policy
 
 Expressions are compiled with `new Function`, so a page with a Content Security
