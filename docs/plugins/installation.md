@@ -57,6 +57,8 @@ createApp({ open: false }).use(transition).use(persist).mount();
 
 With a bundler both import styles cost the same — the barrel is side-effect free, so anything you don't import is tree-shaken. The subpath mainly earns its place with `<script>` tags, and for making intent obvious in a diff.
 
+Use one style for each plugin throughout an app. The combined entry and a plugin's subpath are separate copies of that plugin, so importing it from both ships its code twice. Plugins with page-wide state then keep two copies of it that do not see each other: a breakpoint scale passed to one copy of the `media` plugin is unknown to the other copy's `mq`, and a storage registered through one copy's `registerStorage` is unknown to the other copy's `v-persist`.
+
 With `<script>` tags the trade is real, because each standalone file carries its own wrapper. One or two plugins are much smaller loaded individually; once you are using most of them the combined bundle wins. Check the actual byte counts against a build rather than guessing — `dist/plugins/` and `dist/litevue-plugins.iife.js` are both in the published package.
 
 ## Installing every plugin

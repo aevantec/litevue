@@ -53,7 +53,7 @@ Each helper has a script form on the `mq` object — `$mqFoo` in markup is
 `mq.foo` in a script:
 
 ```ts
-import { mq, defaultBreakpoints, resetMedia } from '@aevantec/litevue/plugins/media';
+import { mq, defaultBreakpoints, resetMedia } from '@aevantec/litevue/plugins';
 
 mq(map, fallback?)          // $mq
 mq.props(maps)              // $mqProps
@@ -148,7 +148,7 @@ Useful where there is no element — a request size, shared state:
 
 ```js
 import { store, watchEffect } from '@aevantec/litevue';
-import { mq } from '@aevantec/litevue/plugins/media';
+import { mq } from '@aevantec/litevue/plugins';
 
 const limit = mq({ mobile: 5, tablet: 10, desktop: 25 });
 const res = await fetch(`/api/activity?limit=${limit}`);
