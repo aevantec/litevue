@@ -95,10 +95,19 @@ export const popover: Plugin = (app) => {
     const assign = get(`(val) => { ${exp} = val }`);
     const sync = (e: Event) => assign((e as ToggleEvent).newState === 'open');
     pop.addEventListener('toggle', sync);
-    effect(() => {
+    const toggle = () => {
       const open = !!get();
-      if (open !== pop.matches(':popover-open')) {
+      if (pop.isConnected && open !== pop.matches(':popover-open')) {
         open ? pop.showPopover() : pop.hidePopover();
+      }
+    };
+    effect(() => {
+      if (pop.isConnected) toggle();
+      else {
+        // a v-if or v-for block is walked before it is inserted, and the
+        // Popover API throws on a detached element
+        get();
+        Promise.resolve().then(toggle);
       }
     });
     return () => pop.removeEventListener('toggle', sync);
