@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.6.1](https://github.com/aevantec/litevue/compare/v0.6.0...v0.6.1) (2026-11-10)
+
+
+### Features
+
+* **plugins:** show the server's field values after a successful navigation, and keep focus on a 422 ([#284](https://github.com/aevantec/litevue/issues/284)) ([be1a7df](https://github.com/aevantec/litevue/commit/be1a7dfd884af479d64f65808cd124e263d0b439))
+
+
+### Bug Fixes
+
+* credit the bundled @vue/reactivity and @vue/shared in LICENSE ([#273](https://github.com/aevantec/litevue/issues/273)) ([a09495b](https://github.com/aevantec/litevue/commit/a09495b69bc684efb0b351c906a67bb3a4e47011))
+* **devtools:** keep panel edits and the state view safe from untouched fields and throwing getters ([#266](https://github.com/aevantec/litevue/issues/266)) ([b0f6dd1](https://github.com/aevantec/litevue/commit/b0f6dd10c1f478a1653f21fbf6d5bdcf09dbe4da))
+* **devtools:** keep the extension tab working with throwing getters, untouched fields and shifting scopes ([#267](https://github.com/aevantec/litevue/issues/267)) ([4740c16](https://github.com/aevantec/litevue/commit/4740c16d6bf1cb18a52b0f107bf19af7c40610d1))
+* **devtools:** show Maps and Sets, keep derived values read-only, and bound the state preview ([#279](https://github.com/aevantec/litevue/issues/279)) ([9727b92](https://github.com/aevantec/litevue/commit/9727b9297a6c953f90fe698ed5679931a1539afd))
+* ignore a key-less keydown in key modifiers, and keep this in an object plugin's install ([#276](https://github.com/aevantec/litevue/issues/276)) ([a338db9](https://github.com/aevantec/litevue/commit/a338db99aa70f81ffa9040dec5f8e0fdf4f28d0b))
+* keep $refs on the element that holds a name, and stop the duplicate-ref loop ([#263](https://github.com/aevantec/litevue/issues/263)) ([c5b2f58](https://github.com/aevantec/litevue/commit/c5b2f589cda9ea9bda07658d3e92322c532d1dcd))
+* leave the text of script elements uninterpolated ([#277](https://github.com/aevantec/litevue/issues/277)) ([3076e48](https://github.com/aevantec/litevue/commit/3076e4820a0762987b7ce2814973971c0d7c9be4))
+* **plugins:** act on show and hide only when truthiness changes, and remove same-flush leaves ([#268](https://github.com/aevantec/litevue/issues/268)) ([fb09283](https://github.com/aevantec/litevue/commit/fb092839194e31d52b778328a9d9c9bd10cf06e0))
+* **plugins:** bind markup morphed into a waiting lazy region with that region, and update template content ([#282](https://github.com/aevantec/litevue/issues/282)) ([df0c561](https://github.com/aevantec/litevue/commit/df0c5614b720cea364058997c17fad7034fdd38e))
+* **plugins:** drop noscript from fetched pages so its content stays inert ([#262](https://github.com/aevantec/litevue/issues/262)) ([89261e1](https://github.com/aevantec/litevue/commit/89261e18acb7849fa9f3138f9039f3bbe9306256))
+* **plugins:** keep a $template component's children through a morph ([#261](https://github.com/aevantec/litevue/issues/261)) ([f73b158](https://github.com/aevantec/litevue/commit/f73b158b0510c01d89990cb1779883d0c6064e72))
+* **plugins:** keep a v-teleport element through morph and navigate ([#271](https://github.com/aevantec/litevue/issues/271)) ([ae5bac0](https://github.com/aevantec/litevue/commit/ae5bac05c22f27a84186d77673128d490af42576))
+* **plugins:** keep data islands through navigate, and stop a navigation on unmount ([#272](https://github.com/aevantec/litevue/issues/272)) ([f647b39](https://github.com/aevantec/litevue/commit/f647b3964c8e031581e7052769d4b9c663804161))
+* **plugins:** keep v-persist out of localStorage when its storage is unknown ([#270](https://github.com/aevantec/litevue/issues/270)) ([acf3efe](https://github.com/aevantec/litevue/commit/acf3efe0e2aef558183e87152687eab2ba752ba4))
+* **plugins:** open a v-popover rendered by v-if or v-for while already true ([#269](https://github.com/aevantec/litevue/issues/269)) ([fa6cac3](https://github.com/aevantec/litevue/commit/fa6cac34e1fa9e2b7a53913019fc8b174d0c1343))
+* **plugins:** persist restores only saved own keys, and warns about a missing listed key ([#281](https://github.com/aevantec/litevue/issues/281)) ([80f7472](https://github.com/aevantec/litevue/commit/80f7472b3625b3cf4c7c0f2d2474e9183ba00da3))
+* **plugins:** read form enctype case-insensitively, and stop waiting on stylesheets the browser never loads ([#283](https://github.com/aevantec/litevue/issues/283)) ([4150087](https://github.com/aevantec/litevue/commit/415008717d1497807d2c5032ded4ea6f53b2531c))
+* **plugins:** v-mask formats a v-model.lazy value at mount and closes a trailing literal ([#280](https://github.com/aevantec/litevue/issues/280)) ([6430eac](https://github.com/aevantec/litevue/commit/6430eaca94291d82882e36961617a994c6f974f2))
+* render Errors and Dates, bind media width, and loop over strings as Vue does ([#278](https://github.com/aevantec/litevue/issues/278)) ([a960feb](https://github.com/aevantec/litevue/commit/a960febc0f74059f06853df1255b5bf17c25d4b1))
+* set a bound property again only when its value changes ([#264](https://github.com/aevantec/litevue/issues/264)) ([dd950d7](https://github.com/aevantec/litevue/commit/dd950d79cf6a5b1917d21d51d69a27f5dc083453))
+
 ## [0.6.0](https://github.com/aevantec/litevue/compare/v0.5.17...v0.6.0) (2026-11-09)
 
 
