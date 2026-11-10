@@ -141,7 +141,7 @@ announcement and an `aria-busy` loading state. With `prefetch: true`, it
 fetches a link's page on hover or focus, before the click.
 
 ```js
-import { morphPlugin } from '@aevantec/litevue/plugins/morph';
+import { morphPlugin } from '@aevantec/litevue/plugins';
 import { navigate } from '@aevantec/litevue/plugins/navigate';
 
 createApp().use(morphPlugin).use(navigate).mount();
