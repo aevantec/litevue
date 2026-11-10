@@ -60,6 +60,49 @@ describe('v-mask plugin', () => {
     app.unmount();
   });
 
+  // .lazy listens for change, not input; the mount-time change also reaches
+  // the page's own @change, once, as documented
+  test('formats the initial v-model.lazy value, and the model receives it', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ phone: '5551234567', changes: 0 }">
+      <input v-mask="(999) 999-9999" v-model.lazy="phone" @change="changes++" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    const scope = devtools.getScope(input)!;
+    expect(input.value).toBe('(555) 123-4567');
+    expect(scope.phone).toBe('(555) 123-4567');
+    expect(scope.changes).toBe(1);
+    app.unmount();
+  });
+
+  test('appends trailing literals once every slot is filled', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ code: '' }">
+      <input v-mask="(999)" v-model="code" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    type(input, '123');
+    expect(input.value).toBe('(123)');
+    // the user's own closing literal is kept, not stripped
+    type(input, '(123)');
+    expect(input.value).toBe('(123)');
+    await tick();
+    expect(devtools.getScope(input)!.code).toBe('(123)');
+
+    // Backspace over the trailing literal leaves it off, so the user can
+    // keep deleting rather than having it put straight back
+    input.value = '(123';
+    input.dispatchEvent(
+      new InputEvent('input', { inputType: 'deleteContentBackward' })
+    );
+    expect(input.value).toBe('(123');
+    app.unmount();
+  });
+
   // rewriting value puts the caret at the end; an edit in the middle keeps it
   // after the characters before it
   test('keeps the caret in place when editing mid-value', async () => {

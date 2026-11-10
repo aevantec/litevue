@@ -25,7 +25,8 @@ export const collapse: Plugin = (app) => {
     const hide = (hidden: boolean) =>
       (elem.style.visibility = hidden ? 'hidden' : before[3]);
     elem.style.overflow = 'hidden';
-    let first = true;
+    // undefined until the first run, which applies the state without animating
+    let shown: boolean | undefined;
     let seq = 0;
     // pending timers are cancelled on teardown: app.unmount(el) leaves the
     // element in the document, so a timer firing afterwards would still be
@@ -40,31 +41,30 @@ export const collapse: Plugin = (app) => {
     };
     effect(() => {
       const show = !!get();
+      // re-expanding while open would pin the height again for `duration`
+      if (show === shown) return;
       const id = ++seq;
-      if (first) {
-        first = false;
-        if (!show) elem.style.height = '0px';
-        hide(!show);
+      hide(!show);
+      if (shown == null) {
         // enable the transition only after the initial state is applied;
         // visibility switches at the end of a collapse, at the start of an expand
         later(() => {
           elem.style.transition = `height ${duration}ms ease, visibility ${duration}ms`;
         });
-        return;
-      }
-      hide(!show);
-      if (show) {
-        elem.style.height = elem.scrollHeight + 'px';
-        later(() => {
-          // release the fixed height so content can resize freely
-          if (id === seq) elem.style.height = '';
-        }, duration);
       } else {
         elem.style.height = elem.scrollHeight + 'px';
-        // force a reflow so the browser animates from the measured height
-        void elem.offsetHeight;
-        elem.style.height = '0px';
+        if (show) {
+          later(() => {
+            // release the fixed height so content can resize freely
+            if (id === seq) elem.style.height = '';
+          }, duration);
+        } else {
+          // force a reflow so the browser animates from the measured height
+          void elem.offsetHeight;
+        }
       }
+      if (!show) elem.style.height = '0px';
+      shown = show;
     });
 
     return () => {

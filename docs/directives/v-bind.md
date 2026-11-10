@@ -34,7 +34,9 @@ Bind an attribute or DOM property to an expression.
 
 A name is treated as a property when the element has one by that name. SVG
 elements, and `type`, `form`, `list`, `spellcheck`, `draggable` and `translate`,
-always use the attribute.
+always use the attribute. So do `width` and `height` on `img`, `video`, `canvas`
+and `source`, as in Vue: their properties hold numbers, so `:width="'50%'"`
+would otherwise become `0`.
 
 Some boolean attributes have a camel-cased property, so the lowercase name in
 markup does not match it: `readonly`, `novalidate`, `formnovalidate`,
@@ -91,6 +93,7 @@ can come from an expression:
 ## Behavior
 
 - Dynamic argument names such as `:[name]` are not supported.
+- A binding is set again only when its value changes, as in Vue. Replacing a list with fresh objects that hold the same URLs therefore does not restart a `<video>` or reload an `<iframe>`. An array or object bound to `:class` or `:style` is always reapplied, since it may have changed in place.
 - For other attributes that are not properties, bind `null` to remove the attribute, since `false` is written as the string `"false"`: `:aria-hidden="open ? null : 'true'"`.
 - `:value` also stores the raw value on the element, so [`v-model`](/directives/v-model) can read non-string option and checkbox values.
 - Checkboxes read `:true-value` and `:false-value` as values rather than attributes — see `v-model`.

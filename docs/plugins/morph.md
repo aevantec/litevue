@@ -203,12 +203,17 @@ still carries the directives:
 | Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
 | An element with `v-if` or `v-for` | Leaves the whole containing element alone |
+| An element with `v-teleport` | Leaves the live element in its target alone, and removes it only when the server stops sending it |
 | Anything else | Patches it to match, and removes attributes the server dropped |
 
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
 - That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you. A region torn down with `app.unmount(el)` counts as outside every scope, so markup morphed into it is not bound to the scope it had.
+- New markup inside a [lazy region](/directives/v-scope#mounting-on-demand) that has not mounted yet (`v-scope.visible`, `.idle` or `.interaction`) is not walked by morph. The region binds it with its own scope when it mounts, together with the markup it already held.
+- The content of a `<template>` element is replaced with the content the server sends. A template holds no live bindings, so nothing is lost; elements already created from it keep their nodes and state.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
+- A component that renders from [`$template`](/directives/v-scope) keeps its children. The server sends its root empty, since the markup comes from the template on the client, so morph patches only the root's attributes.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
+- A [`v-teleport`](/directives/v-teleport) element keeps its node and its state across a morph, provided no unkeyed element is added or removed before it; one that is would take its position and replace it. The server cannot change its attributes or contents, so bind those to state instead. Morphing its target never removes it, since the server does not send it there.
 - The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
 - On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
 - A removed element's scope is released with it, inside a mounted scope or outside every one: its effects stop and its listeners are removed. State that must survive a re-render belongs in a [store](/globals/store).

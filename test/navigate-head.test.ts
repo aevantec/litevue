@@ -113,6 +113,23 @@ describe('navigate: head', () => {
     expect(main()).toBe('next');
   });
 
+  // browsers fire neither load nor error for these, so waiting would stall
+  test('does not wait for a disabled stylesheet or one without an href', async () => {
+    reply = page(
+      '<link rel="stylesheet" href="/off.css" disabled>' +
+        '<link rel="stylesheet" href="" id="empty">' +
+        '<link rel="stylesheet" id="none">'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect($head('[href="/off.css"]')).not.toBeNull();
+    expect($head('#empty')).not.toBeNull();
+    expect($head('#none')).not.toBeNull();
+  });
+
   test('adds and removes inline styles', async () => {
     reply = page('<style>main { color: red }</style>');
     await start('<style>main { color: blue }</style>');
@@ -134,6 +151,33 @@ describe('navigate: head', () => {
     expect($head('[src="/two.js"]')).toBeNull();
   });
 
+  // The fetched page is parsed with scripting off, so <noscript> holds real
+  // elements there; in the live page, with scripting on, it is inert text.
+  test('never applies a style from a noscript in the next page', async () => {
+    reply = page(
+      '<noscript><style>.needs-js { display: none }</style></noscript>'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect(document.querySelectorAll('style')).toHaveLength(0);
+  });
+
+  test('never inserts the elements of a noscript in the next body', async () => {
+    reply = page(
+      '',
+      '<noscript><iframe src="/ns.html"></iframe></noscript><main>next</main>'
+    );
+    await start('');
+
+    await go();
+
+    expect(main()).toBe('next');
+    expect(document.querySelector('iframe')).toBeNull();
+  });
+
   test('keeps an element marked data-navigate-preserve', async () => {
     reply = page('');
     await start('<style data-navigate-preserve>.injected {}</style>');
@@ -153,6 +197,24 @@ describe('navigate: head', () => {
     await go();
 
     expect($head('[data-navigate-track]')).toBe(link);
+  });
+
+  test('unmounting stops a navigation waiting on a stylesheet', async () => {
+    reply = page('<link rel="stylesheet" href="/slow.css">');
+    await start('');
+    const after = vi.fn();
+    document.addEventListener('navigate:after', after);
+    await go();
+
+    current!.unmount();
+    current = undefined;
+    fire('[href="/slow.css"]', 'load');
+    await settle();
+    document.removeEventListener('navigate:after', after);
+
+    expect(main()).toBe('home');
+    expect(location.pathname).toBe('/');
+    expect(after).not.toHaveBeenCalled();
   });
 
   test('a newer navigation wins over one waiting on a stylesheet', async () => {

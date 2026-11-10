@@ -40,6 +40,21 @@ describe('v-bind boolean attributes with a camel-cased property', () => {
 });
 
 // translate is a boolean property, so 'no' would read as true, as Vue notes
+// Their width and height properties are numbers, so '50%' would become 0
+describe('v-bind width and height on media elements, as Vue', () => {
+  test.each(['img', 'video', 'canvas', 'source'])(
+    '<%s> keeps a percentage as the attribute',
+    async (tag) => {
+      const { $ } = await mount(
+        `<div v-scope><${tag} :width="'50%'" :height="'25%'"></div>`
+      );
+      const el = $(tag);
+      expect(el.getAttribute('width')).toBe('50%');
+      expect(el.getAttribute('height')).toBe('25%');
+    }
+  );
+});
+
 describe('v-bind translate', () => {
   test(':translate="\'no\'" writes translate="no"', async () => {
     const { $ } = await mount(`<div v-scope><p :translate="'no'"></p></div>`);
@@ -60,5 +75,69 @@ describe('v-bind object form', () => {
     await tick();
     expect($('p').style.color).toBe('');
     expect($('p').style.margin).toBe('1px');
+  });
+});
+
+/**
+ * Setting a media element's or an iframe's src, even to the value it already
+ * has, restarts loading. Vue only patches a binding whose value changed.
+ */
+describe('v-bind with an unchanged value', () => {
+  const countSets = (el: HTMLElement, proto: object, prop: string) => {
+    const desc = Object.getOwnPropertyDescriptor(proto, prop)!;
+    let sets = 0;
+    Object.defineProperty(el, prop, {
+      configurable: true,
+      get() {
+        return desc.get!.call(this);
+      },
+      set(v) {
+        sets++;
+        desc.set!.call(this, v);
+      },
+    });
+    return () => sets;
+  };
+
+  test('a refetched list does not re-set an unchanged :src', async () => {
+    const { $$, root } = await mount(
+      `<div v-scope="{ clips: [{ id: 1, url: '/a.mp4' }, { id: 2, url: '/b.mp4' }] }">
+        <video v-for="c in clips" :key="c.id" :src="c.url"></video>
+      </div>`
+    );
+    const counts = $$('video').map((v) =>
+      countSets(v, HTMLMediaElement.prototype, 'src')
+    );
+    // a poll or refetch: new objects, the same content
+    (root as any).__ctx.scope.clips = [
+      { id: 1, url: '/a.mp4' },
+      { id: 2, url: '/b.mp4' },
+    ];
+    await tick();
+    expect(counts.map((n) => n())).toEqual([0, 0]);
+
+    (root as any).__ctx.scope.clips = [
+      { id: 1, url: '/c.mp4' },
+      { id: 2, url: '/b.mp4' },
+    ];
+    await tick();
+    expect(counts.map((n) => n())).toEqual([1, 0]);
+    expect(($$('video')[0] as HTMLVideoElement).src).toContain('/c.mp4');
+  });
+
+  test('an array mutated in place is still applied', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ cls: ['a'] }"><p :class="cls"></p></div>`
+    );
+    (root as any).__ctx.scope.cls.push('b');
+    await tick();
+    expect($('p').className).toBe('a b');
+  });
+
+  test('an undefined first value still removes the static attribute', async () => {
+    const { $ } = await mount(
+      `<div v-scope="{ u: undefined }"><a href="/x" :href="u"></a></div>`
+    );
+    expect($('a').hasAttribute('href')).toBe(false);
   });
 });

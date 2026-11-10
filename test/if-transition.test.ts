@@ -51,6 +51,23 @@ describe('v-if leave transitions (v-transition unmount mode)', () => {
     expect(log).toEqual(['u']);
     app.unmount();
   });
+
+  // the enter is queued a microtask after insertion; running it after the
+  // leave has begun made the leave's end timer stale, so removal never came
+  test('removes an element inserted and removed in the same flush', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ open: false, blocked: true }">
+      <p id="box" v-if="open" v-transition:fade></p>
+      <span v-effect="if (open && blocked) open = false"></span>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    (document.querySelector('#app') as any).__ctx.scope.open = true;
+    await tick();
+    await sleep(20);
+    expect(document.getElementById('box')).toBeNull();
+    app.unmount();
+  });
 });
 
 describe('leave transitions inside fragment blocks', () => {

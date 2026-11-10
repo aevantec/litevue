@@ -5,12 +5,15 @@ import {
   isString,
   isArray,
   isPlainObject,
+  isObject,
   hyphenate,
   camelize,
   parseStringStyle,
 } from '@vue/shared';
 
 const forceAttrRE = /^(spellcheck|draggable|translate|form|list|type)$/;
+// numeric properties here, which turn '50%' into 0; set as attributes, as in Vue
+const mediaSizeRE = /^(img|video|canvas|source)(width|height)$/;
 // booleans whose property is camel-cased (readOnly), so markup's lowercase
 // name misses it and lands on the attribute path
 const booleanAttrRE =
@@ -19,7 +22,8 @@ const booleanAttrRE =
 export const bind: Directive<
   Element & { _class?: string | null; __bound?: any }
 > = ({ el, get, effect, arg, modifiers }) => {
-  let prevValue: any;
+  // a fresh object, so the first run always applies, even an undefined value
+  let prevValue: any = {};
 
   // record static class, for the object form too, and once: a second binding
   // would read back the first one's classes. The attribute, since an SVG
@@ -34,7 +38,12 @@ export const bind: Directive<
       if (modifiers?.camel) {
         arg = camelize(arg);
       }
-      setProp(el, arg, value, prevValue);
+      // As Vue: an unchanged value is not set again, since re-setting src
+      // restarts a video or reloads an iframe. An object may have changed in
+      // place, so it is always applied.
+      if (value !== prevValue || isObject(value)) {
+        setProp(el, arg, value, prevValue);
+      }
     } else {
       for (const key in value) {
         setProp(el, key, value[key], prevValue && prevValue[key]);
@@ -89,7 +98,8 @@ const setProp = (
   } else if (
     !(el instanceof SVGElement) &&
     key in el &&
-    !forceAttrRE.test(key)
+    !forceAttrRE.test(key) &&
+    !mediaSizeRE.test(el.localName + key)
   ) {
     // A string property would read null as "null", so it gets '' and the
     // attribute goes, as in Vue. Booleans still take null as false.

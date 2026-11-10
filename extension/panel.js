@@ -8,7 +8,7 @@ const treeEl = document.getElementById('tree');
 const stateEl = document.getElementById('state');
 
 let snapshot = { ok: false, scopes: [], stores: [] };
-let selection = null; // { kind: 'scope' | 'store', index }
+let selection = null; // { kind: 'scope', id } | { kind: 'store', index, name }
 
 const evalInPage = (code) =>
   new Promise((resolve, reject) => {
@@ -22,6 +22,13 @@ const evalInPage = (code) =>
 const SNAPSHOT = `(() => {
   const d = window.__LITE_VUE__;
   if (!d) return { ok: false };
+  // a stable id per scope element, so an edit can't reach whichever scope
+  // shifted into a list position after another unmounted
+  const ids = (window.__LITE_VUE_EXT_IDS__ ||= { of: new WeakMap(), n: 0 });
+  const idOf = (el) => {
+    if (!ids.of.has(el)) ids.of.set(el, ++ids.n);
+    return ids.of.get(el);
+  };
   const clone = (v, depth) => {
     if (v === null || typeof v !== 'object') {
       return typeof v === 'function' ? undefined : v;
@@ -31,13 +38,21 @@ const SNAPSHOT = `(() => {
     const out = {};
     for (const k of Object.keys(v)) {
       if (k[0] === '$') continue;
-      const c = clone(v[k], depth - 1);
+      // one throwing getter must not fail the whole snapshot
+      let c;
+      try {
+        c = clone(v[k], depth - 1);
+      } catch {
+        c = '(threw)';
+      }
       if (c !== undefined) out[k] = c;
     }
     return out;
   };
   const scopes = [...d.scopes.entries()].map(([el, scope]) => ({
-    label: d.names.get(el) || el.id || el.tagName.toLowerCase(),
+    id: idOf(el),
+    // a form's controls named id or tagName shadow those properties
+    label: d.names.get(el) || el.getAttribute('id') || el.localName,
     exp: d.exps.get(el) || '',
     data: clone(scope, 4),
   }));
@@ -53,7 +68,12 @@ const editCode = (sel, key, value) => {
   const v = JSON.stringify(value);
   return sel.kind === 'store'
     ? `window.__LITE_VUE__.stores.get(${JSON.stringify(sel.name)})[${k}] = ${v}`
-    : `[...window.__LITE_VUE__.scopes.values()][${sel.index}][${k}] = ${v}`;
+    : `(() => {
+        const ids = window.__LITE_VUE_EXT_IDS__;
+        for (const [el, s] of window.__LITE_VUE__.scopes) {
+          if (ids && ids.of.get(el) === ${JSON.stringify(sel.id)}) s[${k}] = ${v};
+        }
+      })()`;
 };
 
 const h = (tag, className, text) => {
@@ -69,16 +89,16 @@ const renderTree = () => {
     treeEl.appendChild(h('div', 'empty', 'LiteVue not detected on this page'));
     return;
   }
-  snapshot.scopes.forEach((s, index) => {
+  snapshot.scopes.forEach((s) => {
     const sel =
-      selection && selection.kind === 'scope' && selection.index === index;
+      selection && selection.kind === 'scope' && selection.id === s.id;
     const row = h('div', sel ? 'row sel' : 'row');
     const label = h('span', 'name');
     label.textContent = '<' + s.label + '>';
     row.appendChild(label);
     if (s.exp) row.appendChild(h('span', 'exp', ' ' + s.exp));
     row.onclick = () => {
-      selection = { kind: 'scope', index };
+      selection = { kind: 'scope', id: s.id };
       render();
     };
     treeEl.appendChild(row);
@@ -107,7 +127,7 @@ const renderState = () => {
     selection &&
     (selection.kind === 'store'
       ? snapshot.stores[selection.index]
-      : snapshot.scopes[selection.index]);
+      : snapshot.scopes.find((s) => s.id === selection.id));
   if (!entry) {
     stateEl.appendChild(h('div', 'empty', 'select a scope'));
     return;
@@ -135,6 +155,8 @@ const renderState = () => {
         }
       };
       input.onblur = () => {
+        // untouched text is never written: null would come back as 'null'
+        if (input.value === String(v)) return;
         let next = input.value;
         if (typeof v === 'number' && !isNaN(+next)) next = +next;
         if (typeof v === 'boolean') next = input.value === 'true';

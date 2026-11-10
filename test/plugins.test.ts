@@ -81,6 +81,18 @@ describe('plugin system', () => {
     expect(installs).toEqual({ fn: 1, obj: 1 });
     app.unmount();
   });
+
+  test('calls an object plugin install with the plugin as this', async () => {
+    const plugin = {
+      endpoint: '/api',
+      install(app: any) {
+        app.scope.$endpoint = this.endpoint;
+      },
+    };
+    const { createApp } = await import('../src');
+    const app = createApp().use(plugin);
+    expect(app.scope.$endpoint).toBe('/api');
+  });
 });
 
 describe('persist plugin', () => {
@@ -124,6 +136,23 @@ describe('focus plugin', () => {
     document.querySelector('button')!.click();
     await tick(5);
     expect(document.activeElement).toBe(input);
+    app.unmount();
+  });
+
+  // only a change to truthy focuses; any other dependency change would pull
+  // focus back from wherever the user has moved it
+  test('leaves focus alone while the value stays truthy', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ n: 1 }">
+      <input id="a" v-focus="n > 0" /><input id="b" />
+    </div>`;
+    const app = createApp().use(focus);
+    app.mount('#app');
+    await tick(5);
+    expect(document.activeElement!.id).toBe('a');
+    (document.querySelector('#b') as HTMLElement).focus();
+    (document.querySelector('#app') as any).__ctx.scope.n = 2;
+    await tick(5);
+    expect(document.activeElement!.id).toBe('b');
     app.unmount();
   });
 });
@@ -302,6 +331,30 @@ describe('transition plugin', () => {
     scope.open = true;
     await tick();
     expect(box.style.display).toBe('');
+    app.unmount();
+  });
+
+  // like v-show, it acts only when truthiness changes
+  test('does not replay a transition while truthiness is unchanged', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ n: 1 }">
+      <div id="box" v-transition:fade="n > 0"></div>
+    </div>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const box = document.querySelector('#box') as HTMLElement;
+    const scope = (document.querySelector('#app') as any).__ctx.scope;
+    scope.n = 2;
+    await tick();
+    expect(box.className).toBe('');
+
+    scope.n = 0;
+    await tick();
+    await sleep(20);
+    expect(box.style.display).toBe('none');
+    scope.n = -1;
+    await tick();
+    expect(box.className).toBe('');
     app.unmount();
   });
 

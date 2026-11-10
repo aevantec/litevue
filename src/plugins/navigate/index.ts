@@ -74,7 +74,8 @@ const mergeHead = async (doc: Document) => {
       continue;
     }
     const fresh = document.importNode(el, true) as HTMLLinkElement;
-    if (fresh.matches('link[rel=stylesheet]')) {
+    // browsers fire neither load nor error for a disabled or href-less sheet
+    if (fresh.matches('link[rel=stylesheet][href]:not([disabled],[href=""])')) {
       // listeners, not onload: the page's own handler (the media="print"
       // async-CSS pattern) must still run; an error must not block the page
       loads.push(
@@ -124,7 +125,7 @@ const render = (app: App, patch: typeof morph, from: Element, to: Element) => {
 
 export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const target = options.target || 'body';
-  let controller: AbortController | undefined;
+  let controller: AbortController | void;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
   // the document, and the form that started it, while a request is in flight;
@@ -258,8 +259,18 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       if (assets(doc) !== assets(document)) {
         throw new Error(`${url.href} loads different scripts or styles`);
       }
-      // the page's own scripts already ran; fetched ones never do
-      doc.querySelectorAll('script').forEach((s) => s.remove());
+      // the page's own scripts already ran; fetched ones never do. One with no
+      // type, a JavaScript type or module would run; any other is a data
+      // island. DOMParser parses with scripting off, so a noscript holds live
+      // elements here
+      doc
+        .querySelectorAll('script,noscript')
+        .forEach(
+          (s) =>
+            /^\s*(module\s*)?$|script/i.test(
+              (s as HTMLScriptElement).type || ''
+            ) && s.remove()
+        );
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
@@ -343,7 +354,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       by?.getAttribute('form' + name) || form.getAttribute(name);
     const method = (attr('method') || 'get').toLowerCase();
     const where = attr('target');
-    const type = attr('enctype');
+    const type = attr('enctype')?.toLowerCase();
     if (e.defaultPrevented || method === 'dialog' || optedOut(form)) return;
     // text/plain is a debugging format; fetch cannot send it as the browser does
     if (type === 'text/plain') return;
@@ -391,7 +402,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   return () => {
     clearTimeout(saving);
     removeEventListener('scroll', onScroll);
-    controller?.abort();
+    // cleared too, so a navigation awaiting a stylesheet or transition stops
+    controller = controller?.abort();
     pre?.c.abort();
     clearTimeout(timer);
     document.removeEventListener('click', onClick);
