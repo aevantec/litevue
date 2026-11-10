@@ -94,3 +94,15 @@ describe('a modifier that can never match', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+describe('a keyboard event without a key', () => {
+  // Chrome dispatches a key-less keydown when it autofills a field
+  test('does not pass a key modifier', async () => {
+    const hits: Event[] = [];
+    document.body.innerHTML = `<div v-scope><input @keydown.enter="hit($event)" /></div>`;
+    createApp({ hit: (e: Event) => hits.push(e) }).mount();
+    await tick();
+    document.querySelector('input')!.dispatchEvent(new Event('keydown'));
+    expect(hits).toEqual([]);
+  });
+});
