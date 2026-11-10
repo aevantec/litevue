@@ -133,7 +133,7 @@ The fetched page's `<head>` is merged into the current one, so each page keeps i
 - `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
 - Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up.
 - Ones only the current page has are removed once the new page is in place.
-- `<script>` elements are never added or removed. A fetched page's `<script>` elements never run, and removing a script would not unload it.
+- `<script>` elements in the head are never added or removed, data islands included. A fetched page's executable scripts never run, and removing a script would not unload it. Place a data island that changes between pages in the body instead.
 
 Mark an element `data-navigate-preserve` to keep it even when the next page lacks it, such as a stylesheet a client-side library injected:
 
@@ -194,14 +194,14 @@ Back and forward cannot be held this way, since the URL has already changed when
 - Requests send `X-Requested-With: litevue`, so a server can tell them apart from a full load. A server that returns a different response for them must also send `Vary: X-Requested-With`; otherwise a browser or proxy cache can serve that response to a full load of the same URL.
 - A navigation still in flight is cancelled when another starts.
 - The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element, and when its tracked assets differ; see [Deploys](#deploys). A `POST` falls back only when the server redirected it; see [Forms](#forms).
-- `<script>` elements in the fetched page never run. Inline event handler attributes such as `onclick` or `onload` do, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
+- Executable `<script>` elements in the fetched page, those with no `type`, a JavaScript type or `type="module"`, are dropped and never run. Any other `<script>`, such as a `type="application/json"` data island, is morphed like other content, so code that reads it after a navigation sees the new page's data. Inline event handler attributes such as `onclick` or `onload` do run, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - `<noscript>` elements in the fetched page are dropped, in the head and the body. With scripts enabled their content is inert, so a `<style>` or tracking `<iframe>` inside one never applies or loads, as on a full load.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - Focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
 - Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. With `scroll: false`, the plugin does not restore it. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
 - There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
-- On full unmount, the plugin stops intercepting and removes its live region.
+- On full unmount, the plugin stops intercepting and removes its live region. A navigation still in flight, including one waiting on a stylesheet or a view transition, stops without rendering.
 
 ## Security
 

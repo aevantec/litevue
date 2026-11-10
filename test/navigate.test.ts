@@ -246,6 +246,27 @@ describe('navigate: links', () => {
     expect(document.querySelector('main')!.textContent).toBe('S');
   });
 
+  test('keeps a data island and drops every script a browser would run', async () => {
+    const island = (n: number) =>
+      `<script type="application/json" id="data">{"n":${n}}</script>`;
+    replies['/s'] = {
+      body: page(
+        'S',
+        `<main>S</main>${island(2)}<script type="module">1</script>
+         <script type=" Text/JavaScript ">2</script><script type="">3</script>`
+      ),
+    };
+    await start(`<a href="/s">S</a><main>Home</main>${island(1)}`);
+    const live = document.getElementById('data');
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelectorAll('script')).toHaveLength(1);
+    expect(document.getElementById('data')).toBe(live);
+    expect(JSON.parse(live!.textContent!)).toEqual({ n: 2 });
+  });
+
   test('morphs only the target when one is given', async () => {
     replies['/two'] = {
       body: page(

@@ -124,7 +124,7 @@ const render = (app: App, patch: typeof morph, from: Element, to: Element) => {
 
 export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const target = options.target || 'body';
-  let controller: AbortController | undefined;
+  let controller: AbortController | void;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
   // the document, and the form that started it, while a request is in flight;
@@ -258,9 +258,18 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       if (assets(doc) !== assets(document)) {
         throw new Error(`${url.href} loads different scripts or styles`);
       }
-      // the page's own scripts already ran; fetched ones never do. DOMParser
-      // parses with scripting off, so a noscript holds live elements here
-      doc.querySelectorAll('script,noscript').forEach((s) => s.remove());
+      // the page's own scripts already ran; fetched ones never do. One with no
+      // type, a JavaScript type or module would run; any other is a data
+      // island. DOMParser parses with scripting off, so a noscript holds live
+      // elements here
+      doc
+        .querySelectorAll('script,noscript')
+        .forEach(
+          (s) =>
+            /^\s*(module\s*)?$|script/i.test(
+              (s as HTMLScriptElement).type || ''
+            ) && s.remove()
+        );
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
@@ -392,7 +401,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   return () => {
     clearTimeout(saving);
     removeEventListener('scroll', onScroll);
-    controller?.abort();
+    // cleared too, so a navigation awaiting a stylesheet or transition stops
+    controller = controller?.abort();
     pre?.c.abort();
     clearTimeout(timer);
     document.removeEventListener('click', onClick);
