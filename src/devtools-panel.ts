@@ -412,7 +412,13 @@ const addNode = (
   cls: string,
   ancestors: unknown[]
 ) => {
-  const v = container[key];
+  let v: any, threw;
+  // a getter can throw while data loads; show it instead of losing the view
+  try {
+    v = container[key];
+  } catch {
+    threw = 1;
+  }
   const row = h('div', cls);
   row.style.paddingLeft = 8 + depth * 14 + 'px';
 
@@ -452,10 +458,10 @@ const addNode = (
   const desc = descriptorOf(container, key);
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
-  } else if (isReadOnly(desc)) {
+  } else if (threw || isReadOnly(desc)) {
     // getter without a setter, or a computed(): an input here would silently
     // discard writes
-    row.appendChild(h('span', 'preview', fmt(v)));
+    row.appendChild(h('span', 'preview', threw ? '(threw)' : fmt(v)));
   } else if (typeof v === 'boolean') {
     row.appendChild(h('span', 'bool', String(v)));
 
@@ -476,18 +482,21 @@ const addNode = (
     const input = h('input', 'val') as HTMLInputElement;
     input.value = fmt(v);
     input.onfocus = () => {
-      input.value = typeof v === 'string' ? v : String(v);
+      input.value = String(v);
     };
     input.onkeydown = (e) => {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') {
-        input.value = fmt(v);
+        // restore the focus text, which blur treats as "no edit"
+        input.value = String(v);
         input.blur();
       }
     };
     input.onblur = () => {
       const next = coerce(input.value, v);
-      if (next !== v) {
+      // untouched text is never written: null, undefined and NaN would
+      // otherwise come back as strings
+      if (input.value !== String(v) && next !== v) {
         container[key] = next;
         // re-render ourselves: an edit to state no directive tracks never
         // triggers a flush event
