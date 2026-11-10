@@ -123,4 +123,18 @@ describe('extension panel', () => {
       'ext-second'
     );
   });
+
+  test('a form control named id or tagName does not replace the label', async () => {
+    const { root } = await mountOne(
+      `<form v-scope="{ a: 1 }"><input name="id"><input name="tagName"></form>`
+    );
+    // jsdom does not model a named control shadowing a form property
+    for (const name of ['id', 'tagName']) {
+      Object.defineProperty(root, name, {
+        value: root.querySelector(`[name=${name}]`),
+      });
+    }
+    await poll();
+    expect(tree().textContent).toContain('<form>');
+  });
 });

@@ -26,6 +26,8 @@ export const findInState = (scope: any, term: string) => {
     if (typeof value === 'object') {
       if (depth > 4 || seen.has(value)) return;
       seen.add(value);
+      // an index is not a name: searching 1 would find every two-item array
+      const named = !Array.isArray(value);
       for (const key of Object.keys(value)) {
         if (key[0] === '$') continue;
         let child: unknown;
@@ -37,7 +39,7 @@ export const findInState = (scope: any, term: string) => {
         }
         if (typeof child === 'function') continue;
         const here = path ? `${path}.${key}` : key;
-        if (key.toLowerCase().includes(term)) return here;
+        if (named && key.toLowerCase().includes(term)) return here;
         const hit = walk(child, here, depth + 1);
         if (hit) return hit;
       }
@@ -111,5 +113,12 @@ export const collectProps = (scope: Record<string, any>) => {
   return { own, inherited };
 };
 
+export const isCollection = (v: unknown): v is Map<any, any> | Set<any> =>
+  v instanceof Map || v instanceof Set;
+
 export const previewOf = (v: any) =>
-  Array.isArray(v) ? `(${v.length}) ${fmt(v)}` : fmt(v);
+  isCollection(v)
+    ? `${v.constructor.name}(${v.size})`
+    : Array.isArray(v)
+      ? `(${v.length}) ${fmt(v)}`
+      : fmt(v);

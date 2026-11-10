@@ -78,7 +78,8 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - Nested `v-scope` regions form a **collapsible tree**.
 - The **filter** matches names *and* state, case-insensitively: `2026` finds the
   scope holding it, and the row shows the path that matched, such as
-  `user.meta.tags.0`. A match keeps its ancestors visible, so it is never left
+  `user.meta.tags.0`. Array positions are not matched as names, so `1` does
+  not find every list with two items. A match keeps its ancestors visible, so it is never left
   indented under nothing. Escape clears the filter.
 - Hovering a row highlights its element. **Pick mode** works the other way:
   click any element on the page to select its scope.
@@ -87,12 +88,15 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 ## Read and edit state
 
 - The state view separates a scope's own state from what it inherits.
-- Arrays and objects render as an **expandable tree**.
+- Arrays and objects render as an **expandable tree**. A `Map` or `Set` shows
+  its size, as in `Map(2)` or `Set(3)`, and expands to its entries, which are
+  read-only.
 - Every primitive value edits inline, keeping its type; booleans get a checkbox.
   Enter or leaving the field applies the edit, and Escape cancels it. A field
   you leave without changing its text is not written.
 - Derived values, getter-only properties and [`computed()`](/globals/computed),
-  are read-only. A getter that throws is shown as `(threw)`, and the rest of
+  are read-only, and so is everything inside an array or object they return.
+  A getter that throws is shown as `(threw)`, and the rest of
   the scope stays inspectable.
 - An **add-key row** adds a top-level key, and each top-level row has a ✕ to
   delete it.

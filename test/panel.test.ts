@@ -199,3 +199,46 @@ describe('devtools panel with a throwing getter', () => {
     app.unmount();
   });
 });
+
+describe('devtools panel display', () => {
+  test('unmounting the selected scope releases window.$scope', async () => {
+    const { app, scope } = await openScope(
+      'gone',
+      `<div v-name="gone" v-scope="{ n: 1 }"></div>`
+    );
+    expect((window as any).$scope).toBe(scope);
+    app.unmount();
+    await sleep(10);
+    expect((window as any).$scope).toBeFalsy();
+  });
+
+  test('a Map or Set previews its size and expands to its entries', async () => {
+    const { app } = await openScope(
+      'coll',
+      `<div v-name="coll" v-scope="{ m: new Map([['a', 1], ['b', 2]]), s: new Set(['x']) }"></div>`
+    );
+    expect(propRow('m')!.querySelector('.preview')!.textContent).toBe('Map(2)');
+    expect(propRow('s')!.querySelector('.preview')!.textContent).toBe('Set(1)');
+    propRow('m')!.click();
+    await sleep(10);
+    propRow('s')!.click();
+    await sleep(10);
+    // entries are listed, but read-only: an edit would land in a copy
+    expect(propRow('a')!.querySelector('.preview')!.textContent).toBe('1');
+    expect(propRow('a')!.querySelector('input')).toBeNull();
+    expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('"x"');
+    app.unmount();
+  });
+
+  test('the items of an array a getter returns are read-only', async () => {
+    const { app } = await openScope(
+      'derived',
+      `<div v-name="derived" v-scope="{ n: [1, 2], get doubled() { return this.n.map((x) => x * 2) } }"></div>`
+    );
+    propRow('doubled')!.click();
+    await sleep(10);
+    expect(propRow('0')!.querySelector('input')).toBeNull();
+    expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('2');
+    app.unmount();
+  });
+});
