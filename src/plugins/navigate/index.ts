@@ -74,7 +74,8 @@ const mergeHead = async (doc: Document) => {
       continue;
     }
     const fresh = document.importNode(el, true) as HTMLLinkElement;
-    if (fresh.matches('link[rel=stylesheet]')) {
+    // browsers fire neither load nor error for a disabled or href-less sheet
+    if (fresh.matches('link[rel=stylesheet][href]:not([disabled],[href=""])')) {
       // listeners, not onload: the page's own handler (the media="print"
       // async-CSS pattern) must still run; an error must not block the page
       loads.push(
@@ -353,7 +354,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       by?.getAttribute('form' + name) || form.getAttribute(name);
     const method = (attr('method') || 'get').toLowerCase();
     const where = attr('target');
-    const type = attr('enctype');
+    const type = attr('enctype')?.toLowerCase();
     if (e.defaultPrevented || method === 'dialog' || optedOut(form)) return;
     // text/plain is a debugging format; fetch cannot send it as the browser does
     if (type === 'text/plain') return;
