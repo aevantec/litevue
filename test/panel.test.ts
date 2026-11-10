@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { computed, createApp, devtools, store } from '../src';
 import '../src/devtools-panel';
+import { fmt } from '../src/devtools-panel/values';
 import { tick, sleep } from './utils';
 
 const host = () =>
@@ -240,5 +241,49 @@ describe('devtools panel display', () => {
     expect(propRow('0')!.querySelector('input')).toBeNull();
     expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('2');
     app.unmount();
+  });
+});
+
+describe('devtools panel preview text', () => {
+  test('a large array is read only as far as the preview needs', () => {
+    let reads = 0;
+    const rows = new Proxy(
+      Array.from({ length: 20000 }, (_, i) => ({ id: i, name: `row ${i}` })),
+      {
+        get(t, k, r) {
+          if (typeof k === 'string' && /^\d+$/.test(k)) reads++;
+          return Reflect.get(t, k, r);
+        },
+      }
+    );
+    expect(fmt(rows)).toBe(JSON.stringify(rows).slice(0, 60) + '…');
+    reads = 0;
+    fmt(rows);
+    expect(reads).toBeLessThan(10);
+  });
+
+  test('small values read as JSON, as before', () => {
+    const date = new Date(0);
+    const values = [
+      { a: 1, b: 'x', c: null, d: [1, [2, {}]], e: true },
+      { skipped: undefined, fn() {}, kept: 0 },
+      [undefined, () => 0, NaN, date],
+      'text',
+      42,
+      null,
+      [],
+      {},
+    ];
+    for (const v of values) expect(fmt(v)).toBe(JSON.stringify(v));
+    expect(fmt(undefined)).toBe('undefined');
+    expect(fmt({ m: new Map([[1, 2]]), s: new Set() })).toBe(
+      '{"m":Map(1),"s":Set(0)}'
+    );
+  });
+
+  test('a value that refers to itself still previews', () => {
+    const loop: any = { name: 'loop' };
+    loop.self = loop;
+    expect(fmt(loop)).toMatch(/^\{"name":"loop","self":\{"name":"loop"/);
   });
 });

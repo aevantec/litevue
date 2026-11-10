@@ -50,10 +50,39 @@ export const findInState = (scope: any, term: string) => {
   return walk(scope, '', 0);
 };
 
+export const isCollection = (v: unknown): v is Map<any, any> | Set<any> =>
+  v instanceof Map || v instanceof Set;
+
+/**
+ * JSON-style preview, cut at 60 characters. Built entry by entry and stopped
+ * at the limit, since it runs on every flush and a 20,000-row array would
+ * otherwise be serialised whole. The length cap also ends a cycle.
+ */
 export const fmt = (v: unknown) => {
-  let s: string;
+  let s = '';
+  const put = (v: any) => {
+    if (isCollection(v)) s += `${v.constructor.name}(${v.size})`;
+    else if (!v || typeof v !== 'object' || v.toJSON) {
+      s += JSON.stringify(v) ?? String(v);
+    } else {
+      const arr = Array.isArray(v);
+      s += arr ? '[' : '{';
+      let n = 0;
+      for (const k of arr ? v.keys() : Object.keys(v)) {
+        if (s.length > 60) break;
+        const c = v[k];
+        const skip = c === undefined || typeof c === 'function';
+        // JSON leaves these out of an object and writes null in an array
+        if (skip && !arr) continue;
+        if (n++) s += ',';
+        if (!arr) s += JSON.stringify(k) + ':';
+        skip ? (s += 'null') : put(c);
+      }
+      s += arr ? ']' : '}';
+    }
+  };
   try {
-    s = v === undefined ? 'undefined' : (JSON.stringify(v) ?? String(v));
+    put(v);
   } catch {
     s = String(v);
   }
@@ -113,12 +142,5 @@ export const collectProps = (scope: Record<string, any>) => {
   return { own, inherited };
 };
 
-export const isCollection = (v: unknown): v is Map<any, any> | Set<any> =>
-  v instanceof Map || v instanceof Set;
-
 export const previewOf = (v: any) =>
-  isCollection(v)
-    ? `${v.constructor.name}(${v.size})`
-    : Array.isArray(v)
-      ? `(${v.length}) ${fmt(v)}`
-      : fmt(v);
+  Array.isArray(v) ? `(${v.length}) ${fmt(v)}` : fmt(v);
