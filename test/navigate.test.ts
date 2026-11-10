@@ -632,6 +632,71 @@ describe('navigate: forms', () => {
     expect(location.pathname).toBe('/');
   });
 
+  const commentForm = `<form action="/comments" method="post"><input name="c"><button>Post</button></form><main></main>`;
+
+  test('a POST redirected back to the same page clears what was submitted', async () => {
+    replies['/comments'] = {
+      body: page('Comments', commentForm.replace('<main>', '<main>posted')),
+      url: ORIGIN + '/',
+    };
+    await start(commentForm);
+    const input = document.querySelector('input')!;
+    input.value = 'a comment';
+    input.focus();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('posted');
+    expect(input.value).toBe('');
+  });
+
+  test('a 422 keeps the typed text and the focus', async () => {
+    replies['/comments'] = {
+      status: 422,
+      body: page('Comments', commentForm.replace('<main>', '<main>too short')),
+    };
+    await start(commentForm);
+    const input = document.querySelector('input')!;
+    input.value = 'hi';
+    input.focus();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('too short');
+    expect(input.value).toBe('hi');
+    expect(document.activeElement).toBe(input);
+  });
+
+  test('a field on the next page does not inherit text from one in its position', async () => {
+    replies['/next'] = {
+      body: page('Next', '<a href="/next">next</a><input name="other">'),
+    };
+    await start('<a href="/next">next</a><input name="q">');
+    document.querySelector('input')!.value = 'typed';
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('input')!.name).toBe('other');
+    expect(document.querySelector('input')!.value).toBe('');
+  });
+
+  test('a v-model field keeps its state after a successful POST', async () => {
+    const form = `<form v-scope="{ c: 'draft' }" action="/comments" method="post"><input name="c" v-model="c"><button>Post</button></form>`;
+    replies['/comments'] = { body: page('Comments', form), url: ORIGIN + '/' };
+    await start(form);
+    const input = document.querySelector('input')!;
+    input.value = 'edited';
+    input.dispatchEvent(new Event('input'));
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(input.value).toBe('edited');
+  });
+
   test('posts a multipart form as FormData', async () => {
     replies['/save'] = { body: page('Saved', '<main>saved</main>') };
     await start(

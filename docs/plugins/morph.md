@@ -39,6 +39,7 @@ Returns `from` — the same node, which keeps its scope.
 | `beforeNodeAdded(node)` | Called before inserting a node; return `false` to leave it out |
 | `afterNodeRemoved(node)` | Called after a node is removed and its effects are released |
 | `transition` | `true` to patch inside a [view transition](#view-transitions) where the browser supports it |
+| `values` | `true` to set field values, checkboxes and selected options from the new HTML, as a full load would. See [Field values](#field-values) |
 
 ### Attributes
 
@@ -214,12 +215,31 @@ still carries the directives:
 - A component that renders from [`$template`](/directives/v-scope) keeps its children. The server sends its root empty, since the markup comes from the template on the client, so morph patches only the root's attributes.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
 - A [`v-teleport`](/directives/v-teleport) element keeps its node and its state across a morph, provided no unkeyed element is added or removed before it; one that is would take its position and replace it. The server cannot change its attributes or contents, so bind those to state instead. Morphing its target never removes it, since the server does not send it there.
-- The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
+- The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed unless the [`values`](#field-values) option is set. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
 - On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
 - A removed element's scope is released with it, inside a mounted scope or outside every one: its effects stop and its listeners are removed. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
 - Duplicate sibling keys warn in development, since the earlier element would lose its node.
 - `afterNodeRemoved` receives an inert node. Preserved nodes are never announced, because they are never removed.
+
+### Field values
+
+By default, morph never changes what a visitor has typed, ticked or selected. It updates the `value`, `checked` and `selected` attributes, but once a field has been edited the browser shows the edited value rather than the attribute. A form re-rendered with validation errors therefore keeps the visitor's input.
+
+With `values: true`, morph also sets each field's current value, checked state and selection from the new HTML, so the page shows what a full load of that HTML would show. Use it when the new HTML replaces the form's state, for example after a successful save:
+
+```js
+morph(form, html, { values: true });
+```
+
+The option leaves some fields alone:
+
+- A field bound with `v-model`, `:value` or `:checked`, a `<select>` bound with `v-model` or `:value` together with its options, and a field bound with a `v-bind` object. Their values belong to the scope's state; to clear them, reset that state.
+- A field inside an element marked `data-morph-skip`. Mark a field this way when the visitor may still be typing in it while the new HTML loads, such as a search box that updates its results as the visitor types.
+
+The focused field is updated like any other. It gets no exception, because a form submitted with Enter has its focus in the field just submitted, and that field should be cleared like the rest.
+
+[navigate](/plugins/navigate#forms) sets `values` after every successful response.
 
 ## Related
 

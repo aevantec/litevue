@@ -61,6 +61,51 @@ test('focus moves to the target', async () => {
   expect(document.querySelector('h1')!.textContent).toBe('Two');
 });
 
+test('a 422 keeps focus and typed text; a success shows the server values', async () => {
+  // wrapped, so the test mounts its own root rather than <html>
+  const form = `<div v-scope><form action="save" method="post"><input name="c"><input type="checkbox" name="b"><button>Save</button></form><p id="msg"></p></div>`;
+  let status = 422;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url: string) => ({
+      ok: status < 300,
+      status,
+      url: new URL(url, location.href).href,
+      headers: new Headers({ 'content-type': 'text/html' }),
+      text: async () => page('Form', form.replace('></p>', `>${status}</p>`)),
+    }))
+  );
+  document.body.innerHTML = form;
+  app = createApp().use(morphPlugin).use(navigate);
+  app.mount(document.body.firstElementChild as Element);
+  await tick();
+  const input = document.querySelector<HTMLInputElement>('input[name=c]')!;
+  const box = document.querySelector<HTMLInputElement>('input[name=b]')!;
+  const submit = async () => {
+    const done = new Promise((r) =>
+      document.addEventListener('navigate:after', r, { once: true })
+    );
+    document.querySelector('form')!.requestSubmit();
+    await done;
+    // the form accepts another POST only once this one has fully settled
+    await sleep(0);
+  };
+  input.focus();
+  input.value = 'hi';
+  box.checked = true;
+
+  await submit();
+  expect(document.querySelector('#msg')!.textContent).toBe('422');
+  expect(document.activeElement).toBe(input);
+  expect([input.value, box.checked]).toEqual(['hi', true]);
+
+  status = 200;
+  await submit();
+  expect(document.querySelector('#msg')!.textContent).toBe('200');
+  expect([input.value, box.checked]).toEqual(['', false]);
+  expect(document.activeElement).not.toBe(input);
+});
+
 test('a hash link scrolls its target into view', async () => {
   serve(
     page(
