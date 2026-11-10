@@ -258,8 +258,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       if (assets(doc) !== assets(document)) {
         throw new Error(`${url.href} loads different scripts or styles`);
       }
-      // the page's own scripts already ran; fetched ones never do
-      doc.querySelectorAll('script').forEach((s) => s.remove());
+      // the page's own scripts already ran; fetched ones never do. DOMParser
+      // parses with scripting off, so a noscript holds live elements here
+      doc.querySelectorAll('script,noscript').forEach((s) => s.remove());
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
