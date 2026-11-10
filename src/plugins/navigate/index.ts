@@ -124,7 +124,7 @@ const render = (app: App, patch: typeof morph, from: Element, to: Element) => {
 
 export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const target = options.target || 'body';
-  let controller: AbortController | undefined;
+  let controller: AbortController | void;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
   // the document, and the form that started it, while a request is in flight;
@@ -401,7 +401,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   return () => {
     clearTimeout(saving);
     removeEventListener('scroll', onScroll);
-    controller?.abort();
+    // cleared too, so a navigation awaiting a stylesheet or transition stops
+    controller = controller?.abort();
     pre?.c.abort();
     clearTimeout(timer);
     document.removeEventListener('click', onClick);

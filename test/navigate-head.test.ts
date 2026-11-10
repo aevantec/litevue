@@ -182,6 +182,24 @@ describe('navigate: head', () => {
     expect($head('[data-navigate-track]')).toBe(link);
   });
 
+  test('unmounting stops a navigation waiting on a stylesheet', async () => {
+    reply = page('<link rel="stylesheet" href="/slow.css">');
+    await start('');
+    const after = vi.fn();
+    document.addEventListener('navigate:after', after);
+    await go();
+
+    current!.unmount();
+    current = undefined;
+    fire('[href="/slow.css"]', 'load');
+    await settle();
+    document.removeEventListener('navigate:after', after);
+
+    expect(main()).toBe('home');
+    expect(location.pathname).toBe('/');
+    expect(after).not.toHaveBeenCalled();
+  });
+
   test('a newer navigation wins over one waiting on a stylesheet', async () => {
     reply = page(
       '<link rel="stylesheet" href="/slow.css">',

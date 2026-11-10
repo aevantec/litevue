@@ -201,7 +201,7 @@ Back and forward cannot be held this way, since the URL has already changed when
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.
 - Back and forward fetch the page again and return to the scroll position the user left, even when the URL has a `#hash`. The position is saved on the history entry once scrolling pauses. With `scroll: false`, the plugin does not restore it. The plugin sets `history.scrollRestoration` to `manual` so the browser does not scroll the outgoing page first, and restores the previous value on unmount.
 - There is no page cache. A snapshot of a live page cannot be restored, because mounting consumes the directives in the markup, so a restored copy would bind nothing. A cache of the server's HTML would only save the request, and could show stale content, so every traversal fetches the page.
-- On full unmount, the plugin stops intercepting and removes its live region.
+- On full unmount, the plugin stops intercepting and removes its live region. A navigation still in flight, including one waiting on a stylesheet or a view transition, stops without rendering.
 
 ## Security
 
