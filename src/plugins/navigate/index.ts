@@ -93,6 +93,20 @@ const mergeHead = async (doc: Document) => {
     live.forEach((el) => el.matches('[data-navigate-preserve]') || el.remove());
 };
 
+// as on a full load: an autofocus field, else the top of the document; a
+// region takes focus itself
+const moveFocus = (from: Element) => {
+  const auto = from.querySelector<HTMLElement>('[autofocus]');
+  if (auto) {
+    auto.focus();
+  } else if (from === document.body) {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+  } else {
+    from.hasAttribute('tabindex') || from.setAttribute('tabindex', '-1');
+    (from as HTMLElement).focus({ preventScroll: true });
+  }
+};
+
 const hasCtxAbove = (el: Element | null) => {
   for (; el; el = el.parentElement) if ((el as any).__ctx) return true;
   return false;
@@ -103,12 +117,19 @@ const hasCtxAbove = (el: Element | null) => {
  * and releases nodes itself; at page level there is no scope, so roots the
  * page removes are unmounted and roots it adds are mounted here.
  */
-const render = (app: App, patch: typeof morph, from: Element, to: Element) => {
+const render = (
+  app: App,
+  patch: typeof morph,
+  from: Element,
+  to: Element,
+  values: boolean
+) => {
   const roots = [from, ...from.querySelectorAll('*')].filter(
     (el) => (el as any).__ctx && !hasCtxAbove(el.parentElement)
   );
   const added: Element[] = [];
   patch(from, to, {
+    values,
     beforeNodeAdded: (node) => {
       node.nodeType === 1 && added.push(node as Element);
     },
@@ -160,12 +181,12 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     from: Element,
     doc: Document,
     url: URL,
-    push: boolean,
+    ok: boolean,
     dropOld: () => void,
     y?: number
   ) => {
     // history first, so the new page's scopes read its URL as they mount
-    if (push) {
+    if (ok && y == null) {
       history[url.href === location.href ? 'replaceState' : 'pushState'](
         {},
         '',
@@ -174,7 +195,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     }
     rendered = pathOf(location);
     document.title = doc.title;
-    render(app, app.scope.$morph, from, doc.querySelector(target)!);
+    // a success shows the server's field values, as a full load would; an
+    // error such as a 422 keeps what was typed
+    render(app, app.scope.$morph, from, doc.querySelector(target)!, ok);
     dropOld();
     if (options.scroll !== false) {
       // back and forward return to where the user was, not to the anchor
@@ -182,17 +205,8 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         y == null && url.hash && document.getElementById(url.hash.slice(1));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
     }
-    // as on a full load: an autofocus field, else the top of the document;
-    // a region takes focus itself
-    const auto = from.querySelector<HTMLElement>('[autofocus]');
-    if (auto) {
-      auto.focus();
-    } else if (from === document.body) {
-      (document.activeElement as HTMLElement | null)?.blur?.();
-    } else {
-      from.hasAttribute('tabindex') || from.setAttribute('tabindex', '-1');
-      (from as HTMLElement).focus({ preventScroll: true });
-    }
+    // an error rendered in place leaves focus on the field being corrected
+    if (ok) moveFocus(from);
     // as Next.js does: an untitled page still says where the user landed
     status.textContent =
       document.title ||
@@ -274,9 +288,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
-      const push = res.ok && y == null;
+      const ok = res.ok;
       const run = () =>
-        c === controller && show(from, doc, url, push, dropOld, y);
+        c === controller && show(from, doc, url, ok, dropOld, y);
       options.transition && document.startViewTransition
         ? document.startViewTransition(run)
         : run();
