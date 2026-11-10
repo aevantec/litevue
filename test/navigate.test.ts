@@ -200,6 +200,39 @@ describe('navigate: links', () => {
     expect(runs).toBe(before);
   });
 
+  // a teleport into the morphed target sits where no server markup matches it;
+  // it goes only with the markup it was written in
+  test.each([
+    [
+      'keeps a body teleport from a region both pages share',
+      '<main>B</main>',
+      1,
+    ],
+    ['removes it with a region the new page drops', '', 0],
+  ])('%s', async (_, keep, count) => {
+    const layout = `<a href="/b">B</a><aside id="player" v-scope="{ n: 1 }"><div class="mini" v-teleport="body">{{ n }}</div></aside>`;
+    replies['/b'] = {
+      body: page(
+        'B',
+        count ? layout + keep : '<a href="/">A</a><main>B</main>'
+      ),
+    };
+    await start(layout + '<main>A</main>');
+    const mini = document.querySelector('.mini')!;
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('B');
+    expect(document.querySelectorAll('.mini').length).toBe(count);
+    if (count) {
+      expect(document.querySelector('.mini')).toBe(mini);
+      (document.querySelector('#player') as any).__ctx.scope.n = 2;
+      await tick();
+      expect(mini.textContent).toBe('2');
+    }
+  });
+
   test('never inserts a script from the fetched page', async () => {
     replies['/s'] = {
       body: page('S', '<main>S</main><script>window.__ran = true</script>'),

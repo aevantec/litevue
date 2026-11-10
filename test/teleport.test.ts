@@ -124,6 +124,39 @@ describe('v-teleport under morph', () => {
     app.unmount();
   });
 
+  // formatted markup puts whitespace beside the marker; with an id the
+  // element used to be inserted again, its marker patched as text
+  test('a keyed element between whitespace keeps its one live node', async () => {
+    const inner = `
+      <p id="m" v-teleport="#outlet">{{ n }}</p>
+    `;
+    const { app, scope, outlet } = await mountRegion(inner);
+    const p = outlet.querySelector('p')!;
+    for (let i = 0; i < 2; i++) {
+      morph(
+        document.querySelector('#r')!,
+        `<section id="r">${inner}</section>`
+      );
+    }
+    await tick();
+    scope.n = 3;
+    await tick();
+    expect(outlet.children.length).toBe(1);
+    expect(outlet.firstElementChild).toBe(p);
+    expect(p.textContent).toBe('3');
+    app.unmount();
+  });
+
+  test('leaves the target when the server stops sending it but keeps the text beside it', async () => {
+    const { app, outlet } = await mountRegion(
+      `<p v-teleport="#outlet">{{ n }}</p>\n<b></b>`
+    );
+    morph(document.querySelector('#r')!, `<section id="r">\n<b></b></section>`);
+    await tick();
+    expect(outlet.children.length).toBe(0);
+    app.unmount();
+  });
+
   test('a removed teleported element stops reacting', async () => {
     const { app, scope, outlet } = await mountRegion(
       `<p v-teleport="#outlet">{{ n }}</p>`

@@ -52,6 +52,8 @@ export interface MorphOptions {
 const preserved = (node: Node, opts: MorphOptions) =>
   node.nodeType === 1 &&
   ((node as Element).hasAttribute('data-morph-preserve') ||
+    // a v-teleport element goes only with its marker, never with its target
+    (node as any).__marker ||
     !!opts.preserve?.(node as Element));
 
 const dirRE = /^(?:v-|:|@)/;
@@ -191,6 +193,8 @@ const patchNode = (
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
     if (isInterpolation(data, ctx)) return;
+    // an empty text is a v-teleport marker; replacing it removes its element
+    if (!(from as Text).data) return replaceNode(from, to, ctx, opts);
     if ((from as Text).data !== data) (from as Text).data = data;
     return;
   }
@@ -281,7 +285,13 @@ const patchChildren = (
     const nextNew = newChild.nextSibling;
     const wantKey = keyOf(newChild);
 
-    if (wantKey != null) {
+    if (
+      (oldChild as Text)?.data === '' &&
+      (newChild as Element).hasAttribute?.('v-teleport')
+    ) {
+      // the marker stands in for the element, which lives in its target
+      oldChild = oldChild!.nextSibling;
+    } else if (wantKey != null) {
       const match = keyed.get(wantKey);
       if (match) {
         // reuse the live node, moving it if the server reordered it
