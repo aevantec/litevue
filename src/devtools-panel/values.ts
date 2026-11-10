@@ -92,8 +92,9 @@ export const isReadOnly = (desc?: PropertyDescriptor) => {
 };
 
 export const collectProps = (scope: Record<string, any>) => {
+  // judged from the descriptor: reading a getter here could throw
   const isData = (o: any, k: string) =>
-    k[0] !== '$' && typeof o[k] !== 'function';
+    k[0] !== '$' && typeof descriptorOf(o, k)?.value !== 'function';
   const own = Object.keys(scope).filter((k) => isData(scope, k));
   const seen = new Set(own);
   const inherited: string[] = [];
