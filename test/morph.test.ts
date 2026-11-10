@@ -402,6 +402,32 @@ describe('morph', () => {
     expect(root.querySelector('#c i')!.textContent).toBe('1');
   });
 
+  test('markup morphed into a lazy region that has not mounted binds with that region', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><div id="lazy" v-scope.interaction="{ n: 3 }"><p>{{ n }}</p></div></div>`
+    );
+    morph(
+      root.querySelector('#lazy')!,
+      `<div id="lazy" v-scope.interaction="{ n: 3 }"><p>{{ n }}</p><span>{{ n }}</span></div>`
+    );
+    await tick();
+    root.querySelector('#lazy')!.dispatchEvent(new Event('pointerdown'));
+    await tick();
+    expect(root.querySelector('#lazy p')!.textContent).toBe('3');
+    expect(root.querySelector('#lazy span')!.textContent).toBe('3');
+  });
+
+  test("updates a <template>'s content", async () => {
+    const { root } = await mountApp(
+      `<div v-scope><template id="row"><li>old</li></template></div>`
+    );
+    morph(
+      root,
+      `<div v-scope><template id="row"><li>new</li></template></div>`
+    );
+    expect(root.querySelector('#row')!.innerHTML).toBe('<li>new</li>');
+  });
+
   test('accepts an element as the target and returns the live node', async () => {
     const { root } = await mountApp(`<div><p id="p">old</p></div>`);
     const next = document.createElement('p');
