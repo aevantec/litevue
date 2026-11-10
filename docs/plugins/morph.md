@@ -208,6 +208,7 @@ still carries the directives:
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
 - That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you. A region torn down with `app.unmount(el)` counts as outside every scope, so markup morphed into it is not bound to the scope it had.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.
+- A component that renders from [`$template`](/directives/v-scope) keeps its children. The server sends its root empty, since the markup comes from the template on the client, so morph patches only the root's attributes.
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
 - The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
 - On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.

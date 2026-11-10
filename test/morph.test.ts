@@ -360,6 +360,48 @@ describe('morph', () => {
     ]);
   });
 
+  test('does not empty a $template component the server sends without children', async () => {
+    const { root } = await mountApp(
+      `<div><template id="tpl"><button @click="n++">{{ n }}</button></template>
+        <section id="s" v-scope>
+          <div id="c" v-scope="{ $template: '#tpl', n: 5 }"></div>
+        </section></div>`
+    );
+    const button = root.querySelector('#c button') as HTMLButtonElement;
+    expect(button.textContent).toBe('5');
+
+    morph(
+      root.querySelector('#s')!,
+      `<section id="s" v-scope>
+        <div id="c" v-scope="{ $template: '#tpl', n: 5 }"></div>
+      </section>`
+    );
+    await tick();
+    // the same button, still bound to the component's live scope
+    expect(root.querySelector('#c button')).toBe(button);
+    button.click();
+    await tick();
+    expect(button.textContent).toBe('6');
+  });
+
+  test('still patches the attributes of a $template component root', async () => {
+    const { root } = await mountApp(
+      `<div><template id="tpl"><i>{{ n }}</i></template>
+        <section id="s" v-scope>
+          <div id="c" class="old" v-scope="{ $template: '#tpl', n: 1 }"></div>
+        </section></div>`
+    );
+    morph(
+      root.querySelector('#s')!,
+      `<section id="s" v-scope>
+        <div id="c" class="new" v-scope="{ $template: '#tpl', n: 1 }"></div>
+      </section>`
+    );
+    await tick();
+    expect(root.querySelector('#c')!.className).toBe('new');
+    expect(root.querySelector('#c i')!.textContent).toBe('1');
+  });
+
   test('accepts an element as the target and returns the live node', async () => {
     const { root } = await mountApp(`<div><p id="p">old</p></div>`);
     const next = document.createElement('p');
