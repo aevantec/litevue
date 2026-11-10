@@ -39,7 +39,9 @@ A scope key shadows a global of the same name, so a key called `name` or
 ## Interpolation
 
 `{{ }}` inserts a value as text, never as HTML. `null` and `undefined` render as
-empty, and objects as formatted JSON. For whole-element text or HTML, see
+empty, and arrays and plain objects as formatted JSON. Any other value is
+converted with `String()`, as in Vue, so an `Error` renders as `Error: message`
+and a `Date` as its date string. For whole-element text or HTML, see
 [`v-text`](/directives/v-text) and [`v-html`](/directives/v-html); for
 attributes, [`v-bind`](/directives/v-bind).
 

@@ -12,6 +12,8 @@ import {
 } from '@vue/shared';
 
 const forceAttrRE = /^(spellcheck|draggable|translate|form|list|type)$/;
+// numeric properties here, which turn '50%' into 0; set as attributes, as in Vue
+const mediaSizeRE = /^(img|video|canvas|source)(width|height)$/;
 // booleans whose property is camel-cased (readOnly), so markup's lowercase
 // name misses it and lands on the attribute path
 const booleanAttrRE =
@@ -96,7 +98,8 @@ const setProp = (
   } else if (
     !(el instanceof SVGElement) &&
     key in el &&
-    !forceAttrRE.test(key)
+    !forceAttrRE.test(key) &&
+    !mediaSizeRE.test(el.localName + key)
   ) {
     // A string property would read null as "null", so it gets '' and the
     // attribute goes, as in Vue. Booleans still take null as false.
