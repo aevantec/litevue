@@ -19,7 +19,7 @@ const isTabStop = (e: any, _: number, all: any[]) =>
 /**
  * Focus utilities.
  *
- * v-focus="expression" — focuses the element while the expression is truthy,
+ * v-focus="expression" — focuses the element when the expression becomes truthy,
  * on mount included, making it an autofocus.
  * - .select  also select the text (inputs/textareas)
  *
@@ -30,8 +30,11 @@ const isTabStop = (e: any, _: number, all: any[]) =>
 export const focus: Plugin = (app) => {
   app.directive('focus', ({ el, get, effect, modifiers }) => {
     let live = true;
+    let on = false;
     effect(() => {
-      const on = !!get();
+      // only a change to truthy focuses, or any other dependency change
+      // would pull focus back from where the user has moved it
+      if (on === (on = !!get())) return;
       // wait a tick so v-if/v-show updates land in the DOM first
       Promise.resolve().then(() => {
         // the element can be torn down within that tick, and focusing a
