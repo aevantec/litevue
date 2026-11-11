@@ -185,7 +185,9 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     }
 
     handler = (e: Event) => {
-      if (modifiers.outside && el.contains(e.target as Node)) {
+      // the path is fixed at dispatch, so a target removed by an earlier
+      // listener still counts as inside
+      if (modifiers.outside && e.composedPath().includes(el)) {
         return;
       }
       // A key-less key event (Chrome's autofill keydown) matches no key, as
