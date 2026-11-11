@@ -71,6 +71,9 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
 };
 
 const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
+  // output the text and html directives rendered is data, not template
+  // source, however often the node is walked again
+  if ((node as any).__r) return;
   const type = node.nodeType;
   if (type === 1) {
     // Element
