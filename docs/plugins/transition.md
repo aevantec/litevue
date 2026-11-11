@@ -45,7 +45,9 @@ createApp({ open: false }).use(transition).mount();
 ### With v-if and v-for
 
 With no expression, `v-if` or `v-for` decides when the element exists. Removal,
-and `@unmounted`, wait for the leave transition:
+and `@unmounted`, wait for the leave transition. The element stops updating as
+soon as the leave begins, so it keeps the content it last showed while it
+leaves:
 
 ```html
 <div v-if="open" v-transition:fade>animates in and out</div>

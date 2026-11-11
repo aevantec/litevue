@@ -4,6 +4,13 @@ import { remove } from '@vue/shared';
 import { stopEffect } from './scheduler';
 import { disposeSubtree, own } from './ownership';
 
+// Effects only: a block waiting on a leave stays in the document, but must not
+// re-render data that is gone. Its listeners and cleanups wait for the leave.
+const stopEffects = (block: Block): void => {
+  block.ctx.blocks.forEach(stopEffects);
+  block.ctx.effects.splice(0).forEach(stopEffect);
+};
+
 export class Block {
   // `declare`: assigned in the constructor or later, so no field initializers
   declare template: Element | DocumentFragment;
@@ -131,6 +138,7 @@ export class Block {
     // Leave hooks (transition plugin, unmount mode) defer removal until every
     // animation finishes. A fragment's <template> never enters the DOM, so
     // its hooks sit on its top-level nodes instead.
+    stopEffects(this);
     const leaves: Promise<void>[] = [];
     let node: Node | null = this.start || this.template;
     while (node) {
