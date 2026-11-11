@@ -21,7 +21,11 @@ export default defineConfig(({ mode }) => {
         // import/require builds keep the bare specifier, so the consumer's
         // resolver hands back the instance their app already loaded; <script>
         // builds read it off the global the core defines.
-        output: { globals: { [PKG]: 'LiteVue' } },
+        // symbols: false drops the Symbol.toStringTag line (see vite.config.mts)
+        output: {
+          globals: { [PKG]: 'LiteVue' },
+          generatedCode: { symbols: false },
+        },
       },
       target: 'esnext',
       minify: dev ? false : 'terser',
