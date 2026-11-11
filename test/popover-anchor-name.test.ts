@@ -115,6 +115,38 @@ describe('v-anchor position with CSS anchor positioning', () => {
     ).toBe('absolute');
   });
 
+  test('a v-popover written after v-anchor stays fixed', async () => {
+    // the attribute v-popover adds, reflected as the Popover API does
+    const proto = HTMLElement.prototype as any;
+    const realMatches = Element.prototype.matches;
+    Object.defineProperty(proto, 'popover', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute('popover');
+      },
+      set(this: HTMLElement, v: string) {
+        this.setAttribute('popover', v);
+      },
+    });
+    Element.prototype.matches = function (this: Element, sel: string) {
+      return sel !== ':popover-open' && realMatches.call(this, sel);
+    };
+    try {
+      await mount(`
+        <div v-scope="{ open: false }">
+          <button ref="btn"></button>
+          <nav id="pop" v-anchor.bottom="$refs.btn" v-popover="open"></nav>
+        </div>`);
+      const pop = document.querySelector('#pop') as HTMLElement;
+
+      expect(pop.hasAttribute('popover')).toBe(true);
+      expect(pop.style.position).toBe('fixed');
+    } finally {
+      delete proto.popover;
+      Element.prototype.matches = realMatches;
+    }
+  });
+
   test('a popover stays fixed', async () => {
     await mount(`
       <div v-scope>

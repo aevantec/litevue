@@ -135,8 +135,11 @@ export const popover: Plugin = (app) => {
       const name = `--litevue-anchor-${++count}`;
       // fixed measures each side's room against the viewport, which goes wrong
       // for an element laid out while its anchor is scrolled away; a popover
-      // is laid out as it opens, while its trigger is on screen
-      if (!float.hasAttribute('popover')) float.style.position = 'absolute';
+      // is laid out as it opens, while its trigger is on screen; v-popover may
+      // come later in attribute order and has not yet added [popover]
+      if (!float.matches('[popover],[v-popover]')) {
+        float.style.position = 'absolute';
+      }
       // the gap is a margin on the side facing the anchor, kept through a flip
       float.style.margin = vertical ? `${gap}px 0` : `0 ${gap}px`;
       float.style.setProperty('position-anchor', name);
