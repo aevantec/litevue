@@ -167,4 +167,45 @@ describe('v-mask plugin', () => {
     expect(input.selectionStart).toBe(10);
     app.unmount();
   });
+
+  // a backward deletion must not put the caret back after the literal it
+  // removed, or every further Backspace removes it again
+  test('Backspace after a literal in the middle of the value keeps deleting', async () => {
+    document.body.innerHTML = `<div id="app" v-scope>
+      <input v-mask="(999) 999-9999" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    input.focus();
+    const backspace = (v: string, at: number) => {
+      input.value = v;
+      input.setSelectionRange(at, at);
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'deleteContentBackward' })
+      );
+    };
+    type(input, '(555) 129-4567');
+
+    // caret after the "-": the "-" comes back and the caret lands before it
+    backspace('(555) 1294567', 9);
+    expect(input.value).toBe('(555) 129-4567');
+    expect(input.selectionStart).toBe(9);
+    // so the next Backspace deletes the 9
+    backspace('(555) 12-4567', 8);
+    expect(input.value).toBe('(555) 124-567');
+    expect(input.selectionStart).toBe(8);
+
+    // caret between ")" and " ": it does not jump forward
+    backspace('(555 124-567', 4);
+    expect(input.value).toBe('(555) 124-567');
+    expect(input.selectionStart).toBe(4);
+
+    // the leading literal still keeps the caret after it (ISSUE-0066)
+    backspace('(55) 124-567', 1);
+    expect(input.value).toBe('(551) 245-67');
+    expect(input.selectionStart).toBe(1);
+    app.unmount();
+  });
 });
