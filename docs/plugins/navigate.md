@@ -4,7 +4,7 @@ title: navigate
 
 # navigate <Badge type="section" text="Plugin" />
 
-Follow same-origin links and submit forms without a full page load. The plugin fetches the next page and [morphs](/plugins/morph) it into this one, so the parts both pages share keep their state: an open sidebar, a playing video, a half-typed search.
+Follow same-origin links and submit forms without a full page load. The plugin fetches the next page and [morphs](/plugins/morph) it into this one, so the parts both pages share keep their state: an open sidebar, a playing video, the scroll position inside a panel.
 
 ```js
 import { createApp } from '@aevantec/litevue';
@@ -109,7 +109,11 @@ After a successful response, the form shows what the server sent, as it would af
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL. The typed values survive, as they do with [morph](/plugins/morph), and focus stays on the field the visitor was in. A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
-When the server redirects a `POST` to a page the plugin cannot render, such as one on another origin or an error page, that page loads in full: following the redirect is a `GET`, so nothing is sent twice. A `POST` answered with a file, such as a CSV export, cannot be loaded that way. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
+When the server redirects a `POST` to a page the plugin cannot render, such as an error page, that page loads in full: following the redirect is a `GET`, so nothing is sent twice.
+
+A `POST` redirected to another origin, such as a payment or identity provider, usually fails instead. The browser follows the redirect inside the request, and because the request carries the `X-Requested-With` header, the other origin must allow it through CORS, which such providers generally do not. The request then fails before any response arrives: the form stays as it was and `navigate:error` fires, although the server has already processed the `POST`. Mark such a form `data-navigate="false"` so the browser submits it itself. The page loads in full only when the other origin allows the request.
+
+A `POST` answered with a file, such as a CSV export, has no page to load. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
 
 While a form's `POST` is in flight, further submits of that form are ignored, so a double click sends one request. A `GET` form submitted again restarts with the newer values, so a search always shows the latest query.
 
