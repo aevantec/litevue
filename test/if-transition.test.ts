@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { createApp } from '../src';
 import { transition } from '../src/plugins';
 import { tick, sleep } from './utils';
@@ -127,6 +127,39 @@ describe('leave transitions inside fragment blocks', () => {
     document.querySelector('button')!.click();
     await tick();
     expect(document.getElementById('plain')).toBeNull();
+    app.unmount();
+  });
+
+  test('re-entering while the old element leaves does not warn of a duplicate ref', async () => {
+    // a real duration, so the old element is still in the document
+    const style = vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      () =>
+        ({
+          transitionDuration: '0.05s',
+          transitionDelay: '0s',
+          animationDuration: '0s',
+          animationDelay: '0s',
+        }) as any
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    document.body.innerHTML = `<div id="app">
+      <p class="box" ref="panel" v-if="show" v-transition:fade></p>
+    </div>`;
+    const app = createApp({ show: true }).use(transition);
+    app.mount('#app');
+    await tick();
+    app.scope.show = false;
+    await tick();
+    app.scope.show = true;
+    await tick();
+    expect(document.querySelectorAll('.box')).toHaveLength(2);
+    await sleep(80);
+    const warnings = warn.mock.calls.map((c) => String(c[0]));
+    style.mockRestore();
+    warn.mockRestore();
+
+    expect(document.querySelectorAll('.box')).toHaveLength(1);
+    expect(warnings).toEqual([]);
     app.unmount();
   });
 });
