@@ -59,7 +59,7 @@ Mark links to files the same way, or with `download`. A same-origin link to a PD
 With `prefetch: true`, the plugin starts fetching a link's page before it is clicked:
 
 - When the pointer rests on the link, or focus stays on it, for 100ms. Moving away sooner fetches nothing, so a pointer crossing the page does not fetch every link it passes.
-- At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger.
+- At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger. A press with another button than the main one, or with a modifier key held, prefetches nothing, since the browser handles that click itself.
 
 ```js
 createApp().use(morphPlugin).use(navigate, { prefetch: true }).mount();

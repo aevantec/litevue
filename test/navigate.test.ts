@@ -207,6 +207,26 @@ describe('navigate: links', () => {
     expect(document.querySelector('b')!.textContent).toBe('2');
   });
 
+  test('replaces a page root with another without a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    replies['/two'] = {
+      body: page(
+        'Two',
+        '<main id="page-two" v-scope="{ n: 2 }">{{ n }}</main><a href="/">One</a>'
+      ),
+    };
+    await start(
+      '<main id="page-one" v-scope="{ n: 1 }">{{ n }}</main><a href="/two">Two</a>'
+    );
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('2');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   test('stops the effects of a scope root the new page removes', async () => {
     const shared = reactive({ n: 0 });
     let runs = 0;
@@ -389,6 +409,22 @@ describe('navigate: links', () => {
     click(document.querySelector('#p')!);
     await settle();
     expect(into).toHaveBeenCalled();
+  });
+
+  // the URL carries the id percent-encoded, as #caf%C3%A9
+  test('scrolls to a hash target whose id is not ASCII', async () => {
+    replies['/two'] = {
+      body: page('Two', '<main>Two<h2 id="café">Café</h2></main>'),
+    };
+    await start('<a href="/two#café">Café</a><main></main>');
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(into).toHaveBeenCalled();
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -842,6 +878,22 @@ describe('navigate: loading state', () => {
     expect(document.querySelector('main')!.textContent).toBe('two');
   });
 
+  test('stays busy until a view transition puts the page in place', async () => {
+    let run!: () => void;
+    (document as any).startViewTransition = (cb: () => void) => (run = cb);
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main>one</main>', { transition: true });
+
+    click(document.querySelector('a')!);
+    await settle();
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    run();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+    delete (document as any).startViewTransition;
+  });
+
   test('marks the submitting form busy too', async () => {
     replies['/save'] = { body: page('Saved', '<main>saved</main>') };
     await start(
@@ -988,6 +1040,19 @@ describe('navigate: prefetch', () => {
       '/a',
       '/b',
     ]);
+  });
+
+  test('a press with another button or a modifier key does not prefetch', async () => {
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    for (const init of [{ button: 2 }, { button: 1 }, { ctrlKey: true }]) {
+      a.dispatchEvent(
+        new MouseEvent('pointerdown', { bubbles: true, ...init })
+      );
+    }
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('skips links a click would leave to the browser, and the current page', async () => {

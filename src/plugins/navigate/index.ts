@@ -35,6 +35,15 @@ const SCROLL_SAVE_DELAY = 150;
 const isLocal = (url: URL) => url.origin === location.origin;
 const pathOf = (url: { pathname: string; search: string }) =>
   url.pathname + url.search;
+// as the browser finds a fragment: as written, then percent-decoded; a
+// malformed escape stays as written
+const decode = (s: string) => {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+};
 const optedOut = (el: Element) => !!el.closest('[data-navigate="false"]');
 // as the browser encodes a form that is not multipart: a file goes as its name
 const encode = (data: FormData) =>
@@ -113,9 +122,9 @@ const hasCtxAbove = (el: Element | null) => {
 };
 
 /**
- * Morph with the app's roots kept in step. Under a mounted scope morph binds
- * and releases nodes itself; at page level there is no scope, so roots the
- * page removes are unmounted and roots it adds are mounted here.
+ * Morph with the app's roots kept in step. Morph releases the roots it
+ * removes; at page level there is no scope to bind what it adds, so roots
+ * the page adds are mounted here.
  */
 const render = (
   app: App,
@@ -124,9 +133,6 @@ const render = (
   to: Element,
   values: boolean
 ) => {
-  const roots = [from, ...from.querySelectorAll('*')].filter(
-    (el) => (el as any).__ctx && !hasCtxAbove(el.parentElement)
-  );
   const added: Element[] = [];
   patch(from, to, {
     values,
@@ -134,7 +140,6 @@ const render = (
       node.nodeType === 1 && added.push(node as Element);
     },
   });
-  roots.forEach((el) => el.isConnected || app.unmount(el));
   added.forEach(
     (el) =>
       el.isConnected &&
@@ -201,8 +206,11 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     dropOld();
     if (options.scroll !== false) {
       // back and forward return to where the user was, not to the anchor
+      const id = url.hash.slice(1);
       const anchor =
-        y == null && url.hash && document.getElementById(url.hash.slice(1));
+        y == null &&
+        id &&
+        (document.getElementById(id) || document.getElementById(decode(id)));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
     }
     // an error rendered in place leaves focus on the field being corrected
@@ -293,20 +301,21 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile
       const ok = res.ok;
+      // busy clears with the swap, inside a transition too, and even if
+      // rendering throws
       const run = () =>
-        c === controller && show(from, doc, url, ok, dropOld, y);
+        c === controller && (setBusy([]), show(from, doc, url, ok, dropOld, y));
       options.transition && document.startViewTransition
         ? document.startViewTransition(run)
         : run();
     } catch (error) {
       if (c.signal.aborted) return;
+      setBusy([]);
       emit('error', { url: href, error });
       // replaying a POST as a GET would be wrong, so the form stays as it was;
       // a redirect, though, already leads to a GET
       if (!post) location.assign(href);
       else if (res?.redirected) location.assign(res.url);
-    } finally {
-      c === controller && setBusy([]);
     }
   };
 
@@ -324,9 +333,13 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     return url;
   };
 
+  // another button or a modifier key: the browser opens a tab, a window or a
+  // menu instead
+  const special = (e: MouseEvent) =>
+    e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+
   const onClick = (e: MouseEvent) => {
-    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey) return;
-    if (e.shiftKey || e.altKey) return;
+    if (e.defaultPrevented || special(e)) return;
     const url = linkTo(e);
     if (!url) return;
     e.preventDefault();
@@ -361,7 +374,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         ['focusin', onHover],
         ['pointerout', onLeave],
         ['focusout', onLeave],
-        ['pointerdown', prefetch],
+        ['pointerdown', (e) => special(e as MouseEvent) || prefetch(e)],
       ]
     : [];
 
