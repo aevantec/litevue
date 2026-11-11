@@ -285,7 +285,11 @@ export const createApp = (initialData?: any) => {
         }
         // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
+        const host = el.parentNode;
         const block = new Block(el, ctx, true);
+        // v-for and v-if detach the root and v-teleport moves it, so
+        // unmount(el) also finds a root by the parent it was mounted in
+        (block as any).host = host;
         import.meta.env.DEV && mountedRoots.set(el, el.firstChild);
         // a root without v-scope gets no stashed context during walk; seed
         // it so markup inserted later (morph) tears down with the region
@@ -354,7 +358,7 @@ export const createApp = (initialData?: any) => {
         const root = block.template as Element;
         // `contains` covers a wrapper holding several mounted roots, and
         // reports true for the element itself
-        if (target.contains(root)) {
+        if (target.contains(root) || target.contains((block as any).host)) {
           block.teardown();
         } else {
           kept.push(block);
