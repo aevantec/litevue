@@ -195,7 +195,7 @@ still carries the directives:
 
 | In the new HTML | Morph |
 | --- | --- |
-| <code v-pre>{{ … }}</code> in a text node | Leaves the rendered text alone |
+| <code v-pre>{{ … }}</code> in a text node | Leaves the rendered text alone, except inside a `<script>`, whose text is never interpolated and so follows the server |
 | `v-*`, `:` and `@` attributes | Never adds them to a live element |
 | `:class` | Leaves the live `class` alone |
 | `v-model`, with or without modifiers | Leaves `value` and `checked` alone |

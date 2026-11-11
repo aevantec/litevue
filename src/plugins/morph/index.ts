@@ -233,7 +233,10 @@ const patchNode = (
 
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
-    if (isInterpolation(data, ctx)) return;
+    // the walker never interpolates a script's text, so a data island's is
+    // the server's
+    if (isInterpolation(data, ctx) && from.parentNode?.nodeName != 'SCRIPT')
+      return;
     // an empty text is a v-teleport marker; replacing it removes its element
     if (!(from as Text).data) return replaceNode(from, to, ctx, opts);
     if ((from as Text).data !== data) (from as Text).data = data;

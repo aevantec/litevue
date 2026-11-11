@@ -410,6 +410,16 @@ describe('morph', () => {
     expect($('#panel').textContent).toBe('new');
   });
 
+  test('updates script text that holds the delimiter', async () => {
+    const island = (n: number) =>
+      `<div v-scope><script type="application/json" id="data">{"greeting":"Hi {{name}}","n":${n}}</script></div>`;
+    const { root, $ } = await mountApp(island(1));
+
+    morph(root, island(2));
+
+    expect(JSON.parse($('#data').textContent!).n).toBe(2);
+  });
+
   test('patches every scope when the root data holds $template', async () => {
     const { root } = await mountApp(`<div v-scope="{}"><p>old</p></div>`, {
       $template: '#none',
