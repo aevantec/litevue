@@ -61,12 +61,14 @@ export const mask: Plugin = (app) => {
     // registered before v-model's deferred listener, so the model always
     // sees the masked value
     el.addEventListener('input', apply);
-    apply();
+    // a value already set (:value bound first, or from the server) is
+    // formatted now, so remember it still needs the events below
+    const dirty = apply();
     // v-model writes its initial value after this runs; format that too, and
     // tell the model, which listens for change instead when .lazy
     let live = true;
     Promise.resolve().then(() => {
-      if (live && apply()) {
+      if (live && (apply() || dirty)) {
         el.dispatchEvent(new Event('input'));
         el.dispatchEvent(new Event('change'));
       }

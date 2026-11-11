@@ -77,6 +77,36 @@ describe('v-mask plugin', () => {
     app.unmount();
   });
 
+  // a value already there when v-mask runs is formatted at once; the mount
+  // events must still follow, whatever the attribute order
+  test('dispatches the mount events for a :value bound before v-mask', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ phone: '5551234567' }">
+      <input :value="phone" v-mask="(999) 999-9999" @input="phone = $event.target.value" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('(555) 123-4567');
+    expect(devtools.getScope(input)!.phone).toBe('(555) 123-4567');
+    app.unmount();
+  });
+
+  test('dispatches the mount events for a server-rendered value', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ inputs: 0, changes: 0 }">
+      <input value="5551234567" v-mask="(999) 999-9999" @input="inputs++" @change="changes++" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    const scope = devtools.getScope(input)!;
+    expect(input.value).toBe('(555) 123-4567');
+    expect(scope.inputs).toBe(1);
+    expect(scope.changes).toBe(1);
+    app.unmount();
+  });
+
   test('appends trailing literals once every slot is filled', async () => {
     document.body.innerHTML = `<div id="app" v-scope="{ code: '' }">
       <input v-mask="(999)" v-model="code" />
