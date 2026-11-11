@@ -318,6 +318,31 @@ describe('navigate: links', () => {
     expect(JSON.parse(live!.textContent!)).toEqual({ n: 2 });
   });
 
+  test("keeps the layout's unkeyed scope after a page root with its own id", async () => {
+    const footer = `<footer v-scope="{ open: false }"><button @click="open = !open">t</button><b v-show="open">more</b></footer>`;
+    replies['/b'] = {
+      body: page(
+        'B',
+        `<a href="/b">b</a><main id="page-b" v-scope="{ n: 2 }">{{ n }}</main>${footer}`
+      ),
+    };
+    await start(
+      `<a href="/b">b</a><main id="page-a" v-scope="{ n: 1 }">{{ n }}</main>${footer}`
+    );
+    const live = document.querySelector('footer')!;
+    live.querySelector('button')!.click();
+    await tick();
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.id).toBe('page-b');
+    expect(document.querySelector('main')!.textContent).toBe('2');
+    expect(document.querySelectorAll('main')).toHaveLength(1);
+    expect(document.querySelector('footer')).toBe(live);
+    expect(live.querySelector('b')!.style.display).toBe('');
+  });
+
   test('morphs only the target when one is given', async () => {
     replies['/two'] = {
       body: page(

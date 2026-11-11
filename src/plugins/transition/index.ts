@@ -81,6 +81,9 @@ export const transition: Plugin = (app) => {
       // the enter, whose new seq would orphan the leave's resolve
       (elem as any).__leave = () => {
         live = false;
+        // read by the core's development duplicate-ref check: a leaving
+        // element no longer claims its ref
+        (elem as any).__leaving = 1;
         return new Promise<void>((resolve) => run('leave', resolve));
       };
       return () => {

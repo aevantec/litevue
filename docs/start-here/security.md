@@ -47,13 +47,32 @@ Mitigations, most effective first:
 
    Avoid the `init` attribute and a bare `createApp().mount()` on any page that renders user-submitted HTML — both crawl the entire document.
 
-2. **Sanitise before rendering.** Strip `v-*`, `@*` and `:*` attributes from user HTML. An allowlist of permitted attributes is safer than a denylist of forbidden ones.
+2. **Sanitise before rendering.** Strip `v-*`, `@*` and `:*` attributes from user HTML. An allowlist of permitted attributes is safer than a denylist of forbidden ones. Attributes are not the only concern: `{{ }}` in text is code as well, as the next section explains.
 
 3. **Keep injected markup inert.** LiteVue never initialises HTML that appears after mount; [dynamic content](/essentials/dynamic-content) becomes live only when you call `app.mount(el)` on it. Do not call it on markup you did not produce.
 
 ::: tip Why there is no automatic initialisation
 Other libraries watch the DOM and activate anything inserted later. LiteVue deliberately does not, because that turns every HTML injection anywhere on the page into code execution. The explicit `app.mount(el)` call is the trust boundary, and it is the reason a `MutationObserver` mode is not built in.
 :::
+
+## User text inside a mounted region
+
+`{{ }}` is compiled wherever it appears as text in a region LiteVue walks, and HTML escaping does not change that. Escaping encodes characters such as `<` and `&`, but the delimiters pass through it, so plain user text that the server has escaped correctly is still evaluated as an expression when it contains `{{ }}` and sits inside a mounted region. Stripping directive attributes does not cover this case.
+
+Keep user-supplied text out of the template in one of these ways:
+
+- **Render it outside every mounted region**, so LiteVue never walks it.
+- **Render it inside `v-pre`.** LiteVue skips a `v-pre` element and everything inside it, including any `v-scope`:
+
+  ```html
+  <div v-scope="{ open: false }">
+    <p class="comment" v-pre><?= htmlspecialchars($comment) ?></p>
+  </div>
+  ```
+
+- **Break up the delimiter on the server**, for example by following every `{` in the user's text with an empty comment, `{<!---->`. The text displays unchanged, but no single text node then contains `{{`. This applies to ordinary element content; inside a `<textarea>`, which does not parse comments, use `v-pre` instead.
+
+Values that reach the page through the scope and are rendered with `{{ }}` or `v-text` are not affected: LiteVue renders them as text and does not compile them again.
 
 ## `v-html`
 
@@ -99,6 +118,7 @@ A plugin receives the app and can read and write `app.scope`, register directive
 
 - Mount an explicit target rather than the whole document.
 - Confirm no region you mount contains unsanitised user HTML.
+- Confirm user-supplied text inside a mounted region is rendered inside `v-pre`, or has its `{{` broken up on the server.
 - Confirm your CSP allows `'unsafe-eval'`, or that you have accepted the alternative.
 - Call `disableDevtools()`, or set `__LITE_VUE_DEVTOOLS__ = false`.
 - Review any third-party plugin as you would any dependency that ships code.

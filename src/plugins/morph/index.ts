@@ -62,6 +62,10 @@ const preserved = (node: Node, opts: MorphOptions) =>
     (node as any).__marker ||
     !!opts.preserve?.(node as Element));
 
+// a lazy region still waiting to mount; a literal, since importing lazy.ts's
+// selector costs the bundle more
+const LAZY = '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]';
+
 const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
 // v-scope roots often carry server-set custom properties; v-on writes nothing
@@ -115,9 +119,14 @@ const boundAttrs = (to: Element) => {
   if (to.matches('details,dialog')) owned.add('open');
   for (const { name } of to.attributes) {
     if (bindRE.test(name)) {
-      // strip modifiers: :class.camel -> class
-      owned.add(name.replace(bindRE, '').split('.')[0]);
-    } else if (name === 'v-model') {
+      // strip modifiers; with .camel, v-bind set the camel-cased name
+      const attr = name.replace(bindRE, '').split('.')[0];
+      owned.add(
+        /\.camel\b/.test(name)
+          ? attr.replace(/-(\w)/g, (_, c) => c.toUpperCase())
+          : attr
+      );
+    } else if (/^v-model\b/.test(name)) {
       owned.add('value');
       owned.add('checked');
     } else if (name === 'v-bind') {
@@ -126,6 +135,8 @@ const boundAttrs = (to: Element) => {
     } else if (clientStyleRE.test(name)) {
       // v-show, v-collapse, v-transition and custom directives write inline style
       owned.add('style');
+      // and v-popover adds the attribute when the markup has none
+      name == 'v-popover' && owned.add('popover');
     }
   }
   return owned;
@@ -160,25 +171,39 @@ const ownsChildren = (to: Element) => {
   return false;
 };
 
-// value, checked and selected, each read from its markup default (defaultValue
-// and so on); a select has no default value, its options carry it
+// value, checked and selected, on fields that have a markup default
+// (defaultValue and so on); a select has none, its options carry it
 const FIELD_PROPS = ['Value', 'Checked', 'Selected'];
 
 const syncValues = (from: any, to: any, owned: Set<string>) => {
   // an option's selection belongs to its select when the client binds that
   const ctl = boundAttrs(to.closest('select') || to);
-  if (owned.has('*') || ctl.has('*') || ctl.has('value')) return;
+  if (
+    owned.has('*') ||
+    ctl.has('*') ||
+    ctl.has('value') ||
+    // an output's text is patched as children, and {{ }} renders client-side
+    from.type == 'output' ||
+    (from.type == 'textarea' && to.value.includes('{{'))
+  )
+    return;
   for (const name of FIELD_PROPS) {
     const prop = name.toLowerCase();
     const init = 'default' + name;
-    if (!owned.has(prop) && init in from && from[prop] !== to[init]) {
-      from[prop] = to[init];
+    // the incoming field's own state, as a full load shows it, so a field that
+    // already matches is left clean; but an option's own selected is its
+    // select's pick, which would deselect one bound with :selected
+    const src = name == 'Selected' ? init : prop;
+    if (!owned.has(prop) && init in from && from[prop] !== to[src]) {
+      from[prop] = to[src];
     }
   }
 };
 
 const patchAttrs = (from: Element, to: Element, values?: boolean) => {
   const owned = boundAttrs(to);
+  // a v-anchor trigger: its anchor-name comes from the floating element
+  if ((from as any).__anchor) owned.add('style');
   if (values) syncValues(from, to, owned);
   // the keys a v-bind object last set, so the server's other attributes still
   // update; Object() so a missing or non-object value owns nothing
@@ -216,7 +241,10 @@ const patchNode = (
 
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
-    if (isInterpolation(data, ctx)) return;
+    // the walker never interpolates a script's text, so a data island's is
+    // the server's
+    if (isInterpolation(data, ctx) && from.parentNode?.nodeName != 'SCRIPT')
+      return;
     // an empty text is a v-teleport marker; replacing it removes its element
     if (!(from as Text).data) return replaceNode(from, to, ctx, opts);
     if ((from as Text).data !== data) (from as Text).data = data;
@@ -230,14 +258,33 @@ const patchNode = (
   // a different tag can't be patched into place
   if (a.tagName !== b.tagName) return replaceNode(from, to, ctx, opts);
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
+  // a lazy region still waiting holds markup nothing has consumed, so its
+  // directives and {{ }} are still the server's to change
+  if (a.matches(LAZY)) {
+    if (!a.isEqualNode(b)) replaceNode(from, to, ctx, opts);
+    return;
+  }
 
   patchAttrs(a, b, opts.values);
   // a template's markup lives in .content, out of patchChildren's reach; it
   // holds no live bindings, so copying it wholesale loses nothing
-  if (a.tagName == 'TEMPLATE') a.innerHTML = b.innerHTML;
+  if (
+    a.tagName == 'TEMPLATE' &&
+    !(a as HTMLTemplateElement).content.isEqualNode(
+      (b as HTMLTemplateElement).content
+    )
+  )
+    a.innerHTML = b.innerHTML;
   // a $template component's markup came from the client, so the server sends
-  // its root empty; only the live scope knows
-  if (!ownsChildren(b) && !(a as any).__ctx?.scope.$template) {
+  // its root empty; only the live scope knows. Its own key: a nested scope
+  // inherits the component's. Not Object.hasOwn, which raises the browser floor
+  if (
+    !ownsChildren(b) &&
+    !Object.getOwnPropertyDescriptor(
+      Object((a as any).__ctx?.scope),
+      '$template'
+    )
+  ) {
     patchChildren(a, b, (a as any).__ctx || ctx, opts);
   }
 };
@@ -264,14 +311,8 @@ const replaceNode = (
  * copy of the core into the plugins bundle.
  */
 const mountNew = (node: Node, ctx: Context | undefined) => {
-  // a lazy region still waiting walks this markup itself when it fires; a
-  // literal, since importing lazy.ts's selector costs the bundle more
-  if (
-    node.parentElement?.closest(
-      '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]'
-    )
-  )
-    return;
+  // a lazy region still waiting walks this markup itself when it fires
+  if (node.parentElement?.closest(LAZY)) return;
   const target = ctx || nearestCtx(node.parentNode);
   target?.walk?.(node, target);
 };
@@ -305,6 +346,19 @@ const patchChildren = (
 
   const keyOf = (n: Node | null) =>
     n && n.nodeType === 1 ? key(n as Element) : null;
+
+  const wanted = new Set<string | null | undefined>();
+  for (let n = to.firstChild; n; n = n.nextSibling) wanted.add(keyOf(n));
+
+  const drop = (node: ChildNode) => {
+    if (!preserved(node, opts)) {
+      // release what the subtree owned first: removeChild alone leaves its
+      // effects live and still reacting
+      release(node, ctx);
+      from.removeChild(node);
+      opts.afterNodeRemoved?.(node);
+    }
+  };
 
   let oldChild = from.firstChild;
   let newChild = to.firstChild;
@@ -353,6 +407,13 @@ const patchChildren = (
       const nextOld = oldChild.nextSibling;
       patchNode(oldChild, newChild, ctx, opts);
       oldChild = nextOld;
+    } else if (oldChild && !wanted.has(keyOf(oldChild))) {
+      // a keyed live node the server no longer sends would hold the cursor
+      // and cost every unkeyed node after it its own; drop it and retry
+      const nextOld = oldChild.nextSibling;
+      drop(oldChild);
+      oldChild = nextOld;
+      continue;
     } else {
       // never consume a keyed live node for an unkeyed slot: it belongs to a
       // later position and would lose its scope here
@@ -366,13 +427,7 @@ const patchChildren = (
   // map instead would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
-    if (!preserved(oldChild, opts)) {
-      // release what the subtree owned first: removeChild alone leaves its
-      // effects live and still reacting
-      release(oldChild, ctx);
-      from.removeChild(oldChild);
-      opts.afterNodeRemoved?.(oldChild);
-    }
+    drop(oldChild);
     oldChild = next;
   }
 };
@@ -391,14 +446,18 @@ export const morph = (
     // parsed in a <template> so table rows, <li> and <option> survive; a
     // lone element is the outer target, but not one beside text
     const holder = document.createElement('template');
-    holder.innerHTML = to.trim();
-    const content = holder.content;
+    // inside an <svg>, so SVG children are parsed in the SVG namespace
+    const svg = from instanceof SVGElement;
+    holder.innerHTML = svg ? `<svg>${to.trim()}</svg>` : to.trim();
+    const content = svg
+      ? (holder.content.firstChild as Element)
+      : holder.content;
     target =
       content.childNodes.length === 1 && content.firstElementChild
         ? content.firstElementChild
         : (() => {
             const wrapper = from.cloneNode(false) as Element;
-            wrapper.appendChild(content);
+            wrapper.append(...content.childNodes);
             return wrapper;
           })();
   } else {

@@ -4,7 +4,6 @@ import {
   normalizeStyle,
   isString,
   isArray,
-  isPlainObject,
   isObject,
   hyphenate,
   camelize,
@@ -38,15 +37,13 @@ export const bind: Directive<
       if (modifiers?.camel) {
         arg = camelize(arg);
       }
-      // As Vue: an unchanged value is not set again, since re-setting src
-      // restarts a video or reloads an iframe. An object may have changed in
-      // place, so it is always applied.
-      if (value !== prevValue || isObject(value)) {
-        setProp(el, arg, value, prevValue);
-      }
+      patch(el, arg, value, prevValue);
     } else {
+      // Object(), since the previous value may be false or null
+      const prev = Object(prevValue);
       for (const key in value) {
-        setProp(el, key, value[key], prevValue && prevValue[key]);
+        // a key new to the object is applied, even an undefined one
+        (key in prev ? patch : setProp)(el, key, value[key], prev[key]);
       }
       for (const key in prevValue) {
         if (!value || !(key in value)) {
@@ -56,11 +53,21 @@ export const bind: Directive<
       }
     }
     // a copy, not the object: one mutated in place would otherwise be its own
-    // previous value, and a deleted key would never be cleared
-    prevValue = isPlainObject(value) ? { ...value } : value;
+    // previous value, and a deleted key would never be cleared. toStyle
+    // flattens a :style array, whose objects are live, and passes others as is
+    prevValue = isObject(value) ? { ...toStyle(value) } : value;
     // the object form's keys, so morph knows which attributes it owns
     if (!arg) el.__bound = prevValue;
   });
+};
+
+// As Vue: an unchanged value is not set again, since re-setting src restarts a
+// video or reloads an iframe. An object may have changed in place, so it is
+// always applied, and so is value, which the user may have typed over.
+const patch = (el: Element, key: string, value: any, prevValue: any) => {
+  if (value !== prevValue || isObject(value) || key === 'value') {
+    setProp(el, key, value, prevValue);
+  }
 };
 
 const setProp = (
@@ -103,8 +110,14 @@ const setProp = (
   ) {
     // A string property would read null as "null", so it gets '' and the
     // attribute goes, as in Vue. Booleans still take null as false.
-    // @ts-ignore
-    el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    try {
+      // @ts-ignore
+      el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    } catch (e) {
+      // a number property such as <progress>'s value rejects undefined; null
+      // still removes the attribute, as in Vue
+      if (value != null) throw e;
+    }
     if (value == null) el.removeAttribute(key);
     if (key === 'value') {
       // @ts-ignore
