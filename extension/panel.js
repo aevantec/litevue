@@ -30,6 +30,8 @@ const SNAPSHOT = `(() => {
     return ids.of.get(el);
   };
   const clone = (v, depth) => {
+    // as text: a BigInt fails the whole eval result, and JSON drops a symbol
+    if (typeof v === 'bigint' || typeof v === 'symbol') return String(v);
     if (v === null || typeof v !== 'object') {
       return typeof v === 'function' ? undefined : v;
     }
@@ -188,6 +190,16 @@ const poll = async () => {
 };
 
 poll();
-setInterval(poll, 500);
+let timer = setInterval(poll, 500);
+// devtools.js calls this from the panel's onShown and onHidden, so a hidden
+// tab stops snapshotting the page
+window.litevuePoll = (shown) => {
+  clearInterval(timer);
+  timer = 0;
+  if (shown) {
+    poll();
+    timer = setInterval(poll, 500);
+  }
+};
 // re-sync immediately on navigation
 chrome.devtools.network.onNavigated.addListener(poll);

@@ -10,8 +10,10 @@ The panel reads the page's `window.__LITE_VUE__` registry through
 `chrome.devtools.inspectedWindow.eval`, which runs in the page world — so no
 content script or messaging bridge is required, and the extension page stays
 free of `eval` (MV3 CSP applies to the extension, not the inspected page).
-v1 polls a JSON-safe snapshot every 500ms. A getter that throws while the
-snapshot is taken shows as `(threw)` instead of hiding the rest of the page.
+v1 polls a JSON-safe snapshot every 500ms while its tab is shown; `devtools.js`
+starts and stops the polling from the panel's `onShown` and `onHidden` events.
+A getter that throws while the snapshot is taken shows as `(threw)` instead of
+hiding the rest of the page, and a `BigInt` or a symbol is sent as its text.
 To keep edits on the right scope, the panel gives each scope element an id
 the first time it sees it, held in a `WeakMap` on
 `window.__LITE_VUE_EXT_IDS__`.
