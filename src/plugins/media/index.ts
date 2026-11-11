@@ -199,10 +199,13 @@ const resolve = <T>(map: ResponsiveMap<T>, fallback?: T): T | undefined => {
   for (const key of Object.keys(map)) {
     const px = keyToPx(key);
     if (px === undefined) {
-      warnOnce(
-        `"${key}" is not a breakpoint. Known: ${order.join(', ')}` +
-          `, plus the aliases ${Object.keys(ALIASES).join(', ')} and raw pixel widths.`
-      );
+      // guarded here, not only in warnOnce, so production skips the joins
+      if (import.meta.env.DEV) {
+        warnOnce(
+          `"${key}" is not a breakpoint. Known: ${order.join(', ')}` +
+            `, plus the aliases ${Object.keys(ALIASES).join(', ')} and raw pixel widths.`
+        );
+      }
       continue;
     }
     // >= so a later key wins a tie, matching object order
@@ -326,16 +329,18 @@ export const resetMedia = () => {
   scale = { ...DEFAULT_BREAKPOINTS };
   order = ['base', ...Object.keys(scale).sort((a, b) => scale[a] - scale[b])];
   active = false;
-  installedScale = undefined;
-  warned.clear();
+  if (import.meta.env.DEV) {
+    installedScale = undefined;
+    warned.clear();
+  }
   state.bp = 'base';
   state.tick = 0;
 };
 
 export const media: Plugin<MediaOptions> = (app, options) => {
-  if (options?.breakpoints) {
+  if (import.meta.env.DEV && options?.breakpoints) {
     const next = JSON.stringify(options.breakpoints);
-    if (import.meta.env.DEV && installedScale && installedScale !== next) {
+    if (installedScale && installedScale !== next) {
       warnOnce(
         'a second app installed media with a different breakpoint scale. ' +
           'The scale is page-wide, so this replaces the first one rather than ' +

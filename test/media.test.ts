@@ -139,6 +139,24 @@ describe('mq() — resolving a responsive map', () => {
     warn.mockRestore();
   });
 
+  // the warning text and the scale comparison only feed development warnings
+  test('production builds no warning text and compares no scales', () => {
+    vi.stubEnv('DEV', false);
+    const stringify = vi.spyOn(JSON, 'stringify');
+    const join = vi.spyOn(Array.prototype, 'join');
+    try {
+      apps.push(createApp().use(media, { breakpoints: { narrow: 500 } }));
+      expect(mq({ base: 1, huge: 9 })).toBe(1);
+
+      expect(stringify).not.toHaveBeenCalled();
+      expect(join).not.toHaveBeenCalled();
+    } finally {
+      stringify.mockRestore();
+      join.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
   // A null map is usually data still loading; the fallback is what was asked
   // for. Production used to skip this check and throw on Object.keys(null).
   test.each([
