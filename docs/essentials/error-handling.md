@@ -46,7 +46,7 @@ They appear while you develop — automatically from npm with Vite or webpack 5,
 | `directive` | a directive's own setup threw, or a `v-teleport` or `$template` selector does not parse |
 | `compile` | the expression could not be parsed into a function at all |
 | `effect` | a re-run after a change threw: a [`$watch`](/magics/watch) callback, [`watchEffect`](/globals/watch-effect), or a plugin's effect — or an effect was skipped for the rest of an update after re-running 100 times in it |
-| `teardown` | a [plugin's teardown](/plugins/authoring#releasing-what-a-plugin-acquires) threw during a full `app.unmount()` |
+| `teardown` | a [plugin's teardown](/plugins/authoring#releasing-what-a-plugin-acquires) threw during a full `app.unmount()`, or a [directive's cleanup](/globals/create-app#returning-a-cleanup) threw when its element or region was torn down |
 
 `source` names the construct it came from — `v-if`, `v-for`, `v-scope`, `:key`, `v-effect`, `@click`, or `{{ }}` for a text interpolation — and an interpolation reports the text as you wrote it rather than the `$s(...)` form it compiles to.
 
@@ -74,7 +74,8 @@ A failure is contained to the thing that failed:
 - A directive that throws during setup is skipped; the remaining elements are still processed.
 - A failing `v-scope` falls back to an empty scope rather than taking the mount down with it. A getter that throws is reported where it is read.
 - Two effects that keep writing state the other reads are skipped for the rest of that update after 100 re-runs and reported, instead of freezing the page. They run again on the next change.
-- A handler that throws does not stop later events from firing.
+- A handler that throws does not stop later events from firing. A `v-on` expression that cannot be compiled is reported and binds no listener.
+- A directive's cleanup that throws is reported, and the rest of the teardown still runs: the other listeners are removed and the region can render again.
 - A `$watch` callback or a re-run of `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page. A `$watch` whose first call throws, as with `{ immediate: true }`, keeps watching, and so does a custom directive's effect whose first run throws. A `watchEffect` whose first run throws passes the error to your code and is stopped — see [watchEffect()](/globals/watch-effect#behavior).
 - A `v-for` that destructures a `null` or `undefined` item, as in `{ id } in items`, renders that row with empty values.
 - A `$template` selector that matches no `<template>` element leaves that region empty, and the rest of the page still mounts.

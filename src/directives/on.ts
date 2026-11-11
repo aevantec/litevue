@@ -96,6 +96,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       : isExpression(exp)
         ? get(`(${a}$event => (${exp}))`)
         : get(`(${a}$event => { ${exp} })`);
+  // did not compile, and get() has reported it
+  if (!handler) return;
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)

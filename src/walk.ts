@@ -366,7 +366,14 @@ const applyDirective = (
     return;
   }
   if (cleanup) {
-    addCleanup(ctx, cleanup);
+    // contained, so one throwing cleanup cannot abort the rest of a teardown
+    addCleanup(ctx, () => {
+      try {
+        cleanup();
+      } catch (e) {
+        handleError(e, { phase: 'teardown', source, el, expression: exp });
+      }
+    });
   }
 };
 
