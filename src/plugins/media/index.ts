@@ -32,9 +32,10 @@ const DEFAULT_BREAKPOINTS: Breakpoints = {
  * replaces rather than merges, so adjusting one breakpoint means spreading
  * this rather than retyping all five.
  */
-export const defaultBreakpoints: Readonly<Breakpoints> = Object.freeze({
-  ...DEFAULT_BREAKPOINTS,
-});
+export const defaultBreakpoints: Readonly<Breakpoints> =
+  /* @__PURE__ */ Object.freeze({
+    ...DEFAULT_BREAKPOINTS,
+  });
 
 // `mobile` is the implicit floor; the other two are named scale entries, so a
 // custom scale that drops them loses those aliases. A scale key of the same
@@ -56,7 +57,7 @@ const NUMERIC = /^\d+$/;
  *   MediaQueryList rather than mirrored, since registering a query inside a
  *   running effect would write a dependency it just read and re-run it.
  */
-const state = reactive({ bp: 'base', tick: 0 });
+const state = /* @__PURE__ */ reactive({ bp: 'base', tick: 0 });
 
 // Module state, shared by every app on the page: two apps passing their own
 // `breakpoints` is not two scales — the second rewrites the first.
@@ -246,7 +247,7 @@ export interface Mq {
 
 const mqFn = <T>(map: ResponsiveMap<T>, fallback?: T) => resolve(map, fallback);
 
-export const mq: Mq = Object.defineProperties(mqFn as Mq, {
+export const mq: Mq = /* @__PURE__ */ Object.defineProperties(mqFn as Mq, {
   props: {
     value: (maps: Record<string, ResponsiveMap>) => {
       trackAll();

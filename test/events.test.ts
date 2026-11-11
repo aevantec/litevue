@@ -61,6 +61,19 @@ describe('extra modifiers', () => {
     app.unmount();
   });
 
+  test('.outside ignores a click inside whose target was removed meanwhile', async () => {
+    const { $, app } = await mount(
+      `<div v-scope="{ closed: 0 }">
+        <div id="modal" @click.outside="closed++"><button @click="$el.remove()"></button></div>
+      </div>`
+    );
+    const scope = (window as any).__LITE_VUE__.getScope($('#modal'));
+    $('button').click();
+    await tick();
+    expect(scope.closed).toBe(0);
+    app.unmount();
+  });
+
   test('.window attaches to window and cleans up on unmount', async () => {
     const { $, app } = await mount(
       `<div v-scope="{ n: 0 }"><span @scroll.window="n++"></span></div>`

@@ -44,8 +44,8 @@ const setName = (el: HTMLElement | undefined, name: string, on: boolean) => {
     .split(/\s*,\s*/)
     .filter((n) => n && n !== name);
   on && names.push(name);
-  // an empty value removes the property
-  el.style.setProperty('anchor-name', names.join());
+  // an empty value removes the property; while set, morph leaves the style
+  el.style.setProperty('anchor-name', ((el as any).__anchor = names.join()));
 };
 
 /** Script placement for engines without anchor positioning: flip, then align. */
