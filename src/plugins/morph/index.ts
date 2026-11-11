@@ -131,6 +131,8 @@ const boundAttrs = (to: Element) => {
     } else if (clientStyleRE.test(name)) {
       // v-show, v-collapse, v-transition and custom directives write inline style
       owned.add('style');
+      // and v-popover adds the attribute when the markup has none
+      name == 'v-popover' && owned.add('popover');
     }
   }
   return owned;
@@ -196,6 +198,8 @@ const syncValues = (from: any, to: any, owned: Set<string>) => {
 
 const patchAttrs = (from: Element, to: Element, values?: boolean) => {
   const owned = boundAttrs(to);
+  // a v-anchor trigger: its anchor-name comes from the floating element
+  if ((from as any).__anchor) owned.add('style');
   if (values) syncValues(from, to, owned);
   // the keys a v-bind object last set, so the server's other attributes still
   // update; Object() so a missing or non-object value owns nothing

@@ -202,6 +202,7 @@ still carries the directives:
 | `<details>` or `<dialog>` | Leaves `open` alone, so one the user opened stays open |
 | `v-bind` with an object | Leaves alone the attributes the object currently binds, updates the others the server sends, and removes none |
 | Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
+| [`v-popover`](/plugins/popover) | Also leaves the `popover` attribute alone, which the directive adds when the markup has none |
 | `v-text`, `v-html`, `v-pre`, `v-once` | Leaves that element's children alone |
 | An element with `v-if` or `v-for` | Leaves the whole containing element alone |
 | An element with `v-teleport` | Leaves the live element in its target alone, and removes it only when the server stops sending it |
@@ -216,7 +217,7 @@ still carries the directives:
 - A class set from JavaScript is patched away unless the element is marked `data-morph-skip`.
 - A [`v-teleport`](/directives/v-teleport) element keeps its node and its state across a morph, provided no unkeyed element is added or removed before it; one that is would take its position and replace it. The server cannot change its attributes or contents, so bind those to state instead. Morphing its target never removes it, since the server does not send it there.
 - The server cannot open or close an existing `<details>` or `<dialog>` by changing `open`, just as it cannot overwrite what the user typed unless the [`values`](#field-values) option is set. To change it from the server, give the element a new `id` so morph replaces it, or bind `:open` to state.
-- On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root.
+- On an element carrying a directive that owns `style`, the server cannot change the inline style. Send server-driven styling as a class, or as a CSS custom property on the `v-scope` root. The same holds for the element a [`v-anchor`](/plugins/popover) points at, since the directive writes `anchor-name` into its inline style.
 - A removed element's scope is released with it, inside a mounted scope or outside every one: its effects stop and its listeners are removed. State that must survive a re-render belongs in a [store](/globals/store).
 - A key must be a plain attribute, readable on both sides. `v-name`, `ref`, `:` and `@` attributes are consumed at mount and cannot serve as keys.
 - Duplicate sibling keys warn in development, since the earlier element would lose its node.
