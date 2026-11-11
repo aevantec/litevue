@@ -125,6 +125,67 @@ describe('v-bind with an unchanged value', () => {
     expect(($$('video')[0] as HTMLVideoElement).src).toContain('/c.mp4');
   });
 
+  test('v-bind="obj" does not re-set an unchanged src', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ url: '/a.mp4', label: 'one' }">
+        <video v-bind="{ src: url, title: label }"></video>
+      </div>`
+    );
+    const video = $('video') as HTMLVideoElement;
+    const count = countSets(video, HTMLMediaElement.prototype, 'src');
+    (root as any).__ctx.scope.label = 'two';
+    await tick();
+    expect(video.title).toBe('two');
+    expect(count()).toBe(0);
+
+    (root as any).__ctx.scope.url = '/b.mp4';
+    await tick();
+    expect(count()).toBe(1);
+    expect(video.src).toContain('/b.mp4');
+  });
+
+  test('v-bind="obj" in a refetched list does not reload iframes', async () => {
+    const { $$, root } = await mount(
+      `<div v-scope="{ clips: [{ id: 1, url: '/a' }, { id: 2, url: '/b' }] }">
+        <iframe v-for="c in clips" :key="c.id" v-bind="{ src: c.url }"></iframe>
+      </div>`
+    );
+    const counts = $$('iframe').map((f) =>
+      countSets(f, HTMLIFrameElement.prototype, 'src')
+    );
+    (root as any).__ctx.scope.clips = [
+      { id: 1, url: '/a' },
+      { id: 2, url: '/b' },
+    ];
+    await tick();
+    expect(counts.map((n) => n())).toEqual([0, 0]);
+  });
+
+  test('v-bind="obj" still applies an undefined first value and value', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ u: undefined, v: 'x' }">
+        <a href="/x" v-bind="{ href: u }"></a>
+        <input v-bind="{ value: v, title: u }">
+      </div>`
+    );
+    expect($('a').hasAttribute('href')).toBe(false);
+    const input = $('input') as HTMLInputElement;
+    input.value = 'typed';
+    (root as any).__ctx.scope.u = 't';
+    await tick();
+    expect(input.value).toBe('x');
+  });
+
+  test('v-bind switching from false to an object applies its keys', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ on: false }"><a v-bind="on && { href: '/x' }"></a></div>`
+    );
+    expect($('a').hasAttribute('href')).toBe(false);
+    (root as any).__ctx.scope.on = true;
+    await tick();
+    expect($('a').getAttribute('href')).toBe('/x');
+  });
+
   test('an array mutated in place is still applied', async () => {
     const { $, root } = await mount(
       `<div v-scope="{ cls: ['a'] }"><p :class="cls"></p></div>`

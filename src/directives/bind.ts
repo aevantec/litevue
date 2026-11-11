@@ -38,16 +38,13 @@ export const bind: Directive<
       if (modifiers?.camel) {
         arg = camelize(arg);
       }
-      // As Vue: an unchanged value is not set again, since re-setting src
-      // restarts a video or reloads an iframe. An object may have changed in
-      // place, so it is always applied, and so is value, which the user may
-      // have typed over.
-      if (value !== prevValue || isObject(value) || arg === 'value') {
-        setProp(el, arg, value, prevValue);
-      }
+      patch(el, arg, value, prevValue);
     } else {
+      // Object(), since the previous value may be false or null
+      const prev = Object(prevValue);
       for (const key in value) {
-        setProp(el, key, value[key], prevValue && prevValue[key]);
+        // a key new to the object is applied, even an undefined one
+        (key in prev ? patch : setProp)(el, key, value[key], prev[key]);
       }
       for (const key in prevValue) {
         if (!value || !(key in value)) {
@@ -62,6 +59,15 @@ export const bind: Directive<
     // the object form's keys, so morph knows which attributes it owns
     if (!arg) el.__bound = prevValue;
   });
+};
+
+// As Vue: an unchanged value is not set again, since re-setting src restarts a
+// video or reloads an iframe. An object may have changed in place, so it is
+// always applied, and so is value, which the user may have typed over.
+const patch = (el: Element, key: string, value: any, prevValue: any) => {
+  if (value !== prevValue || isObject(value) || key === 'value') {
+    setProp(el, key, value, prevValue);
+  }
 };
 
 const setProp = (
