@@ -106,6 +106,8 @@ export class Block {
   remove() {
     if (this.parentCtx) {
       remove(this.parentCtx.blocks, this);
+      // discard() runs next, from the node disposer; spare it a second scan
+      this.parentCtx = undefined;
     }
     const removeNow = () => {
       // The nodes can already be gone: a leave hook defers this call, and
