@@ -115,8 +115,13 @@ const boundAttrs = (to: Element) => {
   if (to.matches('details,dialog')) owned.add('open');
   for (const { name } of to.attributes) {
     if (bindRE.test(name)) {
-      // strip modifiers: :class.camel -> class
-      owned.add(name.replace(bindRE, '').split('.')[0]);
+      // strip modifiers; with .camel, v-bind set the camel-cased name
+      const attr = name.replace(bindRE, '').split('.')[0];
+      owned.add(
+        /\.camel\b/.test(name)
+          ? attr.replace(/-(\w)/g, (_, c) => c.toUpperCase())
+          : attr
+      );
     } else if (/^v-model\b/.test(name)) {
       owned.add('value');
       owned.add('checked');
