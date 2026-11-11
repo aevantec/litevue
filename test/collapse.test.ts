@@ -90,6 +90,26 @@ describe('v-collapse', () => {
     expect(panel().style.overflow).toBe('visible');
   });
 
+  // the author's height is the expanded height, kept after a collapse and
+  // expand rather than released to the content's
+  test('keeps an inline height the author wrote across a collapse and expand', async () => {
+    const root = await mount(
+      `<div v-scope="{ open: true }">` +
+        `<div id="p" style="height: 50px" v-collapse.duration-10="open">x</div></div>`
+    );
+    root.__ctx.scope.open = false;
+    await tick();
+    expect(panel().style.height).toBe('0px');
+
+    root.__ctx.scope.open = true;
+    await tick();
+    // expands to that height, not past it to the content's
+    expect(panel().style.height).toBe('50px');
+    await sleep(20);
+
+    expect(panel().style.height).toBe('50px');
+  });
+
   // a height of 0 still leaves the content in the tab order and the
   // accessibility tree; visibility takes it out of both
   test('hides collapsed content from Tab and assistive technology', async () => {
