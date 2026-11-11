@@ -597,6 +597,9 @@ const scheduleRender = () => {
   setTimeout(() => {
     renderQueued = false;
     if (panelEl.style.display === 'none') return;
+    // A click fires on the common ancestor of its press and release targets,
+    // so replacing the pressed row would lose it: wait for the release.
+    if (panelEl.matches(':active')) return scheduleRender();
     renderTree();
     renderState();
   });

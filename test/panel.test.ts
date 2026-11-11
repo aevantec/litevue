@@ -312,6 +312,39 @@ describe('devtools panel display', () => {
   });
 });
 
+describe('devtools panel re-render timing', () => {
+  test('a flush while the pointer is down waits for the release', async () => {
+    const { app, scope } = await openScope(
+      'ticker',
+      `<div v-name="ticker" v-scope="{ t: 0 }"><b>{{ t }}</b></div>`
+    );
+    const row = $$('.tree .row').find((r) =>
+      r.textContent!.includes('<ticker>')
+    )!;
+    // jsdom does not track :active, so a press on the panel is stubbed
+    const matches = Element.prototype.matches;
+    Element.prototype.matches = function (this: Element, sel: string) {
+      return (
+        (sel === ':active' && this.className === 'panel') ||
+        matches.call(this, sel)
+      );
+    };
+    try {
+      scope.t++;
+      await tick();
+      await sleep(10);
+      // a click whose mousedown row was replaced would never reach a row
+      expect(row.isConnected).toBe(true);
+    } finally {
+      Element.prototype.matches = matches;
+    }
+    await sleep(10);
+    expect(row.isConnected).toBe(false);
+    expect(propRow('t')!.querySelector('input')!.value).toBe('1');
+    app.unmount();
+  });
+});
+
 describe('devtools panel filter search', () => {
   test('looks inside a Map and a Set', () => {
     const scope = reactive({
