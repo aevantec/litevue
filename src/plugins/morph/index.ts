@@ -337,6 +337,19 @@ const patchChildren = (
   const keyOf = (n: Node | null) =>
     n && n.nodeType === 1 ? key(n as Element) : null;
 
+  const wanted = new Set<string | null | undefined>();
+  for (let n = to.firstChild; n; n = n.nextSibling) wanted.add(keyOf(n));
+
+  const drop = (node: ChildNode) => {
+    if (!preserved(node, opts)) {
+      // release what the subtree owned first: removeChild alone leaves its
+      // effects live and still reacting
+      release(node, ctx);
+      from.removeChild(node);
+      opts.afterNodeRemoved?.(node);
+    }
+  };
+
   let oldChild = from.firstChild;
   let newChild = to.firstChild;
 
@@ -384,6 +397,13 @@ const patchChildren = (
       const nextOld = oldChild.nextSibling;
       patchNode(oldChild, newChild, ctx, opts);
       oldChild = nextOld;
+    } else if (oldChild && !wanted.has(keyOf(oldChild))) {
+      // a keyed live node the server no longer sends would hold the cursor
+      // and cost every unkeyed node after it its own; drop it and retry
+      const nextOld = oldChild.nextSibling;
+      drop(oldChild);
+      oldChild = nextOld;
+      continue;
     } else {
       // never consume a keyed live node for an unkeyed slot: it belongs to a
       // later position and would lose its scope here
@@ -397,13 +417,7 @@ const patchChildren = (
   // map instead would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
-    if (!preserved(oldChild, opts)) {
-      // release what the subtree owned first: removeChild alone leaves its
-      // effects live and still reacting
-      release(oldChild, ctx);
-      from.removeChild(oldChild);
-      opts.afterNodeRemoved?.(oldChild);
-    }
+    drop(oldChild);
     oldChild = next;
   }
 };

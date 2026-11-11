@@ -410,6 +410,67 @@ describe('morph', () => {
     expect($('#panel').textContent).toBe('new');
   });
 
+  test('keeps the unkeyed nodes after a keyed node the server dropped', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><p id="flash">Saved</p><details><summary>s</summary>d</details><input name="q"></div>`
+    );
+    const details = root.querySelector('details')!;
+    const input = root.querySelector('input')!;
+    details.open = true;
+    input.value = 'typed';
+    const removed: Node[] = [];
+
+    morph(
+      root,
+      `<div><details><summary>s</summary>d</details><input name="q"></div>`,
+      { afterNodeRemoved: (n) => removed.push(n) }
+    );
+
+    expect(root.querySelector('#flash')).toBeNull();
+    expect(removed.map((n) => (n as Element).id)).toEqual(['flash']);
+    expect(root.querySelector('details')).toBe(details);
+    expect(details.open).toBe(true);
+    expect(root.querySelector('input')).toBe(input);
+    expect(input.value).toBe('typed');
+  });
+
+  test('keeps the unkeyed nodes after a keyed node the server replaced', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="a" v-scope="{ n: 1 }">{{ n }}</section><footer v-scope="{ k: 1 }"><button @click="k++">{{ k }}</button></footer></div>`
+    );
+    const footer = root.querySelector('footer')!;
+    footer.querySelector('button')!.click();
+    await tick();
+
+    morph(
+      root,
+      `<div><section id="b" v-scope="{ n: 2 }">{{ n }}</section><footer v-scope="{ k: 1 }"><button @click="k++">{{ k }}</button></footer></div>`
+    );
+    await tick();
+
+    expect([...root.children].map((c) => c.id || c.tagName)).toEqual([
+      'b',
+      'FOOTER',
+    ]);
+    expect(root.querySelector('#b')!.textContent).toBe('2');
+    expect(root.querySelector('footer')).toBe(footer);
+    expect(footer.textContent).toBe('2');
+  });
+
+  test('keeps a preserved keyed node the server dropped, and what follows it', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><aside id="toast" data-morph-preserve>hi</aside><input name="q"></div>`
+    );
+    const toast = root.querySelector('#toast');
+    const input = root.querySelector('input')!;
+
+    morph(root, `<div><input name="q" class="x"></div>`);
+
+    expect(root.querySelector('#toast')).toBe(toast);
+    expect(root.querySelector('input')).toBe(input);
+    expect(input.className).toBe('x');
+  });
+
   test('updates script text that holds the delimiter', async () => {
     const island = (n: number) =>
       `<div v-scope><script type="application/json" id="data">{"greeting":"Hi {{name}}","n":${n}}</script></div>`;
