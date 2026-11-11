@@ -30,6 +30,11 @@ export class Block {
 
     if (isRoot) {
       this.template = template;
+    } else if (template.hasAttribute('v-for')) {
+      // v-if beside v-for: the list replaces its element with an anchor,
+      // which needs a parent, so the clone goes in a fragment
+      this.isFragment = true;
+      (this.template = new DocumentFragment()).append(template.cloneNode(true));
     } else if (this.isFragment) {
       this.template = (template as HTMLTemplateElement).content.cloneNode(
         true
