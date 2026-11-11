@@ -145,12 +145,20 @@ const tagOf = (el: Element) => {
   return label;
 };
 
+// A form's named controls shadow its properties, methods included, so these
+// are read from the prototypes: a control named parentElement would loop.
+const parentGet = Object.getOwnPropertyDescriptor(
+  Node.prototype,
+  'parentElement'
+)!.get!;
+const parentOf = (el: Element): Element | null => parentGet.call(el);
+
 /** Nearest ancestor element that is itself a registered scope. */
 const parentScopeOf = (el: Element) => {
-  let p = el.parentElement;
+  let p = parentOf(el);
   while (p) {
     if (devtools.scopes.has(p)) return p;
-    p = p.parentElement;
+    p = parentOf(p);
   }
   return null;
 };
@@ -207,9 +215,8 @@ const componentOf = (el: Element) => {
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
   componentOf(el) ||
-  // a form's controls named id or tagName shadow those properties
-  el.getAttribute('id') ||
-  el.localName;
+  Element.prototype.getAttribute.call(el, 'id') ||
+  (el instanceof HTMLFormElement ? 'form' : el.localName);
 
 const renderTabs = () => {
   const storeCount = devtools.stores ? devtools.stores.size : 0;
@@ -562,14 +569,14 @@ const onPickClick = (e: MouseEvent) => {
   e.stopPropagation();
   stopPicking();
   let el: Element | null = target;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   if (el) select(el);
 };
 
 const onPickMove = (e: MouseEvent) => {
   let el: Element | null = e.target as Element;
   if (el === (shadow.host as Element)) return;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   el ? showHighlight(el) : hideHighlight();
 };
 
@@ -662,8 +669,9 @@ const build = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       saveUi({
-        right: parseInt(panelEl.style.right) || 12,
-        bottom: parseInt(panelEl.style.bottom) || 12,
+        // a panel left flush to an edge is at 0, which is not a missing value
+        right: parseInt(panelEl.style.right || '12'),
+        bottom: parseInt(panelEl.style.bottom || '12'),
       });
     };
     document.addEventListener('mousemove', move);
@@ -748,6 +756,8 @@ const build = () => {
     if (picking) stopPicking();
     panelEl.style.display = 'none';
     pillEl.style.display = '';
+    // closed renders are skipped, so these rows would keep their scopes alive
+    treeEl.textContent = stateEl.textContent = '';
     saveUi({ open: false });
   };
   header.appendChild(closeBtn);

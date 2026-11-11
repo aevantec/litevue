@@ -137,4 +137,20 @@ describe('extension panel', () => {
     await poll();
     expect(tree().textContent).toContain('<form>');
   });
+
+  test('a form control named getAttribute or localName does not hide the page', async () => {
+    await mountOne(`<div v-name="ext-other" v-scope="{ n: 1 }"></div>`);
+    const { root } = await mountOne(
+      `<form v-scope="{ q: '' }"><input name="getAttribute"><input name="localName"></form>`
+    );
+    // simulated, as above
+    for (const name of ['getAttribute', 'localName']) {
+      Object.defineProperty(root, name, {
+        value: root.querySelector(`[name=${name}]`),
+      });
+    }
+    await poll();
+    expect(tree().textContent).toContain('ext-other');
+    expect(tree().textContent).toContain('<form>');
+  });
 });

@@ -51,8 +51,11 @@ const SNAPSHOT = `(() => {
   };
   const scopes = [...d.scopes.entries()].map(([el, scope]) => ({
     id: idOf(el),
-    // a form's controls named id or tagName shadow those properties
-    label: d.names.get(el) || el.getAttribute('id') || el.localName,
+    // a form's named controls shadow its properties, methods included
+    label:
+      d.names.get(el) ||
+      Element.prototype.getAttribute.call(el, 'id') ||
+      (el instanceof HTMLFormElement ? 'form' : el.localName),
     exp: d.exps.get(el) || '',
     data: clone(scope, 4),
   }));
