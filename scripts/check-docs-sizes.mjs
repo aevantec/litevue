@@ -55,8 +55,9 @@ const IGNORED = [
   },
 ];
 
-// every ~Nkb, marked or not
-const ANY_CLAIM = /~\d+kb/g;
+// every size, marked or not, in any spelling: ~9.5kb, 9kb, ~9 KB, 9,000 bytes
+// and 9 kilobytes all read as a claim, and only the marked ~Nkb form passes
+const ANY_CLAIM = /~?\d[\d,.]*\s?(?:kb|kilobytes?|bytes)\b/gi;
 
 // Not only docs/: any file that quotes a bundle size can rot. CONTRIBUTING
 // drifted to ~8kb once already, and the issue template after it.
@@ -106,8 +107,8 @@ for (const file of files) {
       if (total > marked && !excused) {
         failures.push(
           `${where} quotes a size with no size: marker, so nothing checks it. ` +
-            `Add \`<!-- size:<bundle> -->\` after it, or list it in IGNORED ` +
-            `with a reason if it is not about a bundle here.`
+            `Write it as ~Nkb with \`<!-- size:<bundle> -->\` after it, or list ` +
+            `it in IGNORED with a reason if it is not about a bundle here.`
         );
       }
       for (const [, claimed, bundle] of line.matchAll(CLAIM)) {

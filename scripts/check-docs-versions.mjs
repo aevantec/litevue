@@ -24,10 +24,18 @@ const extraFiles = new Set(
 );
 
 const MARKER = 'x-release-please-version';
-// a pinned package reference: @scope/name@1.2.3
-const PINNED = /@[\w.-]+\/[\w.-]+@(\d+\.\d+\.\d+)/;
+// a pinned package reference: @scope/name@1.2.3, and the forms that pin
+// nothing release-please rewrites (@0.5, @^0.5.0, @v0.5.0), so they fail too
+const PINNED = /@[\w.-]+\/[\w.-]+@([\^~]?v?\d+(?:\.\d+)*)/g;
 
-const markdown = [];
+// the same root files check-docs-sizes reads: a stale pin rots anywhere
+const markdown = [
+  'README.md',
+  'CONTRIBUTING.md',
+  'extension/README.md',
+  '.github/PULL_REQUEST_TEMPLATE.md',
+  '.github/ISSUE_TEMPLATE/feature_request.yml',
+].map((f) => resolve(root, f));
 (function walk(dir) {
   for (const entry of readdirSync(dir)) {
     if (entry === 'dist' || entry === 'cache' || entry === 'node_modules') {
@@ -46,13 +54,13 @@ for (const file of markdown) {
   read(rel)
     .split('\n')
     .forEach((line, i) => {
-      const match = line.match(PINNED);
-      if (!match) return;
+      const pins = [...line.matchAll(PINNED)].map((m) => m[1]);
+      if (!pins.length) return;
       const where = `${rel}:${i + 1}`;
 
       if (!line.includes(MARKER)) {
         failures.push(
-          `${where} pins ${match[1]} with no ${MARKER} marker — it will never be updated`
+          `${where} pins ${pins[0]} with no ${MARKER} marker — it will never be updated`
         );
         return;
       }
@@ -61,10 +69,8 @@ for (const file of markdown) {
           `${where} has the marker, but ${rel} is missing from extra-files in release-please-config.json`
         );
       }
-      if (match[1] !== version) {
-        failures.push(
-          `${where} pins ${match[1]}, but package.json is ${version}`
-        );
+      for (const pin of pins.filter((p) => p !== version)) {
+        failures.push(`${where} pins ${pin}, but package.json is ${version}`);
       }
     });
 }
