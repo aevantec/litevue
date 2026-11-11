@@ -26,6 +26,8 @@ export const findInState = (scope: any, term: string) => {
     if (typeof value === 'object') {
       if (depth > 4 || seen.has(value)) return;
       seen.add(value);
+      // a Map or Set has no own keys; its entries are searched as arrays
+      if (isCollection(value)) value = [...value];
       // an index is not a name: searching 1 would find every two-item array
       const named = !Array.isArray(value);
       for (const key of Object.keys(value)) {

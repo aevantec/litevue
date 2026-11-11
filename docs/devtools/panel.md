@@ -90,7 +90,8 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - The state view separates a scope's own state from what it inherits.
 - Arrays and objects render as an **expandable tree**. A `Map` or `Set` shows
   its size, as in `Map(2)` or `Set(3)`, and expands to its entries, which are
-  read-only.
+  read-only. Each `Map` entry is labelled with a preview of its key, so object
+  and symbol keys are listed, and the keys `1` and `"1"` remain separate rows.
 - Every primitive value edits inline, keeping its type; booleans get a checkbox.
   Enter or leaving the field applies the edit, and Escape cancels it. A field
   you leave without changing its text is not written.

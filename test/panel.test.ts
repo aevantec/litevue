@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { computed, createApp, devtools, store } from '../src';
+import { computed, createApp, devtools, reactive, store } from '../src';
 import '../src/devtools-panel';
-import { fmt } from '../src/devtools-panel/values';
+import { findInState, fmt } from '../src/devtools-panel/values';
 import { tick, sleep } from './utils';
 
 const host = () =>
@@ -225,9 +225,30 @@ describe('devtools panel display', () => {
     propRow('s')!.click();
     await sleep(10);
     // entries are listed, but read-only: an edit would land in a copy
-    expect(propRow('a')!.querySelector('.preview')!.textContent).toBe('1');
-    expect(propRow('a')!.querySelector('input')).toBeNull();
+    expect(propRow('"a"')!.querySelector('.preview')!.textContent).toBe('1');
+    expect(propRow('"a"')!.querySelector('input')).toBeNull();
     expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('"x"');
+    app.unmount();
+  });
+
+  test('a Map expands to one row per entry, labelled by its key', async () => {
+    const { app } = await openScope(
+      'mapkeys',
+      `<div v-name="mapkeys" v-scope="{ m: new Map([[{ id: 1 }, 'ada'], [{ id: 2 }, 'grace'], [1, 'n'], ['1', 's'], [Symbol('tag'), 'sym']]) }"></div>`
+    );
+    propRow('m')!.click();
+    await sleep(10);
+    const entries = $$('.state .prop')
+      .filter((r) => r.style.paddingLeft === '22px')
+      .map((r) => r.querySelector('.key')!.textContent);
+    expect(entries).toEqual([
+      '{"id":1}',
+      '{"id":2}',
+      '1',
+      '"1"',
+      'Symbol(tag)',
+    ]);
+    expect(propRow('"1"')!.querySelector('.preview')!.textContent).toBe('"s"');
     app.unmount();
   });
 
@@ -241,6 +262,18 @@ describe('devtools panel display', () => {
     expect(propRow('0')!.querySelector('input')).toBeNull();
     expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('2');
     app.unmount();
+  });
+});
+
+describe('devtools panel filter search', () => {
+  test('looks inside a Map and a Set', () => {
+    const scope = reactive({
+      prices: new Map([['needle', 2026]]),
+      tags: new Set(['haystack']),
+    });
+    expect(findInState(scope, 'needle')).toBeTruthy();
+    expect(findInState(scope, '2026')).toBeTruthy();
+    expect(findInState(scope, 'haystack')).toBeTruthy();
   });
 });
 

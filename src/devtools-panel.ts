@@ -414,7 +414,8 @@ const addNode = (
   cls: string,
   ancestors: unknown[],
   // inside a derived value or a Map/Set copy, where an edit would be lost
-  ro?: boolean
+  ro?: boolean,
+  label = key
 ) => {
   let v: any, threw;
   // a getter can throw while data loads; show it instead of losing the view
@@ -432,7 +433,7 @@ const addNode = (
     const circular = ancestors.indexOf(v) > -1;
     const open = !circular && expandedPaths.has(path);
     row.appendChild(h('span', open ? 'arrow open' : 'arrow', '▶'));
-    row.appendChild(h('span', 'key', key));
+    row.appendChild(h('span', 'key', label));
     row.appendChild(
       h('span', 'preview', circular ? '(circular)' : previewOf(v))
     );
@@ -446,13 +447,11 @@ const addNode = (
     appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
-      // a Map or Set has no own keys, so its entries are listed from a copy
+      // A Map or Set has no own keys, so its values are listed from a copy.
+      // Map keys label the rows as previews: they need not be strings.
       const coll = isCollection(v);
-      const src = coll
-        ? v instanceof Map
-          ? Object.fromEntries(v)
-          : [...v]
-        : v;
+      const src = coll ? [...v.values()] : v;
+      const names = v instanceof Map && [...v.keys()].map(fmt);
       const keys = Object.keys(src);
       if (!keys.length) {
         const empty = h('div', 'muted', '(empty)');
@@ -467,7 +466,8 @@ const addNode = (
           depth + 1,
           cls,
           ancestors.concat([v]),
-          ro || coll
+          ro || coll,
+          names ? names[+k] : k
         );
       }
     }
@@ -475,7 +475,7 @@ const addNode = (
   }
 
   row.appendChild(h('span', 'spacer'));
-  row.appendChild(h('span', 'key', key));
+  row.appendChild(h('span', 'key', label));
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (threw || ro) {
