@@ -40,6 +40,10 @@ not in the scope logs a warning.
 | `.session` | `sessionStorage` |
 | `.<name>` | A storage registered with `registerStorage(name, …)` |
 
+Storage names are not case-sensitive. The HTML parser lowercases the modifier,
+so a storage registered as `myVault` is selected by `v-persist.myVault`, which
+arrives as `.myvault`, and by `{ storage: 'myVault' }` alike.
+
 ## Signature
 
 For stores and custom storage, from `@aevantec/litevue/plugins`:
@@ -138,6 +142,7 @@ setDefaultStorage('session');
 - Nested changes save too. A burst of changes in one tick is written once.
 - Methods, getter-only properties and [`computed()`](/globals/computed) values are skipped, even when listed in `keys` — they cannot be assigned back.
 - `persistStore()` restores immediately, so values an `init()` seeded are replaced by anything already saved.
+- `v-persist` restores after the element's children are set up, because the directives on an element run after its children are walked. A child that reads a value only once sees the default. With `v-scope="{ tab: 'profile' }"` and `'billing'` saved, bindings such as `{{ tab }}` and `:class` update to `'billing'`, but a nested `v-scope="{ active: tab }"` copies `'profile'`, and so does a component prop. Read the value through a getter, such as `v-scope="{ get active() { return tab } }"`, or keep it in a store persisted with `persistStore()` before mounting.
 - A per-use storage beats the default. Call `setDefaultStorage()` before `persistStore()` and before mounting.
 - If a storage cannot be used — an unknown modifier, or `localStorage` blocked by the browser — the state still works, it is just not saved. It is never saved to the default storage instead, so a misspelled modifier, or a storage registered only after mounting, cannot place the state in `localStorage`. Call `registerStorage()` before mounting. `persistStore()` and an unknown modifier log a development error explaining why; `v-persist` without a modifier on blocked `localStorage` logs nothing.
 - A write that fails, for example because storage is full, is skipped without an error, and the next change tries again. A saved value that cannot be parsed is ignored, so the state starts from its defaults.
