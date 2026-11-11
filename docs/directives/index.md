@@ -83,5 +83,6 @@ So `v-if` beside `v-for` cannot read the loop variable, while `v-scope` beside
 ## From plugins
 
 [Plugins](/plugins/) add `v-transition`, `v-intersect`, `v-persist`, `v-focus`,
-`v-trap`, `v-collapse`, `v-mask` and `v-resize`. Register your own with
+`v-trap`, `v-collapse`, `v-mask`, `v-resize`, `v-popover` and `v-anchor`.
+Register your own with
 [`app.directive()`](/globals/create-app#custom-directives).
