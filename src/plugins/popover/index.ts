@@ -165,10 +165,15 @@ export const popover: Plugin = (app) => {
       target = get();
       update();
     });
+    // a v-if block is walked before insertion and v-show starts hidden, so the
+    // size is 0 at mount; this re-places it once laid out, and as it resizes
+    const observer = new ResizeObserver(update);
+    observer.observe(float);
     addEventListener('scroll', update, true);
     addEventListener('resize', update);
     float.addEventListener('toggle', update);
     return () => {
+      observer.disconnect();
       removeEventListener('scroll', update, true);
       removeEventListener('resize', update);
       float.removeEventListener('toggle', update);

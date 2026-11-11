@@ -10,9 +10,38 @@ import { tick } from './utils';
  * test/browser/popover.test.ts.
  */
 
+/**
+ * jsdom has no ResizeObserver. This one follows the spec: an observation
+ * starts at 0x0, and `layout()` reports each element whose size has changed.
+ */
+let observers: { cb: () => void; els: Map<Element, string> }[] = [];
+const layout = () => {
+  for (const { cb, els } of observers) {
+    for (const [el, last] of els) {
+      const size = `${(el as HTMLElement).offsetWidth}x${(el as HTMLElement).offsetHeight}`;
+      if (size !== last) {
+        els.set(el, size);
+        cb();
+      }
+    }
+  }
+};
+
 const realCSS = (globalThis as any).CSS;
 beforeEach(() => {
   (globalThis as any).CSS = { supports: () => false };
+  (window as any).ResizeObserver = class {
+    els = new Map<Element, string>();
+    constructor(cb: () => void) {
+      observers.push({ cb, els: this.els });
+    }
+    observe(el: Element) {
+      this.els.set(el, '0x0');
+    }
+    disconnect() {
+      this.els.clear();
+    }
+  };
   Object.defineProperty(window, 'innerWidth', {
     value: 1000,
     configurable: true,
@@ -24,6 +53,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   (globalThis as any).CSS = realCSS;
+  delete (window as any).ResizeObserver;
+  observers = [];
   document.body.innerHTML = '';
 });
 
@@ -111,5 +142,64 @@ describe('v-anchor script placement', () => {
     app.unmount();
 
     expect(f.getAttribute('style') ?? '').toBe('');
+    expect(observers[0].els.size).toBe(0);
+  });
+});
+
+describe('v-anchor script placement: no size at mount', () => {
+  const proto = HTMLElement.prototype as any;
+  // an element has a size only while it is connected and displayed
+  beforeEach(() => {
+    const laidOut = (el: HTMLElement) =>
+      el.isConnected && el.style.display !== 'none';
+    for (const [prop, key] of [
+      ['offsetWidth', 'w'],
+      ['offsetHeight', 'h'],
+    ]) {
+      Object.defineProperty(proto, prop, {
+        configurable: true,
+        get(this: HTMLElement) {
+          return laidOut(this) ? +(this.dataset[key] ?? 0) : 0;
+        },
+      });
+    }
+  });
+  afterEach(() => {
+    delete proto.offsetWidth;
+    delete proto.offsetHeight;
+  });
+
+  /** Anchor at (400, 300) sized 100x20; tooltip 60x40, shown on click. */
+  const show = async (directive: string) => {
+    document.body.innerHTML = `
+      <div v-scope="{ tip: false }">
+        <button ref="a" @click="tip = true"></button>
+        <span id="f" data-w="60" data-h="40" ${directive}="tip" v-anchor.top="$refs.a"></span>
+      </div>`;
+    const a = document.querySelector('button')!;
+    a.getBoundingClientRect = () =>
+      ({
+        left: 400,
+        top: 300,
+        right: 500,
+        bottom: 320,
+        width: 100,
+        height: 20,
+      }) as DOMRect;
+    createApp().use(popover).mount(document.body.firstElementChild!);
+    await tick();
+    a.click();
+    await tick();
+    layout();
+    const f = document.querySelector('#f') as HTMLElement;
+    return [f.style.left, f.style.top];
+  };
+
+  test('a v-show element hidden at mount is placed once shown', async () => {
+    expect(await show('v-show')).toEqual(['420px', '260px']);
+  });
+
+  test('a v-if element is placed once inserted', async () => {
+    expect(await show('v-if')).toEqual(['420px', '260px']);
   });
 });
