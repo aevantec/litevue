@@ -82,6 +82,44 @@ describe('devtools panel chrome', () => {
     expect(savedUi.bottom).toBe(parseInt(panel.style.bottom));
   });
 
+  test('a panel dragged flush to the right and bottom edges is saved there', async () => {
+    const { $ } = await boot();
+    $('.header').dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 100, clientY: 100, bubbles: true })
+    );
+    document.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 9000, clientY: 9000 })
+    );
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    expect($('.panel').style.right).toBe('0px');
+    const savedUi = JSON.parse(localStorage.getItem('litevue-devtools-ui')!);
+    expect(savedUi).toMatchObject({ right: 0, bottom: 0 });
+  });
+
+  test('a closed panel keeps nothing bound to an unmounted scope', async () => {
+    const { app, $, $$ } = await boot();
+    if ($('.panel').style.display !== 'flex') $('.pill').click();
+    await sleep(10);
+    $$('.tab')[0].click();
+    // every boot in this file mounts an <a>; this one is last in the document
+    $$('.tree .row')
+      .filter((r) => r.textContent!.includes('<a>'))
+      .at(-1)!
+      .click();
+    await sleep(10);
+    expect($$('.state .prop input.val').length).toBeGreaterThan(0);
+    const btns = $$('.header .btn');
+    btns[btns.length - 1].click();
+    app.unmount();
+    await sleep(10);
+    // rows hold the element and the scope in their handlers
+    expect($$('.tree .row').length).toBe(0);
+    expect($$('.state .prop').length).toBe(0);
+    $('.pill').click();
+    await sleep(10);
+    expect($('.state').textContent).toContain('Select a scope');
+  });
+
   test('adds and removes keys in the state editor', async () => {
     const { store, $, $$ } = await boot();
     store('ui-store', { existing: 1 });

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { computed, createApp, devtools, store } from '../src';
+import { computed, createApp, devtools, reactive, store } from '../src';
 import '../src/devtools-panel';
-import { fmt } from '../src/devtools-panel/values';
+import { findInState, fmt } from '../src/devtools-panel/values';
 import { tick, sleep } from './utils';
 
 const host = () =>
@@ -175,6 +175,23 @@ describe('devtools panel inline editor', () => {
   });
 });
 
+describe('devtools panel with a frozen value', () => {
+  test('fields of a frozen object are read-only', async () => {
+    const { app } = await openScope(
+      'frozen',
+      `<div v-name="frozen" v-scope="{ config: Object.freeze({ mode: 'draft', live: false }) }"></div>`
+    );
+    propRow('config')!.click();
+    await sleep(10);
+    expect(propRow('mode')!.querySelector('input')).toBeNull();
+    expect(propRow('mode')!.querySelector('.preview')!.textContent).toBe(
+      '"draft"'
+    );
+    expect(propRow('live')!.querySelector('input')).toBeNull();
+    app.unmount();
+  });
+});
+
 describe('devtools panel with a throwing getter', () => {
   test('lists the rest of the scope and marks the getter', async () => {
     const { app } = await openScope(
@@ -185,6 +202,36 @@ describe('devtools panel with a throwing getter', () => {
     expect(propRow('total')!.querySelector('.preview')!.textContent).toBe(
       '(threw)'
     );
+    app.unmount();
+  });
+
+  test('a null-prototype object holding one keeps the state view', async () => {
+    const errors: string[] = [];
+    const onError = (e: ErrorEvent) => {
+      errors.push(e.message);
+      e.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    const dict = Object.create(null);
+    dict.a = 1;
+    Object.defineProperty(dict, 'total', {
+      enumerable: true,
+      get() {
+        throw new Error('still loading');
+      },
+    });
+    (window as any).__nullProtoDict = dict;
+    const { app } = await openScope(
+      'nullproto',
+      `<div v-name="nullproto" v-scope="{ first: 1, dict: window.__nullProtoDict, last: 2 }"></div>`
+    );
+    window.removeEventListener('error', onError);
+    delete (window as any).__nullProtoDict;
+    expect(errors).toEqual([]);
+    expect(propRow('dict')!.querySelector('.preview')!.textContent).toBe(
+      '{"a":1}'
+    );
+    expect(propRow('last')).toBeTruthy();
     app.unmount();
   });
 
@@ -225,9 +272,30 @@ describe('devtools panel display', () => {
     propRow('s')!.click();
     await sleep(10);
     // entries are listed, but read-only: an edit would land in a copy
-    expect(propRow('a')!.querySelector('.preview')!.textContent).toBe('1');
-    expect(propRow('a')!.querySelector('input')).toBeNull();
+    expect(propRow('"a"')!.querySelector('.preview')!.textContent).toBe('1');
+    expect(propRow('"a"')!.querySelector('input')).toBeNull();
     expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('"x"');
+    app.unmount();
+  });
+
+  test('a Map expands to one row per entry, labelled by its key', async () => {
+    const { app } = await openScope(
+      'mapkeys',
+      `<div v-name="mapkeys" v-scope="{ m: new Map([[{ id: 1 }, 'ada'], [{ id: 2 }, 'grace'], [1, 'n'], ['1', 's'], [Symbol('tag'), 'sym']]) }"></div>`
+    );
+    propRow('m')!.click();
+    await sleep(10);
+    const entries = $$('.state .prop')
+      .filter((r) => r.style.paddingLeft === '22px')
+      .map((r) => r.querySelector('.key')!.textContent);
+    expect(entries).toEqual([
+      '{"id":1}',
+      '{"id":2}',
+      '1',
+      '"1"',
+      'Symbol(tag)',
+    ]);
+    expect(propRow('"1"')!.querySelector('.preview')!.textContent).toBe('"s"');
     app.unmount();
   });
 
@@ -241,6 +309,51 @@ describe('devtools panel display', () => {
     expect(propRow('0')!.querySelector('input')).toBeNull();
     expect(propRow('0')!.querySelector('.preview')!.textContent).toBe('2');
     app.unmount();
+  });
+});
+
+describe('devtools panel re-render timing', () => {
+  test('a flush while the pointer is down waits for the release', async () => {
+    const { app, scope } = await openScope(
+      'ticker',
+      `<div v-name="ticker" v-scope="{ t: 0 }"><b>{{ t }}</b></div>`
+    );
+    const row = $$('.tree .row').find((r) =>
+      r.textContent!.includes('<ticker>')
+    )!;
+    // jsdom does not track :active, so a press on the panel is stubbed
+    const matches = Element.prototype.matches;
+    Element.prototype.matches = function (this: Element, sel: string) {
+      return (
+        (sel === ':active' && this.className === 'panel') ||
+        matches.call(this, sel)
+      );
+    };
+    try {
+      scope.t++;
+      await tick();
+      await sleep(10);
+      // a click whose mousedown row was replaced would never reach a row
+      expect(row.isConnected).toBe(true);
+    } finally {
+      Element.prototype.matches = matches;
+    }
+    await sleep(10);
+    expect(row.isConnected).toBe(false);
+    expect(propRow('t')!.querySelector('input')!.value).toBe('1');
+    app.unmount();
+  });
+});
+
+describe('devtools panel filter search', () => {
+  test('looks inside a Map and a Set', () => {
+    const scope = reactive({
+      prices: new Map([['needle', 2026]]),
+      tags: new Set(['haystack']),
+    });
+    expect(findInState(scope, 'needle')).toBeTruthy();
+    expect(findInState(scope, '2026')).toBeTruthy();
+    expect(findInState(scope, 'haystack')).toBeTruthy();
   });
 });
 
@@ -267,7 +380,7 @@ describe('devtools panel preview text', () => {
     const values = [
       { a: 1, b: 'x', c: null, d: [1, [2, {}]], e: true },
       { skipped: undefined, fn() {}, kept: 0 },
-      [undefined, () => 0, NaN, date],
+      [undefined, () => 0, date],
       'text',
       42,
       null,
@@ -279,6 +392,51 @@ describe('devtools panel preview text', () => {
     expect(fmt({ m: new Map([[1, 2]]), s: new Set() })).toBe(
       '{"m":Map(1),"s":Set(0)}'
     );
+  });
+
+  test('NaN and Infinity read as themselves, not as null', () => {
+    expect(fmt(NaN)).toBe('NaN');
+    expect(fmt(-Infinity)).toBe('-Infinity');
+    expect(fmt([NaN, 1])).toBe('[NaN,1]');
+  });
+
+  test('a throwing getter or a BigInt does not lose the preview', () => {
+    const cart = {
+      items: null as any,
+      count: 2,
+      get total() {
+        return this.items.length;
+      },
+    };
+    expect(fmt(cart)).toBe('{"items":null,"count":2}');
+    const dict = Object.create(null);
+    dict.id = 10n;
+    expect(fmt(dict)).toBe('{"id":10}');
+    // nothing to fall back to: no toString on a null-prototype object
+    const bad = Object.create(null);
+    Object.defineProperty(bad, 'x', { enumerable: true, value: 1 });
+    bad.toJSON = () => {
+      throw new Error('no');
+    };
+    expect(() => fmt(bad)).not.toThrow();
+  });
+
+  test('a typed array is read only as far as the preview needs', () => {
+    const bytes = new Uint8Array(2_000_000);
+    const realKeys = Object.keys;
+    let listed = 0;
+    Object.keys = ((o: any) => {
+      const k = realKeys(o);
+      if (o === bytes) listed = k.length;
+      return k;
+    }) as typeof Object.keys;
+    try {
+      expect(fmt(bytes)).toMatch(/^\[0,0,0,/);
+    } finally {
+      Object.keys = realKeys;
+    }
+    expect(listed).toBe(0);
+    expect(fmt(new DataView(new ArrayBuffer(4)))).toBe('[]');
   });
 
   test('a value that refers to itself still previews', () => {

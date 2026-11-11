@@ -137,4 +137,65 @@ describe('extension panel', () => {
     await poll();
     expect(tree().textContent).toContain('<form>');
   });
+
+  test('a BigInt or a symbol in one scope does not hide the page', async () => {
+    await mountOne(`<div v-name="ext-fine" v-scope="{ n: 1 }"></div>`);
+    await mountOne(
+      `<div v-name="ext-bigint" v-scope="{ rowId: 9007199254740993n, tag: Symbol('t') }"></div>`
+    );
+    await poll();
+    expect(tree().textContent).toContain('ext-fine');
+    select('ext-bigint');
+    expect(inputFor('rowId').value).toBe('9007199254740993');
+    expect(inputFor('tag').value).toBe('Symbol(t)');
+  });
+
+  test('polls only while its devtools tab is shown', () => {
+    const live = new Set<number>();
+    let next = 0;
+    const src = readFileSync(
+      resolve(__dirname, '../extension/panel.js'),
+      'utf8'
+    );
+    new Function('setInterval', 'clearInterval', src)(
+      () => (live.add(++next), next),
+      (id: number) => live.delete(id)
+    );
+    let shown: ((win: Window) => void) | undefined;
+    let hidden: (() => void) | undefined;
+    (globalThis as any).chrome.devtools.panels = {
+      create: (...args: any[]) =>
+        args[3]({
+          onShown: { addListener: (fn: typeof shown) => (shown = fn) },
+          onHidden: { addListener: (fn: typeof hidden) => (hidden = fn) },
+        }),
+    };
+    new Function(
+      readFileSync(resolve(__dirname, '../extension/devtools.js'), 'utf8')
+    )();
+    // polling from load, before the first onShown reaches the page
+    expect(live.size).toBe(1);
+    shown!(window);
+    expect(live.size).toBe(1);
+    hidden!();
+    expect(live.size).toBe(0);
+    shown!(window);
+    expect(live.size).toBe(1);
+  });
+
+  test('a form control named getAttribute or localName does not hide the page', async () => {
+    await mountOne(`<div v-name="ext-other" v-scope="{ n: 1 }"></div>`);
+    const { root } = await mountOne(
+      `<form v-scope="{ q: '' }"><input name="getAttribute"><input name="localName"></form>`
+    );
+    // simulated, as above
+    for (const name of ['getAttribute', 'localName']) {
+      Object.defineProperty(root, name, {
+        value: root.querySelector(`[name=${name}]`),
+      });
+    }
+    await poll();
+    expect(tree().textContent).toContain('ext-other');
+    expect(tree().textContent).toContain('<form>');
+  });
 });
