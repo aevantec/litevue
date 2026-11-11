@@ -276,15 +276,18 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // the page's own scripts already ran; fetched ones never do. One with no
       // type, a JavaScript type or module would run; any other is a data
       // island. DOMParser parses with scripting off, so a noscript holds live
-      // elements here
-      doc
-        .querySelectorAll('script,noscript')
-        .forEach(
-          (s) =>
-            /^\s*(module\s*)?$|script/i.test(
-              (s as HTMLScriptElement).type || ''
-            ) && s.remove()
-        );
+      // elements here. The live target drops them too, so the elements after
+      // one still line up; a script that ran stays run
+      [doc, from].forEach((d) =>
+        d
+          .querySelectorAll('script,noscript')
+          .forEach(
+            (s) =>
+              /^\s*(module\s*)?$|script/i.test(
+                (s as HTMLScriptElement).type || ''
+              ) && s.remove()
+          )
+      );
       const dropOld = await mergeHead(doc);
       // stylesheets and transitions both defer this; a newer navigation may
       // have started meanwhile

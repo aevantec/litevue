@@ -155,6 +155,37 @@ describe('navigate: links', () => {
     expect((side.querySelector('b') as HTMLElement).style.display).toBe('');
   });
 
+  // the fetched page loses these, so the live page must too, or every
+  // unkeyed element after one is compared with the wrong one
+  test.each([
+    ['a noscript', '<noscript><iframe src="about:blank"></iframe></noscript>'],
+    ['an inline script', '<script>window.__ran = 1</script>'],
+  ])('keeps an unkeyed scope after %s and its state', async (_, lead) => {
+    const side = `<aside v-scope="{ open: false }"><b v-show="open">menu</b>
+        <button @click="open = true">open</button></aside>`;
+    replies['/about'] = {
+      body: page('About', `${lead}${side}<a href="/">Home</a>`),
+    };
+    await start(`${side}<a href="/about">About</a>`);
+    // as a browser leaves them: the script ran, the noscript holds text
+    const live = document.createElement('div');
+    live.innerHTML = lead;
+    const ns = live.querySelector('noscript');
+    if (ns) ns.textContent = ns.innerHTML;
+    document.body.prepend(live.firstChild!);
+    const aside = document.querySelector('aside')!;
+    aside.querySelector('button')!.click();
+    await tick();
+
+    click(document.querySelector('a[href="/about"]')!);
+    await settle();
+
+    expect(location.pathname).toBe('/about');
+    expect(document.querySelector('aside')).toBe(aside);
+    expect(aside.querySelector('b')!.style.display).toBe('');
+    expect(document.querySelector('iframe,script')).toBeNull();
+  });
+
   test('mounts a scope root the new page adds', async () => {
     replies['/count'] = {
       body: page(
