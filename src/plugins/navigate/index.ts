@@ -83,8 +83,11 @@ const mergeHead = async (doc: Document) => {
       continue;
     }
     const fresh = document.importNode(el, true) as HTMLLinkElement;
-    // browsers fire neither load nor error for a disabled or href-less sheet
-    if (fresh.matches('link[rel=stylesheet][href]:not([disabled],[href=""])')) {
+    // browsers fire neither load nor error for a disabled or href-less sheet;
+    // two :not()s, as a list inside one needs Chrome 88 and Firefox 84
+    if (
+      fresh.matches('link[rel=stylesheet][href]:not([disabled]):not([href=""])')
+    ) {
       // listeners, not onload: the page's own handler (the media="print"
       // async-CSS pattern) must still run; an error must not block the page
       loads.push(
