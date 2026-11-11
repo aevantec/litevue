@@ -62,6 +62,10 @@ const preserved = (node: Node, opts: MorphOptions) =>
     (node as any).__marker ||
     !!opts.preserve?.(node as Element));
 
+// a lazy region still waiting to mount; a literal, since importing lazy.ts's
+// selector costs the bundle more
+const LAZY = '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]';
+
 const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
 // v-scope roots often carry server-set custom properties; v-on writes nothing
@@ -254,11 +258,23 @@ const patchNode = (
   // a different tag can't be patched into place
   if (a.tagName !== b.tagName) return replaceNode(from, to, ctx, opts);
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
+  // a lazy region still waiting holds markup nothing has consumed, so its
+  // directives and {{ }} are still the server's to change
+  if (a.matches(LAZY)) {
+    if (!a.isEqualNode(b)) replaceNode(from, to, ctx, opts);
+    return;
+  }
 
   patchAttrs(a, b, opts.values);
   // a template's markup lives in .content, out of patchChildren's reach; it
   // holds no live bindings, so copying it wholesale loses nothing
-  if (a.tagName == 'TEMPLATE') a.innerHTML = b.innerHTML;
+  if (
+    a.tagName == 'TEMPLATE' &&
+    !(a as HTMLTemplateElement).content.isEqualNode(
+      (b as HTMLTemplateElement).content
+    )
+  )
+    a.innerHTML = b.innerHTML;
   // a $template component's markup came from the client, so the server sends
   // its root empty; only the live scope knows. Its own key: a nested scope
   // inherits the component's. Not Object.hasOwn, which raises the browser floor
@@ -295,14 +311,8 @@ const replaceNode = (
  * copy of the core into the plugins bundle.
  */
 const mountNew = (node: Node, ctx: Context | undefined) => {
-  // a lazy region still waiting walks this markup itself when it fires; a
-  // literal, since importing lazy.ts's selector costs the bundle more
-  if (
-    node.parentElement?.closest(
-      '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]'
-    )
-  )
-    return;
+  // a lazy region still waiting walks this markup itself when it fires
+  if (node.parentElement?.closest(LAZY)) return;
   const target = ctx || nearestCtx(node.parentNode);
   target?.walk?.(node, target);
 };
@@ -436,14 +446,18 @@ export const morph = (
     // parsed in a <template> so table rows, <li> and <option> survive; a
     // lone element is the outer target, but not one beside text
     const holder = document.createElement('template');
-    holder.innerHTML = to.trim();
-    const content = holder.content;
+    // inside an <svg>, so SVG children are parsed in the SVG namespace
+    const svg = from instanceof SVGElement;
+    holder.innerHTML = svg ? `<svg>${to.trim()}</svg>` : to.trim();
+    const content = svg
+      ? (holder.content.firstChild as Element)
+      : holder.content;
     target =
       content.childNodes.length === 1 && content.firstElementChild
         ? content.firstElementChild
         : (() => {
             const wrapper = from.cloneNode(false) as Element;
-            wrapper.appendChild(content);
+            wrapper.append(...content.childNodes);
             return wrapper;
           })();
   } else {

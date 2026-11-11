@@ -515,6 +515,50 @@ describe('morph', () => {
     expect(root.querySelector('#row')!.innerHTML).toBe('<li>new</li>');
   });
 
+  test('leaves an unchanged <template> content as it is', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><template id="row"><li>a</li></template></div>`
+    );
+    const template = root.querySelector('#row') as HTMLTemplateElement;
+    const li = template.content.firstChild;
+
+    morph(root, `<div v-scope><template id="row"><li>a</li></template></div>`);
+
+    expect(template.content.firstChild).toBe(li);
+  });
+
+  test('a waiting lazy region takes the markup the server changed', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }"><button>{{ id }}</button></section></div>`
+    );
+    const old = root.querySelector('#lazy')!;
+
+    morph(
+      root,
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 18 }"><button>{{ id }}</button></section></div>`
+    );
+    root.querySelector('#lazy')!.dispatchEvent(new Event('pointerdown'));
+    old.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(root.querySelector('#lazy button')!.textContent).toBe('18');
+    // the replaced region's trigger was released with it
+    expect(old.textContent).toBe('{{ id }}');
+  });
+
+  test('an unchanged waiting lazy region keeps its node', async () => {
+    const markup = `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }"><button>{{ id }}</button></section></div>`;
+    const { root } = await mountApp(markup);
+    const lazy = root.querySelector('#lazy')!;
+
+    morph(root, markup);
+    lazy.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(root.querySelector('#lazy')).toBe(lazy);
+    expect(lazy.querySelector('button')!.textContent).toBe('17');
+  });
+
   test('accepts an element as the target and returns the live node', async () => {
     const { root } = await mountApp(`<div><p id="p">old</p></div>`);
     const next = document.createElement('p');
@@ -566,5 +610,20 @@ describe('morph with an HTML string', () => {
 
     expect(r.isConnected).toBe(true);
     expect(r.innerHTML).toBe('Hello <b>world</b>');
+  });
+
+  test('parses markup for an SVG element as SVG', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><svg><g id="g"><rect></rect></g></svg></div>`
+    );
+    const g = root.querySelector('#g')!;
+
+    morph(g, '<g id="g"><circle r="2"></circle></g>');
+    morph(g, '<circle r="3"></circle><circle r="4"></circle>');
+
+    expect(root.querySelector('#g')).toBe(g);
+    const circles = [...g.children];
+    expect(circles.map((c) => c.getAttribute('r'))).toEqual(['3', '4']);
+    expect(circles.every((c) => c instanceof SVGElement)).toBe(true);
   });
 });
