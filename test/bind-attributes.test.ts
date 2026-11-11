@@ -141,3 +141,52 @@ describe('v-bind with an unchanged value', () => {
     expect($('a').hasAttribute('href')).toBe(false);
   });
 });
+
+/**
+ * Vue always patches `value`: the field may have changed underneath the
+ * binding, so an unchanged value still puts it back.
+ */
+describe('v-bind :value after the user typed', () => {
+  test('a reset to the same value clears the typed text', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ form: { name: '' } }"><input :value="form.name"></div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    input.value = 'typed';
+    (root as any).__ctx.scope.form = { name: '' };
+    await tick();
+    expect(input.value).toBe('');
+  });
+
+  test('a clamped input shows the clamped value', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ n: 5 }"><input :value="Math.min(n, 10)" @input="n = +$event.target.value"></div>`
+    );
+    const input = $('input') as HTMLInputElement;
+    input.value = '50';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+    expect(input.value).toBe('10');
+    input.value = '100';
+    input.dispatchEvent(new Event('input'));
+    await tick();
+    expect((root as any).__ctx.scope.n).toBe(100);
+    expect(input.value).toBe('10');
+  });
+
+  test('a select snaps back to an allowed value', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ pick: 'a' }">
+        <select :value="pick === 'b' ? 'a' : pick" @change="pick = $event.target.value">
+          <option>a</option><option>b</option>
+        </select>
+      </div>`
+    );
+    const select = $('select') as HTMLSelectElement;
+    select.value = 'b';
+    select.dispatchEvent(new Event('change'));
+    await tick();
+    expect((root as any).__ctx.scope.pick).toBe('b');
+    expect(select.value).toBe('a');
+  });
+});

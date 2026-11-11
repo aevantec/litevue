@@ -40,8 +40,9 @@ export const bind: Directive<
       }
       // As Vue: an unchanged value is not set again, since re-setting src
       // restarts a video or reloads an iframe. An object may have changed in
-      // place, so it is always applied.
-      if (value !== prevValue || isObject(value)) {
+      // place, so it is always applied, and so is value, which the user may
+      // have typed over.
+      if (value !== prevValue || isObject(value) || arg === 'value') {
         setProp(el, arg, value, prevValue);
       }
     } else {
