@@ -14,7 +14,7 @@ export type ErrorPhase =
   | 'compile'
   /** re-running after a change: a `$watch` callback, `watchEffect`, a plugin effect */
   | 'effect'
-  /** a plugin's teardown, during a full `app.unmount()` */
+  /** a plugin's teardown during a full `app.unmount()`, or a directive's cleanup */
   | 'teardown';
 
 export interface ErrorInfo {

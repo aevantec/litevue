@@ -39,21 +39,21 @@ export const mask: Plugin = (app) => {
     const input = el as HTMLInputElement;
     const apply = (e?: Event) => {
       const { value, selectionStart: at } = input;
+      const type = (e as InputEvent)?.inputType;
       // not after a deletion, or Backspace over a trailing literal would
       // only put it back
-      const masked = format(
-        value,
-        exp,
-        !(e as InputEvent)?.inputType?.startsWith('del')
-      );
+      const masked = format(value, exp, !type?.startsWith('del'));
       if (masked === value) return false;
       input.value = masked;
       // rewriting value moves the caret to the end; put it back after the
       // characters that were before it, and past the literals before the next
-      // slot, which formatting that prefix leaves off
+      // slot, which formatting that prefix leaves off; except after a
+      // backward deletion mid-value, where that would put the caret back
+      // after the literal just deleted
       if (at != null && document.activeElement === input) {
         let to = format(value.slice(0, at), exp).length;
-        while (to < masked.length && !tokens[exp[to]]) to++;
+        if (!to || !type?.endsWith('Backward'))
+          while (to < masked.length && !tokens[exp[to]]) to++;
         input.setSelectionRange(to, to);
       }
       return true;
@@ -61,12 +61,14 @@ export const mask: Plugin = (app) => {
     // registered before v-model's deferred listener, so the model always
     // sees the masked value
     el.addEventListener('input', apply);
-    apply();
+    // a value already set (:value bound first, or from the server) is
+    // formatted now, so remember it still needs the events below
+    const dirty = apply();
     // v-model writes its initial value after this runs; format that too, and
     // tell the model, which listens for change instead when .lazy
     let live = true;
     Promise.resolve().then(() => {
-      if (live && apply()) {
+      if (live && (apply() || dirty)) {
         el.dispatchEvent(new Event('input'));
         el.dispatchEvent(new Event('change'));
       }
