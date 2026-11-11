@@ -315,8 +315,9 @@ export const createApp = (initialData?: any) => {
         // appended, not assigned: mount() may be called repeatedly, and
         // unmount() must reach every root, not just the last batch
         rootBlocks.push(block);
-        // a root that morph removes leaves the list too, not only on unmount
-        own(() => remove(rootBlocks, block), el);
+        // a root that morph removes leaves the list and is torn down, as
+        // unmount(el) would; a root without v-scope has no other owner
+        own(() => (remove(rootBlocks, block), block.teardown()), el);
         // forgotten on teardown, so morph cannot bind new markup to it
         block.ctx.cleanups.push(() => delete (el as any).__ctx);
       }
