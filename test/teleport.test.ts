@@ -82,6 +82,27 @@ describe('v-teleport', () => {
     );
     app.unmount();
   });
+
+  test('a target at or inside the element is reported, and the mount goes on', async () => {
+    const seen: string[] = [];
+    document.body.innerHTML = `<div id="app" v-scope="{ n: 1 }"><div id="tp" class="modal" v-teleport=".modal">{{ n }}</div><p>{{ n }}</p></div>`;
+    const app = createApp();
+    app.onError((_e, info) => seen.push(`${info.phase} ${info.source}`));
+    const error = console.error;
+    console.error = () => {};
+    try {
+      expect(() => app.mount('#app')).not.toThrow();
+    } finally {
+      console.error = error;
+    }
+    await tick();
+
+    expect(seen).toEqual(['directive v-teleport']);
+    expect(document.getElementById('tp')!.parentElement!.id).toBe('app');
+    expect(document.getElementById('tp')!.textContent).toBe('1');
+    expect(document.querySelector('p')!.textContent).toBe('1');
+    app.unmount();
+  });
 });
 
 // morph releases what a removed subtree owns, but a teleported element has

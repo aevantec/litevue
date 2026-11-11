@@ -81,7 +81,11 @@ export const hide = (scope: any, key: string, value: any) =>
     configurable: true,
   });
 
-export const createScopedContext = (ctx: Context, data = {}): Context => {
+export const createScopedContext = (
+  ctx: Context,
+  data = {},
+  isRow?: boolean
+): Context => {
   const parentScope = ctx.scope;
   const mergedScope = Object.create(parentScope);
   Object.defineProperties(mergedScope, Object.getOwnPropertyDescriptors(data));
@@ -111,7 +115,8 @@ export const createScopedContext = (ctx: Context, data = {}): Context => {
   hide(mergedScope, '$id', createId());
   // keys read off the raw scope: through the proxy, Object.keys tracks it, and
   // a v-for mounting rows inside its effect picked up one dependency per row
-  bindContextMethods(reactiveProxy, mergedScope);
+  // a v-for row's values are list items, handed over as the list holds them
+  if (!isRow) bindContextMethods(reactiveProxy, mergedScope);
   return scopedCtx;
 };
 
@@ -121,7 +126,9 @@ export const bindContextMethods = (scope: Record<string, any>, raw = scope) => {
   for (const key of Object.keys(raw)) {
     const fn = Object.getOwnPropertyDescriptor(raw, key)!.value;
     if (typeof fn === 'function') {
-      scope[key] = fn.bind(scope);
+      // inherits from the original, so members such as `lib.get` or a
+      // class's statics still resolve on the bound copy
+      scope[key] = Object.setPrototypeOf(fn.bind(scope), fn);
     }
   }
 };

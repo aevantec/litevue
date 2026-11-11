@@ -56,10 +56,11 @@ export const stores: Record<string, any> = reactive(target);
  * expression as `$store.<name>`. Passing a value registers it and runs its
  * `init()` once, if present; omitting one retrieves.
  */
-export const store = <T extends Record<string, any>>(
-  name: string,
-  value?: T
-): T => {
+export const store: {
+  <T extends Record<string, any>>(name: string, value: T): T;
+  /** A name that was never registered reads as undefined. */
+  <T extends Record<string, any>>(name: string): T | undefined;
+} = (name: string, value?: Record<string, any>) => {
   if (value !== undefined) {
     stores[name] = value;
     if (typeof stores[name].init === 'function') {

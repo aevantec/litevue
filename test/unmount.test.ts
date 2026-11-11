@@ -240,3 +240,65 @@ describe('app.unmount(el)', () => {
     app.unmount();
   });
 });
+
+// the root element itself left the container: v-for and v-if keep it as a
+// detached template, and v-teleport moves it to its target
+describe('app.unmount(el) and roots that left their place', () => {
+  test('a root with v-for', async () => {
+    document.body.innerHTML = `<ul id="c"><li v-for="it in items" :key="it" v-scope="{ open: false }" @click="hits.push(it)">{{ it }}:{{ label }}</li></ul>`;
+    const hits: number[] = [];
+    const app = createApp({ items: [1, 2], label: 'a', hits });
+    app.mount('#c');
+    await tick();
+    expect($('#c').textContent).toBe('1:a2:a');
+
+    app.unmount('#c');
+    app.scope.label = 'b';
+    app.scope.items.push(3);
+    await tick();
+    $('#c li').click();
+
+    expect($('#c').textContent).toBe('1:a2:a');
+    expect(hits).toEqual([]);
+  });
+
+  test('a root with v-if', async () => {
+    document.body.innerHTML = `<div id="c"><p v-scope="{ n: 1 }" v-if="show">{{ n }}:{{ label }}</p></div>`;
+    const app = createApp({ show: true, label: 'a' });
+    app.mount('#c');
+    await tick();
+
+    app.unmount('#c');
+    app.scope.label = 'b';
+    await tick();
+
+    expect($('#c').textContent).toBe('1:a');
+  });
+
+  test('a root with v-teleport', async () => {
+    document.body.innerHTML = `<div id="c"><p v-scope="{ n: 1 }" v-teleport="#t">{{ n }}:{{ label }}</p></div><div id="t"></div>`;
+    const app = createApp({ label: 'a' });
+    app.mount('#c');
+    await tick();
+    expect($('#t').textContent).toBe('1:a');
+
+    app.unmount('#c');
+
+    expect($('#t').textContent).toBe('');
+  });
+
+  test('a sibling root stays mounted', async () => {
+    document.body.innerHTML = `<div><p id="a" v-scope v-if="show">{{ label }}</p><p id="b" v-scope>{{ label }}</p></div>`;
+    const app = createApp({ show: true, label: 'a' });
+    app.mount(document.body.firstElementChild!);
+    await tick();
+
+    app.unmount('#b');
+    app.scope.label = 'b';
+    await tick();
+
+    expect($('#a').textContent).toBe('b');
+    expect($('#b').textContent).toBe('a');
+    app.unmount();
+  });
+});

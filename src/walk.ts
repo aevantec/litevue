@@ -123,7 +123,17 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
         // places its marker.
         const marker = ((el as any).__marker = new Text(''));
         el.before(marker);
-        target.appendChild(el);
+        try {
+          target.appendChild(el);
+        } catch (e) {
+          // the target is the element itself or inside it; it stays put
+          handleError(e, {
+            phase: 'directive',
+            source: 'v-teleport',
+            el,
+            expression: exp,
+          });
+        }
         addCleanup(
           ctx,
           () => {
@@ -209,7 +219,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     // a script's text is code or a client-side template, never ours (as Vue)
     if (
       data.includes(ctx.delimiters[0]) &&
-      !(node.parentNode instanceof HTMLScriptElement)
+      (node.parentNode as Element)?.localName != 'script'
     ) {
       let segments: string[] = [];
       let lastIndex = 0;
@@ -315,7 +325,8 @@ const applyDirective = (
   source?: string,
   displayExp?: string
 ) => {
-  const meta = { source, el, expression: displayExp };
+  // as written, not the wrapper a directive compiles around it
+  const meta = { source, el, expression: displayExp || exp };
   const report = (err: unknown) =>
     handleError(err, {
       phase: 'handler',
@@ -369,7 +380,14 @@ const applyDirective = (
     return;
   }
   if (cleanup) {
-    addCleanup(ctx, cleanup);
+    // contained, so one throwing cleanup cannot abort the rest of a teardown
+    addCleanup(ctx, () => {
+      try {
+        cleanup();
+      } catch (e) {
+        handleError(e, { phase: 'teardown', source, el, expression: exp });
+      }
+    });
   }
 };
 

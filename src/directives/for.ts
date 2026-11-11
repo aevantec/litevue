@@ -113,7 +113,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       data[valueExp] = value;
     }
-    if (objKey) {
+    if (objKey != null) {
       indexExp && (data[indexExp] = objKey);
       objIndexExp && (data[objIndexExp] = index);
     } else {
@@ -133,7 +133,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   };
 
   const mountBlock = (row: Row, ref: Node) => {
-    const block = new Block(el, createScopedContext(ctx, row.data));
+    const block = new Block(el, createScopedContext(ctx, row.data, true));
     block.key = row.key;
     block.insert(parent(), ref);
     return block;
