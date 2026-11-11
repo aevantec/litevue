@@ -136,3 +136,40 @@ describe('rendered output stays inert when walked again', () => {
     first.unmount();
   });
 });
+
+describe('mount() leaves inert content alone', () => {
+  const ran = () => (window as any).__inert;
+
+  afterEach(() => {
+    delete (window as any).__inert;
+    vi.restoreAllMocks();
+  });
+
+  test('a v-scope inside v-pre outside every scope', async () => {
+    const inner = '<div v-scope="{ a: (window.__inert = 1) }">{{ a }}</div>';
+    document.body.innerHTML = `<div v-scope="{ n: 1 }">{{ n }}</div><div id="w" v-pre>${inner}</div>`;
+    const app = createApp().mount()!;
+    await tick();
+    expect(ran()).toBeUndefined();
+    expect(document.getElementById('w')!.innerHTML).toBe(inner);
+    app.unmount();
+  });
+
+  test('a v-scope inside v-pre or v-html output of a mounted region', async () => {
+    document.body.innerHTML = `<div id="c"><section v-scope><code v-pre><span v-scope="{ a: (window.__inert = 1) }">{{ a }}</span></code><div v-html="html"></div></section></div>`;
+    const app = createApp({
+      html: '<i v-scope="{ a: (window.__inert = 2) }">{{ a }}</i>',
+    }).mount()!;
+    await tick();
+    const c = document.getElementById('c')!;
+    c.insertAdjacentHTML('beforeend', '<div v-scope="{ m: 2 }">{{ m }}</div>');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    app.mount(c);
+    // mounted directly, as the post-morph snippet in the docs does
+    app.mount(c.querySelector('i'));
+    await tick();
+    expect(ran()).toBeUndefined();
+    expect(c.lastElementChild!.textContent).toBe('2');
+    app.unmount();
+  });
+});
