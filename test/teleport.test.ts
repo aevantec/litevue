@@ -68,6 +68,21 @@ describe('v-teleport', () => {
     app.unmount();
   });
 
+  test('a target later in the same region does not compile the rendered text', async () => {
+    document.body.innerHTML = `
+      <div id="app" v-scope="{ q: '{{ window.__teleported = 1 }}' }">
+        <p v-teleport="#late">Results for {{ q }}</p>
+        <div id="late"></div>
+      </div>`;
+    const app = createApp().mount('#app')!;
+    await tick();
+    expect((window as any).__teleported).toBeUndefined();
+    expect(document.querySelector('#late p')!.textContent).toBe(
+      'Results for {{ window.__teleported = 1 }}'
+    );
+    app.unmount();
+  });
+
   test('a target at or inside the element is reported, and the mount goes on', async () => {
     const seen: string[] = [];
     document.body.innerHTML = `<div id="app" v-scope="{ n: 1 }"><div id="tp" class="modal" v-teleport=".modal">{{ n }}</div><p>{{ n }}</p></div>`;

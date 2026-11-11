@@ -223,8 +223,11 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
           Object.assign(block.ctx.scope, row.data);
           // Rows after this one are in place, so move it only if it is not
           // already right before its successor. Asked of the DOM, since a
-          // removed neighbour shifts the index without the node moving.
-          if (oldIndex !== i && (block.end || block.el).nextSibling !== ref) {
+          // removed neighbour shifts the index without the node moving. A
+          // neighbour still leaving holds its place, so it is stepped over.
+          let next = (block.end || block.el).nextSibling as any;
+          while (next?.__leaving) next = next.nextSibling;
+          if (oldIndex !== i && next !== ref) {
             block.insert(parent(), ref);
           }
         }

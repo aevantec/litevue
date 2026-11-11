@@ -28,6 +28,10 @@ import { disposeSubtree, own } from './ownership';
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]/\\]/g, '\\$&');
 
+// inside v-pre, or inside output that v-html rendered (see walkNode)
+const isInert = (el: any): any =>
+  el && (el.__r || el.hasAttribute('v-pre') || isInert(el.parentElement));
+
 export interface App {
   /**
    * The reactive root scope. Plugins may attach helpers here (conventionally
@@ -253,6 +257,8 @@ export const createApp = (initialData?: any) => {
       if (!roots.length) {
         roots = [el];
       }
+      // content the docs call inert is never mounted, however it is reached
+      roots = roots.filter((root) => !isInert(root));
 
       if (
         import.meta.env.DEV &&
