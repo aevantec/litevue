@@ -142,6 +142,8 @@ export class Block {
     const leaves: Promise<void>[] = [];
     let node: Node | null = this.start || this.template;
     while (node) {
+      // still in place while it leaves; v-for steps over it
+      (node as any).__leaving = 1;
       const leave = (node as any).__leave as (() => Promise<void>) | undefined;
       if (leave) leaves.push(leave());
       if (!this.start || node === this.end) break;
