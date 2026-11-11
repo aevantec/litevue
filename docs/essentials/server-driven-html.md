@@ -162,13 +162,15 @@ whether that HTML should be mounted or morphed.
 htmx fires [`htmx:load`](https://htmx.org/events/#htmx:load) whenever it inserts
 a node, with `detail.elt` as the new element. That is the hook the htmx
 documentation recommends for initializing third-party JavaScript, and it is the
-right one here:
+right one here. htmx also fires it once at start-up, on `<body>` itself. Skip
+that one: `createApp().mount()` has already mounted the page's regions, and
+mounting the body again would bind the markup outside them.
 
 ```js
 const app = createApp().mount();
 
 document.body.addEventListener('htmx:load', (e) => {
-  app.mount(e.detail.elt);
+  if (e.detail.elt !== document.body) app.mount(e.detail.elt);
 });
 ```
 
@@ -207,11 +209,17 @@ document.addEventListener('turbo:load', () => {
 });
 ```
 
-**Turbo Frames** replace one frame. `turbo:frame-load` fires on the frame
-itself, and does not fire on initial page load — the `turbo:load` handler
-above already covered that:
+**Turbo Frames** replace one frame's contents. `turbo:frame-load` fires on the
+frame itself, and does not fire on initial page load — the `turbo:load`
+handler above already covered that. Unmount the old contents in
+`turbo:before-frame-render`, which fires on the frame before Turbo removes
+them; skipping it leaks the replaced region, as described above:
 
 ```js
+document.addEventListener('turbo:before-frame-render', (e) => {
+  app.unmount(e.target);
+});
+
 document.addEventListener('turbo:frame-load', (e) => {
   app.mount(e.target);
 });
