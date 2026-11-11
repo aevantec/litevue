@@ -130,7 +130,7 @@ One design difference worth calling out: Alpine automatically initializes markup
 ::: danger Read this before deploying
 LiteVue evaluates JavaScript expressions found in your markup, and two consequences decide whether it can be used at all.
 
-- **Never mount over untrusted HTML.** An attacker who can inject a `v-scope` or `@click` attribute into a region you mount can execute code. Mount an explicit target rather than the whole document.
+- **Never mount over untrusted HTML.** An attacker who can inject a `v-scope` or `@click` attribute into a region you mount can execute code, and `{{ }}` in plain user text inside a mounted region is compiled even when the server has HTML-escaped it. Mount an explicit target rather than the whole document, and render user content outside mounted regions or inside `v-pre`.
 - **A strict CSP must allow `script-src 'unsafe-eval'`**, because expressions are compiled with `new Function()`. A nonce or hash does not substitute. If your policy cannot allow it, use standard Vue with pre-compiled templates instead — no CSP build is planned.
 
 Both are covered in full, along with `v-html`, morph, devtools and third-party plugins, on the [Security](/start-here/security) page.

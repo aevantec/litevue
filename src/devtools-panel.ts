@@ -145,12 +145,20 @@ const tagOf = (el: Element) => {
   return label;
 };
 
+// A form's named controls shadow its properties, methods included, so these
+// are read from the prototypes: a control named parentElement would loop.
+const parentGet = Object.getOwnPropertyDescriptor(
+  Node.prototype,
+  'parentElement'
+)!.get!;
+const parentOf = (el: Element): Element | null => parentGet.call(el);
+
 /** Nearest ancestor element that is itself a registered scope. */
 const parentScopeOf = (el: Element) => {
-  let p = el.parentElement;
+  let p = parentOf(el);
   while (p) {
     if (devtools.scopes.has(p)) return p;
-    p = p.parentElement;
+    p = parentOf(p);
   }
   return null;
 };
@@ -207,9 +215,8 @@ const componentOf = (el: Element) => {
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
   componentOf(el) ||
-  // a form's controls named id or tagName shadow those properties
-  el.getAttribute('id') ||
-  el.localName;
+  Element.prototype.getAttribute.call(el, 'id') ||
+  (el instanceof HTMLFormElement ? 'form' : el.localName);
 
 const renderTabs = () => {
   const storeCount = devtools.stores ? devtools.stores.size : 0;
@@ -414,7 +421,8 @@ const addNode = (
   cls: string,
   ancestors: unknown[],
   // inside a derived value or a Map/Set copy, where an edit would be lost
-  ro?: boolean
+  ro?: boolean,
+  label = key
 ) => {
   let v: any, threw;
   // a getter can throw while data loads; show it instead of losing the view
@@ -432,7 +440,7 @@ const addNode = (
     const circular = ancestors.indexOf(v) > -1;
     const open = !circular && expandedPaths.has(path);
     row.appendChild(h('span', open ? 'arrow open' : 'arrow', '▶'));
-    row.appendChild(h('span', 'key', key));
+    row.appendChild(h('span', 'key', label));
     row.appendChild(
       h('span', 'preview', circular ? '(circular)' : previewOf(v))
     );
@@ -446,13 +454,11 @@ const addNode = (
     appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
-      // a Map or Set has no own keys, so its entries are listed from a copy
+      // A Map or Set has no own keys, so its values are listed from a copy.
+      // Map keys label the rows as previews: they need not be strings.
       const coll = isCollection(v);
-      const src = coll
-        ? v instanceof Map
-          ? Object.fromEntries(v)
-          : [...v]
-        : v;
+      const src = coll ? [...v.values()] : v;
+      const names = v instanceof Map && [...v.keys()].map(fmt);
       const keys = Object.keys(src);
       if (!keys.length) {
         const empty = h('div', 'muted', '(empty)');
@@ -467,7 +473,8 @@ const addNode = (
           depth + 1,
           cls,
           ancestors.concat([v]),
-          ro || coll
+          ro || coll,
+          names ? names[+k] : k
         );
       }
     }
@@ -475,7 +482,7 @@ const addNode = (
   }
 
   row.appendChild(h('span', 'spacer'));
-  row.appendChild(h('span', 'key', key));
+  row.appendChild(h('span', 'key', label));
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (threw || ro) {
@@ -562,14 +569,14 @@ const onPickClick = (e: MouseEvent) => {
   e.stopPropagation();
   stopPicking();
   let el: Element | null = target;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   if (el) select(el);
 };
 
 const onPickMove = (e: MouseEvent) => {
   let el: Element | null = e.target as Element;
   if (el === (shadow.host as Element)) return;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   el ? showHighlight(el) : hideHighlight();
 };
 
@@ -597,6 +604,9 @@ const scheduleRender = () => {
   setTimeout(() => {
     renderQueued = false;
     if (panelEl.style.display === 'none') return;
+    // A click fires on the common ancestor of its press and release targets,
+    // so replacing the pressed row would lose it: wait for the release.
+    if (panelEl.matches(':active')) return scheduleRender();
     renderTree();
     renderState();
   });
@@ -659,8 +669,9 @@ const build = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       saveUi({
-        right: parseInt(panelEl.style.right) || 12,
-        bottom: parseInt(panelEl.style.bottom) || 12,
+        // a panel left flush to an edge is at 0, which is not a missing value
+        right: parseInt(panelEl.style.right || '12'),
+        bottom: parseInt(panelEl.style.bottom || '12'),
       });
     };
     document.addEventListener('mousemove', move);
@@ -745,6 +756,8 @@ const build = () => {
     if (picking) stopPicking();
     panelEl.style.display = 'none';
     pillEl.style.display = '';
+    // closed renders are skipped, so these rows would keep their scopes alive
+    treeEl.textContent = stateEl.textContent = '';
     saveUi({ open: false });
   };
   header.appendChild(closeBtn);

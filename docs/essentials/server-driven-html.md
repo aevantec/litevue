@@ -97,9 +97,11 @@ cart
   .forEach((el) => app.mount(el));
 ```
 
-Mounting consumes a root's `v-scope` attribute, so the selector finds only the
-roots morph added, and the `:not()` skips scopes nested inside them, which
-mounting their parent covers. A region that sits inside a mounted `v-scope`
+Mounting consumes a root's `v-scope` attribute, so the selector finds the roots
+morph added, and the `:not()` skips scopes nested inside them, which mounting
+their parent covers. It can also match a `v-scope` written inside `v-pre` or
+`v-html` content; `mount()` never mounts such an element, so passing it is
+safe. A region that sits inside a mounted `v-scope`
 needs none of this: morph mounts new scopes there itself.
 
 Forms follow the same pattern: the server re-renders the form with its

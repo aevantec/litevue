@@ -22,7 +22,12 @@ export const ref: Directive = ({
       const existing = hasOwn(refs, ref) && refs[ref];
       // A second claimant replaces the first, so $refs holds whichever
       // mounted last. v-for rows each have their own $refs, so never collide.
-      if (existing && existing !== el && existing.isConnected) {
+      if (
+        existing &&
+        existing !== el &&
+        existing.isConnected &&
+        !existing.__leaving
+      ) {
         warnOnce(
           `ref-dup:${ref}`,
           `two elements claim ref="${ref}" in the same scope; $refs.${ref} ` +

@@ -4,7 +4,7 @@ title: navigate
 
 # navigate <Badge type="section" text="Plugin" />
 
-Follow same-origin links and submit forms without a full page load. The plugin fetches the next page and [morphs](/plugins/morph) it into this one, so the parts both pages share keep their state: an open sidebar, a playing video, a half-typed search.
+Follow same-origin links and submit forms without a full page load. The plugin fetches the next page and [morphs](/plugins/morph) it into this one, so the parts both pages share keep their state: an open sidebar, a playing video, the scroll position inside a panel.
 
 ```js
 import { createApp } from '@aevantec/litevue';
@@ -59,7 +59,7 @@ Mark links to files the same way, or with `download`. A same-origin link to a PD
 With `prefetch: true`, the plugin starts fetching a link's page before it is clicked:
 
 - When the pointer rests on the link, or focus stays on it, for 100ms. Moving away sooner fetches nothing, so a pointer crossing the page does not fetch every link it passes.
-- At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger.
+- At once on `pointerdown`, which comes before the click by the time it takes to release the button or lift a finger. A press with another button than the main one, or with a modifier key held, prefetches nothing, since the browser handles that click itself.
 
 ```js
 createApp().use(morphPlugin).use(navigate, { prefetch: true }).mount();
@@ -103,13 +103,17 @@ A [store](/globals/store) belongs to the app, not to a page, so its state surviv
 
 ## Forms
 
-A `GET` form navigates to its `action` with the fields as the query string. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. The `enctype` value is matched without regard to case, as the browser matches it. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
+A `GET` form navigates to its `action` with the fields as the query string. A relative `action` is resolved against the document's base URL, so a `<base href>` applies as it does for the browser. A `POST` form follows the server's redirect, so the URL ends on the page the server sent you to. Fields are encoded as the browser would encode them: URL-encoded by default, and as `multipart/form-data` when the form's `enctype` says so. The `enctype` value is matched without regard to case, as the browser matches it. A file input in a URL-encoded form sends its file name, as the browser does. The submit button's `name` and `value`, and its `formaction`, `formmethod`, `formtarget` and `formenctype`, are honored.
 
 After a successful response, the form shows what the server sent, as it would after a full load. When a comment form posts and the server redirects back to the same page, the comment box is empty again, and a field on the next page does not inherit text typed into the field in the same position. The plugin morphs with the [`values`](/plugins/morph#field-values) option to do this. Fields bound with `v-model`, `:value` or `:checked` keep their state, so reset that state to clear them. A field marked `data-morph-skip` keeps what the visitor typed, which suits a search box the visitor may still be typing in.
 
 When a `POST` response is an error, such as a `422` with validation messages, the page renders it in place without changing the URL. The typed values survive, as they do with [morph](/plugins/morph), and focus stays on the field the visitor was in. A `POST` that fails to reach the server is not retried, since sending it again could repeat the action; the form stays as it was and `navigate:error` fires.
 
-When the server redirects a `POST` to a page the plugin cannot render, such as one on another origin, that page loads in full: following the redirect is a `GET`, so nothing is sent twice. A `POST` answered with a file, such as a CSV export, cannot be loaded that way. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
+When the server redirects a `POST` to a page the plugin cannot render, such as an error page, that page loads in full: following the redirect is a `GET`, so nothing is sent twice.
+
+A `POST` redirected to another origin, such as a payment or identity provider, usually fails instead. The browser follows the redirect inside the request, and because the request carries the `X-Requested-With` header, the other origin must allow it through CORS, which such providers generally do not. The request then fails before any response arrives: the form stays as it was and `navigate:error` fires, although the server has already processed the `POST`. Mark such a form `data-navigate="false"` so the browser submits it itself. The page loads in full only when the other origin allows the request.
+
+A `POST` answered with a file, such as a CSV export, has no page to load. The form stays as it was and `navigate:error` fires, so mark the form `data-navigate="false"` and the browser submits it and downloads the file.
 
 While a form's `POST` is in flight, further submits of that form are ignored, so a double click sends one request. A `GET` form submitted again restarts with the newer values, so a search always shows the latest query.
 
@@ -200,6 +204,7 @@ Back and forward cannot be held this way, since the URL has already changed when
 - The plugin falls back to a full load when the response is not HTML, redirects to another origin, is an error for a link or a `GET` form, or has no `target` element, and when its tracked assets differ; see [Deploys](#deploys). A `POST` falls back only when the server redirected it; see [Forms](#forms).
 - Executable `<script>` elements in the fetched page, those with no `type`, a JavaScript type or `type="module"`, are dropped and never run. Any other `<script>`, such as a `type="application/json"` data island, is morphed like other content, so code that reads it after a navigation sees the new page's data. Inline event handler attributes such as `onclick` or `onload` do run, as they would on a full load of that page. Scripts the current page already ran stay run; put page behavior in directives or in your bundle.
 - `<noscript>` elements in the fetched page are dropped, in the head and the body. With scripts enabled their content is inert, so a `<style>` or tracking `<iframe>` inside one never applies or loads, as on a full load.
+- The same executable `<script>` and `<noscript>` elements are removed from the current page's `target` before it is morphed, so the content after them, such as an unkeyed scope that follows a tag manager's `<noscript>`, is matched with its counterpart and keeps its state. Removing a script that already ran does not undo it.
 - The URL changes before the new content mounts, so new scopes read the new `location`.
 - After a successful response, focus goes where a full load would put it: to an `autofocus` field in the new content if there is one. Otherwise, with the default `body` target, it returns to the start of the document; with a `target`, the target receives focus, gaining `tabindex="-1"` if it has none. After an error response rendered in place, focus stays where it was.
 - The new page is announced through a visually hidden, polite live region, so screen-reader users learn the page changed: its title, or its first `<h1>` when it has none, or its path when it has neither. The first page load is not announced, since the screen reader reads it already.

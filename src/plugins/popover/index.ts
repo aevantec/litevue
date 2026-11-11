@@ -44,8 +44,8 @@ const setName = (el: HTMLElement | undefined, name: string, on: boolean) => {
     .split(/\s*,\s*/)
     .filter((n) => n && n !== name);
   on && names.push(name);
-  // an empty value removes the property
-  el.style.setProperty('anchor-name', names.join());
+  // an empty value removes the property; while set, morph leaves the style
+  el.style.setProperty('anchor-name', ((el as any).__anchor = names.join()));
 };
 
 /** Script placement for engines without anchor positioning: flip, then align. */
@@ -135,8 +135,11 @@ export const popover: Plugin = (app) => {
       const name = `--litevue-anchor-${++count}`;
       // fixed measures each side's room against the viewport, which goes wrong
       // for an element laid out while its anchor is scrolled away; a popover
-      // is laid out as it opens, while its trigger is on screen
-      if (!float.hasAttribute('popover')) float.style.position = 'absolute';
+      // is laid out as it opens, while its trigger is on screen; v-popover may
+      // come later in attribute order and has not yet added [popover]
+      if (!float.matches('[popover],[v-popover]')) {
+        float.style.position = 'absolute';
+      }
       // the gap is a margin on the side facing the anchor, kept through a flip
       float.style.margin = vertical ? `${gap}px 0` : `0 ${gap}px`;
       float.style.setProperty('position-anchor', name);
@@ -165,10 +168,15 @@ export const popover: Plugin = (app) => {
       target = get();
       update();
     });
+    // a v-if block is walked before insertion and v-show starts hidden, so the
+    // size is 0 at mount; this re-places it once laid out, and as it resizes
+    const observer = new ResizeObserver(update);
+    observer.observe(float);
     addEventListener('scroll', update, true);
     addEventListener('resize', update);
     float.addEventListener('toggle', update);
     return () => {
+      observer.disconnect();
       removeEventListener('scroll', update, true);
       removeEventListener('resize', update);
       float.removeEventListener('toggle', update);

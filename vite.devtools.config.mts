@@ -15,6 +15,8 @@ export default defineConfig({
       },
     },
     emptyOutDir: false,
+    // no Symbol.toStringTag line (see vite.config.mts)
+    rollupOptions: { output: { generatedCode: { symbols: false } } },
     lib: {
       entry: resolve(import.meta.dirname, 'src/devtools-panel.ts'),
       name: 'LiteVueDevtoolsPanel',

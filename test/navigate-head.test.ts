@@ -130,6 +130,30 @@ describe('navigate: head', () => {
     expect($head('#none')).not.toBeNull();
   });
 
+  // Chrome before 88 and Firefox before 84 throw on a selector list inside
+  // :not(), and both are within the documented browser floor
+  test('waits for a stylesheet without a selector list inside :not()', async () => {
+    const matches = Element.prototype.matches;
+    const spy = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, sel: string) {
+        if (/:not\([^)]*,/.test(sel))
+          throw new DOMException(sel, 'SyntaxError');
+        return matches.call(this, sel);
+      });
+    reply = page('<link rel="stylesheet" href="/two.css">');
+    await start('');
+
+    await go();
+    const added = $head('[href="/two.css"]');
+    added?.dispatchEvent(new Event('load'));
+    await settle();
+    spy.mockRestore();
+
+    expect(added).not.toBeNull();
+    expect(main()).toBe('next');
+  });
+
   test('adds and removes inline styles', async () => {
     reply = page('<style>main { color: red }</style>');
     await start('<style>main { color: blue }</style>');

@@ -94,6 +94,24 @@ describe('v-for', () => {
     );
     expect($$('i').map((i) => i.textContent)).toEqual(['0a', '1b', '2c']);
   });
+
+  test('an empty-string object key is passed as the key, not the index', async () => {
+    const { $$ } = await mount(
+      `<div v-scope><i v-for="(v, k, i) in obj">[{{ k }}]{{ i }}</i></div>`,
+      { obj: { '': 1, a: 2 } }
+    );
+    expect($$('i').map((i) => i.textContent)).toEqual(['[]0', '[a]1']);
+  });
+
+  test('a row gets the function the list holds, not a bound copy', async () => {
+    const f: any = () => 1;
+    f.label = 'F';
+    const { $ } = await mount(
+      `<div v-scope><i v-for="fn in fns">{{ fn.label }}:{{ fns.indexOf(fn) }}</i></div>`,
+      { fns: [f] }
+    );
+    expect($('i').textContent).toBe('F:0');
+  });
 });
 
 describe('v-model', () => {

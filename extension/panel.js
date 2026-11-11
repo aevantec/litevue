@@ -30,6 +30,8 @@ const SNAPSHOT = `(() => {
     return ids.of.get(el);
   };
   const clone = (v, depth) => {
+    // as text: a BigInt fails the whole eval result, and JSON drops a symbol
+    if (typeof v === 'bigint' || typeof v === 'symbol') return String(v);
     if (v === null || typeof v !== 'object') {
       return typeof v === 'function' ? undefined : v;
     }
@@ -51,8 +53,11 @@ const SNAPSHOT = `(() => {
   };
   const scopes = [...d.scopes.entries()].map(([el, scope]) => ({
     id: idOf(el),
-    // a form's controls named id or tagName shadow those properties
-    label: d.names.get(el) || el.getAttribute('id') || el.localName,
+    // a form's named controls shadow its properties, methods included
+    label:
+      d.names.get(el) ||
+      Element.prototype.getAttribute.call(el, 'id') ||
+      (el instanceof HTMLFormElement ? 'form' : el.localName),
     exp: d.exps.get(el) || '',
     data: clone(scope, 4),
   }));
@@ -185,6 +190,16 @@ const poll = async () => {
 };
 
 poll();
-setInterval(poll, 500);
+let timer = setInterval(poll, 500);
+// devtools.js calls this from the panel's onShown and onHidden, so a hidden
+// tab stops snapshotting the page
+window.litevuePoll = (shown) => {
+  clearInterval(timer);
+  timer = 0;
+  if (shown) {
+    poll();
+    timer = setInterval(poll, 500);
+  }
+};
 // re-sync immediately on navigation
 chrome.devtools.network.onNavigated.addListener(poll);

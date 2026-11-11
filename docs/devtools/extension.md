@@ -24,10 +24,12 @@ The extension reads the page's `window.__LITE_VUE__` registry through
 `chrome.devtools.inspectedWindow.eval`, which runs in the page's own world. No
 content script or messaging bridge is needed, and the extension page itself
 never calls `eval`, so it stays within the Manifest V3 security policy. It polls
-a JSON-safe snapshot of the registry every 500ms.
+a JSON-safe snapshot of the registry every 500ms while its tab is shown, and
+stops while another devtools tab is in front.
 
 A getter that throws while the snapshot is taken is shown as `(threw)`, and the
-rest of the page's state is still listed. Each scope keeps its identity between
+rest of the page's state is still listed. A `BigInt` or a symbol, which a JSON
+snapshot cannot carry, is shown as its text. Each scope keeps its identity between
 polls, so an edit always reaches the scope it was made in, even when other
 scopes mount or unmount while you type. Leaving a field without changing its
 text does not write anything.
