@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { mount, tick } from './utils';
 
 /**
@@ -59,6 +59,65 @@ describe('v-bind translate', () => {
   test(':translate="\'no\'" writes translate="no"', async () => {
     const { $ } = await mount(`<div v-scope><p :translate="'no'"></p></div>`);
     expect($('p').getAttribute('translate')).toBe('no');
+  });
+});
+
+// A numeric property rejects undefined (and size rejects 0), which used to
+// throw before the attribute was removed
+describe('v-bind null on a numeric property', () => {
+  test.each([
+    ['progress', 'value', 30, undefined],
+    ['meter', 'value', 0.5, undefined],
+    ['input', 'size', 10, null],
+  ])('<%s :%s> removes the attribute', async (tag, attr, on, off) => {
+    const { $, app, root } = await mount(
+      `<div v-scope="{ v: ${on} }"><${tag} :${attr}="v"></${tag}></div>`
+    );
+    const errors: unknown[] = [];
+    app.onError((e) => errors.push(e));
+    expect($(tag).getAttribute(attr)).toBe(String(on));
+    (root as any).__ctx.scope.v = off;
+    await tick();
+    expect(errors).toEqual([]);
+    expect($(tag).hasAttribute(attr)).toBe(false);
+  });
+
+  test('a non-null value it rejects is still reported', async () => {
+    const { app, root } = await mount(
+      `<div v-scope="{ v: 10 }"><input :size="v"></div>`
+    );
+    const errors: unknown[] = [];
+    app.onError((e) => errors.push(e));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    (root as any).__ctx.scope.v = 0;
+    await tick();
+    spy.mockRestore();
+    expect(errors).toHaveLength(1);
+  });
+});
+
+describe('v-bind :style array', () => {
+  test('a key deleted in place from one of its objects is cleared', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ base: { color: 'red' }, extra: { fontWeight: 'bold' } }">
+        <p :style="[base, extra]"></p>
+      </div>`
+    );
+    expect($('p').style.fontWeight).toBe('bold');
+    delete (root as any).__ctx.scope.extra.fontWeight;
+    await tick();
+    expect($('p').style.fontWeight).toBe('');
+    expect($('p').style.color).toBe('red');
+  });
+
+  test('a key deleted in place from a plain object is cleared', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ s: { color: 'red', fontWeight: 'bold' } }"><p :style="s"></p></div>`
+    );
+    delete (root as any).__ctx.scope.s.fontWeight;
+    await tick();
+    expect($('p').style.fontWeight).toBe('');
+    expect($('p').style.color).toBe('red');
   });
 });
 

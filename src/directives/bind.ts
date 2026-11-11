@@ -4,7 +4,6 @@ import {
   normalizeStyle,
   isString,
   isArray,
-  isPlainObject,
   isObject,
   hyphenate,
   camelize,
@@ -54,8 +53,9 @@ export const bind: Directive<
       }
     }
     // a copy, not the object: one mutated in place would otherwise be its own
-    // previous value, and a deleted key would never be cleared
-    prevValue = isPlainObject(value) ? { ...value } : value;
+    // previous value, and a deleted key would never be cleared. toStyle
+    // flattens a :style array, whose objects are live, and passes others as is
+    prevValue = isObject(value) ? { ...toStyle(value) } : value;
     // the object form's keys, so morph knows which attributes it owns
     if (!arg) el.__bound = prevValue;
   });
@@ -110,8 +110,14 @@ const setProp = (
   ) {
     // A string property would read null as "null", so it gets '' and the
     // attribute goes, as in Vue. Booleans still take null as false.
-    // @ts-ignore
-    el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    try {
+      // @ts-ignore
+      el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+    } catch (e) {
+      // a number property such as <progress>'s value rejects undefined; null
+      // still removes the attribute, as in Vue
+      if (value != null) throw e;
+    }
     if (value == null) el.removeAttribute(key);
     if (key === 'value') {
       // @ts-ignore
