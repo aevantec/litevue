@@ -113,7 +113,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       data[valueExp] = value;
     }
-    if (objKey) {
+    if (objKey != null) {
       indexExp && (data[indexExp] = objKey);
       objIndexExp && (data[objIndexExp] = index);
     } else {
@@ -133,7 +133,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   };
 
   const mountBlock = (row: Row, ref: Node) => {
-    const block = new Block(el, createScopedContext(ctx, row.data));
+    const block = new Block(el, createScopedContext(ctx, row.data, true));
     block.key = row.key;
     block.insert(parent(), ref);
     return block;
@@ -223,8 +223,11 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
           Object.assign(block.ctx.scope, row.data);
           // Rows after this one are in place, so move it only if it is not
           // already right before its successor. Asked of the DOM, since a
-          // removed neighbour shifts the index without the node moving.
-          if (oldIndex !== i && (block.end || block.el).nextSibling !== ref) {
+          // removed neighbour shifts the index without the node moving. A
+          // neighbour still leaving holds its place, so it is stepped over.
+          let next = (block.end || block.el).nextSibling as any;
+          while (next?.__leaving) next = next.nextSibling;
+          if (oldIndex !== i && next !== ref) {
             block.insert(parent(), ref);
           }
         }

@@ -102,6 +102,38 @@ describe('event handlers', () => {
     expect((seen[0].err as Error).message).toBe('network');
   });
 
+  test('a trailing semicolon still reports a rejected promise', async () => {
+    const { root } = mount(
+      `<div v-scope="{ save() { return Promise.reject(new Error('network')) } }">
+        <button @click="save();"></button>
+      </div>`
+    );
+    await tick();
+    root.querySelector('button')!.click();
+    await tick(5);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info).toMatchObject({
+      phase: 'handler',
+      expression: 'save();',
+    });
+  });
+
+  test('a compile error in a handler or v-model reports the expression as written', async () => {
+    mount(
+      `<div v-scope><button @click="n +"></button><input v-model="a b" /></div>`
+    );
+    await tick();
+
+    // v-model compiles its value and its setter, and both fail
+    const reported = seen.map(
+      ({ info }) => `${info.phase} ${info.source} ${info.expression}`
+    );
+    expect(new Set(reported)).toEqual(
+      new Set(['compile @click n +', 'compile v-model a b'])
+    );
+  });
+
   test('a handler error does not stop later events from working', async () => {
     const { root } = mount(
       `<div v-scope="{ n: 0, boom() { throw new Error('x') } }">
@@ -454,5 +486,106 @@ describe('handlers compiled by a directive', () => {
     app.mount(document.body.firstElementChild!);
 
     expect(got).toBe(app.scope.fn);
+  });
+});
+
+// A v-on expression that does not compile used to leave its handler undefined,
+// and a cleanup that threw aborted the rest of the teardown.
+describe('uncompilable handlers and throwing cleanups', () => {
+  test('@unmounted that does not compile lets unmount() finish', async () => {
+    let down = false;
+    document.body.innerHTML = `<div v-scope><p @unmounted="track('O'Brien')"></p><button @click="n++">{{ n }}</button></div>`;
+    const app = createApp({ n: 0 }).use(() => () => {
+      down = true;
+    });
+    app.mount(document.body.firstElementChild!);
+    await tick();
+
+    expect(() => app.unmount()).not.toThrow();
+    document.querySelector('button')!.click();
+    expect(app.scope.n).toBe(0);
+    expect(down).toBe(true);
+  });
+
+  test('@unmounted that does not compile inside v-if: the chain still switches', async () => {
+    const { app, root } = mount(
+      `<div v-scope><section v-if="show"><p @unmounted="oops("></p></section><em v-else>else</em></div>`,
+      { show: true }
+    );
+    await tick();
+    app.scope.show = false;
+    await tick();
+    expect(root.querySelector('em')).not.toBe(null);
+    app.scope.show = true;
+    await tick();
+    expect(root.querySelector('section')).not.toBe(null);
+  });
+
+  test('@click.prevent that does not compile does not throw on click', async () => {
+    const { root } = mount(
+      `<div v-scope><a href="#" @click.prevent="go(">x</a></div>`
+    );
+    await tick();
+    const uncaught: string[] = [];
+    const onErr = (e: ErrorEvent) => {
+      uncaught.push(e.message);
+      e.preventDefault();
+    };
+    window.addEventListener('error', onErr);
+    root.querySelector('a')!.click();
+    window.removeEventListener('error', onErr);
+
+    expect(uncaught).toEqual([]);
+    expect(seen.map((s) => s.info.phase)).toEqual(['compile']);
+  });
+
+  test('@mounted that does not compile does not reject', async () => {
+    const rejections: unknown[] = [];
+    const onRejection = (r: unknown) => rejections.push(r);
+    process.on('unhandledRejection', onRejection);
+    mount(`<div v-scope><a @mounted="oops(">x</a></div>`);
+    await tick();
+    await new Promise((r) => setTimeout(r, 10));
+    process.off('unhandledRejection', onRejection);
+
+    expect(rejections).toEqual([]);
+  });
+
+  test('a cleanup that throws is reported and does not strand its neighbours', async () => {
+    document.body.innerHTML = `<div v-scope><p v-bad="x"></p><button @click="n++">{{ n }}</button></div>`;
+    const app = createApp({ n: 0 }).directive('bad', () => () => {
+      throw new Error('cleanup boom');
+    });
+    app.onError((err, info) => seen.push({ err, info }));
+    app.mount(document.body.firstElementChild!);
+    await tick();
+
+    expect(() => app.unmount()).not.toThrow();
+    document.querySelector('button')!.click();
+    expect(app.scope.n).toBe(0);
+    expect(seen).toHaveLength(1);
+    expect((seen[0].err as Error).message).toBe('cleanup boom');
+    expect(seen[0].info).toMatchObject({
+      phase: 'teardown',
+      source: 'v-bad',
+      expression: 'x',
+    });
+  });
+
+  test('a cleanup that throws on a removed v-if branch is reported', async () => {
+    document.body.innerHTML = `<div v-scope><p v-if="show" v-bad></p><em v-else>else</em></div>`;
+    const app = createApp({ show: true }).directive('bad', () => () => {
+      throw new Error('cleanup boom');
+    });
+    app.onError((err, info) => seen.push({ err, info }));
+    app.mount(document.body.firstElementChild!);
+    await tick();
+    app.scope.show = false;
+    await tick();
+    app.scope.show = true;
+    await tick();
+
+    expect(document.querySelector('p')).not.toBe(null);
+    expect(seen.map((s) => s.info.phase)).toEqual(['teardown']);
   });
 });

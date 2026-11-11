@@ -295,6 +295,23 @@ describe('storage selection', () => {
     app.unmount();
   });
 
+  // the HTML parser lowercases the attribute, so .myVault arrives as .myvault
+  test('a storage registered with capitals works as a modifier and by name', async () => {
+    const custom = memoryStorage();
+    registerStorage('myVault', custom);
+    document.body.innerHTML = `<div id="a" v-scope="{ token: 'shh' }" v-persist.myVault="auth"></div>`;
+    const app = createApp().use(persist);
+    app.mount('#a');
+    await tick();
+    store('vaulted', { n: 1 });
+    persistStore('vaulted', { storage: 'myVault' });
+    await tick();
+
+    expect(savedIn(custom, 'auth')).toEqual({ token: 'shh' });
+    expect(savedIn(custom, 'vaulted')).toEqual({ n: 1 });
+    app.unmount();
+  });
+
   test('an unknown storage modifier warns and leaves state working', async () => {
     const errors: string[] = [];
     const orig = console.error;

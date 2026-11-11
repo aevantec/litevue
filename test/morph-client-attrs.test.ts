@@ -258,3 +258,14 @@ describe('morph with a v-bind that is not an object', () => {
     expect(el().getAttribute('title')).toBe('b');
   });
 });
+
+describe('morph with a .camel binding', () => {
+  test('keeps the camel-cased attribute it binds', async () => {
+    const html = `<section id="r" v-scope="{ vb: '0 0 10 10' }"><svg id="p" :view-box.camel="vb"></svg></section>`;
+    const r = await mount(html);
+
+    morph(r, html);
+
+    expect(el().getAttribute('viewBox')).toBe('0 0 10 10');
+  });
+});

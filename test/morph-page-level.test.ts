@@ -59,6 +59,26 @@ describe('morph outside every scope', () => {
     app.unmount();
   });
 
+  // mounted with app.mount(el), so only the root block holds its scope
+  test('releases a root mounted without v-scope', async () => {
+    const { s, app, runs } = await setup(
+      `<nav v-scope></nav><div id="region"><div id="w" v-effect="s.n, hit()"></div></div>`
+    );
+    const el = document.querySelector('#w')!;
+    app.mount(el);
+    await tick();
+    expect(devtools.scopes.has(el)).toBe(true);
+
+    morph(document.querySelector('#region')!, '<div id="region"></div>');
+    const before = runs();
+    s.n++;
+    await tick();
+
+    expect(runs()).toBe(before);
+    expect(devtools.scopes.has(el)).toBe(false);
+    app.unmount();
+  });
+
   test('leaves a root it adds inert until app.mount(el)', async () => {
     // a root elsewhere, so mount() does not take <html> as the root
     const { app } = await setup(`<nav v-scope></nav><div id="region"></div>`);
