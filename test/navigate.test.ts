@@ -606,6 +606,21 @@ describe('navigate: forms', () => {
     expect(document.querySelector('main')!.textContent).toBe('saved');
   });
 
+  test('resolves a relative action against the base URL', async () => {
+    replies['/app/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="save" method="post"><button>Save</button></form><main></main>`
+    );
+    document.head.insertAdjacentHTML('beforeend', '<base href="/app/">');
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(fetchMock.mock.calls[0][0]).toBe(ORIGIN + '/app/save');
+    expect(document.querySelector('main')!.textContent).toBe('saved');
+    document.querySelector('base')!.remove();
+  });
+
   test('ignores a second POST from a form whose first is still in flight', async () => {
     replies['/save'] = { body: page('Saved', '<main>saved</main>') };
     await start(
@@ -1358,6 +1373,25 @@ describe('navigate: falls back to a full load', () => {
 
     // a GET of the redirect target; the POST itself is never replayed
     expect(assign).toHaveBeenCalledWith('https://pay.example.com/checkout/1');
+  });
+
+  // the error answers the GET the redirect led to, not the POST
+  test('a POST redirected to an error page loads where it led', async () => {
+    replies['/save'] = {
+      body: page('Gone', '<main>gone</main>'),
+      status: 404,
+      url: ORIGIN + '/gone',
+    };
+    await start(
+      '<form action="/save" method="post"><button>Save</button></form><main>Form</main>'
+    );
+    stubLocation();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(assign).toHaveBeenCalledWith(ORIGIN + '/gone');
+    expect(document.querySelector('main')!.textContent).toBe('Form');
   });
 
   test('a POST answered with a file is not replayed', async () => {

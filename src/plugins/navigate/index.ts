@@ -253,11 +253,12 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       // response URLs drop the fragment; a redirect keeps the requested one
       url.hash ||= new URL(href).hash;
       // a failed POST renders in place, like a validation error; a failed
-      // GET is left to the browser's own error page
+      // GET, a redirected POST's included, is left to the browser's own
+      // error page
       if (
         !res.headers.get('content-type')?.includes('text/html') ||
         !isLocal(url) ||
-        (!res.ok && !post)
+        (!res.ok && (!post || res.redirected))
       ) {
         // the full load fetches it again; stop downloading this copy
         res.body?.cancel();
@@ -376,7 +377,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     // text/plain is a debugging format; fetch cannot send it as the browser does
     if (type === 'text/plain') return;
     if (where && where !== '_self') return;
-    const url = new URL(attr('action') || location.href, location.href);
+    const url = new URL(attr('action') || location.href, document.baseURI);
     if (!isLocal(url)) return;
     const data = new FormData(form);
     if (by?.name) data.append(by.name, by.value);
