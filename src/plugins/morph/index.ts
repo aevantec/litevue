@@ -117,7 +117,7 @@ const boundAttrs = (to: Element) => {
     if (bindRE.test(name)) {
       // strip modifiers: :class.camel -> class
       owned.add(name.replace(bindRE, '').split('.')[0]);
-    } else if (name === 'v-model') {
+    } else if (/^v-model\b/.test(name)) {
       owned.add('value');
       owned.add('checked');
     } else if (name === 'v-bind') {
@@ -160,19 +160,31 @@ const ownsChildren = (to: Element) => {
   return false;
 };
 
-// value, checked and selected, each read from its markup default (defaultValue
-// and so on); a select has no default value, its options carry it
+// value, checked and selected, on fields that have a markup default
+// (defaultValue and so on); a select has none, its options carry it
 const FIELD_PROPS = ['Value', 'Checked', 'Selected'];
 
 const syncValues = (from: any, to: any, owned: Set<string>) => {
   // an option's selection belongs to its select when the client binds that
   const ctl = boundAttrs(to.closest('select') || to);
-  if (owned.has('*') || ctl.has('*') || ctl.has('value')) return;
+  if (
+    owned.has('*') ||
+    ctl.has('*') ||
+    ctl.has('value') ||
+    // an output's text is patched as children, and {{ }} renders client-side
+    from.type == 'output' ||
+    (from.type == 'textarea' && to.value.includes('{{'))
+  )
+    return;
   for (const name of FIELD_PROPS) {
     const prop = name.toLowerCase();
     const init = 'default' + name;
-    if (!owned.has(prop) && init in from && from[prop] !== to[init]) {
-      from[prop] = to[init];
+    // the incoming field's own state, as a full load shows it, so a field that
+    // already matches is left clean; but an option's own selected is its
+    // select's pick, which would deselect one bound with :selected
+    const src = name == 'Selected' ? init : prop;
+    if (!owned.has(prop) && init in from && from[prop] !== to[src]) {
+      from[prop] = to[src];
     }
   }
 };

@@ -198,7 +198,7 @@ still carries the directives:
 | <code v-pre>{{ … }}</code> in a text node | Leaves the rendered text alone |
 | `v-*`, `:` and `@` attributes | Never adds them to a live element |
 | `:class` | Leaves the live `class` alone |
-| `v-model` | Leaves `value` and `checked` alone |
+| `v-model`, with or without modifiers | Leaves `value` and `checked` alone |
 | `<details>` or `<dialog>` | Leaves `open` alone, so one the user opened stays open |
 | `v-bind` with an object | Leaves alone the attributes the object currently binds, updates the others the server sends, and removes none |
 | Any other `v-` directive except `v-scope` and `v-on`, such as `v-show` or `v-collapse` | Leaves the live `style` alone |
@@ -234,7 +234,8 @@ morph(form, html, { values: true });
 
 The option leaves some fields alone:
 
-- A field bound with `v-model`, `:value` or `:checked`, a `<select>` bound with `v-model` or `:value` together with its options, and a field bound with a `v-bind` object. Their values belong to the scope's state; to clear them, reset that state.
+- A field bound with `v-model`, with or without modifiers such as `.trim` or `.lazy`, or with `:value` or `:checked`, a `<select>` bound with `v-model` or `:value` together with its options, and a field bound with a `v-bind` object. Their values belong to the scope's state; to clear them, reset that state.
+- An `<output>`, whose text is updated like any other element's children, so interpolated text in it keeps rendering. A `<textarea>` whose text in the new HTML holds <code v-pre>{{ }}</code> is left alone for the same reason.
 - A field inside an element marked `data-morph-skip`. Mark a field this way when the visitor may still be typing in it while the new HTML loads, such as a search box that updates its results as the visitor types.
 
 The focused field is updated like any other. It gets no exception, because a form submitted with Enter has its focus in the field just submitted, and that field should be cleared like the rest.
