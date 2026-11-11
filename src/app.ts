@@ -53,7 +53,9 @@ export interface App {
    * Returns an unregister function; a full `unmount()` also releases it.
    */
   onError(handler: ErrorHandler): () => void;
-  mount(el?: string | Element | null): App | void;
+  mount(el?: Element | null): App;
+  /** A selector that matches no element mounts nothing and returns undefined. */
+  mount(el: string): App | undefined;
   /**
    * Tear down every mounted root, or — given an element or selector — only the
    * roots at or inside it, leaving the rest of the app running.
@@ -227,7 +229,8 @@ export const createApp = (initialData?: any) => {
       return app;
     },
 
-    mount(el?: string | Element | null) {
+    // `any`: one body serves both overloads in App
+    mount(el?: string | Element | null): any {
       if (typeof el === 'string') {
         const target = document.querySelector(el);
         if (!target) {
