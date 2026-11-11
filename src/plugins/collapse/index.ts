@@ -52,11 +52,12 @@ export const collapse: Plugin = (app) => {
           elem.style.transition = `height ${duration}ms ease, visibility ${duration}ms`;
         });
       } else {
-        elem.style.height = elem.scrollHeight + 'px';
+        // an inline height the author wrote is the expanded height
+        elem.style.height = before[1] || elem.scrollHeight + 'px';
         if (show) {
           later(() => {
-            // release the fixed height so content can resize freely
-            if (id === seq) elem.style.height = '';
+            // release the measured height so content can resize freely
+            if (id === seq) elem.style.height = before[1];
           }, duration);
         } else {
           // force a reflow so the browser animates from the measured height
