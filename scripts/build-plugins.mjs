@@ -47,7 +47,11 @@ const buildPlugin = (name, dev) =>
       // registry (see scripts/check-bundles.mjs)
       rollupOptions: {
         external: [PKG],
-        output: { globals: { [PKG]: 'LiteVue' } },
+        // no Symbol.toStringTag line (see vite.config.mts)
+        output: {
+          globals: { [PKG]: 'LiteVue' },
+          generatedCode: { symbols: false },
+        },
       },
       lib: {
         entry: resolve(pluginsDir, name, 'index.ts'),

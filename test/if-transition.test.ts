@@ -130,3 +130,48 @@ describe('leave transitions inside fragment blocks', () => {
     app.unmount();
   });
 });
+
+// The flush that closes a branch stops its effects first, so a leaving block
+// must not re-render data that is gone while its animation plays.
+describe('a leaving block stops reacting', () => {
+  test('v-if="user" closes without an error and keeps its text', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ user: { name: 'Ada' } }">
+      <p v-if="user" v-transition:fade>Welcome back, {{ user.name }}</p>
+    </div>`;
+    const errors: unknown[] = [];
+    const app = createApp().use(transition);
+    app.onError((e) => errors.push(e));
+    app.mount('#app');
+    await tick();
+    const p = document.querySelector('p')!;
+    expect(p.textContent).toBe('Welcome back, Ada');
+
+    (document.querySelector('#app') as any).__ctx.scope.user = null;
+    await tick();
+    expect(p.isConnected).toBe(true);
+    expect(errors).toEqual([]);
+    expect(p.textContent).toBe('Welcome back, Ada');
+    await sleep(20);
+    expect(p.isConnected).toBe(false);
+    app.unmount();
+  });
+
+  test('a leaving v-for row no longer follows state', async () => {
+    document.body.innerHTML = `<ul id="app" v-scope="{ items: [1, 2] }">
+      <li v-for="it in items" :key="it" v-transition:fade>{{ it }} of {{ items.length }}</li>
+    </ul>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const second = document.querySelectorAll('li')[1];
+    expect(second.textContent).toBe('2 of 2');
+
+    (document.querySelector('#app') as any).__ctx.scope.items = [1];
+    await tick();
+    expect(second.isConnected).toBe(true);
+    expect(second.textContent).toBe('2 of 2');
+    await sleep(20);
+    expect(second.isConnected).toBe(false);
+    app.unmount();
+  });
+});
