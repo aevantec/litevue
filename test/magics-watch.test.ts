@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { mount, tick } from './utils';
 
 /**
@@ -213,6 +215,23 @@ describe('$watch', () => {
       [11, 0],
       [11, 10],
     ]);
+  });
+
+  // the demo on docs/magics/watch.md prepends to its log on every click
+  test('the docs demo runs without warnings', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const demo = readFileSync(
+      resolve(__dirname, '../docs/.vitepress/demos/watch.html'),
+      'utf8'
+    );
+    const { $, $$ } = await mount(demo);
+    $('button').click();
+    await tick(8);
+    $('button').click();
+    await tick(8);
+    expect($$('li').map((li) => li.textContent)).toEqual(['1 → 2', '0 → 1']);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

@@ -22,7 +22,7 @@ what it's there for, and a third-party plugin needs no permission from us.
 ## Getting set up
 
 Requires Node 22.22.2 or later on the 22 line, 24.15 or later on the 24 line, or Node 26,
-and [pnpm](https://pnpm.io). That floor is the toolchain's: jsdom 30 asks for
+and [pnpm](https://pnpm.io). That floor is the toolchain's: jsdom 31 asks for
 `^22.22.2 || ^24.15.0 || >=26.0.0`. CI runs on Node 26 and runs the unit tests on Node 22
 as well. The published package supports Node 22 and later, which is what the `engines`
 field describes.
@@ -202,7 +202,7 @@ messages automatically.
 
 | Type | Use for | Effect on the next release |
 | --- | --- | --- |
-| `feat` | A new user-facing capability | minor version bump |
+| `feat` | A new user-facing capability | minor version bump (a patch while we're below 1.0.0) |
 | `fix` | A bug fix | patch version bump |
 | `perf` | A performance improvement | patch version bump |
 | `refactor` | Internal change with no behavior change | none |

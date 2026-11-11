@@ -17,12 +17,15 @@ const check = (label, ok, detail) => {
   if (!ok) failures.push(`${label}: ${detail}`);
 };
 
-// the combined bundle, plus every standalone plugin build
+// every format of the combined bundle and each standalone plugin, the .dev
+// files included: an import inlines the core as surely as a <script> does
+const BUNDLE = /\.(iife\.js|umd\.js|mjs)$/;
 const pluginBundles = [
-  'litevue-plugins.iife.js',
-  'litevue-plugins.umd.js',
+  ...readdirSync(new URL('../dist', import.meta.url)).filter(
+    (f) => f.startsWith('litevue-plugins.') && BUNDLE.test(f)
+  ),
   ...readdirSync(new URL('../dist/plugins', import.meta.url))
-    .filter((f) => f.endsWith('.iife.js') || f.endsWith('.umd.js'))
+    .filter((f) => BUNDLE.test(f))
     .map((f) => `plugins/${f}`),
 ];
 
