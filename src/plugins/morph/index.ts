@@ -248,8 +248,15 @@ const patchNode = (
   // holds no live bindings, so copying it wholesale loses nothing
   if (a.tagName == 'TEMPLATE') a.innerHTML = b.innerHTML;
   // a $template component's markup came from the client, so the server sends
-  // its root empty; only the live scope knows
-  if (!ownsChildren(b) && !(a as any).__ctx?.scope.$template) {
+  // its root empty; only the live scope knows. Its own key: a nested scope
+  // inherits the component's. Not Object.hasOwn, which raises the browser floor
+  if (
+    !ownsChildren(b) &&
+    !Object.getOwnPropertyDescriptor(
+      Object((a as any).__ctx?.scope),
+      '$template'
+    )
+  ) {
     patchChildren(a, b, (a as any).__ctx || ctx, opts);
   }
 };

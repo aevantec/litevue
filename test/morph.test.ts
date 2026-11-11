@@ -402,6 +402,22 @@ describe('morph', () => {
     expect(root.querySelector('#c i')!.textContent).toBe('1');
   });
 
+  test('patches the children of a plain v-scope inside a $template component', async () => {
+    const { $ } = await mountApp(
+      `<div v-scope="{ $template: '<section v-scope=&quot;{}&quot; id=&quot;panel&quot;><p>old</p></section>' }"></div>`
+    );
+    morph($('#panel'), `<section id="panel"><p>new</p></section>`);
+    expect($('#panel').textContent).toBe('new');
+  });
+
+  test('patches every scope when the root data holds $template', async () => {
+    const { root } = await mountApp(`<div v-scope="{}"><p>old</p></div>`, {
+      $template: '#none',
+    });
+    morph(root, `<div><p>new</p></div>`);
+    expect(root.textContent).toBe('new');
+  });
+
   test('markup morphed into a lazy region that has not mounted binds with that region', async () => {
     const { root } = await mountApp(
       `<div v-scope><div id="lazy" v-scope.interaction="{ n: 3 }"><p>{{ n }}</p></div></div>`
