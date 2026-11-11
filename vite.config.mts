@@ -48,6 +48,9 @@ export default defineConfig(({ command, mode }) => {
       minify: dev ? false : 'terser',
       // the dev files land beside the production ones rather than replacing them
       emptyOutDir: !dev,
+      // no Symbol.toStringTag on the iife/umd namespace object: 61 bytes that
+      // only change Object.prototype.toString's answer
+      rollupOptions: { output: { generatedCode: { symbols: false } } },
       terserOptions: {
         format: {
           // escape non-ASCII so bundles render correctly on pages served

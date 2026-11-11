@@ -134,4 +134,12 @@ describe('createApp', () => {
     expect($('span').textContent).toBe('Ada');
     expect($('script').textContent).toBe('Hello {{ name }}');
   });
+
+  test('leaves the text of an SVG script element alone', async () => {
+    const { $ } = await mount(
+      `<div v-scope><svg><script>var a = "{{ n }}"</script></svg></div>`,
+      { n: 5 }
+    );
+    expect($('script').textContent).toBe('var a = "{{ n }}"');
+  });
 });

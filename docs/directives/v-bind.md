@@ -93,7 +93,7 @@ can come from an expression:
 ## Behavior
 
 - Dynamic argument names such as `:[name]` are not supported.
-- A binding is set again only when its value changes, as in Vue. Replacing a list with fresh objects that hold the same URLs therefore does not restart a `<video>` or reload an `<iframe>`. An array or object bound to `:class` or `:style` is always reapplied, since it may have changed in place.
+- A binding is set again only when its value changes, as in Vue. Replacing a list with fresh objects that hold the same URLs therefore does not restart a `<video>` or reload an `<iframe>`. An array or object bound to `:class` or `:style` is always reapplied, since it may have changed in place. `:value` is also always reapplied, as in Vue, so a field the user has typed into returns to its bound value whenever the binding runs, even when that value has not changed.
 - For other attributes that are not properties, bind `null` to remove the attribute, since `false` is written as the string `"false"`: `:aria-hidden="open ? null : 'true'"`.
 - `:value` also stores the raw value on the element, so [`v-model`](/directives/v-model) can read non-string option and checkbox values.
 - Checkboxes read `:true-value` and `:false-value` as values rather than attributes — see `v-model`.

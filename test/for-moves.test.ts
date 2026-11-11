@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createApp, reactive } from '../src';
-import { tick } from './utils';
+import { transition } from '../src/plugins';
+import { sleep, tick } from './utils';
 
 /**
  * Keyed v-for should move only the rows that are out of place. Moving a row
@@ -89,6 +90,40 @@ describe('keyed v-for moves only rows that are out of place', () => {
     await tick(2);
     expect(document.querySelectorAll('li')[1]).toBe(kept);
   });
+
+  // A leaving row stays where it was until its leave ends, so a survivor
+  // after it is still in place and must not be re-inserted past it.
+  test.each([false, true])(
+    'removing two rows mid-leave moves no survivor (fragment: %s)',
+    async (fragment) => {
+      // a real leave duration; jsdom's computed style reports 0
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+        transitionDuration: '0.05s',
+        transitionDelay: '0s',
+        animationDuration: '0s',
+        animationDelay: '0s',
+      } as any);
+      document.body.innerHTML = fragment
+        ? `<ul><template v-for="it in items" :key="it"><li :id="it" v-transition:fade></li></template></ul>`
+        : `<ul><li v-for="it in items" :key="it" :id="it" v-transition:fade></li></ul>`;
+      const state = reactive({ items: ['a', 'b', 'c', 'd'] });
+      app = createApp(state)
+        .use(transition)
+        .mount(document.body.firstElementChild as Element);
+      await tick();
+      const order = () =>
+        [...document.querySelectorAll('li')].map((li) => li.id).join('');
+      expect(order()).toBe('abcd');
+
+      const spy = vi.spyOn(Node.prototype, 'insertBefore');
+      state.items = ['b', 'd'];
+      await tick(2);
+      expect(spy).not.toHaveBeenCalled();
+      expect(order()).toBe('abcd');
+      await sleep(80);
+      expect(order()).toBe('bd');
+    }
+  );
 });
 
 describe('keyed v-for order under random edits', () => {

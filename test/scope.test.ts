@@ -97,4 +97,19 @@ describe('binding scope methods', () => {
     await tick();
     expect($('span').textContent).toBe('2');
   });
+
+  test('a function with members keeps them', async () => {
+    const lib: any = (x: number) => x * 2;
+    lib.get = () => 'got';
+    class Point {
+      static origin() {
+        return 'o';
+      }
+    }
+    const { $ } = await mount(
+      `<div v-scope><span>{{ lib(2) }}|{{ lib.get() }}|{{ Point.origin() }}</span></div>`,
+      { lib, Point }
+    );
+    expect($('span').textContent).toBe('4|got|o');
+  });
 });
