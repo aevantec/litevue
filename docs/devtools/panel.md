@@ -95,8 +95,9 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - Every primitive value edits inline, keeping its type; booleans get a checkbox.
   Enter or leaving the field applies the edit, and Escape cancels it. A field
   you leave without changing its text is not written.
-- Derived values, getter-only properties and [`computed()`](/globals/computed),
-  are read-only, and so is everything inside an array or object they return.
+- Derived values, getter-only properties, properties that cannot be written,
+  such as those of a frozen object, and [`computed()`](/globals/computed) are
+  read-only, and so is everything inside an array or object they return.
   A getter that throws is shown as `(threw)`, and the rest of
   the scope stays inspectable.
 - An **add-key row** adds a top-level key, and each top-level row has a ✕ to

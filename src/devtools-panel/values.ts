@@ -65,14 +65,24 @@ export const fmt = (v: unknown) => {
   const put = (v: any) => {
     if (isCollection(v)) s += `${v.constructor.name}(${v.size})`;
     else if (!v || typeof v !== 'object' || v.toJSON) {
-      s += JSON.stringify(v) ?? String(v);
+      // String, not JSON, for NaN, Infinity, BigInt and symbols
+      s +=
+        typeof v === 'object' || typeof v === 'string'
+          ? JSON.stringify(v)
+          : String(v);
     } else {
-      const arr = Array.isArray(v);
+      // A typed array is read like an array, as Object.keys would list it whole.
+      // The generic keys() reads a DataView, which has no length, as empty.
+      const arr = Array.isArray(v) || ArrayBuffer.isView(v);
       s += arr ? '[' : '{';
       let n = 0;
-      for (const k of arr ? v.keys() : Object.keys(v)) {
+      for (const k of arr ? [].keys.call(v) : Object.keys(v)) {
         if (s.length > 60) break;
-        const c = v[k];
+        let c;
+        // a throwing getter is left out, like an undefined value
+        try {
+          c = v[k];
+        } catch {}
         const skip = c === undefined || typeof c === 'function';
         // JSON leaves these out of an object and writes null in an array
         if (skip && !arr) continue;
@@ -86,7 +96,8 @@ export const fmt = (v: unknown) => {
   try {
     put(v);
   } catch {
-    s = String(v);
+    // String(v) can throw too, on an object with no prototype
+    s += '…';
   }
   return s.length > 60 ? s.slice(0, 60) + '…' : s;
 };
@@ -112,14 +123,15 @@ export const descriptorOf = (
 };
 
 /**
- * True for values with no editor: setter-less accessors and getter-only
- * `computed()` refs. A computed is only recognizable from the raw descriptor,
- * since reading through the proxy has already unwrapped it. The reactivity
- * flags are read directly to keep @vue/reactivity out of this bundle.
+ * True for values with no editor: setter-less accessors, non-writable (frozen)
+ * properties and getter-only `computed()` refs. A computed is only
+ * recognizable from the raw descriptor, since reading through the proxy has
+ * already unwrapped it. The reactivity flags are read directly to keep
+ * @vue/reactivity out of this bundle.
  */
 export const isReadOnly = (desc?: PropertyDescriptor) => {
   if (!desc) return false;
-  if (desc.get && !desc.set) return true;
+  if ((desc.get && !desc.set) || desc.writable === false) return true;
   const raw = desc.value;
   return !!raw && raw.__v_isRef === true && raw.__v_isReadonly === true;
 };
