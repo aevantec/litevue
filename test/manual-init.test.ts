@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { createApp, devtools, store } from '../src';
 import { tick } from './utils';
 
@@ -66,5 +66,73 @@ describe('manual initialization of dynamic content (initTree-style)', () => {
     await tick();
     expect(document.querySelector('#a span')!.textContent).toBe('0');
     expect(document.querySelector('#b span')!.textContent).toBe('0');
+  });
+});
+
+// What the walker rendered is data: a later walk of the same nodes must not
+// read it as template source, while markup added since is still bound.
+describe('rendered output stays inert when walked again', () => {
+  const payload = '{{ window.__rewalked = 1 }}';
+  const ran = () => (window as any).__rewalked;
+  const quiet = () => vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+  afterEach(() => {
+    delete (window as any).__rewalked;
+    vi.restoreAllMocks();
+  });
+
+  test('mounting the same element again', async () => {
+    document.body.innerHTML = `<div id="app" v-scope><p>{{ c }}</p><b v-text="c"></b></div>`;
+    const app = createApp({ c: payload }).mount('#app')!;
+    await tick();
+    quiet();
+    app.mount('#app');
+    await tick();
+    expect(ran()).toBeUndefined();
+    expect(document.querySelector('p')!.textContent).toBe(payload);
+    app.unmount();
+  });
+
+  test('unmounting an element and mounting it again', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ c: n }"><span>{{ c }}</span></div>`;
+    const el = document.getElementById('app')!;
+    const app = createApp({ n: payload }).mount(el)!;
+    await tick();
+    app.unmount(el);
+    quiet();
+    app.mount(el);
+    await tick();
+    expect(ran()).toBeUndefined();
+    app.unmount();
+  });
+
+  test('mounting a container after appending markup without v-scope', async () => {
+    document.body.innerHTML = `<ul id="list"><li v-scope="{ m: msgs[0] }">{{ m }}</li></ul>`;
+    const app = createApp({ msgs: [payload], shared: 'state' }).mount()!;
+    await tick();
+    const list = document.getElementById('list')!;
+    list.insertAdjacentHTML('beforeend', '<li>{{ shared }}</li>');
+    app.mount(list);
+    await tick();
+    expect(ran()).toBeUndefined();
+    expect(list.firstElementChild!.textContent).toBe(payload);
+    expect(list.lastElementChild!.textContent).toBe('state');
+    app.unmount();
+  });
+
+  test('a second app walking the document', async () => {
+    document.body.innerHTML = `<div id="a" v-scope="{ name: n }"><p v-text="name"></p><div v-html="html"></div></div>`;
+    const first = createApp({
+      n: payload,
+      html: '<i @click="window.__rewalked = 2">{{ window.__rewalked = 3 }}</i>',
+    }).mount('#a')!;
+    await tick();
+    quiet();
+    const second = createApp().mount()!;
+    await tick();
+    document.querySelector('i')!.click();
+    expect(ran()).toBeUndefined();
+    second.unmount();
+    first.unmount();
   });
 });
