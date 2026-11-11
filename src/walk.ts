@@ -120,7 +120,17 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
         // places its marker.
         const marker = ((el as any).__marker = new Text(''));
         el.before(marker);
-        target.appendChild(el);
+        try {
+          target.appendChild(el);
+        } catch (e) {
+          // the target is the element itself or inside it; it stays put
+          handleError(e, {
+            phase: 'directive',
+            source: 'v-teleport',
+            el,
+            expression: exp,
+          });
+        }
         addCleanup(
           ctx,
           () => {
@@ -206,7 +216,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     // a script's text is code or a client-side template, never ours (as Vue)
     if (
       data.includes(ctx.delimiters[0]) &&
-      !(node.parentNode instanceof HTMLScriptElement)
+      (node.parentNode as Element)?.localName != 'script'
     ) {
       let segments: string[] = [];
       let lastIndex = 0;

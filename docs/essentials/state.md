@@ -84,6 +84,11 @@ Methods are bound to their scope, so `this` works even when a method is passed
 as a handler — `@click="increment"`. Getters are reactive but not cached; use
 [`computed()`](/globals/computed) for expensive values.
 
+A bound method keeps the properties of the original function, so a library
+placed in state, such as a `dayjs` function, still offers `dayjs.utc()`, and a
+class keeps its static methods. The values of a [`v-for`](/directives/v-for)
+row are not bound: each row receives an item exactly as the list holds it.
+
 ## Sharing state across apps
 
 Use a [store](/globals/store) for state shared between apps or with plain
