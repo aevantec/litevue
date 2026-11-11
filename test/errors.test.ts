@@ -102,6 +102,38 @@ describe('event handlers', () => {
     expect((seen[0].err as Error).message).toBe('network');
   });
 
+  test('a trailing semicolon still reports a rejected promise', async () => {
+    const { root } = mount(
+      `<div v-scope="{ save() { return Promise.reject(new Error('network')) } }">
+        <button @click="save();"></button>
+      </div>`
+    );
+    await tick();
+    root.querySelector('button')!.click();
+    await tick(5);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].info).toMatchObject({
+      phase: 'handler',
+      expression: 'save();',
+    });
+  });
+
+  test('a compile error in a handler or v-model reports the expression as written', async () => {
+    mount(
+      `<div v-scope><button @click="n +"></button><input v-model="a b" /></div>`
+    );
+    await tick();
+
+    // v-model compiles its value and its setter, and both fail
+    const reported = seen.map(
+      ({ info }) => `${info.phase} ${info.source} ${info.expression}`
+    );
+    expect(new Set(reported)).toEqual(
+      new Set(['compile @click n +', 'compile v-model a b'])
+    );
+  });
+
   test('a handler error does not stop later events from working', async () => {
     const { root } = mount(
       `<div v-scope="{ n: 0, boom() { throw new Error('x') } }">

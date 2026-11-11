@@ -312,7 +312,8 @@ const applyDirective = (
   source?: string,
   displayExp?: string
 ) => {
-  const meta = { source, el, expression: displayExp };
+  // as written, not the wrapper a directive compiles around it
+  const meta = { source, el, expression: displayExp || exp };
   const report = (err: unknown) =>
     handleError(err, {
       phase: 'handler',

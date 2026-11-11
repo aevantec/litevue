@@ -90,11 +90,13 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
   // compiled code, so get() hands back a handler that reports its own throws
   // and rejections
+  // a trailing `;` would force the block form, dropping a returned promise
+  const body = exp.replace(/;\s*$/, '');
   let handler =
     simplePathRE.test(exp) || fnExpRE.test(exp)
-      ? get(`(e => (${exp})(e))`)
-      : isExpression(exp)
-        ? get(`(${a}$event => (${exp}))`)
+      ? get(`(e => (${body})(e))`)
+      : isExpression(body)
+        ? get(`(${a}$event => (${body}))`)
         : get(`(${a}$event => { ${exp} })`);
   // did not compile, and get() has reported it
   if (!handler) return;
