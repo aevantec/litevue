@@ -1,5 +1,51 @@
 # Changelog
 
+## [0.6.2](https://github.com/aevantec/litevue/compare/v0.6.1...v0.6.2) (2026-11-19)
+
+
+### Behaviour changes
+
+None of these is breaking, but each changes what a page shows or receives:
+
+* `@click.outside` ignores events while `v-show` hides its element, and the click that showed it ([#300](https://github.com/aevantec/litevue/issues/300))
+* On a deferred `v-scope.visible`, `.idle` or `.interaction` element, `v-if` and `v-for` apply first, so each branch or row waits on its own; a waiting row shows its raw `{{ }}` unless it carries `v-cloak` ([#300](https://github.com/aevantec/litevue/issues/300))
+* The fallback children of a `v-text` or `v-html` element are no longer bound ([#300](https://github.com/aevantec/litevue/issues/300))
+* `:disabled=""` and `:hidden=""` set the property to `true`, as in Vue ([#301](https://github.com/aevantec/litevue/issues/301))
+* In production, an `onError` handler that throws no longer silences the error: both are written to `console.error` ([#301](https://github.com/aevantec/litevue/issues/301))
+* `morph()` returns the replacement element when the root's tag changes ([#302](https://github.com/aevantec/litevue/issues/302))
+* navigate inserts new head elements in the next page's order instead of appending them ([#302](https://github.com/aevantec/litevue/issues/302))
+* An open `v-collapse` panel no longer clips its overflow ([#302](https://github.com/aevantec/litevue/issues/302))
+* `v-anchor` teardown restores only the styles it wrote, so an author's inline `top`, `left`, `right`, `bottom` or `margin-*` on the anchored element is not kept ([#302](https://github.com/aevantec/litevue/issues/302))
+* A `$watch` callback's own write is not delivered to it again, and function values held by `v-for` rows are no longer bound to the scope ([#292](https://github.com/aevantec/litevue/issues/292))
+* A `POST` redirected by 307 to an error page loads that page with a GET; nothing is re-posted ([#294](https://github.com/aevantec/litevue/issues/294))
+
+
+### Features
+
+* **devtools:** pick the panel's theme and layout from menus, and dock it to the left ([#305](https://github.com/aevantec/litevue/issues/305)) ([fc2bad7](https://github.com/aevantec/litevue/commit/fc2bad77f0827b3b91566ce767e8be60d18fd240))
+
+
+### Bug Fixes
+
+* **core:** contain failing handlers and cleanups, unmount every root, and close watcher, event and type gaps ([#292](https://github.com/aevantec/litevue/issues/292)) ([3365fc8](https://github.com/aevantec/litevue/commit/3365fc880db482ba691a33876eedb1698d14b1cb))
+* **core:** contain throwing devtools listeners and onError handlers, stop a morphed v-if leaking, and close four binding gaps ([#301](https://github.com/aevantec/litevue/issues/301)) ([b8a8031](https://github.com/aevantec/litevue/commit/b8a8031aff052beb740a1bf49d7d05520c49c257))
+* **core:** keep rendered output inert when a node is walked again, and leave v-pre and v-html content out of mount() ([#289](https://github.com/aevantec/litevue/issues/289)) ([3c21092](https://github.com/aevantec/litevue/commit/3c21092d924864b323d3d0db65072fdcbbe0d768))
+* **core:** mount cloaked deferred regions, keep .outside from closing on the opening click, and contain v-for getter errors ([#300](https://github.com/aevantec/litevue/issues/300)) ([9572219](https://github.com/aevantec/litevue/commit/95722197a107a7c4e9c25af834a8c6d0c5518078))
+* **devtools:** keep string line breaks and field types in both editors, resize the floating panel from its top-left, and follow teleported content ([#303](https://github.com/aevantec/litevue/issues/303)) ([1e4ab2b](https://github.com/aevantec/litevue/commit/1e4ab2b1d67e479bcb9b7230ed65f5ae0868b81b))
+* **devtools:** show every Map entry, make value previews safe, and keep the extension working with BigInt state ([#297](https://github.com/aevantec/litevue/issues/297)) ([647cbf8](https://github.com/aevantec/litevue/commit/647cbf821fc89d2f6c5462e14ba18a08c61301a5))
+* **directives:** reapply :value every time, skip unchanged keys in an object v-bind, and accept null on number properties ([#291](https://github.com/aevantec/litevue/issues/291)) ([049ce1c](https://github.com/aevantec/litevue/commit/049ce1c4399a5b7c3c641aad255b7d52a997171c))
+* **directives:** render v-if with v-for on one element, and stop a leaving block's effects ([#290](https://github.com/aevantec/litevue/issues/290)) ([b3a779e](https://github.com/aevantec/litevue/commit/b3a779e5ff713642a5b369002a1456f4b2643bcb))
+* **plugins:** keep client-owned state through morph and its values option ([#293](https://github.com/aevantec/litevue/issues/293)) ([86a3a74](https://github.com/aevantec/litevue/commit/86a3a7429083e750e6e8f9b9d1c67648460c8544))
+* **plugins:** keep positions after scripts and noscript in navigate, follow base href, and clear busy once the page is in place ([#294](https://github.com/aevantec/litevue/issues/294)) ([93e3d55](https://github.com/aevantec/litevue/commit/93e3d55733ffdaf6c2abaca5f15111363dc20929))
+* **plugins:** let Backspace delete after a mask literal, skip inert tab stops and focus the inner nested trap in v-trap, and keep v-collapse's inline height ([#295](https://github.com/aevantec/litevue/issues/295)) ([de640d1](https://github.com/aevantec/litevue/commit/de640d12b2209b9ae223f200b4197dc4d30585a2))
+* **plugins:** place a v-anchor shown after mount, keep media's development work out of production, and match persist storage names in any case ([#296](https://github.com/aevantec/litevue/issues/296)) ([0608021](https://github.com/aevantec/litevue/commit/0608021ab78c731dad32a64865b5993650886a71))
+* **plugins:** wrap v-trap from unreachable elements, bind morphed markup with the right scope, keep navigate's stylesheet order, and fix four teardown gaps ([#302](https://github.com/aevantec/litevue/issues/302)) ([e7bbf5f](https://github.com/aevantec/litevue/commit/e7bbf5fd74dc9d0af10cf6b49e4d57f6189df261))
+
+
+### Performance
+
+* drop the module toStringTag from every IIFE and UMD bundle, and let the combined plugins entry tree-shake ([#288](https://github.com/aevantec/litevue/issues/288)) ([d6763f2](https://github.com/aevantec/litevue/commit/d6763f20b9f2a0c577358287323714f75cbb8de0))
+
 ## [0.6.1](https://github.com/aevantec/litevue/compare/v0.6.0...v0.6.1) (2026-11-10)
 
 
