@@ -45,6 +45,48 @@ describe('devtools panel chrome', () => {
     expect($('.pill').style.display).toBe('none');
   });
 
+  // jsdom has no layout: the panel's top edge is read from the inline
+  // geometry, innerHeight - bottom - height, since it is anchored bottom-right
+  test('the floating grip resizes from the top-left, keeping the header on screen', async () => {
+    const { $ } = await boot();
+    if ($('.panel').style.display !== 'flex') $('.pill').click();
+    const panel = $('.panel');
+    const grip = $('.grip');
+    expect(panel.classList.contains('dock-bottom')).toBe(false);
+    expect(panel.classList.contains('dock-right')).toBe(false);
+    Object.assign(panel.style, { right: '300px', bottom: '300px' });
+    const top = innerHeight - 300 - 450;
+    const left = innerWidth - 300 - 500;
+    panel.getBoundingClientRect = () =>
+      ({ width: 500, height: 450, top, left }) as DOMRect;
+
+    // pull the corner down and right, well past the viewport
+    grip.dispatchEvent(
+      new MouseEvent('mousedown', { clientX: 500, clientY: 300, bubbles: true })
+    );
+    document.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 600, clientY: 900 })
+    );
+    document.dispatchEvent(new MouseEvent('mouseup'));
+
+    const height = parseInt(panel.style.height);
+    const width = parseInt(panel.style.width);
+    expect(height).toBe(innerHeight - 24);
+    expect(width).toBe(600);
+    // the top-left stays put, so the header does not leave the viewport
+    expect(innerHeight - parseInt(panel.style.bottom) - height).toBe(top);
+    expect(innerWidth - parseInt(panel.style.right) - width).toBe(left);
+    const saved = JSON.parse(localStorage.getItem('litevue-devtools-ui')!);
+    expect(saved).toMatchObject({
+      w: 600,
+      h: innerHeight - 24,
+      right: innerWidth - left - 600,
+      bottom: innerHeight - top - height,
+    });
+    // the panel is shared by the tests after this one
+    delete (panel as any).getBoundingClientRect;
+  });
+
   test('close and reopen persist the open flag', async () => {
     const { $, $$ } = await boot();
     // close button is the last header button
@@ -140,6 +182,12 @@ describe('devtools panel chrome', () => {
     valIn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     await sleep(10);
     expect(store('ui-store').added).toBe(42);
+    // blank text is a string, not 0
+    keyIn.value = 'blank';
+    valIn.value = ' ';
+    valIn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    await sleep(10);
+    expect(store('ui-store').blank).toBe(' ');
     expect(
       $$('.state .prop').some(
         (r) => r.querySelector('.key')?.textContent === 'added'

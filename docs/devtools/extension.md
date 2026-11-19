@@ -29,10 +29,17 @@ stops while another devtools tab is in front.
 
 A getter that throws while the snapshot is taken is shown as `(threw)`, and the
 rest of the page's state is still listed. A `BigInt` or a symbol, which a JSON
-snapshot cannot carry, is shown as its text. Each scope keeps its identity between
+snapshot cannot carry, is shown as its text. A `Map` or `Set` is shown read-only
+by its size, as in `Map(2)`, and so is a typed array, as in `Uint8Array(4)`. A
+`Date` is shown as its ISO string, and `NaN`, `Infinity` and `undefined` as
+themselves; each is read-only. Each scope keeps its identity between
 polls, so an edit always reaches the scope it was made in, even when other
 scopes mount or unmount while you type. Leaving a field without changing its
-text does not write anything.
+text does not write anything, and a number or boolean field is written only with
+text of its own type.
+
+A poll that finds nothing changed leaves the panel as it is, and a change found
+while a mouse button is held waits for its release, so a click is not lost.
 
 ## Limitations
 

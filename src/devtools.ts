@@ -193,7 +193,8 @@ export const devtools: LiteVueDevtools = {
     while (el) {
       const scope = scopes.get(el);
       if (scope) return scope;
-      el = el.parentElement;
+      // teleported content belongs to the scope its marker sits in
+      el = (el as any).__marker?.parentElement || el.parentElement;
     }
   },
   on(event, fn) {

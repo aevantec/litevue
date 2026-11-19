@@ -1,7 +1,7 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { computed, createApp, devtools, reactive, store } from '../src';
 import '../src/devtools-panel';
-import { findInState, fmt } from '../src/devtools-panel/values';
+import { coerce, findInState, fmt } from '../src/devtools-panel/values';
 import { tick, sleep } from './utils';
 
 const host = () =>
@@ -172,6 +172,96 @@ describe('devtools panel inline editor', () => {
     expect(scope.avg).toBeNaN();
     expect(root.querySelector('span')).toBe(null);
     app.unmount();
+  });
+
+  // an <input> strips line breaks from its value, so comparing against the
+  // stored string saw an edit that never happened
+  test('focus and blur, or Escape, keep the line breaks of a multi-line string', async () => {
+    const { app, scope } = await openScope(
+      'multiline',
+      `<div v-name="multiline" v-scope="{ note: 'line one\\nline two', crlf: 'a\\r\\nb' }"></div>`
+    );
+    const note = editorFor('note');
+    note.dispatchEvent(new Event('focus'));
+    note.dispatchEvent(new Event('blur'));
+    const crlf = editorFor('crlf');
+    crlf.focus();
+    crlf.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await sleep(10);
+    expect(scope.note).toBe('line one\nline two');
+    expect(scope.crlf).toBe('a\r\nb');
+    app.unmount();
+  });
+
+  test('a number field keeps its type: text that is not a number is not written', async () => {
+    const { app, scope } = await openScope(
+      'numbers',
+      `<div v-name="numbers" v-scope="{ qty: 5, price: 7, total: 9 }"></div>`
+    );
+    const edit = (key: string, text: string) => {
+      const input = editorFor(key);
+      input.dispatchEvent(new Event('focus'));
+      input.value = text;
+      input.dispatchEvent(new Event('blur'));
+    };
+    edit('qty', '');
+    edit('price', '12abc');
+    edit('total', ' 1.5e2 ');
+    await sleep(10);
+    expect(scope.qty).toBe(5);
+    expect(scope.price).toBe(7);
+    expect(scope.total).toBe(150);
+    expect(editorFor('qty').value).toBe('5');
+    app.unmount();
+  });
+});
+
+describe('devtools panel edit coercion', () => {
+  test('a number or BigInt field keeps its type, and other fields take the text', () => {
+    expect(coerce(' 42 ', 1)).toBe(42);
+    expect(coerce('', 1)).toBe(1);
+    expect(coerce('12abc', 1)).toBe(1);
+    expect(coerce('9007199254740993', 1n)).toBe(9007199254740993n);
+    expect(coerce('', 1n)).toBe(1n);
+    expect(coerce('1.5', 1n)).toBe(1n);
+    expect(coerce('text', 'old')).toBe('text');
+    expect(coerce('text', null)).toBe('text');
+  });
+});
+
+describe('devtools panel with teleported content', () => {
+  test('pick mode and the tree follow teleported content to its scope', async () => {
+    const { app, root, scope } = await openScope(
+      'page',
+      `<div v-name="page" v-scope="{ title: 'Delete order?' }">
+        <div v-teleport="#tp-modals"><b id="tp-text">{{ title }}</b>
+          <div v-name="inner" v-scope="{ n: 1 }"></div>
+        </div>
+        <div id="tp-modals"></div>
+      </div>`
+    );
+    // the target sits outside the scope, as a modal root usually does
+    document.body.appendChild(root.querySelector('#tp-modals')!);
+    const text = document.getElementById('tp-text')!;
+    // selecting re-renders the tree from where the elements now are
+    $$('.tree .row')
+      .find((r) => r.textContent!.includes('<page>'))!
+      .click();
+    await sleep(10);
+    // the tree nests the teleported scope under the scope it was written in
+    const indent = (name: string) =>
+      parseInt(
+        $$('.tree .row').find((r) => r.textContent!.includes(`<${name}>`))!
+          .style.paddingLeft
+      );
+    expect(indent('inner')).toBe(indent('page') + 12);
+
+    ($(`.btn[title="pick an element on the page"]`) as HTMLElement).click();
+    text.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await sleep(10);
+    expect((window as any).$scope).toBe(scope);
+    app.unmount();
+    document.getElementById('tp-modals')?.remove();
   });
 });
 
@@ -354,6 +444,20 @@ describe('devtools panel filter search', () => {
     expect(findInState(scope, 'needle')).toBeTruthy();
     expect(findInState(scope, '2026')).toBeTruthy();
     expect(findInState(scope, 'haystack')).toBeTruthy();
+  });
+
+  // a 2 MB Uint8Array took about 250ms per keystroke when walked
+  test('does not walk the elements of a typed array', () => {
+    const pixels = new Uint8Array(100_000);
+    const keys = vi.spyOn(Object, 'keys');
+    try {
+      expect(findInState({ frame: pixels }, 'zzz')).toBe(undefined);
+      expect(keys.mock.calls.some(([v]) => v === pixels)).toBe(false);
+    } finally {
+      keys.mockRestore();
+    }
+    // its name still matches
+    expect(findInState({ frame: pixels }, 'fra')).toBe('frame');
   });
 });
 
