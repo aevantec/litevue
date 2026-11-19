@@ -74,6 +74,25 @@ describe('extra modifiers', () => {
     app.unmount();
   });
 
+  // Alpine's dropdown: the opening click reaches the document listener while
+  // the menu is still hidden, and must not close it again
+  test('.outside on a v-show menu ignores the click that opens it', async () => {
+    const { $, app } = await mount(
+      `<div v-scope="{ open: false }">
+        <button id="toggle" @click="open = !open">menu</button>
+        <div id="menu" v-show="open" @click.outside="open = false">items</div>
+      </div>`
+    );
+    $('#toggle').click();
+    await tick();
+    expect($('#menu').style.display).toBe('');
+
+    document.body.click();
+    await tick();
+    expect($('#menu').style.display).toBe('none');
+    app.unmount();
+  });
+
   test('.window attaches to window and cleans up on unmount', async () => {
     const { $, app } = await mount(
       `<div v-scope="{ n: 0 }"><span @scroll.window="n++"></span></div>`

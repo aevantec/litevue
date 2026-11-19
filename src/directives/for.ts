@@ -4,6 +4,7 @@ import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
 import { setOwner } from '../ownership';
 import { warnOnce } from '../warn';
+import { handleError } from '../errors';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
 const forIteratorRE = /,([^,}\]]*)(?:,([^,}\]]*))?$/;
@@ -79,20 +80,32 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const map: KeyToIndexMap = new Map();
     const rows: Row[] = [];
 
-    // a string iterates by character, as in Vue
-    if (isArray(source) || isString(source)) {
-      for (let i = 0; i < source.length; i++) {
-        rows.push(createRow(map, source[i], i));
+    // Reading items runs getters outside evaluate's containment; a throw
+    // renders no rows rather than aborting mount() or the flush.
+    try {
+      // a string iterates by character, as in Vue
+      if (isArray(source) || isString(source)) {
+        for (let i = 0; i < source.length; i++) {
+          rows.push(createRow(map, source[i], i));
+        }
+      } else if (typeof source === 'number') {
+        for (let i = 0; i < source; i++) {
+          rows.push(createRow(map, i + 1, i));
+        }
+      } else if (isObject(source)) {
+        let i = 0;
+        for (const key in source) {
+          rows.push(createRow(map, source[key], i++, key));
+        }
       }
-    } else if (typeof source === 'number') {
-      for (let i = 0; i < source; i++) {
-        rows.push(createRow(map, i + 1, i));
-      }
-    } else if (isObject(source)) {
-      let i = 0;
-      for (const key in source) {
-        rows.push(createRow(map, source[key], i++, key));
-      }
+    } catch (e) {
+      handleError(e, {
+        phase: 'expression',
+        source: 'v-for',
+        el,
+        expression: sourceExp,
+      });
+      return [[], new Map()];
     }
 
     return [rows, map];

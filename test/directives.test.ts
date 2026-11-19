@@ -244,6 +244,30 @@ describe('v-text / v-html / v-pre', () => {
     expect($('p').innerHTML).toBe('<b>bold</b>');
   });
 
+  test('fallback content that v-text replaces is never bound', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ msg: 'final', fallback: 'x', runs: 0 }"><p v-text="msg">{{ (runs++, fallback) }}</p></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    expect($('p').textContent).toBe('final');
+    expect(scope.runs).toBe(0);
+
+    scope.fallback = 'y';
+    await tick();
+    expect(scope.runs).toBe(0);
+  });
+
+  test('a ref and @mounted in fallback content that v-html replaces do not outlive it', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ html: '<em>server</em>', mounted: 0 }"><section v-html="html"><input ref="field" @mounted="mounted++"></section></div>`
+    );
+    await tick();
+    const scope = (root as any).__ctx.scope;
+    expect($('section').innerHTML).toBe('<em>server</em>');
+    expect(scope.mounted).toBe(0);
+    expect(scope.$refs.field).toBeUndefined();
+  });
+
   test('v-pre skips compilation', async () => {
     const { $ } = await mount(
       `<div v-scope="{ n: 1 }"><span v-pre>{{ n }}</span></div>`
