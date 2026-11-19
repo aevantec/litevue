@@ -108,7 +108,7 @@ For `<script>` users, set the flag before the library loads:
 </script>
 ```
 
-Bypassing that kill-switch to reach application state **is** treated as a vulnerability — see below.
+The kill-switch removes the registry and its events, so the console, the panel and the extension can no longer enumerate scopes through it. It does not hide state from script already running on the page, which can still reach it through internal properties of mounted elements; as above, that script has full access to the page in any case. Making the registry or its events available again after the switch **is** treated as a vulnerability — see below.
 
 ## Third-party plugins
 
@@ -129,7 +129,7 @@ Report privately through [GitHub security advisories](https://github.com/aevante
 
 Because expression evaluation is intentional, reports that restate it — that `@click` in attacker-supplied HTML runs, or that a CSP without `'unsafe-eval'` blocks the library — are closed as working as documented.
 
-In scope: escaping the intended scope of an expression, prototype pollution, bypassing the devtools production kill-switch to reach application state, or getting content that should have stayed inert to execute. The full policy is in [SECURITY.md](https://github.com/aevantec/litevue/blob/main/SECURITY.md).
+In scope: escaping the intended scope of an expression, prototype pollution, making the devtools registry or its events available again after the production kill-switch, or getting content that should have stayed inert to execute. The full policy is in [SECURITY.md](https://github.com/aevantec/litevue/blob/main/SECURITY.md).
 
 ## Next
 

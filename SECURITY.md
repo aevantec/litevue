@@ -32,7 +32,14 @@ you in the advisory unless you'd rather stay anonymous.
   elements, not runtime compilation. See the
   [security page](https://litevue.dev/start-here/security).
 
+- The devtools kill-switch is not a privilege boundary. `disableDevtools()`
+  removes `window.__LITE_VUE__` and its events, so state is no longer enumerable
+  from the console, the panel or the extension. Script already running on the
+  page can still reach state through internal properties of mounted elements, as
+  it can reach anything else on the page. See the
+  [security page](https://litevue.dev/start-here/security#devtools-in-production).
+
 Reports of the above will be closed as working-as-documented. In scope: escaping
-the intended scope of an expression, prototype pollution, bypassing the devtools
-production kill-switch to reach application state, or getting content that should
-have stayed inert to execute.
+the intended scope of an expression, prototype pollution, making the devtools
+registry or its events available again after the production kill-switch, or
+getting content that should have stayed inert to execute.
