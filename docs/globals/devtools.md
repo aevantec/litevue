@@ -112,6 +112,7 @@ build.
 - Scopes are the live reactive objects, so reads are always current and writes update the page.
 - The registry holds references to every scope, and so to its data. Disable it where page state should not be reachable from the console — see [Security](/start-here/security).
 - Once disabled there is no `window.__LITE_VUE__`, nothing registers, and no event fires, including `flush`. Calling it late is safe: it clears anything already registered.
+- Disabling removes the registry; it is not a privilege boundary. Script already running on the page can still reach state through mounted elements — see [Security](/start-here/security#devtools-in-production).
 - Plugins are recorded only in [development builds](/start-here/installation#development-builds), since recording costs the core bytes. In a production build `plugins` stays empty and `plugin:install` never fires.
 - A full [`unmount()`](/globals/create-app#the-app-instance) removes that app's plugins from the list, since their teardowns have run. `unmount(el)` leaves them, because the app is still running.
 
