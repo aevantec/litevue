@@ -84,15 +84,11 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       return;
     }
 
-    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
-    // of v-cloak, which must stay on the element until the region mounts, or
-    // its raw {{ }} shows while it waits.
-    if (deferScope(el, ctx, walkDeferred, inOnce)) return;
-
-    checkAttr(el, 'v-cloak');
-
     let exp: string | null;
 
+    // v-if and v-for come before a deferred v-scope, so a false branch or the
+    // raw template row never shows while the region waits; the clones keep
+    // the modifier and defer on their own.
     // v-if; `!= null` so an empty v-if="" reaches _if, which reads it as false
     if ((exp = checkAttr(el, 'v-if')) != null) {
       return _if(el, exp, ctx);
@@ -102,6 +98,13 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-for'))) {
       return _for(el, exp, ctx);
     }
+
+    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
+    // of v-cloak, which must stay on the element until the region mounts, or
+    // its raw {{ }} shows while it waits.
+    if (deferScope(el, ctx, walkDeferred, inOnce)) return;
+
+    checkAttr(el, 'v-cloak');
 
     // v-name: devtools label for scopes without an id. Read after the
     // v-if/v-for early returns so it survives in their templates, and stripped
@@ -189,8 +192,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       applyDirective(el, ref, `"${exp}"`, ctx);
     }
 
-    // process children first before self attrs
-    walkChildren(el, ctx);
+    // process children first before self attrs; v-text and v-html replace
+    // their fallback children, so binding those would leave live effects,
+    // refs and hooks on discarded nodes
+    if (!el.hasAttribute('v-text') && !el.hasAttribute('v-html')) {
+      walkChildren(el, ctx);
+    }
 
     // other directives
     const deferred: [string, string][] = [];

@@ -66,10 +66,18 @@ A slow connection can show raw `{{ }}` before LiteVue mounts. Hide those regions
 with [`v-cloak`](/directives/v-cloak):
 
 ```css
-[v-cloak] {
+[v-cloak]:not([v-scope\.visible]) {
   display: none;
 }
+[v-cloak][v-scope\.visible] {
+  visibility: hidden;
+}
 ```
+
+The second rule keeps the box of a region deferred with `v-scope.visible`, so
+the browser can report when it scrolls into view. A region deferred with
+`.interaction` must stay visible for the user to reach it; cloak the elements
+inside it instead — see [deferred regions](/directives/v-cloak#deferred-regions).
 
 ## Keeping text uncompiled
 

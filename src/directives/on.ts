@@ -188,8 +188,14 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
 
     handler = (e: Event) => {
       // the path is fixed at dispatch, so a target removed by an earlier
-      // listener still counts as inside
-      if (modifiers.outside && e.composedPath().includes(el)) {
+      // listener still counts as inside. An event from before the element was
+      // shown or listening (Vue's _vts), or while v-show hides it, opened it.
+      if (
+        modifiers.outside &&
+        (e.composedPath().includes(el) ||
+          (el as any)._vsh ||
+          e.timeStamp < (el as any)._vts)
+      ) {
         return;
       }
       // A key-less key event (Chrome's autofill keydown) matches no key, as
@@ -233,6 +239,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       ? document
       : el;
   const event = arg;
+  // in the clock of event.timeStamp; v-show moves it on each show
+  if (modifiers?.outside) (el as any)._vts = performance.now();
   target.addEventListener(event, handler, { ...modifiers, once: false });
   // Element listeners are removed too. They once died with the element, but
   // app.unmount(el) tears down a region that stays in the document, where a

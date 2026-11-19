@@ -78,6 +78,7 @@ A failure is contained to the thing that failed:
 - A directive's cleanup that throws is reported, and the rest of the teardown still runs: the other listeners are removed and the region can render again.
 - A `$watch` callback or a re-run of `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page. A `$watch` whose first call throws, as with `{ immediate: true }`, keeps watching, and so does a custom directive's effect whose first run throws. A `watchEffect` whose first run throws passes the error to your code and is stopped — see [watchEffect()](/globals/watch-effect#behavior).
 - A `v-for` that destructures a `null` or `undefined` item, as in `{ id } in items`, renders that row with empty values.
+- A `v-for` whose source has a getter that throws while its items are read, on the source or on a destructured item, renders no rows and reports the error with `source: 'v-for'` and the element.
 - A `$template` selector that matches no `<template>` element leaves that region empty, and the rest of the page still mounts.
 
 That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.

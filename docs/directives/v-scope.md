@@ -77,9 +77,19 @@ fold or behind a click, and hide their raw `{{ }}` with
 
 ```html
 <section v-scope.visible="Comments({ postId: 7 })" v-cloak>…</section>
-<nav v-scope.interaction="{ open: false }">…</nav>
+<nav v-scope.interaction="{ open: false }">
+  <button @click="open = !open">Menu</button>
+  <ul v-show="open" v-cloak>…</ul>
+</nav>
 <aside v-scope.idle="Recommendations()" v-cloak>…</aside>
 ```
+
+A `.visible` region must keep its box while it waits, so the browser can report
+when it scrolls into view, and a `.interaction` region must stay visible so the
+user can press or focus it. Use the cloak rules for
+[deferred regions](/directives/v-cloak#deferred-regions), which hide a
+`.visible` region with `visibility: hidden` rather than `display: none`, and
+cloak the inside of a `.interaction` region rather than the region itself.
 
 ## Behavior
 
@@ -93,6 +103,7 @@ fold or behind a click, and hide their raw `{{ }}` with
 - Where `IntersectionObserver` is unavailable — in jsdom, for example — `.visible` mounts like `.idle` instead.
 - A region unmounted before its trigger fires never mounts, and its observer or listeners are released.
 - Directives on the deferred element itself wait too: its `ref`, `@click` and `:class` bind when it mounts.
+- `v-if` and `v-for` on a deferred element are applied at once, not deferred: a false branch is removed and a list renders its rows straight away. Each rendered branch or row then waits for its own trigger, and keeps `v-cloak` until it mounts.
 - Inside [`v-once`](/directives/v-once), a deferred region still renders once.
 - Use one modifier per element. With two, the region waits for both triggers in turn; beside a plain `v-scope`, the modifier's value replaces it.
 
