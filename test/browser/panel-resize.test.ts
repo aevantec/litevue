@@ -49,22 +49,20 @@ const drag = async (grip: HTMLElement, dx: number, dy: number) => {
   await flush();
 };
 
-/** Cycles the dock button until the panel is in `want`. */
+const LAYOUTS = ['float', 'left', 'bottom', 'right'];
+
+/** Picks `want` from the layout menu. */
 const dockTo = async (shadow: ShadowRoot, panel: HTMLElement, want: string) => {
-  const is = () =>
-    panel.classList.contains('dock-bottom')
-      ? 'bottom'
-      : panel.classList.contains('dock-right')
-        ? 'right'
-        : 'float';
-  const btn = [...shadow.querySelectorAll('.header .btn')].find((b) =>
-    (b as HTMLElement).title.startsWith('panel:')
+  const btn = shadow.querySelector(
+    '.menu-wrap > .btn[title^="layout:"]'
   ) as HTMLElement;
-  for (let i = 0; i < 4 && is() !== want; i++) {
-    btn.click();
-    await flush();
-  }
-  expect(is()).toBe(want);
+  btn.click();
+  const items = btn.nextElementSibling!.querySelectorAll('.item');
+  // picking the current layout only closes the menu
+  (items[LAYOUTS.indexOf(want)] as HTMLElement).click();
+  await flush();
+  const docked = LAYOUTS.find((d) => panel.classList.contains('dock-' + d));
+  expect(docked || 'float').toBe(want);
 };
 
 beforeEach(() => localStorage.removeItem('litevue-devtools-ui'));
@@ -100,6 +98,19 @@ describe('the resize handle', () => {
     const after = panel.getBoundingClientRect();
     expect(Math.round(after.width)).toBe(Math.round(before.width) + 70);
     expect(Math.round(after.height)).toBe(Math.round(before.height));
+  });
+
+  test('docked to the left: width only, and dragging right grows it', async () => {
+    const { shadow, panel, grip } = await openPanel();
+    await dockTo(shadow, panel, 'left');
+    const before = panel.getBoundingClientRect();
+    expect(Math.round(before.left)).toBe(0);
+    // the handle is on the right edge
+    await drag(grip, 70, 60);
+    const after = panel.getBoundingClientRect();
+    expect(Math.round(after.width)).toBe(Math.round(before.width) + 70);
+    expect(Math.round(after.height)).toBe(Math.round(before.height));
+    expect(Math.round(after.left)).toBe(0);
   });
 
   test('it cannot be dragged below the minimum or past the viewport', async () => {

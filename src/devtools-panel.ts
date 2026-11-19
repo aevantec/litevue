@@ -4,10 +4,10 @@
 import type { LiteVueDevtools } from './devtools';
 import { css } from './devtools-panel/styles';
 import { createPluginsView } from './devtools-panel/plugins';
+import { createMenu, type Menu } from './devtools-panel/menu';
 import {
   clamp,
-  dockIcons,
-  dockTitles,
+  dockOptions,
   icon,
   loadTheme,
   loadUi,
@@ -15,11 +15,9 @@ import {
   maxW,
   MIN_H,
   MIN_W,
-  nextDock,
-  nextTheme,
   saveTheme,
   saveUi,
-  themeIcons,
+  themeOptions,
   type Dock,
   type ThemeMode,
 } from './devtools-panel/chrome';
@@ -42,14 +40,14 @@ let pillEl: HTMLElement;
 let treeEl: HTMLElement;
 let stateEl: HTMLElement;
 let pickBtn: HTMLElement;
-let themeBtn: HTMLElement;
+let themeMenu: Menu<ThemeMode>;
 let highlightEl: HTMLElement;
 let selected: Element | null = null;
 let selectedStore: string | null = null;
 let picking = false;
 let filterText = '';
 let activeTab: 'Elements' | 'Stores' = 'Elements';
-let dockBtn: HTMLElement;
+let dockMenu: Menu<Dock>;
 let dock: Dock = 'float';
 // the floating geometry, kept while docked so undocking restores it
 let floatW = '';
@@ -59,6 +57,7 @@ let floatBottom = '';
 // Each mode keeps its own size: deriving the docked one from the floating
 // geometry would reset a bottom dock sized to 300px on the next dock.
 let bottomH = '';
+let leftW = '';
 let rightW = '';
 
 let elementsTab: HTMLElement;
@@ -73,8 +72,7 @@ const applyTheme = () => {
   const light =
     theme === 'light' || (theme === 'system' && prefersLight.matches);
   shadow.host.classList.toggle('light', light);
-  themeBtn.innerHTML = themeIcons[theme];
-  themeBtn.title = 'theme: ' + theme;
+  themeMenu.set(theme);
 };
 // property paths ("items", "items.0", …) the user expanded; kept across flush
 // re-renders so the tree doesn't collapse while state changes
@@ -114,26 +112,34 @@ const applyDock = (next: Dock) => {
     floatBottom = panelEl.style.bottom || floatBottom;
   } else if (dock === 'bottom') {
     bottomH = panelEl.style.height || bottomH;
+  } else if (dock === 'left') {
+    leftW = panelEl.style.width || leftW;
   } else {
     rightW = panelEl.style.width || rightW;
   }
   dock = next;
   const docked = next !== 'float';
-  panelEl.classList.toggle('dock-bottom', next === 'bottom');
-  panelEl.classList.toggle('dock-right', next === 'right');
+  for (const d of ['left', 'bottom', 'right']) {
+    panelEl.classList.toggle('dock-' + d, next === d);
+  }
 
-  // both docks pin to the right and bottom edges, so neither offset may remain
+  // the docks pin to the viewport's edges, so neither offset may remain
   panelEl.style.right = docked ? '' : floatRight;
   panelEl.style.bottom = docked ? '' : floatBottom;
   // each dock owns one axis and leaves the other resizable, at whatever size
   // that mode was last left
   panelEl.style.width =
-    next === 'bottom' ? '' : next === 'right' ? rightW : floatW;
+    next === 'bottom'
+      ? ''
+      : next === 'left'
+        ? leftW
+        : next === 'right'
+          ? rightW
+          : floatW;
   panelEl.style.height =
-    next === 'right' ? '' : next === 'bottom' ? bottomH : floatH;
+    next === 'bottom' ? bottomH : next === 'float' ? floatH : '';
 
-  dockBtn.innerHTML = dockIcons[next];
-  dockBtn.title = 'panel: ' + dockTitles[next];
+  dockMenu.set(next);
 };
 
 // html-tag-style label for a scope root, e.g. <cart>. See nameOf for source.
@@ -647,7 +653,7 @@ const build = () => {
 
   // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {
-    if ((e.target as Element).closest('.btn')) return;
+    if ((e.target as Element).closest('.btn, .menu')) return;
     // a docked panel is pinned to its edges; dragging it would fight the dock
     if (dock !== 'float') return;
     e.preventDefault();
@@ -698,13 +704,15 @@ const build = () => {
     const startH = rect.height;
 
     const move = (ev: MouseEvent) => {
-      // docked, the handle sits opposite the anchored edge, so the drag reads
-      // backwards: pulling up or left makes the panel bigger
+      // docked to the bottom or right, the handle sits on the top or left
+      // edge, so the drag reads backwards: pulling up or left makes it bigger
       const dy = dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
       const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
       const hgt = clamp(startH + dy, MIN_H, maxH());
       const w = clamp(startW + dx, MIN_W, maxW());
-      if (dock !== 'right') panelEl.style.height = hgt + 'px';
+      if (dock === 'float' || dock === 'bottom') {
+        panelEl.style.height = hgt + 'px';
+      }
       if (dock !== 'bottom') panelEl.style.width = w + 'px';
       // Floating, the panel is anchored by right/bottom: moving those with
       // the size keeps the top-left, and the header, where it was
@@ -727,6 +735,7 @@ const build = () => {
           bottom: parseInt(panelEl.style.bottom),
         });
       } else if (dock === 'bottom') saveUi({ bh: hgt });
+      else if (dock === 'left') saveUi({ lw: w });
       else saveUi({ rw: w });
     };
     document.addEventListener('mousemove', move);
@@ -737,22 +746,19 @@ const build = () => {
   renderPlugins = plugins.render;
   header.appendChild(plugins.btn);
 
-  // Cycles through dock positions like the theme button: the icon shows the
-  // current state rather than opening a menu.
-  dockBtn = h('button', 'btn');
-  dockBtn.onclick = () => {
-    applyDock(nextDock[dock]);
+  dockMenu = createMenu('layout', dockOptions, (next) => {
+    applyDock(next);
+    keepOnScreen();
     saveUi({ dock });
-  };
-  header.appendChild(dockBtn);
+  });
+  header.appendChild(dockMenu.el);
 
-  themeBtn = h('button', 'btn');
-  themeBtn.onclick = () => {
-    theme = nextTheme[theme];
+  themeMenu = createMenu('theme', themeOptions, (next) => {
+    theme = next;
     saveTheme(theme);
     applyTheme();
-  };
-  header.appendChild(themeBtn);
+  });
+  header.appendChild(themeMenu.el);
   prefersLight.addEventListener('change', () => {
     if (theme === 'system') applyTheme();
   });
@@ -821,9 +827,11 @@ const build = () => {
   if (ui.right != null) floatRight = panelEl.style.right = ui.right + 'px';
   if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.bh) bottomH = ui.bh + 'px';
+  if (ui.lw) leftW = ui.lw + 'px';
   if (ui.rw) rightW = ui.rw + 'px';
-  // after the sizes, so it hands each mode the one it was last left at
-  applyDock(ui.dock || 'float');
+  // after the sizes, so it hands each mode the one it was last left at; a
+  // stored value is checked, since the menu can only show a known layout
+  applyDock(dockOptions.some((o) => o.value === ui.dock) ? ui.dock! : 'float');
   // host must be in the document before showing: keepOnScreen measures it,
   // and a detached element measures zero
   document.body.appendChild(host);

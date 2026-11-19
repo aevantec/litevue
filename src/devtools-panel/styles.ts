@@ -7,7 +7,7 @@
  * `[hidden]` is forced with `!important` because an author `display`, such as
  * `.side`'s flex, beats the UA rule, and the plugins view hides by `hidden`.
  *
- * Docked layouts (`.dock-bottom` / `.dock-right`) give the tree a full viewport
+ * Docked layouts (`.dock-left` / `.dock-bottom` / `.dock-right`) give the tree a full viewport
  * edge, as browser devtools do; only the cross-axis stays resizable, since the
  * other would fight the dock.
  *
@@ -18,6 +18,9 @@
  * Sizing uses an explicit `.grip` rather than CSS `resize`, whose handle is
  * always bottom-right — the wrong corner once docked, where dragging down would
  * grow the panel upward. Each mode gets a handle on the edge that moves.
+ *
+ * `.menu` is absolute inside the header's `.menu-wrap`; the panel clips its
+ * overflow, which its 320px minimum height leaves room for.
  */
 export const css = `
 :host {
@@ -94,6 +97,7 @@ export const css = `
   border-right: 0;
   border-bottom: 0;
 }
+.panel.dock-left,
 .panel.dock-right {
   top: 0;
   right: 0;
@@ -105,6 +109,13 @@ export const css = `
   border-right: 0;
   border-bottom: 0;
 }
+.panel.dock-left {
+  right: auto;
+  left: 0;
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+.panel.dock-left .header,
 .panel.dock-bottom .header,
 .panel.dock-right .header {
   cursor: default;
@@ -128,6 +139,7 @@ export const css = `
   cursor: ns-resize;
   background: none;
 }
+.panel.dock-left .grip,
 .panel.dock-right .grip {
   top: 0;
   left: 0;
@@ -136,6 +148,11 @@ export const css = `
   cursor: ew-resize;
   background: none;
 }
+.panel.dock-left .grip {
+  left: auto;
+}
+.panel.dock-left .grip:hover,
+.panel.dock-left .grip.active,
 .panel.dock-bottom .grip:hover,
 .panel.dock-bottom .grip.active,
 .panel.dock-right .grip:hover,
@@ -178,6 +195,50 @@ export const css = `
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
+}
+.btn svg + svg {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+.menu-wrap {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 3px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.item:hover,
+.item:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.item[aria-checked='true'] {
+  color: var(--accent);
 }
 .body {
   display: flex;

@@ -1,4 +1,5 @@
-// Panel chrome: icons, theme and dock cycles, and the persisted UI state.
+// Panel chrome: icons, the theme and layout options, and the persisted UI state.
+import type { MenuOption } from './menu';
 
 export const icon = (paths: string) =>
   '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" ' +
@@ -12,7 +13,7 @@ const THEME_KEY = 'litevue-devtools-theme';
 const UI_KEY = 'litevue-devtools-ui';
 
 // persisted panel chrome: open state, position (right/bottom offsets) and size
-export type Dock = 'float' | 'bottom' | 'right';
+export type Dock = 'float' | 'left' | 'bottom' | 'right';
 
 export interface UiState {
   open?: boolean;
@@ -20,8 +21,9 @@ export interface UiState {
   bottom?: number;
   w?: number;
   h?: number;
-  /** dock-bottom height and dock-right width, remembered separately */
+  /** dock-bottom height and dock-left / dock-right widths, remembered separately */
   bh?: number;
+  lw?: number;
   rw?: number;
   dock?: Dock;
 }
@@ -85,29 +87,28 @@ export const dockIcons: Record<Dock, string> = {
     '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
       '<rect x="2" y="14" width="20" height="7" fill="currentColor"/>'
   ),
+  left: icon(
+    '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
+      '<rect x="2" y="3" width="8" height="18" fill="currentColor"/>'
+  ),
   right: icon(
     '<rect x="2" y="3" width="20" height="18" rx="1"/>' +
       '<rect x="14" y="3" width="8" height="18" fill="currentColor"/>'
   ),
 };
 
-export const nextDock: Record<Dock, Dock> = {
-  float: 'bottom',
-  bottom: 'right',
-  right: 'float',
-};
+export const dockOptions: MenuOption<Dock>[] = [
+  { value: 'float', label: 'Floating', icon: dockIcons.float },
+  { value: 'left', label: 'Dock to left', icon: dockIcons.left },
+  { value: 'bottom', label: 'Dock to bottom', icon: dockIcons.bottom },
+  { value: 'right', label: 'Dock to right', icon: dockIcons.right },
+];
 
-export const dockTitles: Record<Dock, string> = {
-  float: 'floating',
-  bottom: 'docked to bottom',
-  right: 'docked to right',
-};
-
-export const nextTheme: Record<ThemeMode, ThemeMode> = {
-  dark: 'light',
-  light: 'system',
-  system: 'dark',
-};
+export const themeOptions: MenuOption<ThemeMode>[] = [
+  { value: 'dark', label: 'Dark', icon: themeIcons.dark },
+  { value: 'light', label: 'Light', icon: themeIcons.light },
+  { value: 'system', label: 'System', icon: themeIcons.system },
+];
 
 // Bounds for every mode, mirroring min-width / min-height in the stylesheet.
 // CSS clamps what is rendered, this clamps what is stored; if they drift, a
