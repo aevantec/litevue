@@ -24,7 +24,8 @@ export const findInState = (scope: any, term: string) => {
   ): string | undefined => {
     if (value == null) return;
     if (typeof value === 'object') {
-      if (depth > 4 || seen.has(value)) return;
+      // a typed array holds numbers, often millions of them
+      if (depth > 4 || seen.has(value) || ArrayBuffer.isView(value)) return;
       seen.add(value);
       // a Map or Set has no own keys; its entries are searched as arrays
       if (isCollection(value)) value = [...value];
@@ -102,10 +103,22 @@ export const fmt = (v: unknown) => {
   return s.length > 60 ? s.slice(0, 60) + '…' : s;
 };
 
+/**
+ * The edited text as a value of the field's type. Text that is not a number
+ * returns `old`, so a number or BigInt field is never written as a string;
+ * blank is not 0 and '12abc' is not 12.
+ */
 export const coerce = (raw: string, old: unknown) => {
+  if (typeof old === 'bigint') {
+    try {
+      return raw.trim() ? BigInt(raw) : old;
+    } catch {
+      return old;
+    }
+  }
   if (typeof old === 'number') {
-    const n = parseFloat(raw);
-    return isNaN(n) ? raw : n;
+    const n = Number(raw);
+    return raw.trim() && !isNaN(n) ? n : old;
   }
   return raw;
 };
