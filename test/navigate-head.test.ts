@@ -165,6 +165,20 @@ describe('navigate: head', () => {
     expect(styles[0].textContent).toContain('red');
   });
 
+  test('keeps the order the next page gives new and shared stylesheets', async () => {
+    // a reset placed before the shared sheet must not end up overriding it
+    reply = page(
+      '<style id="reset"></style><style id="site"></style><style id="a"></style><style id="b"></style>'
+    );
+    await start('<style id="site"></style><style id="old"></style>');
+
+    await go();
+
+    expect(main()).toBe('next');
+    const ids = [...document.head.querySelectorAll('style')].map((s) => s.id);
+    expect(ids).toEqual(['reset', 'site', 'a', 'b']);
+  });
+
   test('never adds or removes scripts', async () => {
     reply = page('<script src="/two.js"></script>');
     await start('<script src="/one.js"></script>');

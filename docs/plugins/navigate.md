@@ -139,7 +139,7 @@ The fetched page's `<head>` is merged into the current one, so each page keeps i
 
 - `<title>` is replaced.
 - `<link>`, `<style>` and `<meta>` elements present on both pages are left in place, so a shared stylesheet is never reloaded.
-- Ones only the next page has are added. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up. A disabled stylesheet, or one with an empty or missing `href`, is added without waiting, since the browser does not load it.
+- Ones only the next page has are added in the order that page gives them, so a stylesheet placed before a shared one still comes before it in the cascade. New stylesheets finish loading before the page changes, so it never shows unstyled. A stylesheet that fails to load does not hold the navigation up. A disabled stylesheet, or one with an empty or missing `href`, is added without waiting, since the browser does not load it.
 - Ones only the current page has are removed once the new page is in place.
 - `<script>` elements in the head are never added or removed, data islands included. A fetched page's executable scripts never run, and removing a script would not unload it. Place a data island that changes between pages in the body instead.
 
