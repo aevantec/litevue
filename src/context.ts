@@ -122,10 +122,11 @@ export const createScopedContext = (
 
 // Read from the descriptor, not the property: reading runs every getter,
 // outside any error containment, so one throwing getter aborted the mount.
+// A non-writable one (a frozen object's) is left unbound: writing it throws.
 export const bindContextMethods = (scope: Record<string, any>, raw = scope) => {
   for (const key of Object.keys(raw)) {
-    const fn = Object.getOwnPropertyDescriptor(raw, key)!.value;
-    if (typeof fn === 'function') {
+    const { value: fn, writable } = Object.getOwnPropertyDescriptor(raw, key)!;
+    if (typeof fn === 'function' && writable) {
       // inherits from the original, so members such as `lib.get` or a
       // class's statics still resolve on the bound copy
       scope[key] = Object.setPrototypeOf(fn.bind(scope), fn);
