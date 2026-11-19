@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { devtools, store } from '../src';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { createApp, devtools, store } from '../src';
 import { mount, tick } from './utils';
 
 describe('devtools registry', () => {
@@ -64,5 +64,48 @@ describe('devtools registry', () => {
     expect(devtools.stores.get('reg-test')).toBe(store('reg-test'));
     expect(seen).toEqual(['reg-test']);
     off();
+  });
+});
+
+// Listeners run inside walk() and store(), and the registry is on in
+// production, so a faulty console snippet or extension must not abort a mount.
+describe('a devtools listener that throws', () => {
+  const offs: (() => void)[] = [];
+  afterEach(() => {
+    offs.splice(0).forEach((off) => off());
+    vi.restoreAllMocks();
+    document.body.innerHTML = '';
+  });
+
+  test('does not stop the page from mounting, and is reported', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bug = new Error('listener bug');
+    offs.push(
+      devtools.on('scope:mount', (el: Element) => {
+        if (el.id === 'first') throw bug;
+      })
+    );
+    document.body.innerHTML = `<main>
+      <div id="first" v-scope="{ a: 1 }">{{ a }}</div>
+      <div id="second" v-scope="{ b: 2 }">{{ b }}</div>
+    </main>`;
+    createApp().mount(document.querySelector('main')!);
+    await tick();
+    expect(document.getElementById('first')!.textContent).toBe('1');
+    expect(document.getElementById('second')!.textContent).toBe('2');
+    expect(logged.mock.calls.flat()).toContain(bug);
+  });
+
+  test('does not stop the listeners after it', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const seen: string[] = [];
+    offs.push(
+      devtools.on('store:register', () => {
+        throw new Error('listener bug');
+      })
+    );
+    offs.push(devtools.on('store:register', (name: string) => seen.push(name)));
+    store('after-throwing-listener', { v: 1 });
+    expect(seen).toEqual(['after-throwing-listener']);
   });
 });
