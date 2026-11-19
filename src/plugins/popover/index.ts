@@ -93,7 +93,9 @@ export const popover: Plugin = (app) => {
     const pop = el as HTMLElement;
     if (!pop.popover) pop.popover = 'auto';
     const assign = get(`(val) => { ${exp} = val }`);
-    const sync = (e: Event) => assign((e as ToggleEvent).newState === 'open');
+    // undefined for an expression that cannot be assigned to, such as
+    // menu === 'file': it still opens and closes the popover, one way
+    const sync = (e: Event) => assign?.((e as ToggleEvent).newState === 'open');
     pop.addEventListener('toggle', sync);
     const toggle = () => {
       const open = !!get();

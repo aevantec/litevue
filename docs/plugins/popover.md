@@ -20,6 +20,8 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 | `v-popover="expression"` | Shows the popover while truthy. Closing it natively, with Escape or a click outside, sets the expression to `false` |
 | `v-anchor.<placement>="element"` | Positions this element against `element`, usually a [`$refs`](/magics/refs) entry |
 
+Writing back to `v-popover`'s expression needs one that can be assigned to, such as `open` or `menus.file`; with an expression like `menu === 'file'`, the popover still follows the state, but an error is reported at mount and closing the popover natively leaves the state unchanged.
+
 `v-anchor` works on any element, not only a popover, and needs no `v-popover`. Its value is reactive: when the expression points at another element, the anchored element moves there. While the value is `null`, such as a `$refs` entry that has not rendered yet, the element is not anchored to anything.
 
 ### Placements

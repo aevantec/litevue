@@ -94,4 +94,30 @@ describe('v-popover', () => {
     expect(errors).toEqual([]);
     expect(isOpen('#pop')).toBe(false);
   });
+
+  // one state for several menus: the expression cannot be written back
+  test('a non-assignable expression still opens, and a native toggle does not throw', async () => {
+    const errors = await mount(`
+      <div v-scope="{ menu: 'file' }">
+        <div id="pop" v-popover="menu === 'file'"></div>
+      </div>`);
+    expect(isOpen('#pop')).toBe(true);
+    // the write-back that cannot compile is reported once, at mount
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toBeInstanceOf(SyntaxError);
+    const uncaught: unknown[] = [];
+    const onError = (e: ErrorEvent) => {
+      uncaught.push(e.error);
+      e.preventDefault();
+    };
+    window.addEventListener('error', onError);
+
+    const toggle = new Event('toggle') as any;
+    toggle.newState = 'closed';
+    document.querySelector('#pop')!.dispatchEvent(toggle);
+    window.removeEventListener('error', onError);
+
+    expect(uncaught).toEqual([]);
+    expect(errors).toHaveLength(1);
+  });
 });
