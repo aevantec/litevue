@@ -18,6 +18,10 @@ None of these is breaking, but each changes what a page shows or receives:
 * `v-anchor` teardown restores only the styles it wrote, so an author's inline `top`, `left`, `right`, `bottom` or `margin-*` on the anchored element is not kept ([#302](https://github.com/aevantec/litevue/issues/302))
 * A `$watch` callback's own write is not delivered to it again, and function values held by `v-for` rows are no longer bound to the scope ([#292](https://github.com/aevantec/litevue/issues/292))
 * A `POST` redirected by 307 to an error page loads that page with a GET; nothing is re-posted ([#294](https://github.com/aevantec/litevue/issues/294))
+* `:value` is set again on every update, even when the bound value has not changed, so a reset or a clamped value replaces what the user typed, as in Vue ([#291](https://github.com/aevantec/litevue/issues/291))
+* `persist` storage names match in any case, so a storage registered as `myVault` is now selected by `v-persist.myVault`, which the HTML parser lowercases ([#296](https://github.com/aevantec/litevue/issues/296))
+* The devtools panel shows string Map keys quoted, so `1` and `"1"` stay apart ([#297](https://github.com/aevantec/litevue/issues/297))
+* The documented browser floor for Chrome and Edge is now 88, because the styles use `:where()`; Firefox 79 and Safari 14 are unchanged ([#298](https://github.com/aevantec/litevue/issues/298))
 
 
 ### Features
