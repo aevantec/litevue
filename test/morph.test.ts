@@ -627,3 +627,36 @@ describe('morph with an HTML string', () => {
     expect(circles.every((c) => c instanceof SVGElement)).toBe(true);
   });
 });
+
+describe('morph: the scope new markup binds with', () => {
+  const list = `<div v-scope="{ rows: [{ id: 1, name: 'Ada' }] }">
+      <div v-for="row in rows" :key="row.id" class="row"><section class="body">old</section></div>
+    </div>`;
+
+  test('markup morphed into a v-for row binds with that row', async () => {
+    const { root } = await mountApp(list);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe('Ada');
+  });
+
+  test('a v-for row left in place by unmount(el) binds nothing', async () => {
+    const { app, root } = await mountApp(list);
+    app.unmount(root);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe(
+      '{{ row.name }}'
+    );
+  });
+});
