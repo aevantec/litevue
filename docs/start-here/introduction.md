@@ -152,7 +152,7 @@ Devtools registration can also be [disabled entirely](/globals/devtools#disablin
 
 ## Browser support
 
-LiteVue targets modern evergreen browsers. The bundles are not transpiled, and the core uses ES2021 syntax and the `:where()` selector, so it needs **Chrome and Edge 88, Firefox 79 or Safari 14** and later. The [focus](/plugins/focus) plugin uses `Array.prototype.at()`, which raises the floor to Chrome and Edge 92, Firefox 90 and Safari 15.4 for focus and for the combined plugins bundle that includes it.
+LiteVue targets modern evergreen browsers. The bundles are not transpiled, and the core uses ES2021 syntax and the `:where()` selector, so it needs **Chrome and Edge 88, Firefox 79 or Safari 14** and later. The [focus](/plugins/focus) plugin uses `Array.prototype.at()`, which raises the floor to Chrome and Edge 92, Firefox 90 and Safari 15.4 for focus and for the combined plugins bundle that includes it. The [navigate](/plugins/navigate) plugin reads a form's submit button from `SubmitEvent.submitter`, which raises its Safari floor to 15.4 as well; on earlier versions a form submitted with a button loses that button's `name`, `value` and `formaction`, `formmethod`, `formtarget` and `formenctype` overrides.
 
 Reactivity is built on `Proxy`, which cannot be polyfilled, so **IE11 is not supported and cannot be**. If you need legacy browsers, use Vue 2 with its own build tooling.
 

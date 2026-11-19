@@ -16,6 +16,8 @@ createApp().use(morphPlugin).use(navigate).mount();
 
 The plugin ships on its own (~3kb<!-- size:dist/plugins/navigate.iife.js --> gzipped) and is not part of the combined plugins bundle. It needs [morph](/plugins/morph) installed too, which it does not bundle, so a page already using morph carries one copy. From a CDN, load `dist/plugins/navigate.iife.js` after the core and morph; it defines `LiteVueNavigate`.
 
+The plugin needs Safari 15.4 or later, above the core's [browser floor](/start-here/introduction#browser-support), because it reads the submit button from `SubmitEvent.submitter`. On earlier Safari versions a form submitted with a button loses that button's `name` and `value` and its `form*` overrides, so a form with several submit buttons can post to the wrong action or with the wrong method.
+
 ## Options
 
 ```js
