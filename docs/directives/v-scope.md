@@ -77,9 +77,19 @@ fold or behind a click, and hide their raw `{{ }}` with
 
 ```html
 <section v-scope.visible="Comments({ postId: 7 })" v-cloak>…</section>
-<nav v-scope.interaction="{ open: false }">…</nav>
+<nav v-scope.interaction="{ open: false }">
+  <button @click="open = !open">Menu</button>
+  <ul v-show="open" v-cloak>…</ul>
+</nav>
 <aside v-scope.idle="Recommendations()" v-cloak>…</aside>
 ```
+
+A `.visible` region must keep its box while it waits, so the browser can report
+when it scrolls into view, and a `.interaction` region must stay visible so the
+user can press or focus it. Use the cloak rules for
+[deferred regions](/directives/v-cloak#deferred-regions), which hide a
+`.visible` region with `visibility: hidden` rather than `display: none`, and
+cloak the inside of a `.interaction` region rather than the region itself.
 
 ## Behavior
 

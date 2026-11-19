@@ -1,35 +1,86 @@
-import { afterEach, test, expect } from 'vitest';
+import { afterEach, describe, test, expect } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { createApp } from '../../src';
-const tick = async (n = 6) => {
-  for (let i = 0; i < n; i++) await Promise.resolve();
-};
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+let style: HTMLStyleElement | undefined;
+const cloak = (css: string) => {
+  style = document.createElement('style');
+  style.textContent = css;
+  document.head.append(style);
+};
 afterEach(() => {
+  style?.remove();
   document.body.innerHTML = '';
 });
 
-test('v-cloak hides a deferred region until it mounts', async () => {
-  document.head.insertAdjacentHTML(
-    'beforeend',
-    '<style>[v-cloak]{display:none}</style>'
-  );
-  document.body.innerHTML = `<div id="r" v-cloak v-scope.interaction="{ n: 5 }"><b>{{ n }}</b></div>`;
-  const root = document.body.querySelector('#r') as HTMLElement;
-  createApp().mount(root);
-  await tick();
-  await sleep(60);
-  console.log(
-    `  before trigger: v-cloak present=${root.hasAttribute('v-cloak')} display=${getComputedStyle(root).display}`
-  );
-  expect(root.hasAttribute('v-cloak')).toBe(true);
-  expect(getComputedStyle(root).display).toBe('none');
+// the rules docs/directives/v-cloak.md recommends for deferred regions
+const DOCUMENTED_RULES = `
+  [v-cloak]:not([v-scope\\.visible]) { display: none; }
+  [v-cloak][v-scope\\.visible] { visibility: hidden; }
+`;
 
-  root.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-  await tick();
-  await sleep(80);
-  console.log(
-    `  after trigger:  v-cloak present=${root.hasAttribute('v-cloak')} display=${getComputedStyle(root).display} text=${JSON.stringify(root.querySelector('b')!.textContent)}`
-  );
-  expect(root.hasAttribute('v-cloak')).toBe(false);
-  expect(root.querySelector('b')!.textContent).toBe('5');
+/**
+ * A user can reach only what has a box: IntersectionObserver never reports an
+ * element with display: none, and nobody can press or focus one. These use
+ * real scrolling and real pointer input, never a synthetic event on a hidden
+ * element.
+ */
+describe('v-cloak on a deferred region', () => {
+  test('.visible with the documented rule stays hidden, then mounts once on screen', async () => {
+    cloak(DOCUMENTED_RULES);
+    document.body.innerHTML = `
+      <div id="scroller" style="height:100px;overflow:auto">
+        <div style="height:600px"></div>
+        <section id="r" v-scope.visible="{ n: 7 }" v-cloak><b>{{ n }}</b></section>
+      </div>`;
+    const root = document.querySelector('#r') as HTMLElement;
+    createApp().mount(document.querySelector('#scroller')!);
+    await sleep(150);
+    expect(root.hasAttribute('v-cloak')).toBe(true);
+    expect(getComputedStyle(root).visibility).toBe('hidden');
+
+    root.scrollIntoView();
+    await sleep(200);
+    expect(root.hasAttribute('v-cloak')).toBe(false);
+    expect(getComputedStyle(root).visibility).toBe('visible');
+    expect(root.querySelector('b')!.textContent).toBe('7');
+  });
+
+  // its parent stands in for the box it lacks
+  test('.visible still mounts once on screen under a display: none cloak rule', async () => {
+    cloak('[v-cloak] { display: none; }');
+    document.body.innerHTML = `
+      <div id="scroller" style="height:100px;overflow:auto">
+        <div style="height:600px"></div>
+        <div id="parent"><section id="r" v-scope.visible="{ n: 7 }" v-cloak><b>{{ n }}</b></section></div>
+      </div>`;
+    const root = document.querySelector('#r') as HTMLElement;
+    createApp().mount(document.querySelector('#scroller')!);
+    await sleep(150);
+    expect(root.querySelector('b')!.textContent).toBe('{{ n }}');
+
+    document.querySelector('#parent')!.scrollIntoView();
+    await sleep(200);
+    expect(root.hasAttribute('v-cloak')).toBe(false);
+    expect(root.querySelector('b')!.textContent).toBe('7');
+  });
+
+  test('.interaction with v-cloak inside it stays reachable, and a real click mounts it', async () => {
+    cloak(DOCUMENTED_RULES);
+    document.body.innerHTML = `<nav id="r" v-scope.interaction="{ open: false }">
+      <button id="toggle" @click="open = !open">menu</button>
+      <span id="state" v-cloak>{{ open ? 'open' : 'closed' }}</span>
+    </nav>`;
+    const root = document.querySelector('#r') as HTMLElement;
+    const state = document.querySelector('#state') as HTMLElement;
+    createApp().mount(root);
+    await sleep(50);
+    expect(getComputedStyle(state).display).toBe('none');
+
+    await userEvent.click(document.querySelector('#toggle')!);
+    await sleep(80);
+    expect(state.hasAttribute('v-cloak')).toBe(false);
+    expect(state.textContent).toBe('open');
+  });
 });
