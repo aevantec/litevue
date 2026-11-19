@@ -27,7 +27,7 @@ morph(from: Element, to: Element | string, options?: MorphOptions): Element
 | `from` | The live element to update |
 | `to` | The new markup for that element, as an HTML string or an element. A string that is a single element is that element's outer HTML; any other string, such as an element beside text, is its new content. A string for an SVG element is parsed as SVG |
 
-Returns `from` — the same node, which keeps its scope.
+Returns `from`, the same node, which keeps its scope. When `from` itself is replaced, because the new markup has a different tag or `from` is a lazy region that has not mounted yet, `morph` returns the element that took its place instead. That element is bound with the scope around `from`, not with `from`'s own scope, which is released; a replaced root outside every mounted scope stays inert until you call `app.mount()` on it, as described under [Behavior](#behavior).
 
 ### Options
 

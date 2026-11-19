@@ -236,7 +236,7 @@ const patchNode = (
   to: Node,
   ctx: Context | undefined,
   opts: MorphOptions
-): void => {
+): Node | void => {
   if (from.nodeType !== to.nodeType) return replaceNode(from, to, ctx, opts);
 
   if (from.nodeType === 3 || from.nodeType === 8) {
@@ -260,10 +260,8 @@ const patchNode = (
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
   // a lazy region still waiting holds markup nothing has consumed, so its
   // directives and {{ }} are still the server's to change
-  if (a.matches(LAZY)) {
-    if (!a.isEqualNode(b)) replaceNode(from, to, ctx, opts);
-    return;
-  }
+  if (a.matches(LAZY))
+    return a.isEqualNode(b) ? undefined : replaceNode(from, to, ctx, opts);
 
   patchAttrs(a, b, opts.values);
   // a template's markup lives in .content, out of patchChildren's reach; it
@@ -303,6 +301,8 @@ const replaceNode = (
   from.parentNode!.replaceChild(fresh, from);
   opts.afterNodeRemoved?.(from);
   mountNew(fresh, ctx);
+  // morph() hands it back in place of the detached `from`
+  return fresh;
 };
 
 /**
@@ -466,7 +466,10 @@ export const morph = (
   if (target) {
     const patch = () => {
       const restore = captureFocus();
-      patchNode(from, target!, nearestCtx(from), opts);
+      // from the parent: a root whose tag changes is released before its
+      // replacement is walked, so its own context is dead by then
+      from = (patchNode(from, target!, nearestCtx(from.parentNode), opts) ||
+        from) as Element;
       restore();
     };
     opts.transition && document.startViewTransition
