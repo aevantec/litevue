@@ -61,6 +61,30 @@ describe('morph', () => {
     app.unmount();
   });
 
+  // A shown v-if's anchor is out of the document, so disposing the morphed-away
+  // subtree reached only the block's disposer, which stopped the effect but
+  // left it in the scope's effects list, holding the removed DOM.
+  test.each([true, false])(
+    'replacing a v-if (shown: %s) does not grow the scope effects list',
+    async (on) => {
+      const { root } = await mountApp(
+        `<div id="root" v-scope="{ on: ${on} }"><section id="r"></section></div>`
+      );
+      const ctx = (root as any).__ctx;
+      const html = (i: number) =>
+        `<section id="r"><div id="k${i}"><p v-if="on">{{ on }}</p></div></section>`;
+      morph(root.querySelector('#r')!, html(0));
+      await tick();
+      const before = ctx.effects.length;
+      for (let i = 1; i <= 5; i++) {
+        morph(root.querySelector('#r')!, html(i));
+        await tick();
+      }
+      expect(root.querySelectorAll('#r p')).toHaveLength(on ? 1 : 0);
+      expect(ctx.effects.length).toBe(before);
+    }
+  );
+
   test('live state wins over the incoming v-scope expression', async () => {
     const { root } = await mountApp(
       `<div><section id="s" v-scope="{ count: 0 }"><span>{{ count }}</span>

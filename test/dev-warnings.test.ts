@@ -184,6 +184,16 @@ describe('unknown $store', () => {
     await drain();
     expect(matching(warn, /registeredLate/)).toEqual([]);
   });
+
+  // rendering reads toString, which no author wrote
+  test('does not warn for an Object.prototype key read by rendering', async () => {
+    store('renderedWhole', { x: 1 });
+    const warn = spy();
+    await mount(`<div v-scope><pre>{{ $store }}</pre></div>`);
+    await tick(8);
+    await drain();
+    expect(matching(warn, /toString|valueOf/)).toEqual([]);
+  });
 });
 
 describe('mounting an element twice', () => {

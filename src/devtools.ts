@@ -105,8 +105,20 @@ const listeners: Record<DevtoolsEvent, Set<Listener>> = {
   flush: new Set(),
 };
 
+// Listeners run mid-mount, in production too: one that throws is logged, not
+// allowed to abort the mount or skip the listeners after it.
 const emit = (event: DevtoolsEvent, ...args: any[]) => {
-  listeners[event].forEach((fn) => fn(...args));
+  listeners[event].forEach((fn) => {
+    try {
+      fn(...args);
+    } catch (e) {
+      if (import.meta.env.DEV) {
+        console.error(`[litevue] a devtools "${event}" listener threw:`, e);
+      } else {
+        console.error(e);
+      }
+    }
+  });
 };
 
 export const registerScope = (
