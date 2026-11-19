@@ -34,6 +34,7 @@ No argument or modifiers.
 - Directives and `{{ }}` inside the inserted HTML are not compiled. To make new markup interactive, see [Dynamic content](/essentials/dynamic-content).
 - `null` and `undefined` render as empty.
 - Every update replaces the whole content, so focus, selection and any state inside it are lost.
+- Content the element holds before mount, such as a server-rendered fallback, is replaced on the first render and never bound: its directives, `ref` and `@mounted` do not run.
 
 ## Related
 

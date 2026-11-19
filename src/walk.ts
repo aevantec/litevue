@@ -192,8 +192,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       applyDirective(el, ref, `"${exp}"`, ctx);
     }
 
-    // process children first before self attrs
-    walkChildren(el, ctx);
+    // process children first before self attrs; v-text and v-html replace
+    // their fallback children, so binding those would leave live effects,
+    // refs and hooks on discarded nodes
+    if (!el.hasAttribute('v-text') && !el.hasAttribute('v-html')) {
+      walkChildren(el, ctx);
+    }
 
     // other directives
     const deferred: [string, string][] = [];
