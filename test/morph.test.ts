@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { createApp } from '../src';
+import { createApp, devtools, store } from '../src';
 import { morph, morphPlugin } from '../src/plugins';
 import { tick } from './utils';
 
@@ -649,5 +649,117 @@ describe('morph with an HTML string', () => {
     const circles = [...g.children];
     expect(circles.map((c) => c.getAttribute('r'))).toEqual(['3', '4']);
     expect(circles.every((c) => c instanceof SVGElement)).toBe(true);
+  });
+});
+
+describe('morph: the scope new markup binds with', () => {
+  const list = `<div v-scope="{ rows: [{ id: 1, name: 'Ada' }] }">
+      <div v-for="row in rows" :key="row.id" class="row"><section class="body">old</section></div>
+    </div>`;
+
+  test('markup morphed into a v-for row binds with that row', async () => {
+    const { root } = await mountApp(list);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe('Ada');
+  });
+
+  test('a v-for row left in place by unmount(el) binds nothing', async () => {
+    const { app, root } = await mountApp(list);
+    app.unmount(root);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe(
+      '{{ row.name }}'
+    );
+  });
+
+  test('returns the connected element when the tag changes', async () => {
+    document.body.innerHTML = `<div id="wrap"><section id="r">old</section></div>`;
+
+    const result = morph(
+      document.getElementById('r')!,
+      '<article id="r">new</article>'
+    );
+
+    expect(result).toBe(document.getElementById('r'));
+    expect(result.textContent).toBe('new');
+  });
+
+  test('returns the replacement of a waiting lazy region the server changed', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }">{{ id }}</section></div>`
+    );
+
+    const result = morph(
+      root.querySelector('#lazy')!,
+      '<section id="lazy" v-scope.interaction="{ id: 18 }">{{ id }}</section>'
+    );
+    result.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(result).toBe(root.querySelector('#lazy'));
+    expect(result.textContent).toBe('18');
+  });
+
+  test('a scope root whose tag changes binds with the scope around it', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ n: 1 }"><div id="r" v-scope="{ m: 2 }">{{ n }}</div></div>`
+    );
+    const scope = devtools.getScope(root)!;
+
+    const fresh = morph(
+      root.querySelector('#r')!,
+      '<section id="r" v-scope="{ m: 2 }">{{ n }} {{ m }}</section>'
+    );
+    await tick();
+    expect(fresh.textContent).toBe('1 2');
+
+    scope.n = 3;
+    await tick();
+    expect(fresh.textContent).toBe('3 2');
+
+    // part of the region now, so it stops with it
+    app.unmount();
+    scope.n = 4;
+    await tick();
+    expect(fresh.textContent).toBe('3 2');
+  });
+
+  test('a mounted root whose tag changes is released and mounts like any new root', async () => {
+    store('morphRoot', { v: 'a' });
+    document.body.innerHTML = `<div><div id="root" v-scope>{{ $store.morphRoot.v }}</div></div>`;
+    const app = createApp().use(morphPlugin);
+    app.mount('#root');
+    await tick();
+    const old = document.getElementById('root')!;
+
+    const fresh = morph(
+      old,
+      '<section id="root" v-scope>{{ $store.morphRoot.v }}</section>'
+    );
+    await tick();
+    // outside every scope there is nothing to bind it with, not the old root's
+    expect(fresh.textContent).toBe('{{ $store.morphRoot.v }}');
+
+    app.mount(fresh);
+    await tick();
+    expect(fresh.textContent).toBe('a');
+
+    app.unmount();
+    (store('morphRoot') as any).v = 'b';
+    await tick();
+    expect(fresh.textContent).toBe('a');
+    expect(old.textContent).toBe('a');
   });
 });

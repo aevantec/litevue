@@ -27,7 +27,7 @@ morph(from: Element, to: Element | string, options?: MorphOptions): Element
 | `from` | The live element to update |
 | `to` | The new markup for that element, as an HTML string or an element. A string that is a single element is that element's outer HTML; any other string, such as an element beside text, is its new content. A string for an SVG element is parsed as SVG |
 
-Returns `from` — the same node, which keeps its scope.
+Returns `from`, the same node, which keeps its scope. When `from` itself is replaced, because the new markup has a different tag or `from` is a lazy region that has not mounted yet, `morph` returns the element that took its place instead. That element is bound with the scope around `from`, not with `from`'s own scope, which is released; a replaced root outside every mounted scope stays inert until you call `app.mount()` on it, as described under [Behavior](#behavior).
 
 ### Options
 
@@ -210,6 +210,7 @@ still carries the directives:
 
 - New elements are walked, so any `v-scope` they carry becomes live. Treat morphed HTML with the same care as anything you mount — see [Security](/start-here/security#morph-and-server-rendered-updates).
 - That walk needs a scope to walk in. A region outside every mounted scope, such as a server-rendered wrapper holding separately mounted `v-scope` roots, has none, so a new `v-scope` it receives stays inert until you call `app.mount(el)` on it. The [navigate](/plugins/navigate) plugin does this for you. A region torn down with `app.unmount(el)` counts as outside every scope, so markup morphed into it is not bound to the scope it had.
+- Markup morphed into an element inside a `v-for` row is bound with that row's scope, so it can read the loop variable. This holds when the row is an element; the rows of a `<template v-for>` carry no scope of their own, so markup morphed into them is bound with the scope around the list.
 - A [lazy region](/directives/v-scope#mounting-on-demand) that has not mounted yet (`v-scope.visible`, `.idle` or `.interaction`) holds markup nothing has bound, so morph does not patch it. When the server sends it unchanged, it is kept as it is; when the server changes it, including its `v-scope` data or its <code v-pre>{{ }}</code> text, it is replaced as a whole and waits for its trigger again. Either way, the region binds its markup with its own scope when it mounts.
 - The content of a `<template>` element is replaced with the content the server sends, when that content differs. A template holds no live bindings, so nothing is lost; elements already created from it keep their nodes and state.
 - A live element's state wins over its `v-scope` in the new HTML: `v-scope="{ count: 0 }"` does not reset a count that is already `3`.

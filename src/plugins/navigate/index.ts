@@ -76,10 +76,13 @@ const mergeHead = async (doc: Document) => {
   const sel = 'link,style,meta';
   const live = [...document.head.querySelectorAll(sel)];
   const loads: Promise<unknown>[] = [];
+  // each new element goes after the one before it in the next page, so a
+  // sheet placed before a shared one keeps its place in the cascade
+  let at: Element | undefined;
   for (const el of doc.head.querySelectorAll(sel)) {
     const i = live.findIndex((l) => l.isEqualNode(el));
     if (i > -1) {
-      live.splice(i, 1);
+      [at] = live.splice(i, 1);
       continue;
     }
     const fresh = document.importNode(el, true) as HTMLLinkElement;
@@ -97,7 +100,9 @@ const mergeHead = async (doc: Document) => {
         })
       );
     }
-    document.head.append(fresh);
+    if (at) at.after(fresh);
+    else document.head.prepend(fresh);
+    at = fresh;
   }
   await Promise.all(loads);
   // tracked elements never reach here unmatched: a change forces a full load

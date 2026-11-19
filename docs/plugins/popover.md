@@ -20,6 +20,8 @@ The plugin ships on its own (~1kb<!-- size:dist/plugins/popover.iife.js --> gzip
 | `v-popover="expression"` | Shows the popover while truthy. Closing it natively, with Escape or a click outside, sets the expression to `false` |
 | `v-anchor.<placement>="element"` | Positions this element against `element`, usually a [`$refs`](/magics/refs) entry |
 
+Writing back to `v-popover`'s expression needs one that can be assigned to, such as `open` or `menus.file`; with an expression like `menu === 'file'`, the popover still follows the state, but an error is reported at mount and closing the popover natively leaves the state unchanged.
+
 `v-anchor` works on any element, not only a popover, and needs no `v-popover`. Its value is reactive: when the expression points at another element, the anchored element moves there. While the value is `null`, such as a `$refs` entry that has not rendered yet, the element is not anchored to anything.
 
 ### Placements
@@ -75,7 +77,7 @@ The browser's own `popovertarget` toggles a popover with no expression at all. `
 - The popover opens in the top layer, above everything else on the page, so no `z-index` is needed.
 - `v-anchor` flips to the opposite side when there is no room, keeping the offset. It does not slide along the edge to stay on screen.
 - Where CSS anchor positioning is not supported, a small script places the element instead, and re-places it on scroll and resize while it is open. An element that is not a popover is re-placed on every scroll and resize. Either kind is also re-placed when its own size changes, so an element that `v-show` or `v-if` reveals after mount is placed for its real size.
-- `v-anchor` sets `position: fixed` on a popover and clears its default centring. Where CSS anchor positioning is supported, an element that is not a popover gets `position: absolute` instead, so it stays placed correctly while the page scrolls; an ancestor with `overflow: hidden` can clip it, which a popover avoids through the top layer. On unmount, the element gets back the inline styles it had before.
+- `v-anchor` sets `position: fixed` on a popover and clears its default centring. Where CSS anchor positioning is supported, an element that is not a popover gets `position: absolute` instead, so it stays placed correctly while the page scrolls; an ancestor with `overflow: hidden` can clip it, which a popover avoids through the top layer. On unmount, the element gets back the inline `position`, `inset`, `margin` and anchor positioning properties it had before. Styles that something else wrote meanwhile, such as the `display` of a `v-show` on the same element, are kept.
 - Several elements can share one anchor, such as a tooltip and a menu on the same button. Each adds its own name to the anchor's `anchor-name` and removes only that name on unmount, so a name you set inline is kept.
 - Popovers are not modal. For a dialog that must keep focus inside, use `<dialog>` or [`v-trap`](/plugins/focus).
 

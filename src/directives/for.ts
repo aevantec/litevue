@@ -147,6 +147,11 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
 
   const mountBlock = (row: Row, ref: Node) => {
     const block = new Block(el, createScopedContext(ctx, row.data, true));
+    const t = block.template as any;
+    // stashed as a v-scope element's is, so morph binds markup inserted into
+    // a row with the row; forgotten on teardown, as theirs is
+    t.__ctx ??= block.ctx;
+    block.ctx.cleanups.push(() => delete t.__ctx);
     block.key = row.key;
     block.insert(parent(), ref);
     return block;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { createApp } from '../src';
+import { createApp, devtools } from '../src';
 import { popover } from '../src/plugins/popover';
 import { tick } from './utils';
 
@@ -81,6 +81,27 @@ describe('v-anchor anchor-name', () => {
     app.unmount();
 
     expect(names(btn)).toEqual(['--mine']);
+  });
+
+  // unmount(el) leaves the element in the document, so a style another
+  // directive wrote since must survive v-anchor's teardown
+  test('unmounting keeps the display v-show last wrote', async () => {
+    const app = await mount(`
+      <div v-scope="{ open: true }">
+        <button ref="btn"></button>
+        <div id="tip" style="color: red" v-anchor.top="$refs.btn" v-show="open">tip</div>
+      </div>`);
+    const tip = document.getElementById('tip')!;
+    devtools.getScope(tip)!.open = false;
+    await tick(5);
+    expect(tip.style.display).toBe('none');
+
+    app.unmount();
+
+    expect(tip.style.display).toBe('none');
+    expect(tip.style.color).toBe('red');
+    expect(tip.style.position).toBe('');
+    expect(anchorOf('#tip')).toBe('');
   });
 
   test('moves its name when the value points at another element', async () => {

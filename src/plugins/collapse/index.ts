@@ -24,7 +24,6 @@ export const collapse: Plugin = (app) => {
     // a height of 0 leaves content in the tab order and the accessibility tree
     const hide = (hidden: boolean) =>
       (elem.style.visibility = hidden ? 'hidden' : before[3]);
-    elem.style.overflow = 'hidden';
     // undefined until the first run, which applies the state without animating
     let shown: boolean | undefined;
     let seq = 0;
@@ -45,6 +44,9 @@ export const collapse: Plugin = (app) => {
       if (show === shown) return;
       const id = ++seq;
       hide(!show);
+      // clipped only while collapsed or animating, so an open panel shows a
+      // dropdown, focus ring or shadow at its edge
+      elem.style.overflow = show && shown == null ? before[0] : 'hidden';
       if (shown == null) {
         // enable the transition only after the initial state is applied;
         // visibility switches at the end of a collapse, at the start of an expand
@@ -57,7 +59,10 @@ export const collapse: Plugin = (app) => {
         if (show) {
           later(() => {
             // release the measured height so content can resize freely
-            if (id === seq) elem.style.height = before[1];
+            if (id === seq) {
+              elem.style.height = before[1];
+              elem.style.overflow = before[0];
+            }
           }, duration);
         } else {
           // force a reflow so the browser animates from the measured height
