@@ -21,7 +21,7 @@ import { devtools, disableDevtools } from '@aevantec/litevue';
 
 | Member | Meaning |
 | --- | --- |
-| `getScope(node)` | The scope governing a node — the nearest registered scope root at or above it |
+| `getScope(node)` | The scope governing a node — the nearest registered scope root at or above it. Teleported content resolves to the scope it was written in. |
 | `getScopeByName(name)` | The first scope registered with that [`v-name`](/directives/v-name) |
 | `scopes` | `Map<Element, scope>` of every scope root |
 | `names` | `Map<Element, string>` of `v-name` labels |

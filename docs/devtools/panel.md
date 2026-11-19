@@ -75,14 +75,18 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - Scopes are labelled as tags. The name comes from [`v-name`](/directives/v-name),
   then the [component](/essentials/components#registering-by-name) the scope came
   from, then the id, then the tag: `v-scope="Cart()"` reads as `<Cart>`.
-- Nested `v-scope` regions form a **collapsible tree**.
+- Nested `v-scope` regions form a **collapsible tree**. Content moved by
+  [`v-teleport`](/directives/v-teleport) is placed under the scope it was
+  written in, not under its target.
 - The **filter** matches names *and* state, case-insensitively: `2026` finds the
   scope holding it, and the row shows the path that matched, such as
   `user.meta.tags.0`. Array positions are not matched as names, so `1` does
   not find every list with two items. A match keeps its ancestors visible, so it is never left
-  indented under nothing. Escape clears the filter.
+  indented under nothing. Escape clears the filter. The elements of a typed
+  array, such as a `Uint8Array`, are not searched.
 - Hovering a row highlights its element. **Pick mode** works the other way:
-  click any element on the page to select its scope.
+  click any element on the page to select its scope, including teleported
+  content.
 - The selected scope or store is exposed as `window.$scope`, for the console.
 
 ## Read and edit state
@@ -94,7 +98,10 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
   and symbol keys are listed, and the keys `1` and `"1"` remain separate rows.
 - Every primitive value edits inline, keeping its type; booleans get a checkbox.
   Enter or leaving the field applies the edit, and Escape cancels it. A field
-  you leave without changing its text is not written.
+  you leave without changing its text is not written, and neither is text that
+  is not a number in a number or `BigInt` field: an empty field is not `0`, and
+  `12abc` is not `12`. A string's line breaks are kept unless you edit it, since
+  the single-line field cannot show them.
 - Derived values, getter-only properties, properties that cannot be written,
   such as those of a frozen object, and [`computed()`](/globals/computed) are
   read-only, and so is everything inside an array or object they return.
@@ -126,7 +133,8 @@ shows the count.
   width, and **docked to the right** at full height.
 - The panel **drags** by its header. It **resizes** by a handle on the edge that
   moves in each layout: a corner when floating, the top edge when docked to the
-  bottom, and the left edge when docked to the right.
+  bottom, and the left edge when docked to the right. Floating, the corner
+  follows the pointer and the header stays where it is.
 - Each layout keeps its own size. Both dimensions are bounded, no smaller than
   320&nbsp;×&nbsp;320 and no larger than the viewport.
 - The theme cycles through dark, light and system.

@@ -30,6 +30,19 @@ describe('devtools registry', () => {
     expect(devtools.getScope($('#deep')).x).toBe('found');
   });
 
+  test('getScope finds the scope of teleported content, not its target', async () => {
+    const { app } = await mount(
+      `<div v-scope="{ title: 'Delete order?' }">
+        <div id="modal" v-teleport="#modals"><b id="in-modal">{{ title }}</b></div>
+      </div>
+      <div id="modals"></div>`
+    );
+    const inModal = document.getElementById('in-modal')!;
+    expect(inModal.closest('#modals')).not.toBe(null);
+    expect(devtools.getScope(inModal)?.title).toBe('Delete order?');
+    app.unmount();
+  });
+
   test('emits mount/unmount/flush events', async () => {
     const events: string[] = [];
     const offMount = devtools.on('scope:mount', () => events.push('mount'));

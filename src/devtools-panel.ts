@@ -151,7 +151,10 @@ const parentGet = Object.getOwnPropertyDescriptor(
   Node.prototype,
   'parentElement'
 )!.get!;
-const parentOf = (el: Element): Element | null => parentGet.call(el);
+// a teleported element's marker holds its original place, so it belongs
+// to the scope it was written in, not to its target's
+const parentOf = (el: Element): Element | null =>
+  (el as any).__marker?.parentElement || parentGet.call(el);
 
 /** Nearest ancestor element that is itself a registered scope. */
 const parentScopeOf = (el: Element) => {
@@ -394,7 +397,8 @@ const buildAdder = (scope: Record<string, any>) => {
     let v: any = raw;
     if (raw === 'true') v = true;
     else if (raw === 'false') v = false;
-    else if (raw !== '' && !isNaN(+raw)) v = +raw;
+    // blank text is a string: +' ' is 0
+    else if (raw.trim() && !isNaN(+raw)) v = +raw;
     scope[k] = v;
     keyIn.blur();
     valIn.blur();
@@ -508,14 +512,18 @@ const addNode = (
   } else {
     const input = h('input', 'val') as HTMLInputElement;
     input.value = fmt(v);
+    // the text as the input holds it: an input strips line breaks, so
+    // String(v) would differ from it with nothing typed
+    let shown = '';
     input.onfocus = () => {
       input.value = String(v);
+      shown = input.value;
     };
     input.onkeydown = (e) => {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') {
         // restore the focus text, which blur treats as "no edit"
-        input.value = String(v);
+        input.value = shown;
         input.blur();
       }
     };
@@ -523,7 +531,7 @@ const addNode = (
       const next = coerce(input.value, v);
       // untouched text is never written: null, undefined and NaN would
       // otherwise come back as strings
-      if (input.value !== String(v) && next !== v) {
+      if (input.value !== shown && next !== v) {
         container[key] = next;
         // re-render ourselves: an edit to state no directive tracks never
         // triggers a flush event
@@ -692,14 +700,17 @@ const build = () => {
     const move = (ev: MouseEvent) => {
       // docked, the handle sits opposite the anchored edge, so the drag reads
       // backwards: pulling up or left makes the panel bigger
-      if (dock !== 'right') {
-        const dy =
-          dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
-        panelEl.style.height = clamp(startH + dy, MIN_H, maxH()) + 'px';
-      }
-      if (dock !== 'bottom') {
-        const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
-        panelEl.style.width = clamp(startW + dx, MIN_W, maxW()) + 'px';
+      const dy = dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
+      const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
+      const hgt = clamp(startH + dy, MIN_H, maxH());
+      const w = clamp(startW + dx, MIN_W, maxW());
+      if (dock !== 'right') panelEl.style.height = hgt + 'px';
+      if (dock !== 'bottom') panelEl.style.width = w + 'px';
+      // Floating, the panel is anchored by right/bottom: moving those with
+      // the size keeps the top-left, and the header, where it was
+      if (dock === 'float') {
+        panelEl.style.right = Math.max(0, innerWidth - rect.left - w) + 'px';
+        panelEl.style.bottom = Math.max(0, innerHeight - rect.top - hgt) + 'px';
       }
     };
     const up = () => {
@@ -708,8 +719,14 @@ const build = () => {
       grip.classList.remove('active');
       const w = parseInt(panelEl.style.width);
       const hgt = parseInt(panelEl.style.height);
-      if (dock === 'float') saveUi({ w, h: hgt });
-      else if (dock === 'bottom') saveUi({ bh: hgt });
+      if (dock === 'float') {
+        saveUi({
+          w,
+          h: hgt,
+          right: parseInt(panelEl.style.right),
+          bottom: parseInt(panelEl.style.bottom),
+        });
+      } else if (dock === 'bottom') saveUi({ bh: hgt });
       else saveUi({ rw: w });
     };
     document.addEventListener('mousemove', move);

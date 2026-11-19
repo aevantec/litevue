@@ -29,12 +29,24 @@ const SNAPSHOT = `(() => {
     if (!ids.of.has(el)) ids.of.set(el, ++ids.n);
     return ids.of.get(el);
   };
+  // JSON has no Map, Set, Date, NaN or undefined: these cross as a label the
+  // panel shows read-only. A typed array would cross as one key per element.
+  const label = (text) => ({ __lvLabel: text });
   const clone = (v, depth) => {
     // as text: a BigInt fails the whole eval result, and JSON drops a symbol
     if (typeof v === 'bigint' || typeof v === 'symbol') return String(v);
+    if (v === undefined) return label('undefined');
+    if (typeof v === 'number' && !isFinite(v)) return label(String(v));
     if (v === null || typeof v !== 'object') {
       return typeof v === 'function' ? undefined : v;
     }
+    if (v instanceof Map || v instanceof Set) {
+      return label(v.constructor.name + '(' + v.size + ')');
+    }
+    if (ArrayBuffer.isView(v)) {
+      return label(v.constructor.name + '(' + (v.length ?? v.byteLength) + ')');
+    }
+    if (typeof v.toJSON === 'function') return label(String(v.toJSON()));
     if (depth <= 0) return Array.isArray(v) ? '[…]' : '{…}';
     if (Array.isArray(v)) return v.map((x) => clone(x, depth - 1));
     const out = {};
@@ -125,6 +137,22 @@ const renderTree = () => {
   }
 };
 
+const isLabel = (v) => v !== null && typeof v === 'object' && '__lvLabel' in v;
+const unlabel = (_key, v) => (isLabel(v) ? v.__lvLabel : v);
+
+// Edited text as a value of the field's type. Text of another type returns
+// `old`, so a number or boolean field is never written as a string, blank is
+// not 0, and 'yes' is not false.
+const parseAs = (raw, old) => {
+  if (typeof old === 'number') {
+    return raw.trim() && !isNaN(+raw) ? +raw : old;
+  }
+  if (typeof old === 'boolean') {
+    return raw === 'true' ? true : raw === 'false' ? false : old;
+  }
+  return raw;
+};
+
 const renderState = () => {
   if (stateEl.contains(document.activeElement)) return;
   stateEl.textContent = '';
@@ -148,25 +176,30 @@ const renderState = () => {
     const row = h('div', 'prop');
     row.appendChild(h('span', 'key', key));
     if (v !== null && typeof v === 'object') {
-      row.appendChild(h('span', 'ro', JSON.stringify(v)));
+      row.appendChild(
+        h('span', 'ro', isLabel(v) ? v.__lvLabel : JSON.stringify(v, unlabel))
+      );
     } else {
       const input = h('input', '');
       input.value = String(v);
+      // the text as the input holds it: an input strips line breaks, so
+      // String(v) would differ from it with nothing typed
+      const shown = input.value;
       input.onkeydown = (e) => {
         if (e.key === 'Enter') input.blur();
         if (e.key === 'Escape') {
-          input.value = String(v);
+          input.value = shown;
           input.blur();
         }
       };
       input.onblur = () => {
         // untouched text is never written: null would come back as 'null'
-        if (input.value === String(v)) return;
-        let next = input.value;
-        if (typeof v === 'number' && !isNaN(+next)) next = +next;
-        if (typeof v === 'boolean') next = input.value === 'true';
+        if (input.value === shown) return;
+        const next = parseAs(input.value, v);
         if (next !== v) {
           evalInPage(editCode(selection, key, next)).then(poll);
+        } else {
+          input.value = shown;
         }
       };
       row.appendChild(input);
@@ -180,13 +213,44 @@ const render = () => {
   renderState();
 };
 
+// Rebuilding every poll replaced the rows under the pointer, so a click that
+// straddled a poll was lost and a selection cleared. An unchanged snapshot is
+// not drawn again, and a changed one waits while the pointer is down.
+let drawn = '';
+let pressed = false;
+let waiting = false;
+const draw = (json) => {
+  if (pressed) {
+    waiting = true;
+    return;
+  }
+  render();
+  // a focused editor skipped its re-render, so the next poll draws again
+  drawn = stateEl.contains(document.activeElement) ? '' : json;
+};
+document.addEventListener('pointerdown', () => (pressed = true), true);
+for (const type of ['pointerup', 'pointercancel']) {
+  document.addEventListener(
+    type,
+    () => {
+      pressed = false;
+      if (waiting) {
+        waiting = false;
+        draw(JSON.stringify(snapshot));
+      }
+    },
+    true
+  );
+}
+
 const poll = async () => {
   try {
     snapshot = (await evalInPage(SNAPSHOT)) || { ok: false };
   } catch {
     snapshot = { ok: false };
   }
-  render();
+  const json = JSON.stringify(snapshot);
+  if (json !== drawn) draw(json);
 };
 
 poll();
