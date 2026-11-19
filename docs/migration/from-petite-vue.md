@@ -4,7 +4,7 @@ title: Migrating from petite-vue
 
 # Migrating from petite-vue <Badge type="section" text="Migration" />
 
-LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Almost everything petite-vue does works unchanged. The two exceptions, a `Set` model on `<select multiple>` and the new reserved scope keys, are listed below with the other changes.
+LiteVue continues from petite-vue 0.4.1, which is no longer actively maintained upstream. Almost everything petite-vue does works unchanged. The three exceptions, a `Map` or `Set` in state, a `Set` model on `<select multiple>` and the new reserved scope keys, are listed below with the other changes.
 
 ## Package and globals
 
@@ -58,13 +58,20 @@ This also restores petite-vue code written for v0.3 and earlier, which used the 
 - A `<select v-model>` shows the selected value even when its options render after the model, for example from a request; petite-vue shows whichever option the browser selects, usually the first. Checkboxes and radios likewise re-sync when their bound `:value` changes.
 - A `v-for` that destructures a `null` item, as in `{ id } in items`, renders that row empty; in petite-vue it throws out of `mount()`.
 - A getter in a `v-scope` object is not run at setup, so one that throws is reported where it is read; in petite-vue it stops the whole page from mounting.
+- An unchanged bound value is not set again, so refetching a list whose fresh objects hold the same URLs leaves each `<video :src>` playing and each `<iframe :src>` loaded; petite-vue assigns the property on every update, which restarts the load.
+- A key modifier such as `@keydown.enter` ignores a keyboard event that has no `key`, as Chrome dispatches when it autofills a field; petite-vue runs the handler for it.
+- Text inside a `<script>` element, such as a `text/x-template`, is left as written; petite-vue interpolates its `{{ }}`.
+- `{{ }}` shows an `Error`, a `Date` and an object with its own `toString()` through `String()`, as Vue does, so an error reads `Error: boom`; petite-vue shows `{}` for the error, the date as a quoted ISO string and the object as JSON.
+- `:width` and `:height` on `img`, `video`, `canvas` and `source` accept a value such as `'50%'`; petite-vue sets the numeric property, which turns it into `0`.
+- `v-for` over a string renders one item per character, as in Vue; petite-vue renders nothing.
 - The compiled-expression cache is bounded, so a page that morphs in server HTML with per-record data does not grow it for its whole life.
+- A `Map`, `Set`, `WeakMap` or `WeakSet` in state is no longer tracked, because its reactivity support is left out of the build for size. petite-vue tracks them, so a page that calls `set.add()` or `map.set()` and expects the page to update stops updating, without an error. Assign a new collection instead, as in `this.tags = new Set([...this.tags, tag])`, or use an array or a plain object; see [reactive()](/globals/reactive#behavior).
 - A `<select multiple>` model must be an array. petite-vue also reads a `Set`; LiteVue selects nothing for one and warns in the development build, since a `Set` cannot update reactively here. Convert with `[...set]`.
 - Reserved scope keys grew: `$store`, `$watch`, `$id`, `$root` join `$refs` / `$nextTick` / `$s`. Rename any conflicting data properties.
 
 ## Everything new is opt-in
 
-The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions. Adopting LiteVue needs no template changes beyond the two exceptions above.
+The [devtools](/globals/devtools), [plugin system](/plugins/), [global store](/globals/store), [magic properties](/magics/el), [extra event modifiers](/directives/v-on#litevue-modifiers), [`v-teleport`](/directives/v-teleport), and [transitions](/plugins/transition) are all additions. Adopting LiteVue needs no template changes beyond the three exceptions above.
 
 Four later additions are worth knowing about specifically, because petite-vue has no equivalent and each replaces a workaround petite-vue requires:
 

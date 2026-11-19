@@ -71,6 +71,9 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
 };
 
 const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
+  // output the text and html directives rendered is data, not template
+  // source, however often the node is walked again
+  if ((node as any).__r) return;
   const type = node.nodeType;
   if (type === 1) {
     // Element
@@ -81,15 +84,11 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       return;
     }
 
-    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
-    // of v-cloak, which must stay on the element until the region mounts, or
-    // its raw {{ }} shows while it waits.
-    if (deferScope(el, ctx, walkDeferred, inOnce)) return;
-
-    checkAttr(el, 'v-cloak');
-
     let exp: string | null;
 
+    // v-if and v-for come before a deferred v-scope, so a false branch or the
+    // raw template row never shows while the region waits; the clones keep
+    // the modifier and defer on their own.
     // v-if; `!= null` so an empty v-if="" reaches _if, which reads it as false
     if ((exp = checkAttr(el, 'v-if')) != null) {
       return _if(el, exp, ctx);
@@ -99,6 +98,13 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     if ((exp = checkAttr(el, 'v-for'))) {
       return _for(el, exp, ctx);
     }
+
+    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
+    // of v-cloak, which must stay on the element until the region mounts, or
+    // its raw {{ }} shows while it waits.
+    if (deferScope(el, ctx, walkDeferred, inOnce)) return;
+
+    checkAttr(el, 'v-cloak');
 
     // v-name: devtools label for scopes without an id. Read after the
     // v-if/v-for early returns so it survives in their templates, and stripped
@@ -120,7 +126,17 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
         // places its marker.
         const marker = ((el as any).__marker = new Text(''));
         el.before(marker);
-        target.appendChild(el);
+        try {
+          target.appendChild(el);
+        } catch (e) {
+          // the target is the element itself or inside it; it stays put
+          handleError(e, {
+            phase: 'directive',
+            source: 'v-teleport',
+            el,
+            expression: exp,
+          });
+        }
         addCleanup(
           ctx,
           () => {
@@ -176,8 +192,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       applyDirective(el, ref, `"${exp}"`, ctx);
     }
 
-    // process children first before self attrs
-    walkChildren(el, ctx);
+    // process children first before self attrs; v-text and v-html replace
+    // their fallback children, so binding those would leave live effects,
+    // refs and hooks on discarded nodes
+    if (!el.hasAttribute('v-text') && !el.hasAttribute('v-html')) {
+      walkChildren(el, ctx);
+    }
 
     // other directives
     const deferred: [string, string][] = [];
@@ -206,7 +226,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     // a script's text is code or a client-side template, never ours (as Vue)
     if (
       data.includes(ctx.delimiters[0]) &&
-      !(node.parentNode instanceof HTMLScriptElement)
+      (node.parentNode as Element)?.localName != 'script'
     ) {
       let segments: string[] = [];
       let lastIndex = 0;
@@ -312,7 +332,8 @@ const applyDirective = (
   source?: string,
   displayExp?: string
 ) => {
-  const meta = { source, el, expression: displayExp };
+  // as written, not the wrapper a directive compiles around it
+  const meta = { source, el, expression: displayExp || exp };
   const report = (err: unknown) =>
     handleError(err, {
       phase: 'handler',
@@ -366,7 +387,14 @@ const applyDirective = (
     return;
   }
   if (cleanup) {
-    addCleanup(ctx, cleanup);
+    // contained, so one throwing cleanup cannot abort the rest of a teardown
+    addCleanup(ctx, () => {
+      try {
+        cleanup();
+      } catch (e) {
+        handleError(e, { phase: 'teardown', source, el, expression: exp });
+      }
+    });
   }
 };
 

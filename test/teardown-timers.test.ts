@@ -108,6 +108,24 @@ describe('pending timers are cancelled on teardown', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  // the cancelled timer is what hides the element at the end of a leave
+  test('v-transition unmounted mid-leave leaves the element hidden', async () => {
+    const { app, root } = await mount(
+      `<div v-scope="{ show: true }"><b id="el" v-transition:fade="show">x</b></div>`,
+      [transition]
+    );
+    const el = root.querySelector('#el') as HTMLElement;
+    (root as any).__ctx.scope.show = false;
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(el.classList.contains('fade-leave-active')).toBe(true);
+
+    app.unmount();
+
+    expect(el.style.display).toBe('none');
+    expect(el.classList.contains('fade-leave-active')).toBe(false);
+  });
+
   test('v-transition completion timer', async () => {
     const { app } = await mount(
       `<div v-scope="{ s: true }"><b v-if="s" v-transition>x</b></div>`,

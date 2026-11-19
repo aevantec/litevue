@@ -109,4 +109,87 @@ describe('morph: values option', () => {
 
     expect($('input').value).toBe('still typing');
   });
+
+  test('leaves a v-model field with a modifier to its state', async () => {
+    const markup = `<form v-scope="{ t: 'start', n: 1, l: 'a' }">
+        <input name="t" v-model.trim="t">
+        <input name="n" v-model.number="n">
+        <input name="l" v-model.lazy="l">
+      </form>`;
+    const { root, $ } = await mountApp(markup);
+    typeInto($('input[name=t]'), 'typed');
+    typeInto($('input[name=n]'), '42');
+    $('input[name=l]').value = 'changed';
+    $('input[name=l]').dispatchEvent(new Event('change'));
+    await tick();
+
+    morph(root, markup, { values: true });
+    await tick();
+
+    expect($('input[name=t]').value).toBe('typed');
+    expect($('input[name=n]').value).toBe('42');
+    expect($('input[name=l]').value).toBe('changed');
+  });
+
+  test('keeps interpolated text in an output and a textarea', async () => {
+    const markup = `<form v-scope="{ a: 2 }">
+        <output name="o">{{ a * 2 }}</output>
+        <output name="t" v-text="a"></output>
+        <textarea>{{ a }}</textarea>
+        <button type="button" @click="a++">+</button>
+      </form>`;
+    const { root, $ } = await mountApp(markup);
+
+    morph(root, markup, { values: true });
+    await tick();
+
+    expect($('output[name=o]').textContent).toBe('4');
+    expect($('output[name=t]').textContent).toBe('2');
+    expect($<HTMLTextAreaElement>('textarea').value).toBe('2');
+    $<HTMLButtonElement>('button').click();
+    await tick();
+    expect($('output[name=o]').textContent).toBe('6');
+  });
+
+  test('still writes a static output and textarea', async () => {
+    const { root, $ } = await mountApp(
+      `<form><output>1</output><textarea>a</textarea></form>`
+    );
+    $<HTMLTextAreaElement>('textarea').value = 'typed';
+
+    morph(root, `<form><output>2</output><textarea>b</textarea></form>`, {
+      values: true,
+    });
+
+    expect($('output').textContent).toBe('2');
+    expect($<HTMLTextAreaElement>('textarea').value).toBe('b');
+  });
+
+  test('writes nothing to a field that already matches', async () => {
+    const markup = `<form><input type="checkbox" name="b"><input type="radio" name="r"><input type="range" name="g"></form>`;
+    const { root, $ } = await mountApp(markup);
+    const changed: (string | null)[] = [];
+    const observer = new MutationObserver((records) =>
+      records.forEach((r) => changed.push(r.attributeName))
+    );
+    observer.observe(root, { attributes: true, subtree: true });
+
+    morph(root, markup, { values: true });
+    await tick();
+    observer.disconnect();
+    morph(root, markup.replace('name="g"', 'name="g" value="70"'));
+
+    expect(changed).toEqual([]);
+    // still clean, so a later plain morph's value attribute shows
+    expect($('input[name=g]').value).toBe('70');
+  });
+
+  test('keeps an option bound with :selected', async () => {
+    const markup = `<form v-scope="{ s: true }"><select><option>a</option><option :selected="s">b</option></select></form>`;
+    const { root, $ } = await mountApp(markup);
+
+    morph(root, markup, { values: true });
+
+    expect($<HTMLSelectElement>('select').value).toBe('b');
+  });
 });

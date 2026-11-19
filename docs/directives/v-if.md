@@ -41,7 +41,8 @@ Put `v-if` on a `<template>` to toggle several elements at once:
 ### Animating
 
 Add [`v-transition`](/plugins/transition) with no expression. Removal, and
-`@unmounted`, wait for the leave transition:
+`@unmounted`, wait for the leave transition. The branch stops updating as soon
+as the leave begins, so it keeps the content it last showed while it fades:
 
 ```html
 <div v-if="open" v-transition:fade>animates in and out</div>

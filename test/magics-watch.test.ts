@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { mount, tick } from './utils';
 
 /**
@@ -91,7 +93,8 @@ describe('$watch', () => {
     (root as any).__ctx.scope.n = 2;
     await tick(8);
     const afterWatched = reads.mock.calls.length;
-    expect(afterWatched).toBe(afterInit + 1);
+    // more than one read: the getter runs again after the callback
+    expect(afterWatched).toBeGreaterThan(afterInit);
 
     (root as any).__ctx.scope.other = 'b';
     await tick(8);
@@ -191,6 +194,44 @@ describe('$watch', () => {
     );
     await tick(8);
     expect(track).toHaveBeenCalledWith(undefined, undefined);
+  });
+
+  test('a callback that writes its own source still sees the next change', async () => {
+    const seen: [any, any][] = [];
+    const { app } = await mount(`<div v-scope></div>`, { n: 0 });
+    app.scope.$watch('n', (v: number, old: number) => {
+      seen.push([v, old]);
+      if (v > 10) app.scope.n = 10;
+    });
+
+    app.scope.n = 11;
+    await tick(8);
+    expect(app.scope.n).toBe(10);
+    app.scope.n = 11;
+    await tick(8);
+
+    expect(app.scope.n).toBe(10);
+    expect(seen).toEqual([
+      [11, 0],
+      [11, 10],
+    ]);
+  });
+
+  // the demo on docs/magics/watch.md prepends to its log on every click
+  test('the docs demo runs without warnings', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const demo = readFileSync(
+      resolve(__dirname, '../docs/.vitepress/demos/watch.html'),
+      'utf8'
+    );
+    const { $, $$ } = await mount(demo);
+    $('button').click();
+    await tick(8);
+    $('button').click();
+    await tick(8);
+    expect($$('li').map((li) => li.textContent)).toEqual(['1 → 2', '0 → 1']);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 

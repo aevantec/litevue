@@ -4,6 +4,7 @@ import { evaluate } from '../eval';
 import { Context, createScopedContext } from '../context';
 import { setOwner } from '../ownership';
 import { warnOnce } from '../warn';
+import { handleError } from '../errors';
 
 const forAliasRE = /([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/;
 const forIteratorRE = /,([^,}\]]*)(?:,([^,}\]]*))?$/;
@@ -79,20 +80,32 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const map: KeyToIndexMap = new Map();
     const rows: Row[] = [];
 
-    // a string iterates by character, as in Vue
-    if (isArray(source) || isString(source)) {
-      for (let i = 0; i < source.length; i++) {
-        rows.push(createRow(map, source[i], i));
+    // Reading items runs getters outside evaluate's containment; a throw
+    // renders no rows rather than aborting mount() or the flush.
+    try {
+      // a string iterates by character, as in Vue
+      if (isArray(source) || isString(source)) {
+        for (let i = 0; i < source.length; i++) {
+          rows.push(createRow(map, source[i], i));
+        }
+      } else if (typeof source === 'number') {
+        for (let i = 0; i < source; i++) {
+          rows.push(createRow(map, i + 1, i));
+        }
+      } else if (isObject(source)) {
+        let i = 0;
+        for (const key in source) {
+          rows.push(createRow(map, source[key], i++, key));
+        }
       }
-    } else if (typeof source === 'number') {
-      for (let i = 0; i < source; i++) {
-        rows.push(createRow(map, i + 1, i));
-      }
-    } else if (isObject(source)) {
-      let i = 0;
-      for (const key in source) {
-        rows.push(createRow(map, source[key], i++, key));
-      }
+    } catch (e) {
+      handleError(e, {
+        phase: 'expression',
+        source: 'v-for',
+        el,
+        expression: sourceExp,
+      });
+      return [[], new Map()];
     }
 
     return [rows, map];
@@ -113,7 +126,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       data[valueExp] = value;
     }
-    if (objKey) {
+    if (objKey != null) {
       indexExp && (data[indexExp] = objKey);
       objIndexExp && (data[objIndexExp] = index);
     } else {
@@ -133,7 +146,12 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   };
 
   const mountBlock = (row: Row, ref: Node) => {
-    const block = new Block(el, createScopedContext(ctx, row.data));
+    const block = new Block(el, createScopedContext(ctx, row.data, true));
+    const t = block.template as any;
+    // stashed as a v-scope element's is, so morph binds markup inserted into
+    // a row with the row; forgotten on teardown, as theirs is
+    t.__ctx ??= block.ctx;
+    block.ctx.cleanups.push(() => delete t.__ctx);
     block.key = row.key;
     block.insert(parent(), ref);
     return block;
@@ -223,8 +241,11 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
           Object.assign(block.ctx.scope, row.data);
           // Rows after this one are in place, so move it only if it is not
           // already right before its successor. Asked of the DOM, since a
-          // removed neighbour shifts the index without the node moving.
-          if (oldIndex !== i && (block.end || block.el).nextSibling !== ref) {
+          // removed neighbour shifts the index without the node moving. A
+          // neighbour still leaving holds its place, so it is stepped over.
+          let next = (block.end || block.el).nextSibling as any;
+          while (next?.__leaving) next = next.nextSibling;
+          if (oldIndex !== i && next !== ref) {
             block.insert(parent(), ref);
           }
         }

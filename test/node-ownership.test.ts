@@ -432,6 +432,28 @@ describe('node ownership: disposal is exactly once', () => {
 
     expect(calls.filter((c) => c === 'inner:click').length).toBe(1);
   });
+
+  // the node disposer reaches discard() after remove() already left the list;
+  // a second, always-missing scan per row made clearing a long list quadratic
+  test('a removed row leaves its parent block list in one scan', async () => {
+    const { ctx } = mount(
+      `<ul id="root" v-scope="{ items: [] }"><li v-for="it in items" :key="it">{{ it }}</li></ul>`
+    );
+    ctx.scope.items = Array.from({ length: 50 }, (_, i) => i);
+    await tick(6);
+    const blocks = ctx.blocks;
+    expect(blocks.length).toBe(50);
+    let scans = 0;
+    blocks.indexOf = function (this: any, ...args: any[]) {
+      scans++;
+      return Array.prototype.indexOf.apply(this, args as any);
+    };
+
+    ctx.scope.items = [];
+    await tick(6);
+    expect(blocks.length).toBe(0);
+    expect(scans).toBe(50);
+  });
 });
 
 describe('node ownership: surviving nodes are untouched', () => {

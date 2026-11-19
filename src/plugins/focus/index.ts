@@ -4,9 +4,9 @@ const FOCUSABLE =
   'a[href],area[href],button,input:not([type=hidden]),select,textarea,' +
   'summary,iframe,audio[controls],video[controls],[contenteditable],[tabindex]';
 
-// active traps' keydown handlers, latest last: only the innermost handles Tab,
-// or an outer trap wraps first and the inner one pulls focus back
-const traps: Function[] = [];
+// active traps, latest last: only the innermost handles Tab, or an outer trap
+// wraps first and the inner one pulls focus back
+const traps: Element[] = [];
 
 // a radio group's tab stop: its checked radio, else its first
 const isTabStop = (e: any, _: number, all: any[]) =>
@@ -62,13 +62,13 @@ export const focus: Plugin = (app) => {
         .filter(
           (e: any) =>
             e.tabIndex >= 0 &&
-            !e.matches(':disabled,[inert] *') &&
+            !e.matches(':disabled,[inert],[inert] *') &&
             e.checkVisibility?.({ visibilityProperty: true }) !== false
         )
         .filter(isTabStop);
 
     const onKeydown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab' || traps.at(-1) !== onKeydown) return;
+      if (e.key !== 'Tab' || traps.at(-1) !== el) return;
       const els = focusables();
       if (!els.length) {
         e.preventDefault();
@@ -81,19 +81,22 @@ export const focus: Plugin = (app) => {
       if (!el.contains(current)) {
         e.preventDefault();
         first.focus();
-      } else if (e.shiftKey && (current === first || current === el)) {
-        // the focused container counts as before the first
+      } else if (
+        // by document position, so an unreachable element (tabindex=-1, or
+        // the container itself) before the first or after the last wraps too
+        !(
+          (e.shiftKey ? first : last).compareDocumentPosition(current!) &
+          (e.shiftKey ? 4 : 2)
+        )
+      ) {
         e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && current === last) {
-        e.preventDefault();
-        first.focus();
+        (e.shiftKey ? last : first).focus();
       }
     };
 
     const release = () => {
       active = false;
-      traps.splice(traps.indexOf(onKeydown), 1);
+      traps.splice(traps.indexOf(el), 1);
       document.removeEventListener('keydown', onKeydown, true);
       if (prevFocus && (prevFocus as HTMLElement).focus) {
         (prevFocus as HTMLElement).focus();
@@ -105,11 +108,14 @@ export const focus: Plugin = (app) => {
       if (on && !active) {
         active = true;
         prevFocus = document.activeElement;
-        traps.push(onKeydown);
+        // before any active trap inside it (-1 >>> 0 appends), as a child's
+        // effect runs first and would otherwise leave the outer trap last
+        traps.splice(traps.findIndex((t) => el.contains(t)) >>> 0, 0, el);
         document.addEventListener('keydown', onKeydown, true);
         // wait a tick so a v-if/v-show modal is in the DOM before focusing
         Promise.resolve().then(() => {
-          if (active) (focusables()[0] || (el as HTMLElement)).focus();
+          if (active && traps.at(-1) === el)
+            (focusables()[0] || (el as HTMLElement)).focus();
         });
       } else if (!on && active) {
         release();

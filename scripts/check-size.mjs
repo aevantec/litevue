@@ -4,7 +4,7 @@
 // hand — which is how "~3kb (all seven)" survived two plugins being added.
 // Budgets sit above current usage with deliberate headroom, so a failure means
 // something grew enough to be worth a look.
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { gzipSync } from 'zlib';
 
 const { budgets } = JSON.parse(
@@ -13,6 +13,18 @@ const { budgets } = JSON.parse(
 
 const failures = [];
 const rows = [];
+
+// A <script> bundle with no ceiling would grow unchecked. The .dev files are
+// development-only and deliberately unbudgeted.
+const dist = new URL('../dist', import.meta.url);
+const built = existsSync(dist) ? readdirSync(dist, { recursive: true }) : [];
+for (const f of built) {
+  const file = `dist/${f}`;
+  const script = file.endsWith('.iife.js') && !file.endsWith('.dev.iife.js');
+  if (script && !(file in budgets)) {
+    failures.push(`${file}: has no budget — add it to size-budget.json`);
+  }
+}
 
 for (const [file, limit] of Object.entries(budgets)) {
   let bytes;

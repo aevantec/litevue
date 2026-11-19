@@ -49,6 +49,9 @@ export const createWatch =
           cb(value, previous);
         } finally {
           resetTracking();
+          // re-read: a callback that wrote its own source does not re-run
+          // this effect, and the next change must compare with what it wrote
+          oldValue = getter();
         }
       }
       init = true;

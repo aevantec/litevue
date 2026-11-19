@@ -84,6 +84,7 @@ $watch('user.name', cb);               // called
 - Register it once — from `@mounted`, `v-effect`, or a method called from one of them as `this.$watch()`. From JavaScript outside a scope, use `app.scope.$watch()`. Calling it inside a template expression that re-renders registers a new watcher every time.
 - Watchers stop when their scope unmounts, or earlier when the returned function is called. Calling it twice is harmless. A watcher started from `@mounted` or an event handler also stops when that element is removed: a `v-if` branch closing, a `v-for` row going, or morph removing it. A watcher on the root scope, from `app.scope.$watch()` or a mounted root without `v-scope`, belongs to the app and stops on a full `app.unmount()`.
 - Reactive reads inside the callback are not tracked, so the callback only runs when `source` changes. Values are compared with `Object.is`, as in Vue, so a value that stays `NaN` does not call it.
+- A callback may write the value it watches, for example to clamp or trim it. That write does not call the callback again; the next change is compared with the written value, which the callback then receives as `oldValue`.
 - A callback that throws is reported to [`app.onError()`](/essentials/error-handling#app-onerror). Other updates keep running, and the next change still receives the correct `oldValue`. With `immediate`, a throw on that first call comes out of the `$watch()` call itself; from `@mounted` it is reported as a handler error. The watcher stays active.
 
 ## Related

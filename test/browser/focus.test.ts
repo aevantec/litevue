@@ -1,4 +1,5 @@
 import { describe, test, afterEach, expect } from 'vitest';
+import { userEvent } from 'vitest/browser';
 import { createApp } from '../../src';
 import { focus, morph, morphPlugin } from '../../src/plugins';
 import { mount, tick, sleep } from '../utils';
@@ -154,6 +155,33 @@ describe('v-trap', () => {
     });
     last.dispatchEvent(e);
     expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+    app.unmount();
+  });
+
+  // WAI-ARIA suggests focusing a long dialog's heading, tabindex=-1, on open
+  test('real Tab and Shift+Tab from tabindex=-1 elements at the edges stay inside', async () => {
+    document.body.innerHTML = `
+      <button id="before">before</button>
+      <div id="app" v-scope="{ on: true }">
+        <div v-trap="on" role="dialog">
+          <h2 id="heading" tabindex="-1">Title</h2>
+          <button id="first">first</button>
+          <button id="last">last</button>
+          <p id="msg" tabindex="-1">Saved</p>
+        </div>
+      </div>
+      <button id="after">after</button>`;
+    const app = createApp().use(focus);
+    app.mount('#app');
+    await tick(5);
+
+    document.getElementById('heading')!.focus();
+    await userEvent.tab({ shift: true });
+    expect(document.activeElement!.id).toBe('last');
+
+    document.getElementById('msg')!.focus();
+    await userEvent.tab();
     expect(document.activeElement!.id).toBe('first');
     app.unmount();
   });

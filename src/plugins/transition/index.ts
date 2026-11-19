@@ -81,6 +81,9 @@ export const transition: Plugin = (app) => {
       // the enter, whose new seq would orphan the leave's resolve
       (elem as any).__leave = () => {
         live = false;
+        // read by the core's development duplicate-ref check: a leaving
+        // element no longer claims its ref
+        (elem as any).__leaving = 1;
         return new Promise<void>((resolve) => run('leave', resolve));
       };
       return () => {
@@ -115,10 +118,12 @@ export const transition: Plugin = (app) => {
       }
     });
 
-    // the end timer is what removes the classes, so cancelling it must too
+    // the end timer is what removes the classes and ends a leave hidden, so
+    // cancelling it must do both
     return () => {
       clearTimeout(endTimer);
       clear();
+      if (shown === false) elem.style.display = 'none';
     };
   });
 };

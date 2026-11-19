@@ -30,6 +30,7 @@ No argument or modifiers.
 - `null` and `undefined` render as empty. Arrays and plain objects render as formatted JSON. Everything else is converted with `String()`, including objects that define their own `toString`, so an `Error` renders as `Error: message` and a `Date` as its date string. This matches Vue.
 - The value is always text, never parsed as HTML. For markup, see [`v-html`](/directives/v-html).
 - Useful where `{{ }}` would flash before mount, or would clash with a server template language — see [v-cloak](/directives/v-cloak) and [custom delimiters](/essentials/templating#custom-delimiters).
+- Content the element holds before mount, such as a server-rendered fallback, is replaced on the first render and never bound: its `{{ }}` and directives do not run.
 
 ## Related
 

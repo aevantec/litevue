@@ -77,6 +77,36 @@ describe('v-mask plugin', () => {
     app.unmount();
   });
 
+  // a value already there when v-mask runs is formatted at once; the mount
+  // events must still follow, whatever the attribute order
+  test('dispatches the mount events for a :value bound before v-mask', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ phone: '5551234567' }">
+      <input :value="phone" v-mask="(999) 999-9999" @input="phone = $event.target.value" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('(555) 123-4567');
+    expect(devtools.getScope(input)!.phone).toBe('(555) 123-4567');
+    app.unmount();
+  });
+
+  test('dispatches the mount events for a server-rendered value', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ inputs: 0, changes: 0 }">
+      <input value="5551234567" v-mask="(999) 999-9999" @input="inputs++" @change="changes++" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    const scope = devtools.getScope(input)!;
+    expect(input.value).toBe('(555) 123-4567');
+    expect(scope.inputs).toBe(1);
+    expect(scope.changes).toBe(1);
+    app.unmount();
+  });
+
   test('appends trailing literals once every slot is filled', async () => {
     document.body.innerHTML = `<div id="app" v-scope="{ code: '' }">
       <input v-mask="(999)" v-model="code" />
@@ -165,6 +195,47 @@ describe('v-mask plugin', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
     expect(input.value).toBe('(555) 129-567');
     expect(input.selectionStart).toBe(10);
+    app.unmount();
+  });
+
+  // a backward deletion must not put the caret back after the literal it
+  // removed, or every further Backspace removes it again
+  test('Backspace after a literal in the middle of the value keeps deleting', async () => {
+    document.body.innerHTML = `<div id="app" v-scope>
+      <input v-mask="(999) 999-9999" />
+    </div>`;
+    const app = createApp().use(mask);
+    app.mount('#app');
+    await tick();
+    const input = document.querySelector('input') as HTMLInputElement;
+    input.focus();
+    const backspace = (v: string, at: number) => {
+      input.value = v;
+      input.setSelectionRange(at, at);
+      input.dispatchEvent(
+        new InputEvent('input', { inputType: 'deleteContentBackward' })
+      );
+    };
+    type(input, '(555) 129-4567');
+
+    // caret after the "-": the "-" comes back and the caret lands before it
+    backspace('(555) 1294567', 9);
+    expect(input.value).toBe('(555) 129-4567');
+    expect(input.selectionStart).toBe(9);
+    // so the next Backspace deletes the 9
+    backspace('(555) 12-4567', 8);
+    expect(input.value).toBe('(555) 124-567');
+    expect(input.selectionStart).toBe(8);
+
+    // caret between ")" and " ": it does not jump forward
+    backspace('(555 124-567', 4);
+    expect(input.value).toBe('(555) 124-567');
+    expect(input.selectionStart).toBe(4);
+
+    // the leading literal still keeps the caret after it (ISSUE-0066)
+    backspace('(55) 124-567', 1);
+    expect(input.value).toBe('(551) 245-67');
+    expect(input.selectionStart).toBe(1);
     app.unmount();
   });
 });

@@ -130,6 +130,30 @@ describe('navigate: head', () => {
     expect($head('#none')).not.toBeNull();
   });
 
+  // Chrome before 88 and Firefox before 84 throw on a selector list inside
+  // :not(), and both are within the documented browser floor
+  test('waits for a stylesheet without a selector list inside :not()', async () => {
+    const matches = Element.prototype.matches;
+    const spy = vi
+      .spyOn(Element.prototype, 'matches')
+      .mockImplementation(function (this: Element, sel: string) {
+        if (/:not\([^)]*,/.test(sel))
+          throw new DOMException(sel, 'SyntaxError');
+        return matches.call(this, sel);
+      });
+    reply = page('<link rel="stylesheet" href="/two.css">');
+    await start('');
+
+    await go();
+    const added = $head('[href="/two.css"]');
+    added?.dispatchEvent(new Event('load'));
+    await settle();
+    spy.mockRestore();
+
+    expect(added).not.toBeNull();
+    expect(main()).toBe('next');
+  });
+
   test('adds and removes inline styles', async () => {
     reply = page('<style>main { color: red }</style>');
     await start('<style>main { color: blue }</style>');
@@ -139,6 +163,20 @@ describe('navigate: head', () => {
     const styles = document.head.querySelectorAll('style');
     expect(styles).toHaveLength(1);
     expect(styles[0].textContent).toContain('red');
+  });
+
+  test('keeps the order the next page gives new and shared stylesheets', async () => {
+    // a reset placed before the shared sheet must not end up overriding it
+    reply = page(
+      '<style id="reset"></style><style id="site"></style><style id="a"></style><style id="b"></style>'
+    );
+    await start('<style id="site"></style><style id="old"></style>');
+
+    await go();
+
+    expect(main()).toBe('next');
+    const ids = [...document.head.querySelectorAll('style')].map((s) => s.id);
+    expect(ids).toEqual(['reset', 'site', 'a', 'b']);
   });
 
   test('never adds or removes scripts', async () => {

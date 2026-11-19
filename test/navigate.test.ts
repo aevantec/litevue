@@ -155,6 +155,37 @@ describe('navigate: links', () => {
     expect((side.querySelector('b') as HTMLElement).style.display).toBe('');
   });
 
+  // the fetched page loses these, so the live page must too, or every
+  // unkeyed element after one is compared with the wrong one
+  test.each([
+    ['a noscript', '<noscript><iframe src="about:blank"></iframe></noscript>'],
+    ['an inline script', '<script>window.__ran = 1</script>'],
+  ])('keeps an unkeyed scope after %s and its state', async (_, lead) => {
+    const side = `<aside v-scope="{ open: false }"><b v-show="open">menu</b>
+        <button @click="open = true">open</button></aside>`;
+    replies['/about'] = {
+      body: page('About', `${lead}${side}<a href="/">Home</a>`),
+    };
+    await start(`${side}<a href="/about">About</a>`);
+    // as a browser leaves them: the script ran, the noscript holds text
+    const live = document.createElement('div');
+    live.innerHTML = lead;
+    const ns = live.querySelector('noscript');
+    if (ns) ns.textContent = ns.innerHTML;
+    document.body.prepend(live.firstChild!);
+    const aside = document.querySelector('aside')!;
+    aside.querySelector('button')!.click();
+    await tick();
+
+    click(document.querySelector('a[href="/about"]')!);
+    await settle();
+
+    expect(location.pathname).toBe('/about');
+    expect(document.querySelector('aside')).toBe(aside);
+    expect(aside.querySelector('b')!.style.display).toBe('');
+    expect(document.querySelector('iframe,script')).toBeNull();
+  });
+
   test('mounts a scope root the new page adds', async () => {
     replies['/count'] = {
       body: page(
@@ -174,6 +205,26 @@ describe('navigate: links', () => {
     await tick();
 
     expect(document.querySelector('b')!.textContent).toBe('2');
+  });
+
+  test('replaces a page root with another without a warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    replies['/two'] = {
+      body: page(
+        'Two',
+        '<main id="page-two" v-scope="{ n: 2 }">{{ n }}</main><a href="/">One</a>'
+      ),
+    };
+    await start(
+      '<main id="page-one" v-scope="{ n: 1 }">{{ n }}</main><a href="/two">Two</a>'
+    );
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.textContent).toBe('2');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   test('stops the effects of a scope root the new page removes', async () => {
@@ -267,6 +318,31 @@ describe('navigate: links', () => {
     expect(JSON.parse(live!.textContent!)).toEqual({ n: 2 });
   });
 
+  test("keeps the layout's unkeyed scope after a page root with its own id", async () => {
+    const footer = `<footer v-scope="{ open: false }"><button @click="open = !open">t</button><b v-show="open">more</b></footer>`;
+    replies['/b'] = {
+      body: page(
+        'B',
+        `<a href="/b">b</a><main id="page-b" v-scope="{ n: 2 }">{{ n }}</main>${footer}`
+      ),
+    };
+    await start(
+      `<a href="/b">b</a><main id="page-a" v-scope="{ n: 1 }">{{ n }}</main>${footer}`
+    );
+    const live = document.querySelector('footer')!;
+    live.querySelector('button')!.click();
+    await tick();
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(document.querySelector('main')!.id).toBe('page-b');
+    expect(document.querySelector('main')!.textContent).toBe('2');
+    expect(document.querySelectorAll('main')).toHaveLength(1);
+    expect(document.querySelector('footer')).toBe(live);
+    expect(live.querySelector('b')!.style.display).toBe('');
+  });
+
   test('morphs only the target when one is given', async () => {
     replies['/two'] = {
       body: page(
@@ -358,6 +434,22 @@ describe('navigate: links', () => {
     click(document.querySelector('#p')!);
     await settle();
     expect(into).toHaveBeenCalled();
+  });
+
+  // the URL carries the id percent-encoded, as #caf%C3%A9
+  test('scrolls to a hash target whose id is not ASCII', async () => {
+    replies['/two'] = {
+      body: page('Two', '<main>Two<h2 id="café">Café</h2></main>'),
+    };
+    await start('<a href="/two#café">Café</a><main></main>');
+    const into = vi.fn();
+    Element.prototype.scrollIntoView = into;
+
+    click(document.querySelector('a')!);
+    await settle();
+
+    expect(into).toHaveBeenCalled();
+    expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -573,6 +665,21 @@ describe('navigate: forms', () => {
     expect((init.body as URLSearchParams).get('t')).toBe('x');
     expect(location.pathname).toBe('/done');
     expect(document.querySelector('main')!.textContent).toBe('saved');
+  });
+
+  test('resolves a relative action against the base URL', async () => {
+    replies['/app/save'] = { body: page('Saved', '<main>saved</main>') };
+    await start(
+      `<form action="save" method="post"><button>Save</button></form><main></main>`
+    );
+    document.head.insertAdjacentHTML('beforeend', '<base href="/app/">');
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(fetchMock.mock.calls[0][0]).toBe(ORIGIN + '/app/save');
+    expect(document.querySelector('main')!.textContent).toBe('saved');
+    document.querySelector('base')!.remove();
   });
 
   test('ignores a second POST from a form whose first is still in flight', async () => {
@@ -796,6 +903,22 @@ describe('navigate: loading state', () => {
     expect(document.querySelector('main')!.textContent).toBe('two');
   });
 
+  test('stays busy until a view transition puts the page in place', async () => {
+    let run!: () => void;
+    (document as any).startViewTransition = (cb: () => void) => (run = cb);
+    replies['/two'] = { body: page('Two', '<main>two</main>') };
+    await start('<a href="/two">two</a><main>one</main>', { transition: true });
+
+    click(document.querySelector('a')!);
+    await settle();
+    expect(html.getAttribute('aria-busy')).toBe('true');
+
+    run();
+    expect(html.hasAttribute('aria-busy')).toBe(false);
+    expect(document.querySelector('main')!.textContent).toBe('two');
+    delete (document as any).startViewTransition;
+  });
+
   test('marks the submitting form busy too', async () => {
     replies['/save'] = { body: page('Saved', '<main>saved</main>') };
     await start(
@@ -942,6 +1065,19 @@ describe('navigate: prefetch', () => {
       '/a',
       '/b',
     ]);
+  });
+
+  test('a press with another button or a modifier key does not prefetch', async () => {
+    await start('<a href="/two">two</a><main></main>', { prefetch: true });
+    const a = document.querySelector('a')!;
+
+    for (const init of [{ button: 2 }, { button: 1 }, { ctrlKey: true }]) {
+      a.dispatchEvent(
+        new MouseEvent('pointerdown', { bubbles: true, ...init })
+      );
+    }
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test('skips links a click would leave to the browser, and the current page', async () => {
@@ -1327,6 +1463,25 @@ describe('navigate: falls back to a full load', () => {
 
     // a GET of the redirect target; the POST itself is never replayed
     expect(assign).toHaveBeenCalledWith('https://pay.example.com/checkout/1');
+  });
+
+  // the error answers the GET the redirect led to, not the POST
+  test('a POST redirected to an error page loads where it led', async () => {
+    replies['/save'] = {
+      body: page('Gone', '<main>gone</main>'),
+      status: 404,
+      url: ORIGIN + '/gone',
+    };
+    await start(
+      '<form action="/save" method="post"><button>Save</button></form><main>Form</main>'
+    );
+    stubLocation();
+
+    document.querySelector('button')!.click();
+    await settle();
+
+    expect(assign).toHaveBeenCalledWith(ORIGIN + '/gone');
+    expect(document.querySelector('main')!.textContent).toBe('Form');
   });
 
   test('a POST answered with a file is not replayed', async () => {

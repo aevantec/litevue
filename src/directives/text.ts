@@ -2,6 +2,8 @@ import { isArray, isFunction, isObject, objectToString } from '@vue/shared';
 import { Directive } from '.';
 
 export const text: Directive<Text | Element> = ({ el, get, effect }) => {
+  // marks rendered output, which walk() never compiles (see walkNode)
+  (el as any).__r = 1;
   effect(() => {
     el.textContent = toDisplayString(get());
   });

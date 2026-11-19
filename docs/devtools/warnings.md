@@ -318,9 +318,19 @@ one, every such element shares a single key. Write `v-persist="my-key"`.
 ### persist: an unknown storage modifier
 
 A modifier other than `.local`, `.session` or a name passed to
-`registerStorage()` is ignored, and the value goes to the default storage,
-`localStorage` unless `setDefaultStorage()` changed it. See
+`registerStorage()` saves nothing. The state still works, but it is neither
+restored nor saved, and it never falls back to the default storage, so a
+misspelled modifier cannot place the state in `localStorage`. Register a
+custom storage before mounting. See
 [Choosing a storage](/plugins/persist#choosing-a-storage).
+
+### persist: a listed key that is not in the scope
+
+`v-persist:a,b` names a key that the element's scope does not have, so that
+key is neither saved nor restored. The HTML parser lowercases attribute names,
+so `v-persist:firstName` lists `firstname`, which does not match a `firstName`
+property. List the keys in lowercase, or persist camelCase properties with
+`persistStore()` and its `keys` option. See [Syntax](/plugins/persist#syntax).
 
 ### persist: `persistStore()` on a store that does not exist
 

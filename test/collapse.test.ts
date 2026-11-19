@@ -29,12 +29,25 @@ const mount = async (html: string) => {
 const panel = () => document.getElementById('p') as HTMLElement;
 
 describe('v-collapse', () => {
-  test('clips the element while it is mounted', async () => {
-    await mount(
-      `<div v-scope="{ open: true }"><div id="p" v-collapse="open">x</div></div>`
+  test('clips the element only while collapsed or animating', async () => {
+    const root = await mount(
+      `<div v-scope="{ open: true }"><div id="p" v-collapse.duration-10="open">x</div></div>`
     );
-    // overflow must be hidden for the height animation to read correctly
+    // an open panel must not clip a dropdown, focus ring or shadow at its edge
+    expect(panel().style.overflow).toBe('');
+
+    root.__ctx.scope.open = false;
+    await tick();
+    // the height animation needs overflow hidden to read correctly
     expect(panel().style.overflow).toBe('hidden');
+
+    root.__ctx.scope.open = true;
+    await tick();
+    expect(panel().style.overflow).toBe('hidden');
+
+    await sleep(30);
+    expect(panel().style.height).toBe('');
+    expect(panel().style.overflow).toBe('');
   });
 
   test('collapses and expands as the expression toggles', async () => {
@@ -78,7 +91,7 @@ describe('v-collapse', () => {
 
   test('restores an inline overflow the author wrote', async () => {
     await mount(
-      `<div v-scope="{ open: true }">` +
+      `<div v-scope="{ open: false }">` +
         `<div id="p" style="overflow: visible" v-collapse="open">x</div></div>`
     );
     expect(panel().style.overflow).toBe('hidden');
@@ -88,6 +101,26 @@ describe('v-collapse', () => {
     await tick();
 
     expect(panel().style.overflow).toBe('visible');
+  });
+
+  // the author's height is the expanded height, kept after a collapse and
+  // expand rather than released to the content's
+  test('keeps an inline height the author wrote across a collapse and expand', async () => {
+    const root = await mount(
+      `<div v-scope="{ open: true }">` +
+        `<div id="p" style="height: 50px" v-collapse.duration-10="open">x</div></div>`
+    );
+    root.__ctx.scope.open = false;
+    await tick();
+    expect(panel().style.height).toBe('0px');
+
+    root.__ctx.scope.open = true;
+    await tick();
+    // expands to that height, not past it to the content's
+    expect(panel().style.height).toBe('50px');
+    await sleep(20);
+
+    expect(panel().style.height).toBe('50px');
   });
 
   // a height of 0 still leaves the content in the tab order and the

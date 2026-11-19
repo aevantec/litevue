@@ -25,12 +25,14 @@ let target = registry;
 if (import.meta.env.DEV) {
   target = new Proxy(registry, {
     get(obj, key: string | symbol, receiver) {
-      // toJSON: serializing a scope reads it, and it is never a store
+      // toJSON: serializing a scope reads it, and it is never a store; nor is
+      // toString, which rendering {{ $store }} reads
       if (
         typeof key === 'string' &&
         !key.startsWith('__') &&
         key !== 'toJSON' &&
-        !(key in obj)
+        !(key in obj) &&
+        !(key in Object.prototype)
       ) {
         setTimeout(() => {
           if (key in obj) return;
@@ -56,10 +58,11 @@ export const stores: Record<string, any> = reactive(target);
  * expression as `$store.<name>`. Passing a value registers it and runs its
  * `init()` once, if present; omitting one retrieves.
  */
-export const store = <T extends Record<string, any>>(
-  name: string,
-  value?: T
-): T => {
+export const store: {
+  <T extends Record<string, any>>(name: string, value: T): T;
+  /** A name that was never registered reads as undefined. */
+  <T extends Record<string, any>>(name: string): T | undefined;
+} = (name: string, value?: Record<string, any>) => {
   if (value !== undefined) {
     stores[name] = value;
     if (typeof stores[name].init === 'function') {

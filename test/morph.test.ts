@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { createApp } from '../src';
+import { createApp, devtools, store } from '../src';
 import { morph, morphPlugin } from '../src/plugins';
 import { tick } from './utils';
 
@@ -60,6 +60,30 @@ describe('morph', () => {
     (app.scope as any).$morph; // plugin registered the magic
     app.unmount();
   });
+
+  // A shown v-if's anchor is out of the document, so disposing the morphed-away
+  // subtree reached only the block's disposer, which stopped the effect but
+  // left it in the scope's effects list, holding the removed DOM.
+  test.each([true, false])(
+    'replacing a v-if (shown: %s) does not grow the scope effects list',
+    async (on) => {
+      const { root } = await mountApp(
+        `<div id="root" v-scope="{ on: ${on} }"><section id="r"></section></div>`
+      );
+      const ctx = (root as any).__ctx;
+      const html = (i: number) =>
+        `<section id="r"><div id="k${i}"><p v-if="on">{{ on }}</p></div></section>`;
+      morph(root.querySelector('#r')!, html(0));
+      await tick();
+      const before = ctx.effects.length;
+      for (let i = 1; i <= 5; i++) {
+        morph(root.querySelector('#r')!, html(i));
+        await tick();
+      }
+      expect(root.querySelectorAll('#r p')).toHaveLength(on ? 1 : 0);
+      expect(ctx.effects.length).toBe(before);
+    }
+  );
 
   test('live state wins over the incoming v-scope expression', async () => {
     const { root } = await mountApp(
@@ -402,6 +426,93 @@ describe('morph', () => {
     expect(root.querySelector('#c i')!.textContent).toBe('1');
   });
 
+  test('patches the children of a plain v-scope inside a $template component', async () => {
+    const { $ } = await mountApp(
+      `<div v-scope="{ $template: '<section v-scope=&quot;{}&quot; id=&quot;panel&quot;><p>old</p></section>' }"></div>`
+    );
+    morph($('#panel'), `<section id="panel"><p>new</p></section>`);
+    expect($('#panel').textContent).toBe('new');
+  });
+
+  test('keeps the unkeyed nodes after a keyed node the server dropped', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><p id="flash">Saved</p><details><summary>s</summary>d</details><input name="q"></div>`
+    );
+    const details = root.querySelector('details')!;
+    const input = root.querySelector('input')!;
+    details.open = true;
+    input.value = 'typed';
+    const removed: Node[] = [];
+
+    morph(
+      root,
+      `<div><details><summary>s</summary>d</details><input name="q"></div>`,
+      { afterNodeRemoved: (n) => removed.push(n) }
+    );
+
+    expect(root.querySelector('#flash')).toBeNull();
+    expect(removed.map((n) => (n as Element).id)).toEqual(['flash']);
+    expect(root.querySelector('details')).toBe(details);
+    expect(details.open).toBe(true);
+    expect(root.querySelector('input')).toBe(input);
+    expect(input.value).toBe('typed');
+  });
+
+  test('keeps the unkeyed nodes after a keyed node the server replaced', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="a" v-scope="{ n: 1 }">{{ n }}</section><footer v-scope="{ k: 1 }"><button @click="k++">{{ k }}</button></footer></div>`
+    );
+    const footer = root.querySelector('footer')!;
+    footer.querySelector('button')!.click();
+    await tick();
+
+    morph(
+      root,
+      `<div><section id="b" v-scope="{ n: 2 }">{{ n }}</section><footer v-scope="{ k: 1 }"><button @click="k++">{{ k }}</button></footer></div>`
+    );
+    await tick();
+
+    expect([...root.children].map((c) => c.id || c.tagName)).toEqual([
+      'b',
+      'FOOTER',
+    ]);
+    expect(root.querySelector('#b')!.textContent).toBe('2');
+    expect(root.querySelector('footer')).toBe(footer);
+    expect(footer.textContent).toBe('2');
+  });
+
+  test('keeps a preserved keyed node the server dropped, and what follows it', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><aside id="toast" data-morph-preserve>hi</aside><input name="q"></div>`
+    );
+    const toast = root.querySelector('#toast');
+    const input = root.querySelector('input')!;
+
+    morph(root, `<div><input name="q" class="x"></div>`);
+
+    expect(root.querySelector('#toast')).toBe(toast);
+    expect(root.querySelector('input')).toBe(input);
+    expect(input.className).toBe('x');
+  });
+
+  test('updates script text that holds the delimiter', async () => {
+    const island = (n: number) =>
+      `<div v-scope><script type="application/json" id="data">{"greeting":"Hi {{name}}","n":${n}}</script></div>`;
+    const { root, $ } = await mountApp(island(1));
+
+    morph(root, island(2));
+
+    expect(JSON.parse($('#data').textContent!).n).toBe(2);
+  });
+
+  test('patches every scope when the root data holds $template', async () => {
+    const { root } = await mountApp(`<div v-scope="{}"><p>old</p></div>`, {
+      $template: '#none',
+    });
+    morph(root, `<div><p>new</p></div>`);
+    expect(root.textContent).toBe('new');
+  });
+
   test('markup morphed into a lazy region that has not mounted binds with that region', async () => {
     const { root } = await mountApp(
       `<div v-scope><div id="lazy" v-scope.interaction="{ n: 3 }"><p>{{ n }}</p></div></div>`
@@ -426,6 +537,50 @@ describe('morph', () => {
       `<div v-scope><template id="row"><li>new</li></template></div>`
     );
     expect(root.querySelector('#row')!.innerHTML).toBe('<li>new</li>');
+  });
+
+  test('leaves an unchanged <template> content as it is', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><template id="row"><li>a</li></template></div>`
+    );
+    const template = root.querySelector('#row') as HTMLTemplateElement;
+    const li = template.content.firstChild;
+
+    morph(root, `<div v-scope><template id="row"><li>a</li></template></div>`);
+
+    expect(template.content.firstChild).toBe(li);
+  });
+
+  test('a waiting lazy region takes the markup the server changed', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }"><button>{{ id }}</button></section></div>`
+    );
+    const old = root.querySelector('#lazy')!;
+
+    morph(
+      root,
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 18 }"><button>{{ id }}</button></section></div>`
+    );
+    root.querySelector('#lazy')!.dispatchEvent(new Event('pointerdown'));
+    old.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(root.querySelector('#lazy button')!.textContent).toBe('18');
+    // the replaced region's trigger was released with it
+    expect(old.textContent).toBe('{{ id }}');
+  });
+
+  test('an unchanged waiting lazy region keeps its node', async () => {
+    const markup = `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }"><button>{{ id }}</button></section></div>`;
+    const { root } = await mountApp(markup);
+    const lazy = root.querySelector('#lazy')!;
+
+    morph(root, markup);
+    lazy.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(root.querySelector('#lazy')).toBe(lazy);
+    expect(lazy.querySelector('button')!.textContent).toBe('17');
   });
 
   test('accepts an element as the target and returns the live node', async () => {
@@ -479,5 +634,132 @@ describe('morph with an HTML string', () => {
 
     expect(r.isConnected).toBe(true);
     expect(r.innerHTML).toBe('Hello <b>world</b>');
+  });
+
+  test('parses markup for an SVG element as SVG', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><svg><g id="g"><rect></rect></g></svg></div>`
+    );
+    const g = root.querySelector('#g')!;
+
+    morph(g, '<g id="g"><circle r="2"></circle></g>');
+    morph(g, '<circle r="3"></circle><circle r="4"></circle>');
+
+    expect(root.querySelector('#g')).toBe(g);
+    const circles = [...g.children];
+    expect(circles.map((c) => c.getAttribute('r'))).toEqual(['3', '4']);
+    expect(circles.every((c) => c instanceof SVGElement)).toBe(true);
+  });
+});
+
+describe('morph: the scope new markup binds with', () => {
+  const list = `<div v-scope="{ rows: [{ id: 1, name: 'Ada' }] }">
+      <div v-for="row in rows" :key="row.id" class="row"><section class="body">old</section></div>
+    </div>`;
+
+  test('markup morphed into a v-for row binds with that row', async () => {
+    const { root } = await mountApp(list);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe('Ada');
+  });
+
+  test('a v-for row left in place by unmount(el) binds nothing', async () => {
+    const { app, root } = await mountApp(list);
+    app.unmount(root);
+
+    morph(
+      root.querySelector('.row .body')!,
+      '<section class="body"><b>{{ row.name }}</b></section>'
+    );
+    await tick();
+
+    expect(root.querySelector('.row .body b')!.textContent).toBe(
+      '{{ row.name }}'
+    );
+  });
+
+  test('returns the connected element when the tag changes', async () => {
+    document.body.innerHTML = `<div id="wrap"><section id="r">old</section></div>`;
+
+    const result = morph(
+      document.getElementById('r')!,
+      '<article id="r">new</article>'
+    );
+
+    expect(result).toBe(document.getElementById('r'));
+    expect(result.textContent).toBe('new');
+  });
+
+  test('returns the replacement of a waiting lazy region the server changed', async () => {
+    const { root } = await mountApp(
+      `<div v-scope><section id="lazy" v-scope.interaction="{ id: 17 }">{{ id }}</section></div>`
+    );
+
+    const result = morph(
+      root.querySelector('#lazy')!,
+      '<section id="lazy" v-scope.interaction="{ id: 18 }">{{ id }}</section>'
+    );
+    result.dispatchEvent(new Event('pointerdown'));
+    await tick();
+
+    expect(result).toBe(root.querySelector('#lazy'));
+    expect(result.textContent).toBe('18');
+  });
+
+  test('a scope root whose tag changes binds with the scope around it', async () => {
+    const { app, root } = await mountApp(
+      `<div v-scope="{ n: 1 }"><div id="r" v-scope="{ m: 2 }">{{ n }}</div></div>`
+    );
+    const scope = devtools.getScope(root)!;
+
+    const fresh = morph(
+      root.querySelector('#r')!,
+      '<section id="r" v-scope="{ m: 2 }">{{ n }} {{ m }}</section>'
+    );
+    await tick();
+    expect(fresh.textContent).toBe('1 2');
+
+    scope.n = 3;
+    await tick();
+    expect(fresh.textContent).toBe('3 2');
+
+    // part of the region now, so it stops with it
+    app.unmount();
+    scope.n = 4;
+    await tick();
+    expect(fresh.textContent).toBe('3 2');
+  });
+
+  test('a mounted root whose tag changes is released and mounts like any new root', async () => {
+    store('morphRoot', { v: 'a' });
+    document.body.innerHTML = `<div><div id="root" v-scope>{{ $store.morphRoot.v }}</div></div>`;
+    const app = createApp().use(morphPlugin);
+    app.mount('#root');
+    await tick();
+    const old = document.getElementById('root')!;
+
+    const fresh = morph(
+      old,
+      '<section id="root" v-scope>{{ $store.morphRoot.v }}</section>'
+    );
+    await tick();
+    // outside every scope there is nothing to bind it with, not the old root's
+    expect(fresh.textContent).toBe('{{ $store.morphRoot.v }}');
+
+    app.mount(fresh);
+    await tick();
+    expect(fresh.textContent).toBe('a');
+
+    app.unmount();
+    (store('morphRoot') as any).v = 'b';
+    await tick();
+    expect(fresh.textContent).toBe('a');
+    expect(old.textContent).toBe('a');
   });
 });

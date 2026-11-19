@@ -174,6 +174,79 @@ describe('v-trap: where Tab can leave', () => {
     expect(document.activeElement!.id).toBe('last');
   });
 
+  // WAI-ARIA suggests focusing a long dialog's heading (tabindex=-1) on open
+  const unfocusable = `<button id="outside-before"></button>
+      <div id="app" v-scope>
+        <div v-trap="true" role="dialog">
+          <h2 id="heading" tabindex="-1">Title</h2>
+          <button id="first"></button>
+          <button id="last"></button>
+          <p id="msg" tabindex="-1">Saved</p>
+        </div>
+      </div>
+      <button id="outside-after"></button>`;
+
+  test('Shift+Tab from a tabindex=-1 element before the first stop wraps to the last', async () => {
+    await start(unfocusable);
+    $('heading').focus();
+
+    const e = tab($('heading'), true);
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('last');
+  });
+
+  test('Tab from a tabindex=-1 element after the last stop wraps to the first', async () => {
+    await start(unfocusable);
+    $('msg').focus();
+
+    const e = tab($('msg'));
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+  });
+
+  test('an element that is itself inert is not a tab stop', async () => {
+    await start(`<div id="app" v-scope>
+        <div v-trap="true">
+          <button id="dead-first" inert></button>
+          <button id="first"></button>
+          <button id="last"></button>
+          <button id="dead-last" inert></button>
+        </div>
+      </div>`);
+    expect(document.activeElement!.id).toBe('first');
+
+    $('last').focus();
+
+    const e = tab($('last'));
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('first');
+  });
+
+  test('of nested traps activated together, the inner one holds focus', async () => {
+    // both open at mount, as from server state or a restored value
+    await start(`<div id="app" v-scope>
+        <div v-trap="true">
+          <button id="outer-first"></button>
+          <div v-trap="true">
+            <button id="inner-first"></button>
+            <button id="inner-last"></button>
+          </div>
+          <button id="outer-last"></button>
+        </div>
+      </div>`);
+    expect(document.activeElement!.id).toBe('inner-first');
+
+    $('inner-last').focus();
+
+    const e = tab($('inner-last'));
+
+    expect(e.defaultPrevented).toBe(true);
+    expect(document.activeElement!.id).toBe('inner-first');
+  });
+
   test('only the most recently activated of nested traps handles Tab', async () => {
     // a confirm opened inside a modal, at the start of it
     await start(`<div id="app" v-scope="{ inner: false }">

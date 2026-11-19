@@ -34,7 +34,7 @@ The value is a literal selector, not an expression: `v-teleport="#modals"`, not
 ## Behavior
 
 - Use it for modals, dropdowns and toasts that must escape an `overflow: hidden` or stacking-context parent.
-- The target must exist when the region mounts. A missing target logs a development error and leaves the element where it was. A selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) as a `directive` error, with the same result.
+- The target must exist when the region mounts. A missing target logs a development error and leaves the element where it was. A selector that does not parse is reported to [`app.onError()`](/essentials/error-handling#app-onerror) as a `directive` error, with the same result, and so is a selector that matches the element itself or an element inside it.
 - The element is removed from the target when its region unmounts, when its `v-if` turns false, or when [morph](/plugins/morph) or [navigate](/plugins/navigate) removes the markup it was written in. An empty text node marks its original position for this.
 - LiteVue addition; the Vue equivalent is the `<Teleport>` component.
 

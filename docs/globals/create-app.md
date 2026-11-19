@@ -114,6 +114,10 @@ region whose elements stay in the document. A listener left behind keeps firing
 into state that is meant to be inert — even one bound to the element itself.
 :::
 
+A cleanup that throws is reported to
+[`app.onError()`](/essentials/error-handling#app-onerror) with the phase
+`teardown`, and the rest of the teardown still runs.
+
 ### What `mount()` binds
 
 `mount()` binds regions, not the whole target. It picks them in this order:

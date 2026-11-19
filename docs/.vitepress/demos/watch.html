@@ -5,6 +5,6 @@
   <button @click="count++">count: {{ count }}</button>
 
   <ul>
-    <li v-for="entry in log">{{ entry }}</li>
+    <li v-for="entry in log" :key="entry">{{ entry }}</li>
   </ul>
 </div>

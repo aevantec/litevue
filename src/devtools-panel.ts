@@ -4,10 +4,10 @@
 import type { LiteVueDevtools } from './devtools';
 import { css } from './devtools-panel/styles';
 import { createPluginsView } from './devtools-panel/plugins';
+import { createMenu, type Menu } from './devtools-panel/menu';
 import {
   clamp,
-  dockIcons,
-  dockTitles,
+  dockOptions,
   icon,
   loadTheme,
   loadUi,
@@ -15,11 +15,9 @@ import {
   maxW,
   MIN_H,
   MIN_W,
-  nextDock,
-  nextTheme,
   saveTheme,
   saveUi,
-  themeIcons,
+  themeOptions,
   type Dock,
   type ThemeMode,
 } from './devtools-panel/chrome';
@@ -42,14 +40,14 @@ let pillEl: HTMLElement;
 let treeEl: HTMLElement;
 let stateEl: HTMLElement;
 let pickBtn: HTMLElement;
-let themeBtn: HTMLElement;
+let themeMenu: Menu<ThemeMode>;
 let highlightEl: HTMLElement;
 let selected: Element | null = null;
 let selectedStore: string | null = null;
 let picking = false;
 let filterText = '';
 let activeTab: 'Elements' | 'Stores' = 'Elements';
-let dockBtn: HTMLElement;
+let dockMenu: Menu<Dock>;
 let dock: Dock = 'float';
 // the floating geometry, kept while docked so undocking restores it
 let floatW = '';
@@ -59,6 +57,7 @@ let floatBottom = '';
 // Each mode keeps its own size: deriving the docked one from the floating
 // geometry would reset a bottom dock sized to 300px on the next dock.
 let bottomH = '';
+let leftW = '';
 let rightW = '';
 
 let elementsTab: HTMLElement;
@@ -73,8 +72,7 @@ const applyTheme = () => {
   const light =
     theme === 'light' || (theme === 'system' && prefersLight.matches);
   shadow.host.classList.toggle('light', light);
-  themeBtn.innerHTML = themeIcons[theme];
-  themeBtn.title = 'theme: ' + theme;
+  themeMenu.set(theme);
 };
 // property paths ("items", "items.0", …) the user expanded; kept across flush
 // re-renders so the tree doesn't collapse while state changes
@@ -114,26 +112,34 @@ const applyDock = (next: Dock) => {
     floatBottom = panelEl.style.bottom || floatBottom;
   } else if (dock === 'bottom') {
     bottomH = panelEl.style.height || bottomH;
+  } else if (dock === 'left') {
+    leftW = panelEl.style.width || leftW;
   } else {
     rightW = panelEl.style.width || rightW;
   }
   dock = next;
   const docked = next !== 'float';
-  panelEl.classList.toggle('dock-bottom', next === 'bottom');
-  panelEl.classList.toggle('dock-right', next === 'right');
+  for (const d of ['left', 'bottom', 'right']) {
+    panelEl.classList.toggle('dock-' + d, next === d);
+  }
 
-  // both docks pin to the right and bottom edges, so neither offset may remain
+  // the docks pin to the viewport's edges, so neither offset may remain
   panelEl.style.right = docked ? '' : floatRight;
   panelEl.style.bottom = docked ? '' : floatBottom;
   // each dock owns one axis and leaves the other resizable, at whatever size
   // that mode was last left
   panelEl.style.width =
-    next === 'bottom' ? '' : next === 'right' ? rightW : floatW;
+    next === 'bottom'
+      ? ''
+      : next === 'left'
+        ? leftW
+        : next === 'right'
+          ? rightW
+          : floatW;
   panelEl.style.height =
-    next === 'right' ? '' : next === 'bottom' ? bottomH : floatH;
+    next === 'bottom' ? bottomH : next === 'float' ? floatH : '';
 
-  dockBtn.innerHTML = dockIcons[next];
-  dockBtn.title = 'panel: ' + dockTitles[next];
+  dockMenu.set(next);
 };
 
 // html-tag-style label for a scope root, e.g. <cart>. See nameOf for source.
@@ -145,12 +151,23 @@ const tagOf = (el: Element) => {
   return label;
 };
 
+// A form's named controls shadow its properties, methods included, so these
+// are read from the prototypes: a control named parentElement would loop.
+const parentGet = Object.getOwnPropertyDescriptor(
+  Node.prototype,
+  'parentElement'
+)!.get!;
+// a teleported element's marker holds its original place, so it belongs
+// to the scope it was written in, not to its target's
+const parentOf = (el: Element): Element | null =>
+  (el as any).__marker?.parentElement || parentGet.call(el);
+
 /** Nearest ancestor element that is itself a registered scope. */
 const parentScopeOf = (el: Element) => {
-  let p = el.parentElement;
+  let p = parentOf(el);
   while (p) {
     if (devtools.scopes.has(p)) return p;
-    p = p.parentElement;
+    p = parentOf(p);
   }
   return null;
 };
@@ -207,9 +224,8 @@ const componentOf = (el: Element) => {
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
   componentOf(el) ||
-  // a form's controls named id or tagName shadow those properties
-  el.getAttribute('id') ||
-  el.localName;
+  Element.prototype.getAttribute.call(el, 'id') ||
+  (el instanceof HTMLFormElement ? 'form' : el.localName);
 
 const renderTabs = () => {
   const storeCount = devtools.stores ? devtools.stores.size : 0;
@@ -387,7 +403,8 @@ const buildAdder = (scope: Record<string, any>) => {
     let v: any = raw;
     if (raw === 'true') v = true;
     else if (raw === 'false') v = false;
-    else if (raw !== '' && !isNaN(+raw)) v = +raw;
+    // blank text is a string: +' ' is 0
+    else if (raw.trim() && !isNaN(+raw)) v = +raw;
     scope[k] = v;
     keyIn.blur();
     valIn.blur();
@@ -414,7 +431,8 @@ const addNode = (
   cls: string,
   ancestors: unknown[],
   // inside a derived value or a Map/Set copy, where an edit would be lost
-  ro?: boolean
+  ro?: boolean,
+  label = key
 ) => {
   let v: any, threw;
   // a getter can throw while data loads; show it instead of losing the view
@@ -432,7 +450,7 @@ const addNode = (
     const circular = ancestors.indexOf(v) > -1;
     const open = !circular && expandedPaths.has(path);
     row.appendChild(h('span', open ? 'arrow open' : 'arrow', '▶'));
-    row.appendChild(h('span', 'key', key));
+    row.appendChild(h('span', 'key', label));
     row.appendChild(
       h('span', 'preview', circular ? '(circular)' : previewOf(v))
     );
@@ -446,13 +464,11 @@ const addNode = (
     appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
-      // a Map or Set has no own keys, so its entries are listed from a copy
+      // A Map or Set has no own keys, so its values are listed from a copy.
+      // Map keys label the rows as previews: they need not be strings.
       const coll = isCollection(v);
-      const src = coll
-        ? v instanceof Map
-          ? Object.fromEntries(v)
-          : [...v]
-        : v;
+      const src = coll ? [...v.values()] : v;
+      const names = v instanceof Map && [...v.keys()].map(fmt);
       const keys = Object.keys(src);
       if (!keys.length) {
         const empty = h('div', 'muted', '(empty)');
@@ -467,7 +483,8 @@ const addNode = (
           depth + 1,
           cls,
           ancestors.concat([v]),
-          ro || coll
+          ro || coll,
+          names ? names[+k] : k
         );
       }
     }
@@ -475,7 +492,7 @@ const addNode = (
   }
 
   row.appendChild(h('span', 'spacer'));
-  row.appendChild(h('span', 'key', key));
+  row.appendChild(h('span', 'key', label));
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (threw || ro) {
@@ -501,14 +518,18 @@ const addNode = (
   } else {
     const input = h('input', 'val') as HTMLInputElement;
     input.value = fmt(v);
+    // the text as the input holds it: an input strips line breaks, so
+    // String(v) would differ from it with nothing typed
+    let shown = '';
     input.onfocus = () => {
       input.value = String(v);
+      shown = input.value;
     };
     input.onkeydown = (e) => {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') {
         // restore the focus text, which blur treats as "no edit"
-        input.value = String(v);
+        input.value = shown;
         input.blur();
       }
     };
@@ -516,7 +537,7 @@ const addNode = (
       const next = coerce(input.value, v);
       // untouched text is never written: null, undefined and NaN would
       // otherwise come back as strings
-      if (input.value !== String(v) && next !== v) {
+      if (input.value !== shown && next !== v) {
         container[key] = next;
         // re-render ourselves: an edit to state no directive tracks never
         // triggers a flush event
@@ -562,14 +583,14 @@ const onPickClick = (e: MouseEvent) => {
   e.stopPropagation();
   stopPicking();
   let el: Element | null = target;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   if (el) select(el);
 };
 
 const onPickMove = (e: MouseEvent) => {
   let el: Element | null = e.target as Element;
   if (el === (shadow.host as Element)) return;
-  while (el && !devtools.scopes.has(el)) el = el.parentElement;
+  while (el && !devtools.scopes.has(el)) el = parentOf(el);
   el ? showHighlight(el) : hideHighlight();
 };
 
@@ -597,6 +618,9 @@ const scheduleRender = () => {
   setTimeout(() => {
     renderQueued = false;
     if (panelEl.style.display === 'none') return;
+    // A click fires on the common ancestor of its press and release targets,
+    // so replacing the pressed row would lose it: wait for the release.
+    if (panelEl.matches(':active')) return scheduleRender();
     renderTree();
     renderState();
   });
@@ -629,7 +653,7 @@ const build = () => {
 
   // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {
-    if ((e.target as Element).closest('.btn')) return;
+    if ((e.target as Element).closest('.btn, .menu')) return;
     // a docked panel is pinned to its edges; dragging it would fight the dock
     if (dock !== 'float') return;
     e.preventDefault();
@@ -659,8 +683,9 @@ const build = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       saveUi({
-        right: parseInt(panelEl.style.right) || 12,
-        bottom: parseInt(panelEl.style.bottom) || 12,
+        // a panel left flush to an edge is at 0, which is not a missing value
+        right: parseInt(panelEl.style.right || '12'),
+        bottom: parseInt(panelEl.style.bottom || '12'),
       });
     };
     document.addEventListener('mousemove', move);
@@ -679,16 +704,21 @@ const build = () => {
     const startH = rect.height;
 
     const move = (ev: MouseEvent) => {
-      // docked, the handle sits opposite the anchored edge, so the drag reads
-      // backwards: pulling up or left makes the panel bigger
-      if (dock !== 'right') {
-        const dy =
-          dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
-        panelEl.style.height = clamp(startH + dy, MIN_H, maxH()) + 'px';
+      // docked to the bottom or right, the handle sits on the top or left
+      // edge, so the drag reads backwards: pulling up or left makes it bigger
+      const dy = dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
+      const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
+      const hgt = clamp(startH + dy, MIN_H, maxH());
+      const w = clamp(startW + dx, MIN_W, maxW());
+      if (dock === 'float' || dock === 'bottom') {
+        panelEl.style.height = hgt + 'px';
       }
-      if (dock !== 'bottom') {
-        const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
-        panelEl.style.width = clamp(startW + dx, MIN_W, maxW()) + 'px';
+      if (dock !== 'bottom') panelEl.style.width = w + 'px';
+      // Floating, the panel is anchored by right/bottom: moving those with
+      // the size keeps the top-left, and the header, where it was
+      if (dock === 'float') {
+        panelEl.style.right = Math.max(0, innerWidth - rect.left - w) + 'px';
+        panelEl.style.bottom = Math.max(0, innerHeight - rect.top - hgt) + 'px';
       }
     };
     const up = () => {
@@ -697,8 +727,15 @@ const build = () => {
       grip.classList.remove('active');
       const w = parseInt(panelEl.style.width);
       const hgt = parseInt(panelEl.style.height);
-      if (dock === 'float') saveUi({ w, h: hgt });
-      else if (dock === 'bottom') saveUi({ bh: hgt });
+      if (dock === 'float') {
+        saveUi({
+          w,
+          h: hgt,
+          right: parseInt(panelEl.style.right),
+          bottom: parseInt(panelEl.style.bottom),
+        });
+      } else if (dock === 'bottom') saveUi({ bh: hgt });
+      else if (dock === 'left') saveUi({ lw: w });
       else saveUi({ rw: w });
     };
     document.addEventListener('mousemove', move);
@@ -709,22 +746,19 @@ const build = () => {
   renderPlugins = plugins.render;
   header.appendChild(plugins.btn);
 
-  // Cycles through dock positions like the theme button: the icon shows the
-  // current state rather than opening a menu.
-  dockBtn = h('button', 'btn');
-  dockBtn.onclick = () => {
-    applyDock(nextDock[dock]);
+  dockMenu = createMenu('layout', dockOptions, (next) => {
+    applyDock(next);
+    keepOnScreen();
     saveUi({ dock });
-  };
-  header.appendChild(dockBtn);
+  });
+  header.appendChild(dockMenu.el);
 
-  themeBtn = h('button', 'btn');
-  themeBtn.onclick = () => {
-    theme = nextTheme[theme];
+  themeMenu = createMenu('theme', themeOptions, (next) => {
+    theme = next;
     saveTheme(theme);
     applyTheme();
-  };
-  header.appendChild(themeBtn);
+  });
+  header.appendChild(themeMenu.el);
   prefersLight.addEventListener('change', () => {
     if (theme === 'system') applyTheme();
   });
@@ -745,6 +779,8 @@ const build = () => {
     if (picking) stopPicking();
     panelEl.style.display = 'none';
     pillEl.style.display = '';
+    // closed renders are skipped, so these rows would keep their scopes alive
+    treeEl.textContent = stateEl.textContent = '';
     saveUi({ open: false });
   };
   header.appendChild(closeBtn);
@@ -791,9 +827,11 @@ const build = () => {
   if (ui.right != null) floatRight = panelEl.style.right = ui.right + 'px';
   if (ui.bottom != null) floatBottom = panelEl.style.bottom = ui.bottom + 'px';
   if (ui.bh) bottomH = ui.bh + 'px';
+  if (ui.lw) leftW = ui.lw + 'px';
   if (ui.rw) rightW = ui.rw + 'px';
-  // after the sizes, so it hands each mode the one it was last left at
-  applyDock(ui.dock || 'float');
+  // after the sizes, so it hands each mode the one it was last left at; a
+  // stored value is checked, since the menu can only show a known layout
+  applyDock(dockOptions.some((o) => o.value === ui.dock) ? ui.dock! : 'float');
   // host must be in the document before showing: keepOnScreen measures it,
   // and a detached element measures zero
   document.body.appendChild(host);

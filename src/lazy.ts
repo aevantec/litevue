@@ -37,7 +37,13 @@ const arm = (el: Element, mode: LazyMode, fire: () => void): (() => void) => {
   // mounts like .idle rather than throwing mid-walk
   if (mode === 'visible' && typeof IntersectionObserver == 'function') {
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) once();
+      for (const e of entries) {
+        if (e.isIntersecting) return once();
+        // display: none, as a v-cloak rule gives it, leaves no box to
+        // intersect; the parent stands in until the region mounts
+        const parent = e.target.parentElement;
+        if (!e.boundingClientRect.width && parent) io.observe(parent);
+      }
     });
     io.observe(el);
     stop = () => io.disconnect();

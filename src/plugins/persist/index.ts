@@ -32,7 +32,7 @@ const resolve = (
 ): PersistStorage | undefined => {
   const target = storage ?? defaultStorage;
   if (typeof target !== 'string') return target;
-  return registry[target] ?? builtin(target);
+  return registry[target.toLowerCase()] ?? builtin(target);
 };
 
 /**
@@ -44,7 +44,8 @@ const resolve = (
  *   <div v-persist.memory="scratch">…</div>
  */
 export const registerStorage = (name: string, storage: PersistStorage) => {
-  registry[name] = storage;
+  // the HTML parser lowercases attribute names, modifiers included
+  registry[name.toLowerCase()] = storage;
 };
 
 /**

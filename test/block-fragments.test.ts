@@ -181,3 +181,59 @@ describe('structural directives as direct children of a <template>', () => {
     expect(text(root, 'b')).toBe('2');
   });
 });
+
+// v-if is processed before v-for on the same element, so the condition guards
+// the whole list. The branch block is a detached clone, so the list needs a
+// parent for its anchor before the block is inserted.
+describe('v-if and v-for on the same element', () => {
+  const text = (root: Element, sel: string) =>
+    [...root.querySelectorAll(sel)].map((n) => n.textContent).join(',');
+
+  test('v-if guards the list, and the rest of the region binds', async () => {
+    const { root } = await mount(
+      `<ul v-scope="{ show: true, xs: [1, 2, 3] }"><li v-if="show" v-for="x in xs" :key="x" class="row">{{ x }}</li><li class="after">{{ show }}</li></ul>`
+    );
+    expect(text(root, '.row')).toBe('1,2,3');
+    expect(text(root, '.after')).toBe('true');
+
+    const scope = (root as any).__ctx.scope;
+    scope.xs = [3, 1];
+    await tick(8);
+    expect(text(root, '.row')).toBe('3,1');
+
+    scope.show = false;
+    await tick(8);
+    expect(text(root, '.row')).toBe('');
+
+    scope.show = true;
+    await tick(8);
+    expect(text(root, 'li')).toBe('3,1,true');
+  });
+
+  test('the empty-state pattern: v-if, then v-else with v-for', async () => {
+    const { root } = await mount(
+      `<ul v-scope="{ xs: [] }"><li v-if="!xs.length" class="empty">none</li><li v-else v-for="x in xs" class="row">{{ x }}</li></ul>`
+    );
+    expect(text(root, 'li')).toBe('none');
+
+    const scope = (root as any).__ctx.scope;
+    scope.xs = [1, 2];
+    await tick(8);
+    expect(text(root, 'li')).toBe('1,2');
+
+    scope.xs = [];
+    await tick(8);
+    expect(text(root, 'li')).toBe('none');
+  });
+
+  test('<template v-if v-for> keeps its v-for', async () => {
+    const { root } = await mount(
+      `<div v-scope="{ show: true, xs: ['a', 'b'] }"><template v-if="show" v-for="x in xs"><i>{{ x }}</i><b>{{ x }}</b></template></div>`
+    );
+    expect(text(root, 'i, b')).toBe('a,a,b,b');
+
+    (root as any).__ctx.scope.show = false;
+    await tick(8);
+    expect(root.innerHTML).not.toContain('<i>');
+  });
+});

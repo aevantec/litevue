@@ -90,12 +90,16 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
   // compiled code, so get() hands back a handler that reports its own throws
   // and rejections
+  // a trailing `;` would force the block form, dropping a returned promise
+  const body = exp.replace(/;\s*$/, '');
   let handler =
     simplePathRE.test(exp) || fnExpRE.test(exp)
-      ? get(`(e => (${exp})(e))`)
-      : isExpression(exp)
-        ? get(`(${a}$event => (${exp}))`)
+      ? get(`(e => (${body})(e))`)
+      : isExpression(body)
+        ? get(`(${a}$event => (${body}))`)
         : get(`(${a}$event => { ${exp} })`);
+  // did not compile, and get() has reported it
+  if (!handler) return;
 
   // special lifecycle events: @mounted / @unmounted
   // (the legacy vue:-prefixed names still work but are deprecated)
@@ -183,7 +187,15 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     }
 
     handler = (e: Event) => {
-      if (modifiers.outside && el.contains(e.target as Node)) {
+      // the path is fixed at dispatch, so a target removed by an earlier
+      // listener still counts as inside. An event from before the element was
+      // shown or listening (Vue's _vts), or while v-show hides it, opened it.
+      if (
+        modifiers.outside &&
+        (e.composedPath().includes(el) ||
+          (el as any)._vsh ||
+          e.timeStamp < (el as any)._vts)
+      ) {
         return;
       }
       // A key-less key event (Chrome's autofill keydown) matches no key, as
@@ -227,6 +239,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       ? document
       : el;
   const event = arg;
+  // in the clock of event.timeStamp; v-show moves it on each show
+  if (modifiers?.outside) (el as any)._vts = performance.now();
   target.addEventListener(event, handler, { ...modifiers, once: false });
   // Element listeners are removed too. They once died with the element, but
   // app.unmount(el) tears down a region that stays in the document, where a

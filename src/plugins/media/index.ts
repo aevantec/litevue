@@ -32,9 +32,10 @@ const DEFAULT_BREAKPOINTS: Breakpoints = {
  * replaces rather than merges, so adjusting one breakpoint means spreading
  * this rather than retyping all five.
  */
-export const defaultBreakpoints: Readonly<Breakpoints> = Object.freeze({
-  ...DEFAULT_BREAKPOINTS,
-});
+export const defaultBreakpoints: Readonly<Breakpoints> =
+  /* @__PURE__ */ Object.freeze({
+    ...DEFAULT_BREAKPOINTS,
+  });
 
 // `mobile` is the implicit floor; the other two are named scale entries, so a
 // custom scale that drops them loses those aliases. A scale key of the same
@@ -56,7 +57,7 @@ const NUMERIC = /^\d+$/;
  *   MediaQueryList rather than mirrored, since registering a query inside a
  *   running effect would write a dependency it just read and re-run it.
  */
-const state = reactive({ bp: 'base', tick: 0 });
+const state = /* @__PURE__ */ reactive({ bp: 'base', tick: 0 });
 
 // Module state, shared by every app on the page: two apps passing their own
 // `breakpoints` is not two scales — the second rewrites the first.
@@ -199,10 +200,13 @@ const resolve = <T>(map: ResponsiveMap<T>, fallback?: T): T | undefined => {
   for (const key of Object.keys(map)) {
     const px = keyToPx(key);
     if (px === undefined) {
-      warnOnce(
-        `"${key}" is not a breakpoint. Known: ${order.join(', ')}` +
-          `, plus the aliases ${Object.keys(ALIASES).join(', ')} and raw pixel widths.`
-      );
+      // guarded here, not only in warnOnce, so production skips the joins
+      if (import.meta.env.DEV) {
+        warnOnce(
+          `"${key}" is not a breakpoint. Known: ${order.join(', ')}` +
+            `, plus the aliases ${Object.keys(ALIASES).join(', ')} and raw pixel widths.`
+        );
+      }
       continue;
     }
     // >= so a later key wins a tie, matching object order
@@ -246,7 +250,7 @@ export interface Mq {
 
 const mqFn = <T>(map: ResponsiveMap<T>, fallback?: T) => resolve(map, fallback);
 
-export const mq: Mq = Object.defineProperties(mqFn as Mq, {
+export const mq: Mq = /* @__PURE__ */ Object.defineProperties(mqFn as Mq, {
   props: {
     value: (maps: Record<string, ResponsiveMap>) => {
       trackAll();
@@ -326,16 +330,18 @@ export const resetMedia = () => {
   scale = { ...DEFAULT_BREAKPOINTS };
   order = ['base', ...Object.keys(scale).sort((a, b) => scale[a] - scale[b])];
   active = false;
-  installedScale = undefined;
-  warned.clear();
+  if (import.meta.env.DEV) {
+    installedScale = undefined;
+    warned.clear();
+  }
   state.bp = 'base';
   state.tick = 0;
 };
 
 export const media: Plugin<MediaOptions> = (app, options) => {
-  if (options?.breakpoints) {
+  if (import.meta.env.DEV && options?.breakpoints) {
     const next = JSON.stringify(options.breakpoints);
-    if (import.meta.env.DEV && installedScale && installedScale !== next) {
+    if (installedScale && installedScale !== next) {
       warnOnce(
         'a second app installed media with a different breakpoint scale. ' +
           'The scale is page-wide, so this replaces the first one rather than ' +

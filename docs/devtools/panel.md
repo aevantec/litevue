@@ -5,7 +5,7 @@ title: Inspector Panel
 # Inspector Panel <Badge type="section" text="Devtools" />
 
 An in-page inspector for checking and changing state while you develop. It ships
-as a separate bundle (~7kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
+as a separate bundle (~8kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
 so it adds nothing to the core. Load it **after** the library, and **only during
 development**.
 
@@ -75,14 +75,18 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - Scopes are labelled as tags. The name comes from [`v-name`](/directives/v-name),
   then the [component](/essentials/components#registering-by-name) the scope came
   from, then the id, then the tag: `v-scope="Cart()"` reads as `<Cart>`.
-- Nested `v-scope` regions form a **collapsible tree**.
+- Nested `v-scope` regions form a **collapsible tree**. Content moved by
+  [`v-teleport`](/directives/v-teleport) is placed under the scope it was
+  written in, not under its target.
 - The **filter** matches names *and* state, case-insensitively: `2026` finds the
   scope holding it, and the row shows the path that matched, such as
   `user.meta.tags.0`. Array positions are not matched as names, so `1` does
   not find every list with two items. A match keeps its ancestors visible, so it is never left
-  indented under nothing. Escape clears the filter.
+  indented under nothing. Escape clears the filter. The elements of a typed
+  array, such as a `Uint8Array`, are not searched.
 - Hovering a row highlights its element. **Pick mode** works the other way:
-  click any element on the page to select its scope.
+  click any element on the page to select its scope, including teleported
+  content.
 - The selected scope or store is exposed as `window.$scope`, for the console.
 
 ## Read and edit state
@@ -90,12 +94,17 @@ A `⚡ LiteVue` pill appears at the bottom right and expands into the panel.
 - The state view separates a scope's own state from what it inherits.
 - Arrays and objects render as an **expandable tree**. A `Map` or `Set` shows
   its size, as in `Map(2)` or `Set(3)`, and expands to its entries, which are
-  read-only.
+  read-only. Each `Map` entry is labelled with a preview of its key, so object
+  and symbol keys are listed, and the keys `1` and `"1"` remain separate rows.
 - Every primitive value edits inline, keeping its type; booleans get a checkbox.
   Enter or leaving the field applies the edit, and Escape cancels it. A field
-  you leave without changing its text is not written.
-- Derived values, getter-only properties and [`computed()`](/globals/computed),
-  are read-only, and so is everything inside an array or object they return.
+  you leave without changing its text is not written, and neither is text that
+  is not a number in a number or `BigInt` field: an empty field is not `0`, and
+  `12abc` is not `12`. A string's line breaks are kept unless you edit it, since
+  the single-line field cannot show them.
+- Derived values, getter-only properties, properties that cannot be written,
+  such as those of a frozen object, and [`computed()`](/globals/computed) are
+  read-only, and so is everything inside an array or object they return.
   A getter that throws is shown as `(threw)`, and the rest of
   the scope stays inspectable.
 - An **add-key row** adds a top-level key, and each top-level row has a ✕ to
@@ -120,14 +129,20 @@ shows the count.
 
 ## Arrange the panel
 
-- One icon cycles three layouts: **floating**, **docked to the bottom** at full
-  width, and **docked to the right** at full height.
+- The **layout** menu in the header offers four layouts: **floating**,
+  **docked to the left** or **to the right** at full height, and **docked to
+  the bottom** at full width. Its button shows the current layout's icon.
 - The panel **drags** by its header. It **resizes** by a handle on the edge that
-  moves in each layout: a corner when floating, the top edge when docked to the
-  bottom, and the left edge when docked to the right.
+  moves in each layout: a corner when floating, the right edge when docked to
+  the left, the top edge when docked to the bottom, and the left edge when
+  docked to the right. Floating, the corner follows the pointer and the header
+  stays where it is.
 - Each layout keeps its own size. Both dimensions are bounded, no smaller than
   320&nbsp;×&nbsp;320 and no larger than the viewport.
-- The theme cycles through dark, light and system.
+- The **theme** menu offers dark, light and system; system follows the
+  operating system's setting as it changes.
+- Both menus work from the keyboard: the arrow keys move between options,
+  Enter or Space picks one, and Escape closes the menu.
 - Open state, position, size, layout and theme are remembered between reloads.
 
 Everything the panel shows comes from the public [Devtools API](/globals/devtools),

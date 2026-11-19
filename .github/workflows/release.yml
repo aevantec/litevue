@@ -34,8 +34,8 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       # GitHub raises no workflow runs for events caused by GITHUB_TOKEN, so a
-      # release PR opened with it got no checks at all — and since "Validate PR
-      # title" is the only required check on main, it stayed unmergeable until
+      # release PR opened with it got no checks at all — and since main
+      # requires its checks to pass, it stayed unmergeable until
       # someone closed and reopened the PR by hand, every single release.
       #
       # An app token is a different identity, so its PR triggers workflows

@@ -137,4 +137,159 @@ describe('extension panel', () => {
     await poll();
     expect(tree().textContent).toContain('<form>');
   });
+
+  test('a BigInt or a symbol in one scope does not hide the page', async () => {
+    await mountOne(`<div v-name="ext-fine" v-scope="{ n: 1 }"></div>`);
+    await mountOne(
+      `<div v-name="ext-bigint" v-scope="{ rowId: 9007199254740993n, tag: Symbol('t') }"></div>`
+    );
+    await poll();
+    expect(tree().textContent).toContain('ext-fine');
+    select('ext-bigint');
+    expect(inputFor('rowId').value).toBe('9007199254740993');
+    expect(inputFor('tag').value).toBe('Symbol(t)');
+  });
+
+  test('polls only while its devtools tab is shown', () => {
+    const live = new Set<number>();
+    let next = 0;
+    const src = readFileSync(
+      resolve(__dirname, '../extension/panel.js'),
+      'utf8'
+    );
+    new Function('setInterval', 'clearInterval', src)(
+      () => (live.add(++next), next),
+      (id: number) => live.delete(id)
+    );
+    let shown: ((win: Window) => void) | undefined;
+    let hidden: (() => void) | undefined;
+    (globalThis as any).chrome.devtools.panels = {
+      create: (...args: any[]) =>
+        args[3]({
+          onShown: { addListener: (fn: typeof shown) => (shown = fn) },
+          onHidden: { addListener: (fn: typeof hidden) => (hidden = fn) },
+        }),
+    };
+    new Function(
+      readFileSync(resolve(__dirname, '../extension/devtools.js'), 'utf8')
+    )();
+    // polling from load, before the first onShown reaches the page
+    expect(live.size).toBe(1);
+    shown!(window);
+    expect(live.size).toBe(1);
+    hidden!();
+    expect(live.size).toBe(0);
+    shown!(window);
+    expect(live.size).toBe(1);
+  });
+
+  test('a form control named getAttribute or localName does not hide the page', async () => {
+    await mountOne(`<div v-name="ext-other" v-scope="{ n: 1 }"></div>`);
+    const { root } = await mountOne(
+      `<form v-scope="{ q: '' }"><input name="getAttribute"><input name="localName"></form>`
+    );
+    // simulated, as above
+    for (const name of ['getAttribute', 'localName']) {
+      Object.defineProperty(root, name, {
+        value: root.querySelector(`[name=${name}]`),
+      });
+    }
+    await poll();
+    expect(tree().textContent).toContain('ext-other');
+    expect(tree().textContent).toContain('<form>');
+  });
+
+  // an <input> strips line breaks, so comparing with the stored string saw
+  // an edit that never happened
+  test('focus and blur, or Escape, keep the line breaks of a string', async () => {
+    const { root } = await mountOne(
+      `<div v-name="ext-ml" v-scope="{ note: 'a\\nb', crlf: 'c\\r\\nd' }"></div>`
+    );
+    await poll();
+    select('ext-ml');
+    const note = inputFor('note');
+    note.dispatchEvent(new Event('focus'));
+    note.dispatchEvent(new Event('blur'));
+    const crlf = inputFor('crlf');
+    crlf.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    crlf.dispatchEvent(new Event('blur'));
+    await sleep(10);
+    expect(devtools.scopes.get(root)!.note).toBe('a\nb');
+    expect(devtools.scopes.get(root)!.crlf).toBe('c\r\nd');
+  });
+
+  test('a number or boolean field is not written with text of another type', async () => {
+    const { root } = await mountOne(
+      `<div v-name="ext-types" v-scope="{ qty: 5, price: 7, on: true }"></div>`
+    );
+    await poll();
+    select('ext-types');
+    const edit = (key: string, text: string) => {
+      const input = inputFor(key);
+      input.dispatchEvent(new Event('focus'));
+      input.value = text;
+      input.dispatchEvent(new Event('blur'));
+    };
+    edit('qty', '');
+    edit('price', '12abc');
+    edit('on', 'yes');
+    await sleep(10);
+    const scope = devtools.scopes.get(root)!;
+    expect(scope.qty).toBe(5);
+    expect(scope.price).toBe(7);
+    expect(scope.on).toBe(true);
+    edit('qty', ' 8 ');
+    edit('on', 'false');
+    await sleep(10);
+    expect(scope.qty).toBe(8);
+    expect(scope.on).toBe(false);
+  });
+
+  test('collections, dates, typed arrays, NaN and undefined show as read-only labels', async () => {
+    await mountOne(
+      `<div v-name="ext-labels" v-scope="{ m: new Map([[1, 'a'], [2, 'b']]), s: new Set([1, 2, 3]), d: new Date(0), px: new Uint8Array(4), ratio: NaN, picked: undefined, nested: { at: new Date(0), n: -Infinity } }"></div>`
+    );
+    await poll();
+    select('ext-labels');
+    const shown = (key: string) =>
+      [...state().querySelectorAll('.prop')]
+        .find((p) => p.querySelector('.key')!.textContent === key)!
+        .querySelector('.ro')?.textContent;
+    expect(shown('m')).toBe('Map(2)');
+    expect(shown('s')).toBe('Set(3)');
+    expect(shown('d')).toBe('1970-01-01T00:00:00.000Z');
+    expect(shown('px')).toBe('Uint8Array(4)');
+    expect(shown('ratio')).toBe('NaN');
+    expect(shown('picked')).toBe('undefined');
+    expect(shown('nested')).toBe(
+      '{"at":"1970-01-01T00:00:00.000Z","n":"-Infinity"}'
+    );
+  });
+
+  test('a poll that finds nothing changed keeps the rows, so a click is not lost', async () => {
+    await mountOne(`<div v-name="ext-stable" v-scope="{ n: 1 }"></div>`);
+    await poll();
+    select('ext-stable');
+    const row = rows().find((r) => r.textContent!.includes('ext-stable'))!;
+    const prop = state().querySelector('.prop');
+    await poll();
+    expect(rows()).toContain(row);
+    expect(state().querySelector('.prop')).toBe(prop);
+  });
+
+  test('a change found while the pointer is down waits for the release', async () => {
+    const { root } = await mountOne(
+      `<div v-name="ext-press" v-scope="{ n: 1 }"></div>`
+    );
+    await poll();
+    const row = rows().find((r) => r.textContent!.includes('ext-press'))!;
+    document.dispatchEvent(new Event('pointerdown'));
+    devtools.scopes.get(root)!.n = 2;
+    await poll();
+    // the row under the pointer is still the one that was pressed
+    expect(rows()).toContain(row);
+    document.dispatchEvent(new Event('pointerup'));
+    select('ext-press');
+    expect(inputFor('n').value).toBe('2');
+  });
 });

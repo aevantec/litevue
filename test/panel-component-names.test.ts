@@ -118,4 +118,84 @@ describe('devtools labels a scope by its component', () => {
     filter.dispatchEvent(new Event('input', { bubbles: true }));
     expect(labels()).toContain('form');
   });
+
+  // simulated as above: a named control shadows methods too
+  const shadowBy = (form: Element, names: string[]) => {
+    for (const name of names) {
+      Object.defineProperty(form, name, {
+        value: form.querySelector(`[name=${name}]`),
+        configurable: true,
+      });
+    }
+  };
+  const unshadow = (form: Element, names: string[]) => {
+    for (const name of names) Reflect.deleteProperty(form, name);
+  };
+  const errorsDuring = async (run: () => void) => {
+    const errors: string[] = [];
+    const onError = (e: ErrorEvent) => {
+      errors.push(e.message);
+      e.preventDefault();
+    };
+    window.addEventListener('error', onError);
+    try {
+      run();
+      await flush();
+    } finally {
+      window.removeEventListener('error', onError);
+    }
+    return errors;
+  };
+  const refilter = (text: string) => {
+    const filter = [...document.body.children]
+      .find((el) => el.shadowRoot)!
+      .shadowRoot!.querySelector('.filter') as HTMLInputElement;
+    filter.value = text;
+    filter.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  test('form controls named getAttribute or localName keep the label', async () => {
+    const { labels } = await boot(
+      `<div id="host8"><form v-scope="{ a: 1 }"><input name="getAttribute"><input name="localName"></form><div v-name="neighbour" v-scope="{}"></div></div>`
+    );
+    const form = document.querySelector('#host8 form')!;
+    const names = ['getAttribute', 'localName'];
+    shadowBy(form, names);
+    let shown: (string | null)[] = [];
+    let filtered: (string | null)[] = [];
+    const errors = await errorsDuring(() => {
+      refilter('');
+      shown = labels();
+      refilter('form');
+      filtered = labels();
+    });
+    unshadow(form, names);
+    expect(errors).toEqual([]);
+    expect(shown).toEqual(expect.arrayContaining(['form', 'neighbour']));
+    expect(filtered).toContain('form');
+  });
+
+  test('a form control named parentElement does not trap the tree walk', async () => {
+    const { labels } = await boot(
+      `<div id="host9" v-name="outer9" v-scope="{}"><form><input name="parentElement"><div v-name="inner9" v-scope="{}"></div></form></div>`
+    );
+    const form = document.querySelector('#host9 form')!;
+    // the real shadowing would loop forever; stop after enough reads
+    let reads = 0;
+    Object.defineProperty(form, 'parentElement', {
+      get() {
+        if (++reads > 100) throw new Error('parentElement loop');
+        return form.querySelector('input');
+      },
+      configurable: true,
+    });
+    let shown: (string | null)[] = [];
+    const errors = await errorsDuring(() => {
+      refilter('');
+      shown = labels();
+    });
+    unshadow(form, ['parentElement']);
+    expect(errors).toEqual([]);
+    expect(shown).toEqual(expect.arrayContaining(['outer9', 'inner9']));
+  });
 });

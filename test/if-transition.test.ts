@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { createApp } from '../src';
 import { transition } from '../src/plugins';
 import { tick, sleep } from './utils';
@@ -127,6 +127,84 @@ describe('leave transitions inside fragment blocks', () => {
     document.querySelector('button')!.click();
     await tick();
     expect(document.getElementById('plain')).toBeNull();
+    app.unmount();
+  });
+
+  test('re-entering while the old element leaves does not warn of a duplicate ref', async () => {
+    // a real duration, so the old element is still in the document
+    const style = vi.spyOn(window, 'getComputedStyle').mockImplementation(
+      () =>
+        ({
+          transitionDuration: '0.05s',
+          transitionDelay: '0s',
+          animationDuration: '0s',
+          animationDelay: '0s',
+        }) as any
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    document.body.innerHTML = `<div id="app">
+      <p class="box" ref="panel" v-if="show" v-transition:fade></p>
+    </div>`;
+    const app = createApp({ show: true }).use(transition);
+    app.mount('#app');
+    await tick();
+    app.scope.show = false;
+    await tick();
+    app.scope.show = true;
+    await tick();
+    expect(document.querySelectorAll('.box')).toHaveLength(2);
+    await sleep(80);
+    const warnings = warn.mock.calls.map((c) => String(c[0]));
+    style.mockRestore();
+    warn.mockRestore();
+
+    expect(document.querySelectorAll('.box')).toHaveLength(1);
+    expect(warnings).toEqual([]);
+    app.unmount();
+  });
+});
+
+// The flush that closes a branch stops its effects first, so a leaving block
+// must not re-render data that is gone while its animation plays.
+describe('a leaving block stops reacting', () => {
+  test('v-if="user" closes without an error and keeps its text', async () => {
+    document.body.innerHTML = `<div id="app" v-scope="{ user: { name: 'Ada' } }">
+      <p v-if="user" v-transition:fade>Welcome back, {{ user.name }}</p>
+    </div>`;
+    const errors: unknown[] = [];
+    const app = createApp().use(transition);
+    app.onError((e) => errors.push(e));
+    app.mount('#app');
+    await tick();
+    const p = document.querySelector('p')!;
+    expect(p.textContent).toBe('Welcome back, Ada');
+
+    (document.querySelector('#app') as any).__ctx.scope.user = null;
+    await tick();
+    expect(p.isConnected).toBe(true);
+    expect(errors).toEqual([]);
+    expect(p.textContent).toBe('Welcome back, Ada');
+    await sleep(20);
+    expect(p.isConnected).toBe(false);
+    app.unmount();
+  });
+
+  test('a leaving v-for row no longer follows state', async () => {
+    document.body.innerHTML = `<ul id="app" v-scope="{ items: [1, 2] }">
+      <li v-for="it in items" :key="it" v-transition:fade>{{ it }} of {{ items.length }}</li>
+    </ul>`;
+    const app = createApp().use(transition);
+    app.mount('#app');
+    await tick();
+    const second = document.querySelectorAll('li')[1];
+    expect(second.textContent).toBe('2 of 2');
+
+    (document.querySelector('#app') as any).__ctx.scope.items = [1];
+    await tick();
+    expect(second.isConnected).toBe(true);
+    expect(second.textContent).toBe('2 of 2');
+    await sleep(20);
+    expect(second.isConnected).toBe(false);
     app.unmount();
   });
 });

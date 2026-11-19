@@ -94,6 +94,24 @@ describe('v-for', () => {
     );
     expect($$('i').map((i) => i.textContent)).toEqual(['0a', '1b', '2c']);
   });
+
+  test('an empty-string object key is passed as the key, not the index', async () => {
+    const { $$ } = await mount(
+      `<div v-scope><i v-for="(v, k, i) in obj">[{{ k }}]{{ i }}</i></div>`,
+      { obj: { '': 1, a: 2 } }
+    );
+    expect($$('i').map((i) => i.textContent)).toEqual(['[]0', '[a]1']);
+  });
+
+  test('a row gets the function the list holds, not a bound copy', async () => {
+    const f: any = () => 1;
+    f.label = 'F';
+    const { $ } = await mount(
+      `<div v-scope><i v-for="fn in fns">{{ fn.label }}:{{ fns.indexOf(fn) }}</i></div>`,
+      { fns: [f] }
+    );
+    expect($('i').textContent).toBe('F:0');
+  });
 });
 
 describe('v-model', () => {
@@ -224,6 +242,30 @@ describe('v-text / v-html / v-pre', () => {
     );
     expect($('span').textContent).toBe('plain');
     expect($('p').innerHTML).toBe('<b>bold</b>');
+  });
+
+  test('fallback content that v-text replaces is never bound', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ msg: 'final', fallback: 'x', runs: 0 }"><p v-text="msg">{{ (runs++, fallback) }}</p></div>`
+    );
+    const scope = (root as any).__ctx.scope;
+    expect($('p').textContent).toBe('final');
+    expect(scope.runs).toBe(0);
+
+    scope.fallback = 'y';
+    await tick();
+    expect(scope.runs).toBe(0);
+  });
+
+  test('a ref and @mounted in fallback content that v-html replaces do not outlive it', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ html: '<em>server</em>', mounted: 0 }"><section v-html="html"><input ref="field" @mounted="mounted++"></section></div>`
+    );
+    await tick();
+    const scope = (root as any).__ctx.scope;
+    expect($('section').innerHTML).toBe('<em>server</em>');
+    expect(scope.mounted).toBe(0);
+    expect(scope.$refs.field).toBeUndefined();
   });
 
   test('v-pre skips compilation', async () => {

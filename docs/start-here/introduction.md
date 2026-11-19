@@ -130,7 +130,7 @@ One design difference worth calling out: Alpine automatically initializes markup
 ::: danger Read this before deploying
 LiteVue evaluates JavaScript expressions found in your markup, and two consequences decide whether it can be used at all.
 
-- **Never mount over untrusted HTML.** An attacker who can inject a `v-scope` or `@click` attribute into a region you mount can execute code. Mount an explicit target rather than the whole document.
+- **Never mount over untrusted HTML.** An attacker who can inject a `v-scope` or `@click` attribute into a region you mount can execute code, and `{{ }}` in plain user text inside a mounted region is compiled even when the server has HTML-escaped it. Mount an explicit target rather than the whole document, and render user content outside mounted regions or inside `v-pre`.
 - **A strict CSP must allow `script-src 'unsafe-eval'`**, because expressions are compiled with `new Function()`. A nonce or hash does not substitute. If your policy cannot allow it, use standard Vue with pre-compiled templates instead — no CSP build is planned.
 
 Both are covered in full, along with `v-html`, morph, devtools and third-party plugins, on the [Security](/start-here/security) page.
@@ -146,13 +146,13 @@ The core stays small because everything else is opt-in and separately bundled:
 | [Plugins](/plugins/)              | ~5kb<!-- size:dist/litevue-plugins.iife.js --> (nine, combined) | intersect, persist, focus, collapse, mask, media, morph, resize, transition |
 | [popover](/plugins/popover)       | ~1kb<!-- size:dist/plugins/popover.iife.js --> | menus and tooltips; ships only on its own                         |
 | [navigate](/plugins/navigate)     | ~3kb<!-- size:dist/plugins/navigate.iife.js --> | page navigation without a full load; ships only on its own, needs morph |
-| [Devtools panel](/devtools/panel) | ~7kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |
+| [Devtools panel](/devtools/panel) | ~8kb<!-- size:dist/litevue-devtools.iife.js --> | dev-only; never load it in production                               |
 
 Devtools registration can also be [disabled entirely](/globals/devtools#disabling-in-production) with one line so no scope data is exposed in production builds.
 
 ## Browser support
 
-LiteVue targets modern evergreen browsers. The bundles are not transpiled, and the core uses ES2021 syntax, so it needs **Chrome and Edge 85, Firefox 79 or Safari 14** and later. The [focus](/plugins/focus) plugin uses `Array.prototype.at()`, which raises the floor to Chrome and Edge 92, Firefox 90 and Safari 15.4 for focus and for the combined plugins bundle that includes it.
+LiteVue targets modern evergreen browsers. The bundles are not transpiled, and the core uses ES2021 syntax and the `:where()` selector, so it needs **Chrome and Edge 88, Firefox 79 or Safari 14** and later. The [focus](/plugins/focus) plugin uses `Array.prototype.at()`, which raises the floor to Chrome and Edge 92, Firefox 90 and Safari 15.4 for focus and for the combined plugins bundle that includes it. The [navigate](/plugins/navigate) plugin reads a form's submit button from `SubmitEvent.submitter`, which raises its Safari floor to 15.4 as well; on earlier versions a form submitted with a button loses that button's `name`, `value` and `formaction`, `formmethod`, `formtarget` and `formenctype` overrides.
 
 Reactivity is built on `Proxy`, which cannot be polyfilled, so **IE11 is not supported and cannot be**. If you need legacy browsers, use Vue 2 with its own build tooling.
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
-import { createApp } from '../src';
+import { createApp, devtools } from '../src';
 import { popover } from '../src/plugins/popover';
 import { tick } from './utils';
 
@@ -83,6 +83,27 @@ describe('v-anchor anchor-name', () => {
     expect(names(btn)).toEqual(['--mine']);
   });
 
+  // unmount(el) leaves the element in the document, so a style another
+  // directive wrote since must survive v-anchor's teardown
+  test('unmounting keeps the display v-show last wrote', async () => {
+    const app = await mount(`
+      <div v-scope="{ open: true }">
+        <button ref="btn"></button>
+        <div id="tip" style="color: red" v-anchor.top="$refs.btn" v-show="open">tip</div>
+      </div>`);
+    const tip = document.getElementById('tip')!;
+    devtools.getScope(tip)!.open = false;
+    await tick(5);
+    expect(tip.style.display).toBe('none');
+
+    app.unmount();
+
+    expect(tip.style.display).toBe('none');
+    expect(tip.style.color).toBe('red');
+    expect(tip.style.position).toBe('');
+    expect(anchorOf('#tip')).toBe('');
+  });
+
   test('moves its name when the value points at another element', async () => {
     await mount(`
       <div v-scope="{ second: false }">
@@ -113,6 +134,38 @@ describe('v-anchor position with CSS anchor positioning', () => {
     expect(
       (document.querySelector('#badge') as HTMLElement).style.position
     ).toBe('absolute');
+  });
+
+  test('a v-popover written after v-anchor stays fixed', async () => {
+    // the attribute v-popover adds, reflected as the Popover API does
+    const proto = HTMLElement.prototype as any;
+    const realMatches = Element.prototype.matches;
+    Object.defineProperty(proto, 'popover', {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute('popover');
+      },
+      set(this: HTMLElement, v: string) {
+        this.setAttribute('popover', v);
+      },
+    });
+    Element.prototype.matches = function (this: Element, sel: string) {
+      return sel !== ':popover-open' && realMatches.call(this, sel);
+    };
+    try {
+      await mount(`
+        <div v-scope="{ open: false }">
+          <button ref="btn"></button>
+          <nav id="pop" v-anchor.bottom="$refs.btn" v-popover="open"></nav>
+        </div>`);
+      const pop = document.querySelector('#pop') as HTMLElement;
+
+      expect(pop.hasAttribute('popover')).toBe(true);
+      expect(pop.style.position).toBe('fixed');
+    } finally {
+      delete proto.popover;
+      Element.prototype.matches = realMatches;
+    }
   });
 
   test('a popover stays fixed', async () => {

@@ -14,7 +14,7 @@ export type ErrorPhase =
   | 'compile'
   /** re-running after a change: a `$watch` callback, `watchEffect`, a plugin effect */
   | 'effect'
-  /** a plugin's teardown, during a full `app.unmount()` */
+  /** a plugin's teardown during a full `app.unmount()`, or a directive's cleanup */
   | 'teardown';
 
 export interface ErrorInfo {
@@ -134,9 +134,14 @@ export const handleError = (err: unknown, info: ErrorInfo) => {
     try {
       fn(err, info);
     } catch (inner) {
-      if (import.meta.env.DEV) {
-        console.error('[litevue] an onError handler itself threw:', inner);
-      }
+      // Production too, with the original: once a handler is registered
+      // nothing else logs it, and one that threw may never have reported it.
+      console.error(
+        import.meta.env.DEV
+          ? '[litevue] an onError handler itself threw:'
+          : err,
+        inner
+      );
     }
   }
 
