@@ -81,13 +81,16 @@ export const focus: Plugin = (app) => {
       if (!el.contains(current)) {
         e.preventDefault();
         first.focus();
-      } else if (e.shiftKey && (current === first || current === el)) {
-        // the focused container counts as before the first
+      } else if (
+        // by document position, so an unreachable element (tabindex=-1, or
+        // the container itself) before the first or after the last wraps too
+        !(
+          (e.shiftKey ? first : last).compareDocumentPosition(current!) &
+          (e.shiftKey ? 4 : 2)
+        )
+      ) {
         e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && current === last) {
-        e.preventDefault();
-        first.focus();
+        (e.shiftKey ? last : first).focus();
       }
     };
 
