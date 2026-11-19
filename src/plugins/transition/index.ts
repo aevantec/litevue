@@ -118,10 +118,12 @@ export const transition: Plugin = (app) => {
       }
     });
 
-    // the end timer is what removes the classes, so cancelling it must too
+    // the end timer is what removes the classes and ends a leave hidden, so
+    // cancelling it must do both
     return () => {
       clearTimeout(endTimer);
       clear();
+      if (shown === false) elem.style.display = 'none';
     };
   });
 };
