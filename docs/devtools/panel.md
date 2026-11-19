@@ -5,7 +5,7 @@ title: Inspector Panel
 # Inspector Panel <Badge type="section" text="Devtools" />
 
 An in-page inspector for checking and changing state while you develop. It ships
-as a separate bundle (~7kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
+as a separate bundle (~8kb<!-- size:dist/litevue-devtools.iife.js --> gzipped),
 so it adds nothing to the core. Load it **after** the library, and **only during
 development**.
 
@@ -129,15 +129,20 @@ shows the count.
 
 ## Arrange the panel
 
-- One icon cycles three layouts: **floating**, **docked to the bottom** at full
-  width, and **docked to the right** at full height.
+- The **layout** menu in the header offers four layouts: **floating**,
+  **docked to the left** or **to the right** at full height, and **docked to
+  the bottom** at full width. Its button shows the current layout's icon.
 - The panel **drags** by its header. It **resizes** by a handle on the edge that
-  moves in each layout: a corner when floating, the top edge when docked to the
-  bottom, and the left edge when docked to the right. Floating, the corner
-  follows the pointer and the header stays where it is.
+  moves in each layout: a corner when floating, the right edge when docked to
+  the left, the top edge when docked to the bottom, and the left edge when
+  docked to the right. Floating, the corner follows the pointer and the header
+  stays where it is.
 - Each layout keeps its own size. Both dimensions are bounded, no smaller than
   320&nbsp;×&nbsp;320 and no larger than the viewport.
-- The theme cycles through dark, light and system.
+- The **theme** menu offers dark, light and system; system follows the
+  operating system's setting as it changes.
+- Both menus work from the keyboard: the arrow keys move between options,
+  Enter or Space picks one, and Escape closes the menu.
 - Open state, position, size, layout and theme are remembered between reloads.
 
 Everything the panel shows comes from the public [Devtools API](/globals/devtools),
