@@ -55,11 +55,16 @@ export const bind: Directive<
     // a copy, not the object: one mutated in place would otherwise be its own
     // previous value, and a deleted key would never be cleared. toStyle
     // flattens a :style array, whose objects are live, and passes others as is
-    prevValue = isObject(value) ? { ...toStyle(value) } : value;
+    prevValue = snapshot(value);
+    // the object form's nested style is live too
+    if (!arg && prevValue?.style) prevValue.style = snapshot(prevValue.style);
     // the object form's keys, so morph knows which attributes it owns
     if (!arg) el.__bound = prevValue;
   });
 };
+
+const snapshot = (value: any) =>
+  isObject(value) ? { ...toStyle(value) } : value;
 
 // As Vue: an unchanged value is not set again, since re-setting src restarts a
 // video or reloads an iframe. An object may have changed in place, so it is
@@ -109,10 +114,14 @@ const setProp = (
     !mediaSizeRE.test(el.localName + key)
   ) {
     // A string property would read null as "null", so it gets '' and the
-    // attribute goes, as in Vue. Booleans still take null as false.
+    // attribute goes, as in Vue. Booleans take null as false and '' as true.
     try {
+      const type = typeof (el as any)[key];
       // @ts-ignore
-      el[key] = value == null && typeof el[key] == 'string' ? '' : value;
+      el[key] =
+        value == null && type == 'string'
+          ? ''
+          : (value === '' && type == 'boolean') || value;
     } catch (e) {
       // a number property such as <progress>'s value rejects undefined; null
       // still removes the attribute, as in Vue

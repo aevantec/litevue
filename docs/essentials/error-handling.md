@@ -78,6 +78,7 @@ A failure is contained to the thing that failed:
 - A directive's cleanup that throws is reported, and the rest of the teardown still runs: the other listeners are removed and the region can render again.
 - A `$watch` callback or a re-run of `watchEffect` that throws does not stop later updates, on that element or anywhere else on the page. A `$watch` whose first call throws, as with `{ immediate: true }`, keeps watching, and so does a custom directive's effect whose first run throws. A `watchEffect` whose first run throws passes the error to your code and is stopped — see [watchEffect()](/globals/watch-effect#behavior).
 - A `v-for` that destructures a `null` or `undefined` item, as in `{ id } in items`, renders that row with empty values.
+- A `v-for` whose source has a getter that throws while its items are read, on the source or on a destructured item, renders no rows and reports the error with `source: 'v-for'` and the element.
 - A `$template` selector that matches no `<template>` element leaves that region empty, and the rest of the page still mounts.
 
 That keeps a single mistake from taking down a whole page — but it also means a silent `undefined` can be the only symptom, which is why the console output above is worth reading rather than ignoring.
@@ -131,7 +132,7 @@ Several handlers may be registered and all of them run. One throwing does not pr
 The registry is page-wide rather than per-app, so a handler sees errors from any app on the page. A full `app.unmount()` releases the handlers that app registered — a per-region [`app.unmount(el)`](/essentials/dynamic-content#tearing-a-region-down) leaves them in place, since the app is still running.
 
 ::: warning Without a handler, production still logs
-If nothing is registered, a caught error is written to `console.error` so it is never swallowed entirely. Registering a handler takes over that responsibility — if yours discards the error, nothing else will report it.
+If nothing is registered, a caught error is written to `console.error` so it is never swallowed entirely. Registering a handler takes over that responsibility — if yours discards the error, nothing else will report it. A handler that throws has not taken it over: the original error and the handler's own are both written to `console.error`.
 :::
 
 ## What this does not cover

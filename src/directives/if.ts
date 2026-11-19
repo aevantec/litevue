@@ -1,3 +1,4 @@
+import { remove } from '@vue/shared';
 import { Block } from '../block';
 import { evaluate } from '../eval';
 import { checkAttr } from '../utils';
@@ -73,9 +74,13 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   // Unlike v-for, this anchor is only in the document while no branch is
   // rendered. So the effect is owned twice — by the anchor and by each block
   // root — and whichever lands in a disposed subtree stops it. Stopping twice
-  // is a no-op.
+  // is a no-op. Removed as well as stopped, as ctx.effect's own disposer does,
+  // or each morph that drops a shown branch leaves a dead runner in ctx.effects.
   let branchEffect: ReactiveEffectRunner;
-  const stopBranches = () => stopEffect(branchEffect);
+  const stopBranches = () => {
+    stopEffect(branchEffect);
+    remove(ctx.effects, branchEffect);
+  };
   branchEffect = ctx.effect(() => {
     for (let i = 0; i < branches.length; i++) {
       const { exp, el } = branches[i];

@@ -135,6 +135,43 @@ describe('v-bind object form', () => {
     expect($('p').style.color).toBe('');
     expect($('p').style.margin).toBe('1px');
   });
+
+  // the nested style object is live, so a shallow copy shares it with the
+  // previous value and the deleted key is missing from both
+  test('a key deleted from its nested style object is cleared', async () => {
+    const { $, root } = await mount(
+      `<div v-scope="{ attrs: { style: { color: 'red', fontWeight: 'bold' } } }">
+        <p v-bind="attrs"></p>
+      </div>`
+    );
+    expect($('p').style.color).toBe('red');
+
+    delete (root as any).__ctx.scope.attrs.style.color;
+    await tick();
+    expect($('p').style.color).toBe('');
+    expect($('p').style.fontWeight).toBe('bold');
+  });
+});
+
+// Vue's includeBooleanAttr: '' means present, on the property path as on the
+// attribute path that readonly takes
+describe('v-bind an empty string on a boolean property', () => {
+  test.each([
+    ['button', 'disabled'],
+    ['div', 'hidden'],
+    ['input', 'required'],
+  ])('<%s :%s="\'\'"> sets the property', async (tag, prop) => {
+    const { $ } = await mount(
+      `<div v-scope><${tag} :${prop}="''"></${tag}><input :readonly="''"></div>`
+    );
+    expect(($(tag) as any)[prop]).toBe(true);
+    expect(($('input[readonly]') as HTMLInputElement).readOnly).toBe(true);
+  });
+
+  test('an empty string on a string property stays empty', async () => {
+    const { $ } = await mount(`<div v-scope><p :title="''"></p></div>`);
+    expect($('p').title).toBe('');
+  });
 });
 
 /**

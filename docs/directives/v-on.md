@@ -122,6 +122,7 @@ Return the promise, or `await` it, and a rejection is reported to
 
 - `.left` and `.right` depend on the event: arrow keys on `keydown` and `keyup`, mouse buttons on mouse events.
 - On events other than `keydown`, `keyup` and `keypress`, a modifier LiteVue does not recognise is ignored, and warns in the [development build](/start-here/installation#development-builds) — `@input.debounce.500ms` suggests `.debounce-500`. On those keyboard events it is read as a key name, so `@keydown.debounce.500ms` runs only for a key named `500ms`, which means never.
+- `.outside` ignores an event that began before the element was rendered by `v-if` or shown by `v-show`, and every event while `v-show` hides the element. A button outside the menu can therefore open it without the same click closing it again, as in Alpine.
 - `@mounted` and `@unmounted` are lifecycle hooks, not DOM events — see [Lifecycle](/essentials/lifecycle).
 - Listeners, including `.window` and `.document` ones, are removed when their region unmounts. A pending `.debounce` is cancelled.
 - A handler that throws is reported and does not stop later events.

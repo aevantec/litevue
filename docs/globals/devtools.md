@@ -79,6 +79,9 @@ const off = __LITE_VUE__.on('scope:mount', (el, scope) => {
 These events drive the [inspector panel](/devtools/panel) and the
 [browser extension](/devtools/extension).
 
+A listener that throws is logged to `console.error`. It does not stop the
+mount it runs in, nor the listeners registered after it.
+
 ### Disabling in production
 
 ```html

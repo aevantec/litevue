@@ -112,4 +112,17 @@ describe('binding scope methods', () => {
     );
     expect($('span').textContent).toBe('4|got|o');
   });
+
+  // binding a method writes it back through the proxy; a frozen object's
+  // non-writable property made that write throw out of mount()
+  test('a frozen scope object with a method does not abort the mount', async () => {
+    const { $ } = await mount(
+      `<main>
+        <div v-scope="Object.freeze({ label() { return 'L' } })"><i>{{ label() }}</i></div>
+        <div v-scope="{ n: 1 }"><b>{{ n }}</b></div>
+      </main>`
+    );
+    expect($('i').textContent).toBe('L');
+    expect($('b').textContent).toBe('1');
+  });
 });

@@ -116,6 +116,64 @@ describe('markup that used to throw out of mount()', () => {
     expect($$('p').map((p) => p.textContent)).toEqual(['', 'b2']);
   });
 
+  test('a throwing getter in a v-for object source is reported, and the rest binds', async () => {
+    quiet();
+    const infos: ErrorInfo[] = [];
+    document.body.innerHTML = `<div>
+      <div v-scope="{ obj: { a: 1, get b() { throw Error('boom') } } }"><i v-for="(v, k) in obj">{{ k }}</i></div>
+      <div v-scope="{ n: 1 }"><b>{{ n }}</b></div>
+    </div>`;
+    const app = createApp();
+    app.onError((_, info) => infos.push(info));
+    expect(() =>
+      app.mount(document.body.firstElementChild as Element)
+    ).not.toThrow();
+    await tick();
+    expect(document.querySelector('b')!.textContent).toBe('1');
+    expect(document.querySelectorAll('i').length).toBe(0);
+    expect(infos).toEqual([
+      expect.objectContaining({
+        phase: 'expression',
+        source: 'v-for',
+        el: expect.any(Element),
+      }),
+    ]);
+  });
+
+  test('a throwing getter on a destructured v-for item is reported, and the rest binds', async () => {
+    quiet();
+    const infos: ErrorInfo[] = [];
+    document.body.innerHTML = `<div>
+      <ul v-scope="{ rows: [{ id: 1, get total() { throw Error('bad row') } }] }"><li v-for="{ id, total } in rows">{{ id }}</li></ul>
+      <p v-scope="{ ok: 'yes' }">{{ ok }}</p>
+    </div>`;
+    const app = createApp();
+    app.onError((_, info) => infos.push(info));
+    expect(() =>
+      app.mount(document.body.firstElementChild as Element)
+    ).not.toThrow();
+    await tick();
+    expect(document.querySelector('p')!.textContent).toBe('yes');
+    expect(infos.map((i) => i.source)).toEqual(['v-for']);
+  });
+
+  test('a v-for source that throws on a later run is reported with its element', async () => {
+    quiet();
+    const infos: ErrorInfo[] = [];
+    document.body.innerHTML = `<div v-scope="{ bad: false, boom: { get x() { throw Error('late') } } }"><i v-for="v in (bad ? boom : [1, 2])">{{ v }}</i></div>`;
+    const app = createApp();
+    app.onError((_, info) => infos.push(info));
+    app.mount(document.body.firstElementChild as Element);
+    await tick();
+    expect(document.querySelectorAll('i').length).toBe(2);
+
+    (document.body.firstElementChild as any).__ctx.scope.bad = true;
+    await tick();
+    expect(infos).toEqual([
+      expect.objectContaining({ source: 'v-for', el: expect.any(Element) }),
+    ]);
+  });
+
   // treated like a selector that matches nothing
   test('$template naming an element that is not a <template> renders nothing', async () => {
     const error = quiet();
