@@ -70,6 +70,39 @@ describe('app.onError', () => {
   });
 });
 
+// Production skips the diagnostics, and console.error too once a handler is
+// registered, so a handler that throws (a monitoring SDK that failed to load,
+// say) must not leave the error unreported.
+describe('app.onError in production', () => {
+  beforeEach(() => vi.stubEnv('DEV', false));
+  afterEach(() => vi.unstubAllEnvs());
+
+  const boom = async (handler: () => void) => {
+    document.body.innerHTML = `<div v-scope="{ boom() { throw new Error('checkout failed') } }"><button @click="boom()"></button></div>`;
+    const app = createApp();
+    app.onError(handler);
+    app.mount(document.body.firstElementChild as HTMLElement);
+    await tick();
+    document.querySelector('button')!.click();
+    await tick();
+    app.unmount();
+    return spy.mock.calls.flat().map(String).join('\n');
+  };
+
+  test('a handler that throws leaves the original error and its own logged', async () => {
+    const logged = await boom(() => {
+      (window as any).Sentry.captureException();
+    });
+    expect(logged).toContain('checkout failed');
+    expect(logged).toContain('captureException');
+  });
+
+  test('a handler that completes still takes over from console.error', async () => {
+    const logged = await boom(() => {});
+    expect(logged).toBe('');
+  });
+});
+
 describe('event handlers', () => {
   test('an error thrown after the event fires is caught and attributed', async () => {
     const { root } = mount(
