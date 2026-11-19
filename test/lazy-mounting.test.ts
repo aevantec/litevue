@@ -107,3 +107,43 @@ describe('a deferred walk keeps what the original walk knew', () => {
     expect(devtools.scopes.get(el)?.own).toBe(1);
   });
 });
+
+// v-if and v-for decide first, so a deferred region never shows the markup
+// the server sent while it waits; each branch or row then defers on its own.
+describe('a deferred region with v-if or v-for on the same element', () => {
+  test('a false v-if is not shown while it waits', async () => {
+    document.body.innerHTML = `<main><div v-scope.interaction="{}" v-if="false">opted-out content</div></main>`;
+    createApp().mount(document.querySelector('main')!);
+    await tick();
+
+    expect(document.body.textContent).not.toContain('opted-out content');
+  });
+
+  test('v-for renders its rows, each cloaked until it mounts', async () => {
+    document.body.innerHTML = `<ul><li v-scope.idle="{}" v-for="i in 2" v-cloak>{{ i }}</li></ul>`;
+    createApp().mount(document.querySelector('ul')!);
+    await tick();
+
+    // the rows, not the one template row the server sent
+    const rows = [...document.querySelectorAll('li')];
+    expect(rows.length).toBe(2);
+    expect(rows.every((li) => li.hasAttribute('v-cloak'))).toBe(true);
+    await idle();
+    expect(document.querySelector('[v-cloak]')).toBeNull();
+    expect(
+      [...document.querySelectorAll('li')].map((l) => l.textContent)
+    ).toEqual(['1', '2']);
+  });
+
+  test('a true v-if still defers its branch until the trigger', async () => {
+    document.body.innerHTML = `<main><div v-scope.interaction="{ n: 4 }" v-if="true"><i>{{ n }}</i></div></main>`;
+    createApp().mount(document.querySelector('main')!);
+    await tick();
+    const div = document.querySelector('main > div')!;
+    expect(div.textContent).toBe('{{ n }}');
+
+    div.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    await tick();
+    expect(div.textContent).toBe('4');
+  });
+});
