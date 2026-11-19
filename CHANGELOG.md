@@ -3,6 +3,23 @@
 ## [0.6.2](https://github.com/aevantec/litevue/compare/v0.6.1...v0.6.2) (2026-11-19)
 
 
+### Behaviour changes
+
+None of these is breaking, but each changes what a page shows or receives:
+
+* `@click.outside` ignores events while `v-show` hides its element, and the click that showed it ([#300](https://github.com/aevantec/litevue/issues/300))
+* On a deferred `v-scope.visible`, `.idle` or `.interaction` element, `v-if` and `v-for` apply first, so each branch or row waits on its own; a waiting row shows its raw `{{ }}` unless it carries `v-cloak` ([#300](https://github.com/aevantec/litevue/issues/300))
+* The fallback children of a `v-text` or `v-html` element are no longer bound ([#300](https://github.com/aevantec/litevue/issues/300))
+* `:disabled=""` and `:hidden=""` set the property to `true`, as in Vue ([#301](https://github.com/aevantec/litevue/issues/301))
+* In production, an `onError` handler that throws no longer silences the error: both are written to `console.error` ([#301](https://github.com/aevantec/litevue/issues/301))
+* `morph()` returns the replacement element when the root's tag changes ([#302](https://github.com/aevantec/litevue/issues/302))
+* navigate inserts new head elements in the next page's order instead of appending them ([#302](https://github.com/aevantec/litevue/issues/302))
+* An open `v-collapse` panel no longer clips its overflow ([#302](https://github.com/aevantec/litevue/issues/302))
+* `v-anchor` teardown restores only the styles it wrote, so an author's inline `top`, `left`, `right`, `bottom` or `margin-*` on the anchored element is not kept ([#302](https://github.com/aevantec/litevue/issues/302))
+* A `$watch` callback's own write is not delivered to it again, and function values held by `v-for` rows are no longer bound to the scope ([#292](https://github.com/aevantec/litevue/issues/292))
+* A `POST` redirected by 307 to an error page loads that page with a GET; nothing is re-posted ([#294](https://github.com/aevantec/litevue/issues/294))
+
+
 ### Features
 
 * **devtools:** pick the panel's theme and layout from menus, and dock it to the left ([#305](https://github.com/aevantec/litevue/issues/305)) ([fc2bad7](https://github.com/aevantec/litevue/commit/fc2bad77f0827b3b91566ce767e8be60d18fd240))
