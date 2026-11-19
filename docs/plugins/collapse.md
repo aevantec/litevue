@@ -44,6 +44,7 @@ createApp({ open: false }).use(collapse).mount();
 
 - The initial state applies without animating.
 - Once expanded, the fixed height is released, so the content can grow or shrink freely. An inline `height` written on the element is its expanded height instead: the element expands to it and keeps it.
+- The element clips its content with `overflow: hidden` only while it is collapsed or animating. Once expanded, its own `overflow` applies again, so a dropdown, focus ring or shadow at its edge is not cut off.
 - Collapsed content gets `visibility: hidden` once the height reaches 0, so Tab skips it and screen readers do not read it. It becomes visible as soon as it starts to expand.
 - On unmount, the element gets back the inline `height`, `overflow`, `transition` and `visibility` it had before.
 - For hiding without animating height, use [`v-show`](/directives/v-show).
