@@ -124,14 +124,22 @@ export const popover: Plugin = (app) => {
       const match = /^offset-(\d+)$/.exec(m);
       if (match) gap = +match[1];
     }
-    const before = float.style.cssText;
+    // records what each write replaces, newest first, so teardown restores
+    // only what v-anchor wrote and a later style (v-show's display) survives
+    const saved: string[][] = [];
+    const set = (p: string, v: string) => {
+      saved.unshift([p, float.style.getPropertyValue(p)]);
+      float.style.setProperty(p, v);
+    };
+    const restore = () =>
+      saved.forEach(([p, v]) => float.style.setProperty(p, v));
     const vertical = /^(top|bottom)/.test(placement);
     let target: HTMLElement | undefined;
 
     // the UA centres a popover with inset: 0 and margin: auto
-    float.style.position = 'fixed';
-    float.style.inset = 'auto';
-    float.style.margin = '0';
+    set('position', 'fixed');
+    set('inset', 'auto');
+    set('margin', '0');
 
     if (CSS.supports('anchor-name: --a')) {
       const name = `--litevue-anchor-${++count}`;
@@ -140,16 +148,13 @@ export const popover: Plugin = (app) => {
       // is laid out as it opens, while its trigger is on screen; v-popover may
       // come later in attribute order and has not yet added [popover]
       if (!float.matches('[popover],[v-popover]')) {
-        float.style.position = 'absolute';
+        set('position', 'absolute');
       }
       // the gap is a margin on the side facing the anchor, kept through a flip
-      float.style.margin = vertical ? `${gap}px 0` : `0 ${gap}px`;
-      float.style.setProperty('position-anchor', name);
-      float.style.setProperty('position-area', AREAS[placement]);
-      float.style.setProperty(
-        'position-try-fallbacks',
-        'flip-block, flip-inline'
-      );
+      set('margin', vertical ? `${gap}px 0` : `0 ${gap}px`);
+      set('position-anchor', name);
+      set('position-area', AREAS[placement]);
+      set('position-try-fallbacks', 'flip-block, flip-inline');
       effect(() => {
         setName(target, name, false);
         target = get();
@@ -157,7 +162,7 @@ export const popover: Plugin = (app) => {
       });
       return () => {
         setName(target, name, false);
-        float.style.cssText = before;
+        restore();
       };
     }
 
@@ -182,7 +187,7 @@ export const popover: Plugin = (app) => {
       removeEventListener('scroll', update, true);
       removeEventListener('resize', update);
       float.removeEventListener('toggle', update);
-      float.style.cssText = before;
+      restore();
     };
   });
 };

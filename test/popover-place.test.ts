@@ -144,6 +144,19 @@ describe('v-anchor script placement', () => {
     expect(f.getAttribute('style') ?? '').toBe('');
     expect(observers[0].els.size).toBe(0);
   });
+
+  test('unmounting keeps a style written after mount by something else', async () => {
+    const { f, app } = await place('.bottom');
+    // as v-show or :style would, after v-anchor captured the inline style
+    f.style.display = 'none';
+
+    app.unmount();
+
+    expect(f.style.display).toBe('none');
+    expect(f.style.position).toBe('');
+    expect(f.style.left).toBe('');
+    expect(f.style.top).toBe('');
+  });
 });
 
 describe('v-anchor script placement: no size at mount', () => {
