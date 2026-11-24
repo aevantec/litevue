@@ -1,6 +1,3 @@
-// In-page devtools inspector panel. A standalone bundle: it reaches the
-// registry through window.__LITE_VUE__ only, never by module import, so it
-// always sees the same instance as the app.
 import type { LiteVueDevtools } from './devtools';
 import { css } from './devtools-panel/styles';
 import { createPluginsView } from './devtools-panel/plugins';
@@ -49,13 +46,10 @@ let filterText = '';
 let activeTab: 'Elements' | 'Stores' = 'Elements';
 let dockMenu: Menu<Dock>;
 let dock: Dock = 'float';
-// the floating geometry, kept while docked so undocking restores it
 let floatW = '';
 let floatH = '';
 let floatRight = '';
 let floatBottom = '';
-// Each mode keeps its own size: deriving the docked one from the floating
-// geometry would reset a bottom dock sized to 300px on the next dock.
 let bottomH = '';
 let leftW = '';
 let rightW = '';
@@ -74,22 +68,10 @@ const applyTheme = () => {
   shadow.host.classList.toggle('light', light);
   themeMenu.set(theme);
 };
-// property paths ("items", "items.0", …) the user expanded; kept across flush
-// re-renders so the tree doesn't collapse while state changes
 const expandedPaths = new Set<string>();
 
-// scopes collapsed in the Elements tree. Weak, so unmounting takes the entry
-// with it rather than pinning the element.
 const collapsedScopes = new WeakSet<Element>();
 
-/**
- * Pulls a floating panel back inside the viewport.
- *
- * Called on show, not on restore: a hidden element measures zero, so clamping
- * at restore time would bound against a width of nothing. Covers a position
- * saved before the drag was bounded, and a window smaller than last visit —
- * in both, the header is off screen too, so dragging it back is impossible.
- */
 const keepOnScreen = () => {
   if (dock !== 'float') return;
   const right = parseInt(panelEl.style.right) || 0;
@@ -101,10 +83,6 @@ const keepOnScreen = () => {
 };
 
 const applyDock = (next: Dock) => {
-  // Dragging and the grip write inline styles, which beat the stylesheet — so
-  // left in place they would hold a docked panel away from its edge. The
-  // floating geometry is stashed and cleared on the way in, restored on the
-  // way out, so undocking returns the panel exactly where it was left.
   if (dock === 'float') {
     floatW = panelEl.style.width || floatW;
     floatH = panelEl.style.height || floatH;
@@ -123,11 +101,8 @@ const applyDock = (next: Dock) => {
     panelEl.classList.toggle('dock-' + d, next === d);
   }
 
-  // the docks pin to the viewport's edges, so neither offset may remain
   panelEl.style.right = docked ? '' : floatRight;
   panelEl.style.bottom = docked ? '' : floatBottom;
-  // each dock owns one axis and leaves the other resizable, at whatever size
-  // that mode was last left
   panelEl.style.width =
     next === 'bottom'
       ? ''
@@ -142,7 +117,6 @@ const applyDock = (next: Dock) => {
   dockMenu.set(next);
 };
 
-// html-tag-style label for a scope root, e.g. <cart>. See nameOf for source.
 const tagOf = (el: Element) => {
   const label = h('span', 'label');
   label.appendChild(h('span', 'punct', '<'));
@@ -157,12 +131,9 @@ const parentGet = Object.getOwnPropertyDescriptor(
   Node.prototype,
   'parentElement'
 )!.get!;
-// a teleported element's marker holds its original place, so it belongs
-// to the scope it was written in, not to its target's
 const parentOf = (el: Element): Element | null =>
   (el as any).__marker?.parentElement || parentGet.call(el);
 
-/** Nearest ancestor element that is itself a registered scope. */
 const parentScopeOf = (el: Element) => {
   let p = parentOf(el);
   while (p) {
@@ -206,21 +177,13 @@ const switchTab = (tab: 'Elements' | 'Stores') => {
   renderTree();
 };
 
-// `Cart({ id: 1 })` → `Cart`. Refuses dotted or bracketed callees: the
-// registry is flat, so only a bare identifier can name one.
 const CALLEE = /^\s*([A-Za-z_$][\w$]*)\s*\(/;
 
-/** The registered component a scope expression instantiates, if it is one. */
 const componentOf = (el: Element) => {
   const callee = CALLEE.exec(devtools.exps.get(el) || '')?.[1];
   return callee && devtools.components?.has(callee) ? callee : undefined;
 };
 
-/**
- * v-name wins — it is what the author asked to be called — then the component,
- * then id, then tag. The `components` guard keeps a newer panel working against
- * a core built before the registry existed, as the stores tab already does.
- */
 const nameOf = (el: Element) =>
   devtools.names.get(el) ||
   componentOf(el) ||
@@ -245,8 +208,6 @@ const renderTree = () => {
       a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
     );
 
-    // A scope matches on its name or its state. `hits` keeps the matching
-    // path so the row can show why it survived the filter.
     const hits = new Map<Element, string | undefined>();
     for (const el of all) {
       if (!filterText || nameOf(el).toLowerCase().includes(filterText)) {
@@ -268,16 +229,12 @@ const renderTree = () => {
       return;
     }
 
-    // Ancestors of a hit are kept even when they don't match: without them a
-    // nested scope renders indented under nothing, reading as a broken tree.
     const visible = new Set<Element>();
     for (const el of hits.keys()) {
       visible.add(el);
       for (let p = parentScopeOf(el); p; p = parentScopeOf(p)) visible.add(p);
     }
 
-    // parentage, child counts and depth in one pass over the visible set,
-    // in document order so a parent is always recorded before its children
     const parents = new Map<Element, Element | null>();
     const childCount = new Map<Element, number>();
     const depth = new Map<Element, number>();
@@ -301,8 +258,6 @@ const renderTree = () => {
       const row = h('div', el === selected ? 'row sel' : 'row');
       row.style.paddingLeft = 8 + (depth.get(el) ?? 0) * 12 + 'px';
 
-      // caret matches the state tree below, and holds its width when there is
-      // nothing to collapse so sibling names stay aligned
       const collapsed = collapsedScopes.has(el);
       if (childCount.get(el)) {
         const arrow = h('span', collapsed ? 'arrow' : 'arrow open', '▶');
@@ -363,7 +318,6 @@ const renderTree = () => {
 };
 
 const renderState = () => {
-  // don't clobber an in-progress edit
   if (stateEl.contains(shadow.activeElement)) return;
   stateEl.textContent = '';
   const scope = selectedStore
@@ -387,8 +341,6 @@ const renderState = () => {
   stateEl.appendChild(buildAdder(scope));
 };
 
-// "+ key / value" row for adding state. On nested v-scope proxies an unknown
-// key falls through to the parent scope, matching the framework's writes.
 const buildAdder = (scope: Record<string, any>) => {
   const row = h('div', 'prop adder');
   row.appendChild(h('span', 'spacer'));
@@ -409,7 +361,6 @@ const buildAdder = (scope: Record<string, any>) => {
     keyIn.blur();
     valIn.blur();
     scheduleRender();
-    // refocus after the re-render so several keys can be added in a row
     setTimeout(() => {
       const next = stateEl.querySelector('.adder .key-in') as HTMLInputElement;
       if (next) next.focus();
@@ -430,12 +381,10 @@ const addNode = (
   depth: number,
   cls: string,
   ancestors: unknown[],
-  // inside a derived value or a Map/Set copy, where an edit would be lost
   ro?: boolean,
   label = key
 ) => {
   let v: any, threw;
-  // a getter can throw while data loads; show it instead of losing the view
   try {
     v = container[key];
   } catch {
@@ -464,8 +413,6 @@ const addNode = (
     appendDelete(row, container, key, depth, cls);
     stateEl.appendChild(row);
     if (open) {
-      // A Map or Set has no own keys, so its values are listed from a copy.
-      // Map keys label the rows as previews: they need not be strings.
       const coll = isCollection(v);
       const src = coll ? [...v.values()] : v;
       const names = v instanceof Map && [...v.keys()].map(fmt);
@@ -496,22 +443,16 @@ const addNode = (
   if (typeof v === 'function') {
     row.appendChild(h('span', 'preview', 'ƒ'));
   } else if (threw || ro) {
-    // getter without a setter, or a computed(): an input here would silently
-    // discard writes
     row.appendChild(h('span', 'preview', threw ? '(threw)' : fmt(v)));
   } else if (typeof v === 'boolean') {
     row.appendChild(h('span', 'bool', String(v)));
 
-    // checkbox input for boolean values, so the user can toggle them
     const cb = h('input', 'check') as HTMLInputElement;
     cb.type = 'checkbox';
     cb.checked = v;
     cb.onchange = () => {
       container[key] = cb.checked;
-      // release focus so the re-render isn't skipped
       cb.blur();
-      // re-render ourselves: an edit to state no directive tracks never
-      // triggers a flush event
       scheduleRender();
     };
     row.appendChild(cb);
@@ -528,19 +469,14 @@ const addNode = (
     input.onkeydown = (e) => {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') {
-        // restore the focus text, which blur treats as "no edit"
         input.value = shown;
         input.blur();
       }
     };
     input.onblur = () => {
       const next = coerce(input.value, v);
-      // untouched text is never written: null, undefined and NaN would
-      // otherwise come back as strings
       if (input.value !== shown && next !== v) {
         container[key] = next;
-        // re-render ourselves: an edit to state no directive tracks never
-        // triggers a flush event
         scheduleRender();
       } else {
         input.value = fmt(v);
@@ -552,7 +488,6 @@ const addNode = (
   stateEl.appendChild(row);
 };
 
-// removable: top-level own keys of the selected scope/store
 const appendDelete = (
   row: HTMLElement,
   container: Record<string, any>,
@@ -567,7 +502,6 @@ const appendDelete = (
   del.title = `delete "${key}"`;
   del.onclick = (e) => {
     e.stopPropagation();
-    // release any focused editor so the re-render isn't skipped
     const active = shadow.activeElement as HTMLElement | null;
     if (active && active.blur) active.blur();
     delete container[key];
@@ -613,8 +547,6 @@ let renderQueued = false;
 const scheduleRender = () => {
   if (renderQueued) return;
   renderQueued = true;
-  // setTimeout over rAF: rAF stalls in hidden tabs, freezing the state shown
-  // when the tab becomes visible again
   setTimeout(() => {
     renderQueued = false;
     if (panelEl.style.display === 'none') return;
@@ -651,10 +583,8 @@ const build = () => {
   const header = h('div', 'header');
   header.appendChild(h('span', 'title', '⚡ LiteVue'));
 
-  // drag the panel by its header; position persists as right/bottom offsets
   header.addEventListener('mousedown', (e) => {
     if ((e.target as Element).closest('.btn, .menu')) return;
-    // a docked panel is pinned to its edges; dragging it would fight the dock
     if (dock !== 'float') return;
     e.preventDefault();
     const rect = panelEl.getBoundingClientRect();
@@ -663,9 +593,6 @@ const build = () => {
     const startX = e.clientX;
     const startY = e.clientY;
     const move = (ev: MouseEvent) => {
-      // Positioned by right/bottom offsets, so a zero floor only holds those
-      // two edges and the left and top could leave the screen with no way
-      // back. The upper bound is what puts the opposite edge at zero.
       panelEl.style.right =
         clamp(
           startRight - (ev.clientX - startX),
@@ -683,7 +610,6 @@ const build = () => {
       document.removeEventListener('mousemove', move);
       document.removeEventListener('mouseup', up);
       saveUi({
-        // a panel left flush to an edge is at 0, which is not a missing value
         right: parseInt(panelEl.style.right || '12'),
         bottom: parseInt(panelEl.style.bottom || '12'),
       });
@@ -691,8 +617,6 @@ const build = () => {
     document.addEventListener('mousemove', move);
     document.addEventListener('mouseup', up);
   });
-  // The resize handle. CSS decides which edge it sits on; the dock decides
-  // which axes it drives, since the other belongs to the viewport.
   const grip = h('div', 'grip');
   grip.addEventListener('mousedown', (e) => {
     e.preventDefault();
@@ -704,8 +628,6 @@ const build = () => {
     const startH = rect.height;
 
     const move = (ev: MouseEvent) => {
-      // docked to the bottom or right, the handle sits on the top or left
-      // edge, so the drag reads backwards: pulling up or left makes it bigger
       const dy = dock === 'bottom' ? startY - ev.clientY : ev.clientY - startY;
       const dx = dock === 'right' ? startX - ev.clientX : ev.clientX - startX;
       const hgt = clamp(startH + dy, MIN_H, maxH());
@@ -714,8 +636,6 @@ const build = () => {
         panelEl.style.height = hgt + 'px';
       }
       if (dock !== 'bottom') panelEl.style.width = w + 'px';
-      // Floating, the panel is anchored by right/bottom: moving those with
-      // the size keeps the top-left, and the header, where it was
       if (dock === 'float') {
         panelEl.style.right = Math.max(0, innerWidth - rect.left - w) + 'px';
         panelEl.style.bottom = Math.max(0, innerHeight - rect.top - hgt) + 'px';
@@ -779,7 +699,6 @@ const build = () => {
     if (picking) stopPicking();
     panelEl.style.display = 'none';
     pillEl.style.display = '';
-    // closed renders are skipped, so these rows would keep their scopes alive
     treeEl.textContent = stateEl.textContent = '';
     saveUi({ open: false });
   };
@@ -820,7 +739,6 @@ const build = () => {
   panelEl.appendChild(grip);
   shadow.appendChild(panelEl);
 
-  // restore persisted chrome: position, size, open state
   const ui = loadUi();
   if (ui.w) floatW = panelEl.style.width = ui.w + 'px';
   if (ui.h) floatH = panelEl.style.height = ui.h + 'px';
@@ -829,8 +747,6 @@ const build = () => {
   if (ui.bh) bottomH = ui.bh + 'px';
   if (ui.lw) leftW = ui.lw + 'px';
   if (ui.rw) rightW = ui.rw + 'px';
-  // after the sizes, so it hands each mode the one it was last left at; a
-  // stored value is checked, since the menu can only show a known layout
   applyDock(dockOptions.some((o) => o.value === ui.dock) ? ui.dock! : 'float');
   // host must be in the document before showing: keepOnScreen measures it,
   // and a detached element measures zero
@@ -844,11 +760,9 @@ const build = () => {
 
   devtools.on('scope:mount', scheduleRender);
   devtools.on('scope:unmount', (el: Element) => {
-    // $scope too, or the console keeps the torn-down scope alive
     if (el === selected) selected = (window as any).$scope = null;
     scheduleRender();
   });
-  // guard for panels loaded against a core built before stores existed
   if (devtools.stores) {
     devtools.on('store:register', scheduleRender);
   }
@@ -858,8 +772,6 @@ const build = () => {
 
 let isStarted = false;
 
-// Runs on import. Calling it again retries a panel that loaded before
-// LiteVue; once the panel is built or scheduled, a call does nothing.
 export const init = () => {
   if (isStarted) return;
   const d = window.__LITE_VUE__;

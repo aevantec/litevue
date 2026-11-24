@@ -44,11 +44,9 @@ const setName = (el: HTMLElement | undefined, name: string, on: boolean) => {
     .split(/\s*,\s*/)
     .filter((n) => n && n !== name);
   on && names.push(name);
-  // an empty value removes the property; while set, morph leaves the style
   el.style.setProperty('anchor-name', ((el as any).__anchor = names.join()));
 };
 
-/** Script placement for engines without anchor positioning: flip, then align. */
 const place = (
   float: HTMLElement,
   target: Element,
@@ -93,8 +91,6 @@ export const popover: Plugin = (app) => {
     const pop = el as HTMLElement;
     if (!pop.popover) pop.popover = 'auto';
     const assign = get(`(val) => { ${exp} = val }`);
-    // undefined for an expression that cannot be assigned to, such as
-    // menu === 'file': it still opens and closes the popover, one way
     const sync = (e: Event) => assign?.((e as ToggleEvent).newState === 'open');
     pop.addEventListener('toggle', sync);
     const toggle = () => {
@@ -106,8 +102,6 @@ export const popover: Plugin = (app) => {
     effect(() => {
       if (pop.isConnected) toggle();
       else {
-        // a v-if or v-for block is walked before it is inserted, and the
-        // Popover API throws on a detached element
         get();
         Promise.resolve().then(toggle);
       }
@@ -124,8 +118,6 @@ export const popover: Plugin = (app) => {
       const match = /^offset-(\d+)$/.exec(m);
       if (match) gap = +match[1];
     }
-    // records what each write replaces, newest first, so teardown restores
-    // only what v-anchor wrote and a later style (v-show's display) survives
     const saved: string[][] = [];
     const set = (p: string, v: string) => {
       saved.unshift([p, float.style.getPropertyValue(p)]);
@@ -143,14 +135,9 @@ export const popover: Plugin = (app) => {
 
     if (CSS.supports('anchor-name: --a')) {
       const name = `--litevue-anchor-${++count}`;
-      // fixed measures each side's room against the viewport, which goes wrong
-      // for an element laid out while its anchor is scrolled away; a popover
-      // is laid out as it opens, while its trigger is on screen; v-popover may
-      // come later in attribute order and has not yet added [popover]
       if (!float.matches('[popover],[v-popover]')) {
         set('position', 'absolute');
       }
-      // the gap is a margin on the side facing the anchor, kept through a flip
       set('margin', vertical ? `${gap}px 0` : `0 ${gap}px`);
       set('position-anchor', name);
       set('position-area', AREAS[placement]);
@@ -175,8 +162,6 @@ export const popover: Plugin = (app) => {
       target = get();
       update();
     });
-    // a v-if block is walked before insertion and v-show starts hidden, so the
-    // size is 0 at mount; this re-places it once laid out, and as it resizes
     const observer = new ResizeObserver(update);
     observer.observe(float);
     addEventListener('scroll', update, true);

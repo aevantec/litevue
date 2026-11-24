@@ -13,7 +13,6 @@ const maxOf = (durations: string, delays: string) => {
   return max;
 };
 
-// longest transition/animation (duration + delay) currently applying to el
 const durationOf = (el: Element) => {
   const s = getComputedStyle(el);
   return Math.max(
@@ -38,8 +37,6 @@ export const transition: Plugin = (app) => {
     const name = arg || 'v';
     const cls = (phase: string) => `${name}-${phase}`;
     let seq = 0;
-    // Tracked so teardown can cancel it: unmounting mid-transition left this
-    // pending, stripping classes and running `done` for a dead directive.
     let endTimer: ReturnType<typeof setTimeout> | undefined;
 
     const clear = () => {
@@ -71,18 +68,12 @@ export const transition: Plugin = (app) => {
     };
 
     if (!exp) {
-      // unmount mode: the element's lifetime is controlled by v-if/v-for.
-      // enter runs a microtask later, once the block has been inserted
       let live = true;
       Promise.resolve().then(() => {
         if (live) run('enter');
       });
-      // a leave begun in the insertion's own flush must not be overtaken by
-      // the enter, whose new seq would orphan the leave's resolve
       (elem as any).__leave = () => {
         live = false;
-        // read by the core's development duplicate-ref check: a leaving
-        // element no longer claims its ref
         (elem as any).__leaving = 1;
         return new Promise<void>((resolve) => run('leave', resolve));
       };
@@ -94,15 +85,10 @@ export const transition: Plugin = (app) => {
       };
     }
 
-    // as v-show does, so showing restores an inline display such as flex,
-    // but not a none that only hid the element until mount
     const display = elem.style.display == 'none' ? '' : elem.style.display;
-    // undefined until the first run, which applies the state without
-    // animating unless .appear is present
     let shown: boolean | undefined;
     effect(() => {
       const show = !!get();
-      // like v-show, act only when truthiness changes
       if (show === shown) return;
       const animate = shown != null;
       shown = show;
@@ -118,8 +104,6 @@ export const transition: Plugin = (app) => {
       }
     });
 
-    // the end timer is what removes the classes and ends a leave hidden, so
-    // cancelling it must do both
     return () => {
       clearTimeout(endTimer);
       clear();

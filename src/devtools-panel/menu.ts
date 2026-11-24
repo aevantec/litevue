@@ -1,5 +1,3 @@
-// A header dropdown: the trigger shows the current option's icon, the menu
-// lists every option with its icon and label.
 import { h } from './values';
 
 export interface MenuOption<T extends string> {
@@ -9,9 +7,7 @@ export interface MenuOption<T extends string> {
 }
 
 export interface Menu<T extends string> {
-  /** The wrapper to place in the header. */
   el: HTMLElement;
-  /** Shows `value` as current, without calling `onSelect`. */
   set: (value: T) => void;
 }
 
@@ -19,7 +15,6 @@ const CHEVRON =
   '<svg width="7" height="7" viewBox="0 0 10 10" fill="currentColor">' +
   '<path d="M1 3h8L5 8z"/></svg>';
 
-// one open at a time, page-wide: opening one closes the other
 let closeOpen: (() => void) | undefined;
 
 export const createMenu = <T extends string>(
@@ -43,7 +38,6 @@ export const createMenu = <T extends string>(
     item.appendChild(h('span', '', o.label));
     item.onclick = () => {
       close(true);
-      // picking the current option only closes the menu
       if (o.value === current) return;
       set(o.value);
       onSelect(o.value);

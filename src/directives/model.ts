@@ -9,16 +9,12 @@ export const model: Directive<
   const type = el.type;
   const assign = get(`(val) => { ${exp} = val }`);
   const { trim, number = type === 'number', lazy, fill } = modifiers || {};
-  // as Vue: what does not parse, such as "" or "abc", stays a string
   const cast = (val: string) => (number ? looseToNumber(val) : val);
 
-  // Collected so teardown can remove them: app.unmount(el) leaves elements in
-  // the document, so a surviving listener would still write to a dead scope.
   const off: (() => void)[] = [];
   const on = (event: string, handler: any) =>
     off.push(listen(el, event, handler));
 
-  // writes the control's state to the model, and renders the model onto it
   let update: () => void;
   let render: () => void;
   let isText = false;
@@ -49,8 +45,6 @@ export const model: Directive<
         const option = sel.options[i];
         const optionValue = getValue(option);
         if (isMultiple) {
-          // arrays only: a Set cannot be tracked here, since collection
-          // reactivity is trimmed from the build, and a change writes an array
           option.selected =
             isArray(value) && looseIndexOf(value, optionValue) > -1;
         } else {
@@ -104,16 +98,11 @@ export const model: Directive<
       (el as HTMLInputElement).checked = looseEqual(get(), getValue(el));
     };
   } else {
-    // text-like
     isText = true;
-    // trim first, then convert, as in Vue: .trim.number yields a number
     const resolveValue = (val: string) => cast(trim ? val.trim() : val);
     update = () => assign(resolveValue(el.value));
 
-    // .debounce[-ms]: rate-limit assignments from input events
     let write = assign;
-    // cancelled on teardown with the listeners: a pending debounce would
-    // otherwise assign into a torn-down scope
     let debounceTimer: ReturnType<typeof setTimeout> | undefined;
     for (const key in modifiers || {}) {
       const m = /^debounce(?:-(\d+))?$/.exec(key);
@@ -155,8 +144,6 @@ export const model: Directive<
     };
   }
 
-  // .fill: seed an empty model from the control's initial state — a radio's
-  // only if checked, a select's not from an empty placeholder
   if (fill) {
     const cur = get();
     if (
@@ -169,8 +156,6 @@ export const model: Directive<
   }
 
   const sync = effect(render);
-  // A select's options, or a checkbox's or radio's :value, can change without
-  // the model doing so; both show up as DOM mutations, so re-render on those.
   if (!isText) {
     const observer = new MutationObserver(() => sync());
     observer.observe(el, { attributes: true, childList: true, subtree: true });
@@ -182,7 +167,6 @@ export const model: Directive<
 
 const getValue = (el: any) => ('_value' in el ? el._value : el.value);
 
-// retrieve raw value for true-value and false-value set via :true-value or :false-value bindings
 const getCheckboxValue = (
   el: HTMLInputElement & { _trueValue?: any; _falseValue?: any },
   checked: boolean

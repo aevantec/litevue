@@ -11,17 +11,12 @@ export const ref: Directive = ({
   get,
   effect,
 }) => {
-  // reads go to the raw object: a tracked read made two elements claiming one
-  // name re-run each other's effect until the scheduler stopped them
   const refs = toRaw($refs);
   let prevRef: any;
   effect(() => {
     const ref = get();
     if (import.meta.env.DEV) {
-      // own entries only: a nested scope may reuse its parent's names
       const existing = hasOwn(refs, ref) && refs[ref];
-      // A second claimant replaces the first, so $refs holds whichever
-      // mounted last. v-for rows each have their own $refs, so never collide.
       if (
         existing &&
         existing !== el &&
@@ -42,8 +37,6 @@ export const ref: Directive = ({
     }
     prevRef = ref;
   });
-  // only its own entry: a leave transition defers this until after a newer
-  // element may have claimed the name
   return () => {
     refs[prevRef] === el && delete $refs[prevRef];
   };

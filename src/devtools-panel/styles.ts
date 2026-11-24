@@ -1,26 +1,9 @@
-// The panel's stylesheet, kept apart so the panel's logic reads on its own.
-
 /**
- * Panel stylesheet. Note the template below is a *string* — comments inside it
- * ship verbatim, so explanations belong out here where terser strips them.
- *
  * `[hidden]` is forced with `!important` because an author `display`, such as
- * `.side`'s flex, beats the UA rule, and the plugins view hides by `hidden`.
- *
- * Docked layouts (`.dock-left` / `.dock-bottom` / `.dock-right`) give the tree a full viewport
- * edge, as browser devtools do; only the cross-axis stays resizable, since the
- * other would fight the dock.
- *
- * `min-height` is 320px, not 200: against the fixed chrome (34px header, 28px
- * tabs, 23px filter) 200 left about five rows of tree, too few to read. 320
- * keeps roughly eleven.
+ * `.side`'s flex, beats the UA rule.
  *
  * Sizing uses an explicit `.grip` rather than CSS `resize`, whose handle is
- * always bottom-right — the wrong corner once docked, where dragging down would
- * grow the panel upward. Each mode gets a handle on the edge that moves.
- *
- * `.menu` is absolute inside the header's `.menu-wrap`; the panel clips its
- * overflow, which its 320px minimum height leaves room for.
+ * always bottom-right.
  */
 export const css = `
 :host {

@@ -11,11 +11,6 @@ type Listener = (...args: any[]) => void;
 
 /**
  * What one `app.use()` contributed.
- *
- * `directives` and `magics` carry the weight, not `name`: minifiers rename
- * plugin functions, so `Function.name` is an empty string in every production
- * build — the builds an inspector is actually pointed at. What a plugin added
- * survives minification and is what someone debugging wants anyway.
  */
 export interface PluginInfo {
   /** The plugin function's name where a build kept it, else `plugin <n>`. */
@@ -91,8 +86,6 @@ const pluginList: PluginInfo[] = [];
 
 let disabled = false;
 
-// checked lazily so the flag also works when set after the lib loads but
-// before mount
 const isDisabled = () =>
   disabled ||
   (typeof window !== 'undefined' && window.__LITE_VUE_DEVTOOLS__ === false);
@@ -105,8 +98,6 @@ const listeners: Record<DevtoolsEvent, Set<Listener>> = {
   flush: new Set(),
 };
 
-// Listeners run mid-mount, in production too: one that throws is logged, not
-// allowed to abort the mount or skip the listeners after it.
 const emit = (event: DevtoolsEvent, ...args: any[]) => {
   listeners[event].forEach((fn) => {
     try {
@@ -151,7 +142,6 @@ export const registerComponent = (name: string) => {
   if (!isDisabled()) componentNames.add(name);
 };
 
-/** Registers a plugin and returns a deregister, as registerScope does. */
 export const registerPlugin = (info: PluginInfo) => {
   if (isDisabled()) return;
   pluginList.push(info);
@@ -162,14 +152,9 @@ export const registerPlugin = (info: PluginInfo) => {
   };
 };
 
-/** True when something is listening, so app.use() can skip the diff. */
 export const pluginsWatched = () => !isDisabled();
 
 export const emitFlush = () => {
-  // Size check first: this runs on every flush, and with nothing subscribed
-  // it costs one property read. The disabled check is what the other events
-  // get free by returning early at their source; `flush` has no such source,
-  // so without it a listener added after disableDevtools() would still fire.
   if (listeners.flush.size && !isDisabled()) {
     emit('flush');
   }
@@ -193,7 +178,6 @@ export const devtools: LiteVueDevtools = {
     while (el) {
       const scope = scopes.get(el);
       if (scope) return scope;
-      // teleported content belongs to the scope its marker sits in
       el = (el as any).__marker?.parentElement || el.parentElement;
     }
   },
