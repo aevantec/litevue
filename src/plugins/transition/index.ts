@@ -74,7 +74,6 @@ export const transition: Plugin = (app) => {
       });
       (elem as any).__leave = () => {
         live = false;
-        (elem as any).__leaving = 1;
         return new Promise<void>((resolve) => run('leave', resolve));
       };
       return () => {

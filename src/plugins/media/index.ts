@@ -56,12 +56,8 @@ const supported = () =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function';
 
 const subscribe = (mql: MediaQueryList, cb: () => void): Sub => {
-  if (mql.addEventListener) {
-    mql.addEventListener('change', cb);
-    return { mql, off: () => mql.removeEventListener('change', cb) };
-  }
-  mql.addListener(cb);
-  return { mql, off: () => mql.removeListener(cb) };
+  mql.addEventListener('change', cb);
+  return { mql, off: () => mql.removeEventListener('change', cb) };
 };
 
 const currentBp = () => {
