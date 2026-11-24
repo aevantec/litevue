@@ -4,20 +4,14 @@ import { nextTick } from '../scheduler';
 import { warnOnce } from '../warn';
 import { EVAL_CACHE_LIMIT } from '../eval';
 
-/**
- * Can `exp` stand as a single expression, or is it a statement list?
- * Memoised: it compiles a throwaway function, which a `v-for` pays per row.
- */
 let expressionCache: Record<string, boolean> = Object.create(null);
 let cachedExpressions = 0;
 
-/** For tests: how many handler expressions are memoised. */
 export const expressionCacheSize = () => cachedExpressions;
 
 const isExpression = (exp: string) => {
   const hit = expressionCache[exp];
   if (hit !== undefined) return hit;
-  // bounded like the evaluator's cache, which morph-streamed handlers grow
   if (++cachedExpressions > EVAL_CACHE_LIMIT) {
     expressionCache = Object.create(null);
     cachedExpressions = 1;
@@ -30,11 +24,9 @@ const isExpression = (exp: string) => {
   }
 };
 
-// an arrow or function expression is the handler itself, as in Vue
 const fnExpRE =
   /^\s*(async\s*)?(\([^)]*?\)|[\w$]+)\s*=>|^\s*(async\s+)?function\b/;
 
-// same as vue 2
 const simplePathRE =
   /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\['[^']*?']|\["[^"]*?"]|\[\d+]|\[[A-Za-z_$][\w$]*])*$/;
 
@@ -60,8 +52,6 @@ const modifierGuards: Record<
     systemModifiers.some((m) => (e as any)[`${m}Key`] && !modifiers[m]),
 };
 
-// Vue's key aliases. `left` and `right` are mouse buttons too — which one
-// depends on the event. `delete` also matches Backspace, as in Vue.
 const keyAliases: Record<string, string> = {
   esc: 'escape',
   space: ' ',
@@ -72,7 +62,6 @@ const keyAliases: Record<string, string> = {
   delete: 'backspace',
 };
 
-// modifiers that are never key-name filters on keyboard events
 const nonKeyModifierRE =
   /^(stop|prevent|self|ctrl|shift|alt|meta|left|middle|right|exact|once|capture|passive|window|document|outside|debounce(-\d+)?|throttle(-\d+)?|prop-.+|name-.+)$/;
 
@@ -84,13 +73,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return;
   }
 
-  // The expression form returns the value, so an async handler's rejection
-  // can be reported. Statement lists like `a++; b++` keep the block form.
-  // `await` makes the handler async; handlers without it stay synchronous.
   const a = /\bawait\b/.test(exp) ? 'async ' : '';
-  // compiled code, so get() hands back a handler that reports its own throws
-  // and rejections
-  // a trailing `;` would force the block form, dropping a returned promise
   const body = exp.replace(/;\s*$/, '');
   let handler =
     simplePathRE.test(exp) || fnExpRE.test(exp)
@@ -98,11 +81,8 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       : isExpression(body)
         ? get(`(${a}$event => (${body}))`)
         : get(`(${a}$event => { ${exp} })`);
-  // did not compile, and get() has reported it
   if (!handler) return;
 
-  // special lifecycle events: @mounted / @unmounted
-  // (the legacy vue:-prefixed names still work but are deprecated)
   if (
     import.meta.env.DEV &&
     (arg === 'vue:mounted' || arg === 'vue:unmounted')
@@ -112,7 +92,6 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     );
   }
   if (arg === 'mounted' || arg === 'vue:mounted') {
-    // same race as v-effect: the element may be torn down before this tick
     let live = true;
     nextTick(() => {
       if (live) handler();
@@ -124,19 +103,14 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
     return () => handler();
   }
 
-  // Held at directive scope so teardown can cancel it: a debounce pending at
-  // unmount would otherwise fire against a scope meant to be inert.
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
   if (modifiers) {
-    // map modifiers
     if (arg === 'click') {
       if (modifiers.right) arg = 'contextmenu';
       if (modifiers.middle) arg = 'mouseup';
     }
 
-    // rate-limit only the user callback so guards like .prevent still act
-    // on the event synchronously
     let invoke = handler;
     for (const key in modifiers) {
       let m = /^debounce(?:-(\d+))?$/.exec(key);
@@ -168,8 +142,6 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       (k) => !nonKeyModifierRE.test(k) || k in keyAliases
     );
 
-    // A key name on a non-keyboard event filters nothing: Alpine's
-    // `.debounce.500ms` otherwise runs at 250ms without a sound.
     if (import.meta.env.DEV && !arg.startsWith('key')) {
       for (const k of keyFilter) {
         if (k in keyAliases) continue;
@@ -188,8 +160,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
 
     handler = (e: Event) => {
       // the path is fixed at dispatch, so a target removed by an earlier
-      // listener still counts as inside. An event from before the element was
-      // shown or listening (Vue's _vts), or while v-show hides it, opened it.
+      // listener still counts as inside
       if (
         modifiers.outside &&
         (e.composedPath().includes(el) ||
@@ -198,8 +169,7 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
       ) {
         return;
       }
-      // A key-less key event (Chrome's autofill keydown) matches no key, as
-      // in Vue; mouse events skip the filter so .left and .right still pass.
+      // a key-less key event (Chrome's autofill keydown) matches no key
       if (keyFilter.length && ('key' in e || e.type.startsWith('key'))) {
         const key = hyphenate((e as KeyboardEvent).key || '');
         if (!keyFilter.some((k) => k === key || keyAliases[k] === key)) return;
@@ -209,8 +179,6 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
         if (guard && guard(e, modifiers)) {
           return;
         }
-        // animation/transition event filters: @transitionend.prop-opacity,
-        // @animationend.name-bounce
         if (
           key.startsWith('prop-') &&
           'propertyName' in e &&
@@ -226,25 +194,20 @@ export const on: Directive = ({ el, get, exp, arg, modifiers }) => {
           return;
         }
       }
-      // here rather than natively, so an event a guard rejects keeps it
       if (modifiers.once) target.removeEventListener(event, handler, modifiers);
       return invoke(e);
     };
   }
 
-  // .window/.document/.outside listen beyond the element
   const target: EventTarget = modifiers?.window
     ? window
     : modifiers?.document || modifiers?.outside
       ? document
       : el;
   const event = arg;
-  // in the clock of event.timeStamp; v-show moves it on each show
+  // in the clock of event.timeStamp
   if (modifiers?.outside) (el as any)._vts = performance.now();
   target.addEventListener(event, handler, { ...modifiers, once: false });
-  // Element listeners are removed too. They once died with the element, but
-  // app.unmount(el) tears down a region that stays in the document, where a
-  // live handler would keep mutating inert state.
   return () => {
     clearTimeout(debounceTimer);
     target.removeEventListener(event, handler, modifiers);

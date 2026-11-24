@@ -1,5 +1,3 @@
-// Pure helpers for reading and editing scope state; none touch panel state.
-
 export const h = (tag: string, className: string, text?: string) => {
   const el = document.createElement(tag);
   el.className = className;
@@ -7,14 +5,6 @@ export const h = (tag: string, className: string, text?: string) => {
   return el;
 };
 
-/**
- * Finds `term` among a scope's property names and values, returning the first
- * hit's path so the tree can show why a scope matched.
- *
- * Bounded on purpose: it runs on every keystroke over every mounted scope and
- * state is arbitrary. Depth is capped, functions and `$` magics are skipped,
- * and visited objects are remembered so cycles terminate.
- */
 export const findInState = (scope: any, term: string) => {
   const seen = new Set<any>();
   const walk = (
@@ -24,17 +14,13 @@ export const findInState = (scope: any, term: string) => {
   ): string | undefined => {
     if (value == null) return;
     if (typeof value === 'object') {
-      // a typed array holds numbers, often millions of them
       if (depth > 4 || seen.has(value) || ArrayBuffer.isView(value)) return;
       seen.add(value);
-      // a Map or Set has no own keys; its entries are searched as arrays
       if (isCollection(value)) value = [...value];
-      // an index is not a name: searching 1 would find every two-item array
       const named = !Array.isArray(value);
       for (const key of Object.keys(value)) {
         if (key[0] === '$') continue;
         let child: unknown;
-        // a getter can throw, and one bad computed must not break the filter
         try {
           child = value[key];
         } catch {
@@ -56,11 +42,6 @@ export const findInState = (scope: any, term: string) => {
 export const isCollection = (v: unknown): v is Map<any, any> | Set<any> =>
   v instanceof Map || v instanceof Set;
 
-/**
- * JSON-style preview, cut at 60 characters. Built entry by entry and stopped
- * at the limit, since it runs on every flush and a 20,000-row array would
- * otherwise be serialised whole. The length cap also ends a cycle.
- */
 export const fmt = (v: unknown) => {
   let s = '';
   const put = (v: any) => {
@@ -80,12 +61,10 @@ export const fmt = (v: unknown) => {
       for (const k of arr ? [].keys.call(v) : Object.keys(v)) {
         if (s.length > 60) break;
         let c;
-        // a throwing getter is left out, like an undefined value
         try {
           c = v[k];
         } catch {}
         const skip = c === undefined || typeof c === 'function';
-        // JSON leaves these out of an object and writes null in an array
         if (skip && !arr) continue;
         if (n++) s += ',';
         if (!arr) s += JSON.stringify(k) + ':';
@@ -97,17 +76,11 @@ export const fmt = (v: unknown) => {
   try {
     put(v);
   } catch {
-    // String(v) can throw too, on an object with no prototype
     s += '…';
   }
   return s.length > 60 ? s.slice(0, 60) + '…' : s;
 };
 
-/**
- * The edited text as a value of the field's type. Text that is not a number
- * returns `old`, so a number or BigInt field is never written as a string;
- * blank is not 0 and '12abc' is not 12.
- */
 export const coerce = (raw: string, old: unknown) => {
   if (typeof old === 'bigint') {
     try {
@@ -123,8 +96,6 @@ export const coerce = (raw: string, old: unknown) => {
   return raw;
 };
 
-// scopes inherit through a prototype chain, so a plain
-// getOwnPropertyDescriptor misses everything under the "inherited" divider
 export const descriptorOf = (
   o: any,
   key: string
@@ -135,13 +106,8 @@ export const descriptorOf = (
   }
 };
 
-/**
- * True for values with no editor: setter-less accessors, non-writable (frozen)
- * properties and getter-only `computed()` refs. A computed is only
- * recognizable from the raw descriptor, since reading through the proxy has
- * already unwrapped it. The reactivity flags are read directly to keep
- * @vue/reactivity out of this bundle.
- */
+// a computed is only recognizable from the raw descriptor, since reading
+// through the proxy has already unwrapped it
 export const isReadOnly = (desc?: PropertyDescriptor) => {
   if (!desc) return false;
   if ((desc.get && !desc.set) || desc.writable === false) return true;
@@ -150,7 +116,6 @@ export const isReadOnly = (desc?: PropertyDescriptor) => {
 };
 
 export const collectProps = (scope: Record<string, any>) => {
-  // judged from the descriptor: reading a getter here could throw
   const isData = (o: any, k: string) =>
     k[0] !== '$' && typeof descriptorOf(o, k)?.value !== 'function';
   const own = Object.keys(scope).filter((k) => isData(scope, k));

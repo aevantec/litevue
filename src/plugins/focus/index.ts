@@ -4,11 +4,8 @@ const FOCUSABLE =
   'a[href],area[href],button,input:not([type=hidden]),select,textarea,' +
   'summary,iframe,audio[controls],video[controls],[contenteditable],[tabindex]';
 
-// active traps, latest last: only the innermost handles Tab, or an outer trap
-// wraps first and the inner one pulls focus back
 const traps: Element[] = [];
 
-// a radio group's tab stop: its checked radio, else its first
 const isTabStop = (e: any, _: number, all: any[]) =>
   e.type !== 'radio' ||
   !e.name ||
@@ -32,13 +29,8 @@ export const focus: Plugin = (app) => {
     let live = true;
     let on = false;
     effect(() => {
-      // only a change to truthy focuses, or any other dependency change
-      // would pull focus back from where the user has moved it
       if (on === (on = !!get())) return;
-      // wait a tick so v-if/v-show updates land in the DOM first
       Promise.resolve().then(() => {
-        // the element can be torn down within that tick, and focusing a
-        // detached node blurs whatever the user was typing in
         if (live && on) {
           (el as HTMLElement).focus();
           if (modifiers?.select && (el as HTMLInputElement).select) {
@@ -56,7 +48,6 @@ export const focus: Plugin = (app) => {
     let active = false;
     let prevFocus: Element | null = null;
 
-    // only what Tab reaches: the trap wraps from the last one it counts
     const focusables = () =>
       [...el.querySelectorAll<HTMLElement>(FOCUSABLE)]
         .filter(
@@ -77,13 +68,10 @@ export const focus: Plugin = (app) => {
       const first = els[0];
       const last = els[els.length - 1];
       const current = document.activeElement;
-      // pull stray focus back inside, and wrap at the edges
       if (!el.contains(current)) {
         e.preventDefault();
         first.focus();
       } else if (
-        // by document position, so an unreachable element (tabindex=-1, or
-        // the container itself) before the first or after the last wraps too
         !(
           (e.shiftKey ? first : last).compareDocumentPosition(current!) &
           (e.shiftKey ? 4 : 2)
@@ -108,11 +96,8 @@ export const focus: Plugin = (app) => {
       if (on && !active) {
         active = true;
         prevFocus = document.activeElement;
-        // before any active trap inside it (-1 >>> 0 appends), as a child's
-        // effect runs first and would otherwise leave the outer trap last
         traps.splice(traps.findIndex((t) => el.contains(t)) >>> 0, 0, el);
         document.addEventListener('keydown', onKeydown, true);
-        // wait a tick so a v-if/v-show modal is in the DOM before focusing
         Promise.resolve().then(() => {
           if (active && traps.at(-1) === el)
             (focusables()[0] || (el as HTMLElement)).focus();

@@ -23,16 +23,6 @@ const modifierRE = /\.([\w-]+)/g;
 
 export let inOnce = false;
 
-/**
- * Registers a cleanup on both owners: the context, for whole-region teardown,
- * and the walked node, for a subtree detached on its own. Dropping the entry
- * when the node goes keeps a re-mounted region from accumulating spent ones.
- *
- * The `indexOf` guard also makes this run-once. A subtree can reach the same
- * cleanup twice — via the block root, whose teardown drains `ctx.cleanups`,
- * and via the node — and a second run would remove a listener the next mount
- * installed.
- */
 const addCleanup = (ctx: Context, cleanup: () => void, node?: Node) => {
   ctx.cleanups.push(cleanup);
   own(() => {
@@ -44,8 +34,6 @@ const addCleanup = (ctx: Context, cleanup: () => void, node?: Node) => {
   }, node);
 };
 
-// Work that runs after the walk has reset inOnce (a deferred region, a job
-// queued under v-once, a v-effect on nextTick) carries the value it began under.
 export const withOnce = (once: boolean, fn: () => unknown) => {
   const previous = inOnce;
   inOnce = once;
@@ -60,8 +48,6 @@ const walkDeferred = (node: Node, ctx: Context, once: boolean) =>
   withOnce(once, () => walk(node, ctx));
 
 export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
-  // Own what this node acquires, so a subtree removed on its own can be
-  // disposed. Restored on exit so a nested walk leaves the cursor intact.
   const previousOwner = setOwner(node);
   try {
     return walkNode(node, ctx);
@@ -71,14 +57,10 @@ export const walk = (node: Node, ctx: Context): ChildNode | null | void => {
 };
 
 const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
-  // output the text and html directives rendered is data, not template
-  // source, however often the node is walked again
   if ((node as any).__r) return;
   const type = node.nodeType;
   if (type === 1) {
-    // Element
     const el = node as Element;
-    // every check below reads an attribute; most markup carries none
     if (!el.hasAttributes()) return walkChildren(el, ctx);
     if (el.hasAttribute('v-pre')) {
       return;
@@ -86,50 +68,30 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
 
     let exp: string | null;
 
-    // v-if and v-for come before a deferred v-scope, so a false branch or the
-    // raw template row never shows while the region waits; the clones keep
-    // the modifier and defer on their own.
-    // v-if; `!= null` so an empty v-if="" reaches _if, which reads it as false
     if ((exp = checkAttr(el, 'v-if')) != null) {
       return _if(el, exp, ctx);
     }
 
-    // v-for
     if ((exp = checkAttr(el, 'v-for'))) {
       return _for(el, exp, ctx);
     }
 
-    // v-scope.visible / .idle / .interaction defer the whole subtree — ahead
-    // of v-cloak, which must stay on the element until the region mounts, or
-    // its raw {{ }} shows while it waits.
     if (deferScope(el, ctx, walkDeferred, inOnce)) return;
 
     checkAttr(el, 'v-cloak');
 
-    // v-name: devtools label for scopes without an id. Read after the
-    // v-if/v-for early returns so it survives in their templates, and stripped
-    // everywhere so it never reaches directive processing.
     const name = checkAttr(el, 'v-name');
 
-    // v-teleport: reparent the element (literal CSS selector) while it keeps
-    // its original scope. After the v-if/v-for early returns so it composes
-    // with them; removed from the target when the owning block unmounts.
     let teleportNext: ChildNode | null | undefined;
     if ((exp = checkAttr(el, 'v-teleport'))) {
       const target = query(exp, el, 'v-teleport');
       if (target) {
-        // hand the parent's child walk its original next sibling — after
-        // the move, el.nextSibling points into the target instead
         teleportNext = el.nextSibling;
-        // A marker holds the original place, so disposing that subtree still
-        // reaches the element. A block root has no parent yet; Block.insert
-        // places its marker.
         const marker = ((el as any).__marker = new Text(''));
         el.before(marker);
         try {
           target.appendChild(el);
         } catch (e) {
-          // the target is the element itself or inside it; it stays put
           handleError(e, {
             phase: 'directive',
             source: 'v-teleport',
@@ -150,21 +112,12 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       }
     }
 
-    // v-scope
     if ((exp = checkAttr(el, 'v-scope')) || exp === '') {
-      // `|| {}`: a throwing expression evaluates to undefined, and reading
-      // $template off that would take down the whole mount, not one region
       const scope =
         (exp ? evaluate(ctx.scope, exp, el, { source: 'v-scope', el }) : {}) ||
         {};
       ctx = createScopedContext(ctx, scope);
-      // stashed so code inserting markup into a live tree later (the morph
-      // plugin) walks it with the scope it landed in, not the root
       (el as any).__ctx = ctx;
-      // via addCleanup, not ctx.cleanups: the devtools registry is a strong
-      // Map keyed by Element, so a scope root morphed away without
-      // deregistering leaks the element and its scope for the page's life.
-      // The stash goes too, or morph binds later markup to the dead scope.
       const deregister = registerScope(
         el,
         ctx.scope,
@@ -180,32 +133,23 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
       }
     }
 
-    // v-once; restored on exit rather than cleared, so a nested v-once
-    // cannot end the region around it
     const wasOnce = inOnce;
     if (checkAttr(el, 'v-once') != null) {
       inOnce = true;
     }
 
-    // ref
     if ((exp = checkAttr(el, 'ref'))) {
       applyDirective(el, ref, `"${exp}"`, ctx);
     }
 
-    // process children first before self attrs; v-text and v-html replace
-    // their fallback children, so binding those would leave live effects,
-    // refs and hooks on discarded nodes
     if (!el.hasAttribute('v-text') && !el.hasAttribute('v-html')) {
       walkChildren(el, ctx);
     }
 
-    // other directives
     const deferred: [string, string][] = [];
     for (const { name, value } of [...el.attributes]) {
       if (dirRE.test(name) && name !== 'v-cloak') {
         if (name === 'v-model' || name.startsWith('v-model.')) {
-          // defer v-model since it relies on :value bindings to be processed
-          // first, but also before v-on listeners (#73)
           deferred.unshift([name, value]);
         } else if (name[0] === '@' || /^v-on\b/.test(name)) {
           deferred.push([name, value]);
@@ -221,9 +165,7 @@ const walkNode = (node: Node, ctx: Context): ChildNode | null | void => {
     inOnce = wasOnce;
     return teleportNext;
   } else if (type === 3) {
-    // Text
     const data = (node as Text).data;
-    // a script's text is code or a client-side template, never ours (as Vue)
     if (
       data.includes(ctx.delimiters[0]) &&
       (node.parentNode as Element)?.localName != 'script'
@@ -272,11 +214,8 @@ const processDirective = (
   let dir: Directive | undefined;
   let arg: string | undefined;
   let modifiers: Record<string, true> | undefined;
-  // the attribute as written, modifiers included: what diagnostics quote and
-  // what must be removed — the stripped name below never existed on the element
   const source = raw;
 
-  // modifiers
   raw = raw.replace(modifierRE, (_, m) => {
     (modifiers || (modifiers = {}))[m] = true;
     return '';
@@ -291,8 +230,6 @@ const processDirective = (
   } else {
     const argIndex = raw.indexOf(':');
     const dirName = argIndex > 0 ? raw.slice(2, argIndex) : raw.slice(2);
-    // own keys only: a plain-object lookup would resolve v-constructor to
-    // the inherited Object member instead of reporting it as unknown
     dir = hasOwn(builtInDirectives, dirName)
       ? builtInDirectives[dirName]
       : hasOwn(ctx.dirs, dirName)
@@ -305,9 +242,6 @@ const processDirective = (
     applyDirective(el, dir, exp, ctx, arg, modifiers, source);
     el.removeAttribute(source);
   } else if (import.meta.env.DEV) {
-    // The structural ones are consumed directly in walk() rather than living
-    // in builtInDirectives, so listing only that map would have told the
-    // reader that v-if and v-for do not exist.
     const known = [
       ...structuralDirectives.map((d) => 'v-' + d),
       'ref',
@@ -332,7 +266,6 @@ const applyDirective = (
   source?: string,
   displayExp?: string
 ) => {
-  // as written, not the wrapper a directive compiles around it
   const meta = { source, el, expression: displayExp || exp };
   const report = (err: unknown) =>
     handleError(err, {
@@ -342,19 +275,13 @@ const applyDirective = (
       expression: exp,
       scope: ctx.scope,
     });
-  // Code a directive compiles itself is a handler or setter, called later from
-  // an event or observer, outside evaluate's containment. Its calls report
-  // throws and rejections; `get()` of the directive's own value is untouched.
   const get = (code?: string) => {
     const value = evaluate(ctx.scope, code ?? exp, el, meta);
     return code && typeof value == 'function'
       ? (...args: any[]) => {
-          // owned by the element, as in the walk: a $watch started here
-          // stops when the element goes, not only on a full unmount
           const previous = setOwner(el);
           try {
             const result = value(...args);
-            // only a real Promise: a thenable may be a lazy query builder
             if (result instanceof Promise) result.catch(report);
             return result;
           } catch (err) {
@@ -365,10 +292,6 @@ const applyDirective = (
         }
       : value;
   };
-  // ctx.effect is passed through unwrapped: directives are applied while the
-  // walk cursor still points at this element, so anything they create
-  // synchronously is attributed correctly. v-effect is the one exception and
-  // restores the cursor itself.
   let cleanup;
   try {
     cleanup = dir({
@@ -381,13 +304,10 @@ const applyDirective = (
       modifiers,
     });
   } catch (e) {
-    // contained, so one throwing setup cannot abort the walk and leave the
-    // rest of the page unbound
     handleError(e, { phase: 'directive', source, el, expression: exp });
     return;
   }
   if (cleanup) {
-    // contained, so one throwing cleanup cannot abort the rest of a teardown
     addCleanup(ctx, () => {
       try {
         cleanup();
@@ -398,10 +318,6 @@ const applyDirective = (
   }
 };
 
-/**
- * `querySelector` for a selector written in markup. One that does not parse is
- * reported and yields undefined, rather than throwing out of `mount()`.
- */
 const query = (sel: string, el: Element, source: string) => {
   try {
     return document.querySelector(sel);
@@ -413,11 +329,7 @@ const query = (sel: string, el: Element, source: string) => {
 const resolveTemplate = (el: Element, template: string) => {
   if (template[0] === '#') {
     const templateEl = query(template, el, 'v-scope');
-    // Returning matters in production, where the warning below is stripped:
-    // without it a missing selector, or one naming an element that is not a
-    // <template>, reaches `.content` and throws out of mount().
     if (!(templateEl instanceof HTMLTemplateElement)) {
-      // undefined: the selector did not parse, which query() reported
       if (import.meta.env.DEV && templateEl !== undefined) {
         console.error(
           `template selector ${template} has no matching <template> element.`

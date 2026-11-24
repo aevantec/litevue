@@ -13,7 +13,6 @@ const destructureRE = /^[{[]\s*((?:[\w_$]+\s*,?\s*)+)[\]}]$/;
 
 type KeyToIndexMap = Map<any, number>;
 
-// a row's data and key; a scoped context is only built when the row mounts
 interface Row {
   data: Record<string, any>;
   key: any;
@@ -28,16 +27,10 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
 
   const nextNode = el.nextSibling;
 
-  // Resolved through the anchor on every use: as a direct child of a
-  // <template> block the parent starts as its DocumentFragment, which empties
-  // into the real element once the block is inserted.
   const anchor = new Text('');
   el.replaceWith(anchor);
   const parent = () => anchor.parentNode as Element;
 
-  // From here the directive's effects belong to the anchor: `el` has left the
-  // document, so a subtree disposal could never reach anything it owns and the
-  // list effect would keep mounting blocks into a detached parent.
   setOwner(anchor);
 
   const sourceExp = inMatch[2].trim();
@@ -80,10 +73,7 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const map: KeyToIndexMap = new Map();
     const rows: Row[] = [];
 
-    // Reading items runs getters outside evaluate's containment; a throw
-    // renders no rows rather than aborting mount() or the flush.
     try {
-      // a string iterates by character, as in Vue
       if (isArray(source) || isString(source)) {
         for (let i = 0; i < source.length; i++) {
           rows.push(createRow(map, source[i], i));
@@ -120,7 +110,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     const data: any = {};
     if (destructureBindings) {
       destructureBindings.forEach(
-        // a null item renders empty, rather than throwing out of mount()
         (b, i) => (data[b] = value?.[isArrayDestructure ? i : b])
       );
     } else {
@@ -132,9 +121,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       indexExp && (data[indexExp] = index);
     }
-    // The data itself, over the parent scope, rather than a scoped context:
-    // one per row per update made a one-item change cost most of a rebuild.
-    // Items read from reactive state are reactive, so `it.id` still tracks.
     const key = keyExp
       ? evaluate(Object.setPrototypeOf(data, ctx.scope), keyExp, el, {
           source: ':key',
@@ -148,8 +134,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
   const mountBlock = (row: Row, ref: Node) => {
     const block = new Block(el, createScopedContext(ctx, row.data, true));
     const t = block.template as any;
-    // stashed as a v-scope element's is, so morph binds markup inserted into
-    // a row with the row; forgotten on teardown, as theirs is
     t.__ctx ??= block.ctx;
     block.ctx.cleanups.push(() => delete t.__ctx);
     block.key = row.key;
@@ -157,9 +141,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     return block;
   };
 
-  // DEV: previous source, kept only to tell a reorder from an append. A
-  // keyless list reconciles by position — right for append and truncate,
-  // wrong the moment an item moves.
   let prevItems: any[] | undefined;
 
   ctx.effect(() => {
@@ -168,9 +149,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     [rows, keyToIndexMap] = createRows(source);
 
     if (import.meta.env.DEV) {
-      // Detection is free — a repeated key means fewer map entries than
-      // contexts. Naming the offender costs a pass, and only runs once one
-      // is known to exist.
       if (keyToIndexMap.size !== rows.length) {
         const counts = new Map<any, number>();
         let dup: any;
@@ -215,8 +193,6 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
     } else {
       for (let i = 0; i < blocks.length; i++) {
         const key = blocks[i].key;
-        // a row whose key repeated is not the one the map kept, and nothing
-        // would claim it, so it goes like a dropped key
         if (!keyToIndexMap.has(key) || prevKeyToIndexMap.get(key) !== i) {
           blocks[i].remove();
         }
@@ -228,29 +204,20 @@ export const _for = (el: Element, exp: string, ctx: Context) => {
       while (i--) {
         const row = rows[i];
         const oldIndex = prevKeyToIndexMap.get(row.key);
-        // claimed once: a key repeated in the new list mounts a fresh row
         prevKeyToIndexMap.delete(row.key);
         const ref = nextBlock ? nextBlock.el : anchor;
         let block;
         if (oldIndex == null) {
-          // new
           block = mountBlock(row, ref);
         } else {
-          // update
           block = blocks[oldIndex];
           Object.assign(block.ctx.scope, row.data);
-          // Rows after this one are in place, so move it only if it is not
-          // already right before its successor. Asked of the DOM, since a
-          // removed neighbour shifts the index without the node moving. A
-          // neighbour still leaving holds its place, so it is stepped over.
           let next = (block.end || block.el).nextSibling as any;
           while (next?.__leaving) next = next.nextSibling;
           if (oldIndex !== i && next !== ref) {
             block.insert(parent(), ref);
           }
         }
-        // indexed, not unshift: the loop visits each index once, and unshift
-        // made a large update quadratic
         nextBlocks[i] = nextBlock = block;
       }
       blocks = nextBlocks;

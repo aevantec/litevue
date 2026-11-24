@@ -15,7 +15,6 @@ export const resize: Plugin = (app) => {
   app.directive('resize', ({ el, get, exp, modifiers }) => {
     const handler = get(`(($width, $height) => { ${exp} })`);
     if (modifiers?.window || modifiers?.visual) {
-      // window has no width, so it falls through to innerWidth / innerHeight
       const view: any = (modifiers.visual && window.visualViewport) || window;
       const fire = () =>
         handler(view.width || innerWidth, view.height || innerHeight);

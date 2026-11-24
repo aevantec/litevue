@@ -19,16 +19,12 @@ import { addErrorHandler, handleError, type ErrorHandler } from './errors';
 import { warn } from './warn';
 import { SCOPE_SELECTOR } from './lazy';
 
-// DEV: each mounted root's first child after the walk, so a second mount of
-// unreplaced markup can say why nothing bound. Weak, and never read in
-// production.
 const mountedRoots = new WeakMap<Element, ChildNode | null>();
 import { disposeSubtree, own } from './ownership';
 
 const escapeRegex = (str: string) =>
   str.replace(/[-.*+?^${}()|[\]/\\]/g, '\\$&');
 
-// inside v-pre, or inside output that v-html rendered (see walkNode)
 const isInert = (el: any): any =>
   el && (el.__r || el.hasAttribute('v-pre') || isInert(el.parentElement));
 
@@ -41,8 +37,7 @@ export interface App {
   directive(name: string, def?: Directive): any;
   /**
    * Register a component — a function returning a scope object, used from
-   * `v-scope="Name()"` — or retrieve one by name. Gives components a named
-   * home, so a plugin can contribute one without reaching into `app.scope`.
+   * `v-scope="Name()"` — or retrieve one by name.
    */
   component(name: string, factory?: ComponentFactory): any;
   /**
@@ -69,9 +64,7 @@ export interface App {
 
 /**
  * A plugin may return a teardown function, run on full unmount; returning
- * nothing stays valid. Mirrors directives, which already return their cleanup.
- * Without it, page-wide resources — observers, listeners, matchMedia — could
- * never be given back.
+ * nothing stays valid.
  */
 export type PluginTeardown = () => void;
 
@@ -86,9 +79,7 @@ export type Plugin<Options = any> =
   | { install(app: App, options?: Options): PluginTeardown | void };
 
 export const createApp = (initialData?: any) => {
-  // root context
   const ctx = createContext();
-  // setup-function style: the function runs once and returns the root scope
   if (typeof initialData === 'function') {
     initialData = initialData();
     if (
@@ -102,7 +93,6 @@ export const createApp = (initialData?: any) => {
     ctx.scope = reactive(initialData);
     bindContextMethods(ctx.scope);
 
-    // handle custom delimiters
     if (initialData.$delimiters) {
       const [open, close] = (ctx.delimiters = initialData.$delimiters);
       ctx.delimitersRE = new RegExp(
@@ -112,16 +102,12 @@ export const createApp = (initialData?: any) => {
     }
   }
 
-  // global internal helpers, hidden as a v-scope's are, so serializing the
-  // root ({{ $data }}) yields only the app's own state
   hide(ctx.scope, '$s', toDisplayString);
   hide(ctx.scope, '$nextTick', nextTick);
   hide(ctx.scope, '$refs', Object.create(null));
   hide(ctx.scope, '$store', stores);
   hide(ctx.scope, '$watch', createWatch(ctx));
   hide(ctx.scope, '$id', createId());
-  // non-enumerable so serializing a scope ({{ $data }}, devtools previews)
-  // doesn't recurse into the self-reference
   Object.defineProperty(ctx.scope, '$root', {
     value: ctx.scope,
     enumerable: false,
@@ -132,8 +118,6 @@ export const createApp = (initialData?: any) => {
   const pluginDeregisters: (() => void)[] = [];
   const installedPlugins = new Set<Plugin>();
   const pluginTeardowns: PluginTeardown[] = [];
-  // The error registry is page-global: without these, a torn-down app keeps
-  // receiving other apps' errors and each remount stacks another handler.
   const ownErrorHandlers: (() => void)[] = [];
 
   const app: App = {
@@ -168,9 +152,6 @@ export const createApp = (initialData?: any) => {
               `the same name.`
           );
         } else if (name in ctx.scope) {
-          // Refusing is the safe direction: the root scope is the user's,
-          // and claiming a name in it would replace their data with a
-          // function.
           warn(
             `component "${name}" was not registered: the root scope already ` +
               `has a "${name}", and overwriting it would replace your data ` +
@@ -182,8 +163,6 @@ export const createApp = (initialData?: any) => {
 
       components[name] = factory;
       registerComponent(name);
-      // mirrored onto the root scope, which is what expressions resolve
-      // against; a nested v-scope shadows it through the prototype chain
       ctx.scope[name] = factory;
       return this;
     },
@@ -201,12 +180,9 @@ export const createApp = (initialData?: any) => {
     use(plugin, options) {
       if (!installedPlugins.has(plugin)) {
         installedPlugins.add(plugin);
-        // identified by what it contributed, since minifiers empty Function.name;
-        // DEV-only because the snapshots cost the core bytes
         const watched = import.meta.env.DEV && pluginsWatched();
         const dirsBefore = watched ? Object.keys(ctx.dirs) : [];
         const scopeBefore = watched ? Object.keys(ctx.scope) : [];
-        // a method call, so an object plugin's install keeps `this`, as in Vue
         const teardown =
           typeof plugin === 'function'
             ? plugin(app, options)
@@ -225,15 +201,12 @@ export const createApp = (initialData?: any) => {
             ),
             teardown: typeof teardown === 'function',
           });
-          // deregistered with the app, so the panel stops listing a plugin
-          // whose app is gone
           if (off) pluginDeregisters.push(off);
         }
       }
       return app;
     },
 
-    // `any`: one body serves both overloads in App
     mount(el?: string | Element | null): any {
       if (typeof el === 'string') {
         const target = document.querySelector(el);
@@ -257,7 +230,6 @@ export const createApp = (initialData?: any) => {
       if (!roots.length) {
         roots = [el];
       }
-      // content the docs call inert is never mounted, however it is reached
       roots = roots.filter((root) => !isInert(root));
 
       if (
@@ -273,16 +245,11 @@ export const createApp = (initialData?: any) => {
         );
       }
 
-      // published before any child context is spread off this one, so every
-      // scope inherits it (see Context.walk)
       ctx.walk ??= walk;
       ctx.dispose ??= disposeSubtree;
 
       for (const el of roots) {
         if (import.meta.env.DEV) {
-          // Walking consumes directives — each one is removed as it binds.
-          // A second mount therefore walks a stripped tree and binds nothing:
-          // an inert region that looks mounted.
           if (mountedRoots.has(el) && mountedRoots.get(el) === el.firstChild) {
             warn(
               `mount() was called again on an element that has already been ` +
@@ -292,55 +259,29 @@ export const createApp = (initialData?: any) => {
             );
           }
         }
-        // read v-name before walk strips it from the element
         const name = el.getAttribute('v-name');
         const host = el.parentNode;
         const block = new Block(el, ctx, true);
-        // v-for and v-if detach the root and v-teleport moves it, so
-        // unmount(el) also finds a root by the parent it was mounted in
         (block as any).host = host;
         import.meta.env.DEV && mountedRoots.set(el, el.firstChild);
-        // a root without v-scope gets no stashed context during walk; seed
-        // it so markup inserted later (morph) tears down with the region
         (el as any).__ctx ??= block.ctx;
-        // roots with v-scope register during walk; only claim the rest. A
-        // deferred root still carries its v-scope.<mode> and registers when it
-        // mounts. The cleanup sits on the block so unmount(el) deregisters
-        // just this one.
         if (!devtools.scopes.has(el) && !el.matches(SCOPE_SELECTOR)) {
           block.ctx.cleanups.push(
             registerScope(el, block.ctx.scope, undefined, name || undefined)
           );
         }
-        // appended, not assigned: mount() may be called repeatedly, and
-        // unmount() must reach every root, not just the last batch
         rootBlocks.push(block);
-        // a root that morph removes leaves the list and is torn down, as
-        // unmount(el) would; a root without v-scope has no other owner
         own(() => (remove(rootBlocks, block), block.teardown()), el);
-        // forgotten on teardown, so morph cannot bind new markup to it
         block.ctx.cleanups.push(() => delete (el as any).__ctx);
       }
       return this;
     },
 
-    /**
-     * Tear down mounted regions: every root, or only those at or inside `el`.
-     * Effects stop, cleanups run and scopes deregister; the rest of the app
-     * keeps running. Without it, replacing a region's markup leaves its
-     * effects writing to detached nodes.
-     */
     unmount(el?: string | Element | null) {
       if (el == null) {
         rootBlocks.forEach((block) => block.teardown());
         rootBlocks = [];
-        // the root $watch's effects sit on the app's own context, which no
-        // root block tears down
         ctx.effects.splice(0).forEach(stopEffect);
-        // A full unmount ends the app, so plugins go with it; unmount(el)
-        // deliberately leaves them, since other regions still need them. The
-        // install record is cleared so a later use() reinstalls rather than
-        // no-opping. Each teardown is isolated so one throw strands nothing.
         pluginDeregisters.splice(0).forEach((fn) => fn());
         pluginTeardowns.splice(0).forEach((fn) => {
           try {
@@ -350,8 +291,6 @@ export const createApp = (initialData?: any) => {
           }
         });
         installedPlugins.clear();
-        // after plugin teardowns, so a teardown that throws is still reported
-        // to this app's handlers; unmount(el) keeps them, like plugins
         ownErrorHandlers.splice(0).forEach((off) => off());
         return;
       }
@@ -366,8 +305,6 @@ export const createApp = (initialData?: any) => {
       const kept: Block[] = [];
       for (const block of rootBlocks) {
         const root = block.template as Element;
-        // `contains` covers a wrapper holding several mounted roots, and
-        // reports true for the element itself
         if (target.contains(root) || target.contains((block as any).host)) {
           block.teardown();
         } else {

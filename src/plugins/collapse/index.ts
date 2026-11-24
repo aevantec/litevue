@@ -16,20 +16,13 @@ export const collapse: Plugin = (app) => {
       const match = /^duration-(\d+)$/.exec(m);
       if (match) duration = +match[1];
     }
-    // Restored on teardown: app.unmount(el) leaves the element in the
-    // document, so a style left behind keeps acting on it — a region
-    // collapsed at unmount would stay at height 0 with nothing to reopen it.
     const owned = ['overflow', 'height', 'transition', 'visibility'] as const;
     const before = owned.map((k) => elem.style[k]);
     // a height of 0 leaves content in the tab order and the accessibility tree
     const hide = (hidden: boolean) =>
       (elem.style.visibility = hidden ? 'hidden' : before[3]);
-    // undefined until the first run, which applies the state without animating
     let shown: boolean | undefined;
     let seq = 0;
-    // pending timers are cancelled on teardown: app.unmount(el) leaves the
-    // element in the document, so a timer firing afterwards would still be
-    // writing styles for a directive that no longer exists
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const later = (fn: () => void, ms?: number) => {
       const t = setTimeout(() => {
@@ -40,25 +33,19 @@ export const collapse: Plugin = (app) => {
     };
     effect(() => {
       const show = !!get();
-      // re-expanding while open would pin the height again for `duration`
       if (show === shown) return;
       const id = ++seq;
       hide(!show);
-      // clipped only while collapsed or animating, so an open panel shows a
-      // dropdown, focus ring or shadow at its edge
       elem.style.overflow = show && shown == null ? before[0] : 'hidden';
       if (shown == null) {
-        // enable the transition only after the initial state is applied;
         // visibility switches at the end of a collapse, at the start of an expand
         later(() => {
           elem.style.transition = `height ${duration}ms ease, visibility ${duration}ms`;
         });
       } else {
-        // an inline height the author wrote is the expanded height
         elem.style.height = before[1] || elem.scrollHeight + 'px';
         if (show) {
           later(() => {
-            // release the measured height so content can resize freely
             if (id === seq) {
               elem.style.height = before[1];
               elem.style.overflow = before[0];
