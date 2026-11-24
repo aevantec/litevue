@@ -1,8 +1,4 @@
 import type { Plugin } from '../../app';
-// imported by package name, not relative path: the plugins bundle keeps the
-// core external, and only a bare specifier resolves to the *same* module the
-// app loaded. `stores` is a singleton, so a second copy means a second
-// registry.
 import { store as getStore, watchEffect } from '@aevantec/litevue';
 
 const PREFIX = 'litevue:';
@@ -13,7 +9,6 @@ export interface PersistStorage {
   setItem(key: string, value: string): void;
 }
 
-/** Custom storages registered by name, usable as a directive modifier. */
 const registry: Record<string, PersistStorage> = Object.create(null);
 
 let defaultStorage: PersistStorage | string = 'local';
@@ -58,19 +53,10 @@ export const setDefaultStorage = (storage: PersistStorage | string) => {
   defaultStorage = storage;
 };
 
-/**
- * Which own properties of `target` can round-trip through storage. Methods are
- * behavior, not state; getter-only properties are derived and would throw on
- * restore. An explicit list is filtered too, so naming a getter is a no-op.
- */
 const persistable = (target: Record<string, any>, keys?: string[]) =>
   (keys ?? Object.keys(target)).filter((k) => {
     if (k[0] === '$') return false;
     const desc = Object.getOwnPropertyDescriptor(target, k);
-    // Derived values can't be assigned back on restore: setter-less getters,
-    // and computed() refs, visible only on the raw descriptor since the proxy
-    // already unwrapped them. Flags are read directly rather than via
-    // isRef/isReadonly, which would pull @vue/reactivity into this bundle.
     if (desc && desc.get && !desc.set) return false;
     const raw = desc && desc.value;
     if (raw && raw.__v_isRef === true && raw.__v_isReadonly === true) {
@@ -79,7 +65,6 @@ const persistable = (target: Record<string, any>, keys?: string[]) =>
     return typeof target[k] !== 'function';
   });
 
-/** Restore saved values, then keep storage in sync with every change. */
 const sync = <T>(
   target: Record<string, any>,
   key: string,
@@ -94,7 +79,6 @@ const sync = <T>(
     const saved = JSON.parse(storage.getItem(key) || 'null');
     if (saved) {
       for (const k of fields) {
-        // own keys only: `in` matches Object.prototype members like valueOf.
         // Not Object.hasOwn, which would raise the documented browser floor
         if ({}.hasOwnProperty.call(saved, k)) target[k] = saved[k];
       }
@@ -105,8 +89,6 @@ const sync = <T>(
     const snapshot: Record<string, any> = {};
     for (const k of fields) snapshot[k] = target[k];
     try {
-      // stringify reads nested values inside the effect, so deep changes
-      // are tracked and re-saved too
       storage.setItem(key, JSON.stringify(snapshot));
     } catch {}
   });
@@ -132,8 +114,6 @@ export const persist: Plugin = (app) => {
       console.error(`v-persist needs a key: v-persist="my-key".`);
     }
 
-    // named storages that all fail save nowhere: falling back to the default
-    // could put a secret in localStorage
     let storage = modifiers ? undefined : resolve();
     for (const name in modifiers) {
       if ((storage = resolve(name))) break;
@@ -151,8 +131,6 @@ export const persist: Plugin = (app) => {
           .map((k) => k.trim())
           .filter(Boolean)
       : undefined;
-    // the HTML parser lowercases attribute names, so v-persist:firstName
-    // arrives as firstname and would otherwise persist nothing, silently
     if (import.meta.env.DEV) {
       for (const k of keys || []) {
         if (!(k in ctx.scope)) {
@@ -207,8 +185,6 @@ export const persistStore = (
     );
   }
 
-  // watchEffect batches through the scheduler, so a burst of mutations in one
-  // tick writes once
   return sync(
     target,
     PREFIX + (options.key ?? name),

@@ -44,7 +44,6 @@ export const createContext = (parent?: Context): Context => {
     cleanups: [],
     effect: (fn) => {
       if (inOnce) {
-        // still once when it runs: v-if and v-for build their content here
         const job = () => withOnce(true, fn);
         queueJob(job);
         return job as any;
@@ -55,9 +54,6 @@ export const createContext = (parent?: Context): Context => {
         rawEffect(fn, { scheduler: () => queueJob(e), lazy: true })
       );
       ctx.effects.push(e);
-      // Also owned by the walked node, so detaching it alone releases the
-      // effect. Both halves matter: stopping without removing would leave a
-      // dead runner in ctx.effects, one per morph cycle.
       own(() => {
         stopEffect(e);
         remove(ctx.effects, e);
@@ -69,11 +65,6 @@ export const createContext = (parent?: Context): Context => {
   return ctx;
 };
 
-/**
- * Framework-provided, so non-enumerable: `Object.assign`-ing one scope onto
- * another must copy the user's data and leave these alone. v-for does exactly
- * that on every update, which reset each row's $id and wiped its $refs.
- */
 export const hide = (scope: any, key: string, value: any) =>
   Object.defineProperty(scope, key, {
     value,
@@ -93,10 +84,9 @@ export const createScopedContext = (
   const reactiveProxy = reactive(
     new Proxy(mergedScope, {
       set(target, key, val, receiver) {
-        // Writes to a property this scope does not own fall through to the
-        // parent rather than shadowing it. `hasOwn`, not
-        // `target.hasOwnProperty`: that lookup walks into the parent reactive
-        // proxy, whose instrumented version (>= 3.2.46) recurses forever.
+        // `hasOwn`, not `target.hasOwnProperty`: that lookup walks into the
+        // parent reactive proxy, whose instrumented version (>= 3.2.46)
+        // recurses forever.
         if (receiver === reactiveProxy && !hasOwn(target, key)) {
           return Reflect.set(parentScope, key, val);
         }
@@ -109,26 +99,16 @@ export const createScopedContext = (
     ...ctx,
     scope: reactiveProxy,
   };
-  // per-scope magics — set on the raw scope, not the proxy, so the set trap
-  // cannot fall them through to the parent
   hide(mergedScope, '$watch', createWatch(scopedCtx));
   hide(mergedScope, '$id', createId());
-  // keys read off the raw scope: through the proxy, Object.keys tracks it, and
-  // a v-for mounting rows inside its effect picked up one dependency per row
-  // a v-for row's values are list items, handed over as the list holds them
   if (!isRow) bindContextMethods(reactiveProxy, mergedScope);
   return scopedCtx;
 };
 
-// Read from the descriptor, not the property: reading runs every getter,
-// outside any error containment, so one throwing getter aborted the mount.
-// A non-writable one (a frozen object's) is left unbound: writing it throws.
 export const bindContextMethods = (scope: Record<string, any>, raw = scope) => {
   for (const key of Object.keys(raw)) {
     const { value: fn, writable } = Object.getOwnPropertyDescriptor(raw, key)!;
     if (typeof fn === 'function' && writable) {
-      // inherits from the original, so members such as `lib.get` or a
-      // class's statics still resolve on the bound copy
       scope[key] = Object.setPrototypeOf(fn.bind(scope), fn);
     }
   }

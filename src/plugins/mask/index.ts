@@ -13,10 +13,8 @@ const format = (value: string, mask: string, end?: boolean) => {
   for (let mi = 0; mi < mask.length; mi++) {
     const re = tokens[mask[mi]];
     if (re) {
-      // consume the next matching char, skipping non-matching input
       while (vi < value.length && !re.test(value[vi])) vi++;
       if (vi >= value.length) return out;
-      // flush pending literals only when a real char follows them
       out += literals + value[vi++];
       literals = '';
     } else {
@@ -24,7 +22,6 @@ const format = (value: string, mask: string, end?: boolean) => {
       if (value[vi] === mask[mi]) vi++;
     }
   }
-  // every slot is filled: add the literals that close the mask
   return end ? out + literals : out;
 };
 
@@ -40,16 +37,9 @@ export const mask: Plugin = (app) => {
     const apply = (e?: Event) => {
       const { value, selectionStart: at } = input;
       const type = (e as InputEvent)?.inputType;
-      // not after a deletion, or Backspace over a trailing literal would
-      // only put it back
       const masked = format(value, exp, !type?.startsWith('del'));
       if (masked === value) return false;
       input.value = masked;
-      // rewriting value moves the caret to the end; put it back after the
-      // characters that were before it, and past the literals before the next
-      // slot, which formatting that prefix leaves off; except after a
-      // backward deletion mid-value, where that would put the caret back
-      // after the literal just deleted
       if (at != null && document.activeElement === input) {
         let to = format(value.slice(0, at), exp).length;
         if (!to || !type?.endsWith('Backward'))
@@ -58,14 +48,8 @@ export const mask: Plugin = (app) => {
       }
       return true;
     };
-    // registered before v-model's deferred listener, so the model always
-    // sees the masked value
     el.addEventListener('input', apply);
-    // a value already set (:value bound first, or from the server) is
-    // formatted now, so remember it still needs the events below
     const dirty = apply();
-    // v-model writes its initial value after this runs; format that too, and
-    // tell the model, which listens for change instead when .lazy
     let live = true;
     Promise.resolve().then(() => {
       if (live && (apply() || dirty)) {

@@ -1,8 +1,3 @@
-/**
- * One route for every runtime error. The diagnostic prose is DEV-only; the
- * routing and `onError` handlers ship, since that is where monitoring hooks in.
- */
-
 export type ErrorPhase =
   /** evaluating a directive's expression, or a text interpolation */
   | 'expression'
@@ -31,7 +26,6 @@ export interface ErrorInfo {
 
 export type ErrorHandler = (err: unknown, info: ErrorInfo) => void;
 
-/** Levenshtein, bounded — only used to rank candidate names in DEV. */
 const distance = (a: string, b: string): number => {
   const m = a.length;
   const n = b.length;
@@ -52,7 +46,6 @@ const distance = (a: string, b: string): number => {
   return prev[n];
 };
 
-/** Every name in scope, up the prototype chain that nested `v-scope`s inherit. */
 const scopeNames = (scope: Record<string, any>): string[] => {
   const names = new Set<string>();
   let cur: any = scope;
@@ -65,7 +58,6 @@ const scopeNames = (scope: Record<string, any>): string[] => {
   return [...names];
 };
 
-/** `count is not defined` → the closest name actually in scope. */
 const suggestName = (err: unknown, scope?: Record<string, any>) => {
   if (!scope || !(err instanceof ReferenceError)) return;
   const missing = /^(\w+) is not defined$/.exec(err.message)?.[1];
@@ -81,14 +73,12 @@ const suggestName = (err: unknown, scope?: Record<string, any>) => {
       best = name;
     }
   }
-  // only offer a name that is genuinely close, or the noise outweighs the help
   const limit = Math.max(1, Math.floor(missing.length / 3));
   return best && bestScore <= limit
     ? { missing, suggestion: best }
     : { missing };
 };
 
-/** A short, recognisable rendering of the element — not its whole subtree. */
 export const describeEl = (el?: Node): string | undefined => {
   if (!el) return;
   if (!(el instanceof Element)) {
@@ -104,7 +94,6 @@ export const describeEl = (el?: Node): string | undefined => {
 
 const handlers: ErrorHandler[] = [];
 
-/** Registered by `app.onError()`. Shared across apps, like the store registry. */
 export const addErrorHandler = (fn: ErrorHandler) => {
   handlers.push(fn);
   return () => {
@@ -113,7 +102,6 @@ export const addErrorHandler = (fn: ErrorHandler) => {
   };
 };
 
-/** Test seam — drops every registered handler. */
 export const clearErrorHandlers = () =>
   void handlers.splice(0, handlers.length);
 
@@ -127,15 +115,10 @@ const PHASES: Record<ErrorPhase, string> = {
 };
 
 export const handleError = (err: unknown, info: ErrorInfo) => {
-  // Handlers run first and in production too — this is where an app routes
-  // errors to monitoring. One throwing must not hide the original error. A
-  // copy, so a handler that unregisters itself cannot skip the next one.
   for (const fn of [...handlers]) {
     try {
       fn(err, info);
     } catch (inner) {
-      // Production too, with the original: once a handler is registered
-      // nothing else logs it, and one that threw may never have reported it.
       console.error(
         import.meta.env.DEV
           ? '[litevue] an onError handler itself threw:'
@@ -146,7 +129,6 @@ export const handleError = (err: unknown, info: ErrorInfo) => {
   }
 
   if (!import.meta.env.DEV) {
-    // Never swallow: without a handler the error still has to reach someone.
     if (!handlers.length) console.error(err);
     return;
   }

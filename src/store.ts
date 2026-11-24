@@ -2,31 +2,12 @@ import { reactive } from '@vue/reactivity';
 import { registerStore } from './devtools';
 import { warnOnce } from './warn';
 
-/**
- * DEV: catch `$store.typo`, which otherwise reads as `undefined` and renders a
- * blank instead of raising.
- *
- * The trap sits *under* `reactive`, not over it: `reactive` probes its target
- * for `__v_raw`, and a wrapper that forwards that probe is bypassed entirely.
- * `__v_`-prefixed keys are ignored for the same reason — they are not reads a
- * user wrote.
- *
- * Deferred to the end of the task, because reading a store before it is
- * registered is legitimate — the registry is reactive so the expression
- * re-runs. A microtask would warn on a store registered after an `await`. One
- * registered later still warns; a check cannot wait forever.
- */
 const registry: Record<string, any> = Object.create(null);
 
-// Built inside the guard, not chosen by a ternary: `new Proxy(...)` is a
-// constructor call terser will not drop from an expression, so a ternary would
-// ship the trap. Under `if (false)` the whole block is dead code.
 let target = registry;
 if (import.meta.env.DEV) {
   target = new Proxy(registry, {
     get(obj, key: string | symbol, receiver) {
-      // toJSON: serializing a scope reads it, and it is never a store; nor is
-      // toString, which rendering {{ $store }} reads
       if (
         typeof key === 'string' &&
         !key.startsWith('__') &&
@@ -49,8 +30,6 @@ if (import.meta.env.DEV) {
   });
 }
 
-// reactive, so expressions reading $store.<name> re-evaluate when a store is
-// registered later
 export const stores: Record<string, any> = reactive(target);
 
 /**

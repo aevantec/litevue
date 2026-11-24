@@ -24,9 +24,7 @@ export interface NavigateOptions {
 }
 
 const STATUS_ID = 'litevue-navigate-status';
-// long enough to skip links the pointer only crosses
 const HOVER_DELAY = 100;
-// as Turbo: a prefetched page older than this is fetched again
 const PREFETCH_TTL = 10_000;
 // scrolling must pause this long before its position is saved: Safari throws
 // past 100 history writes in 10 seconds
@@ -50,7 +48,6 @@ const encode = (data: FormData) =>
   new URLSearchParams(
     [...data].map(([k, v]) => [k, (v as File).name ?? v] as [string, string])
   );
-// remembered on the current entry, so back and forward can restore it
 const saveScroll = () =>
   history.replaceState({ ...history.state, y: scrollY }, '');
 const emit = (name: string, detail: object, cancelable = false) =>
@@ -58,8 +55,6 @@ const emit = (name: string, detail: object, cancelable = false) =>
     new CustomEvent('navigate:' + name, { detail, cancelable })
   );
 
-// opt-in, as per-page entry scripts would otherwise force a full load on
-// every navigation; a tracked asset that changed means a new deploy
 const assets = (doc: Document) =>
   [...doc.head.querySelectorAll('[data-navigate-track]')]
     .map((el) => el.getAttribute('src') || el.getAttribute('href'))
@@ -67,17 +62,13 @@ const assets = (doc: Document) =>
     .join();
 
 /**
- * Adds the next page's head elements and returns a function dropping the
- * current page's, run after the swap so the old styles hold until then.
  * Scripts are left out both ways: fetched ones never run, and removing a
- * script does not unload it. New stylesheets load before the swap.
+ * script does not unload it.
  */
 const mergeHead = async (doc: Document) => {
   const sel = 'link,style,meta';
   const live = [...document.head.querySelectorAll(sel)];
   const loads: Promise<unknown>[] = [];
-  // each new element goes after the one before it in the next page, so a
-  // sheet placed before a shared one keeps its place in the cascade
   let at: Element | undefined;
   for (const el of doc.head.querySelectorAll(sel)) {
     const i = live.findIndex((l) => l.isEqualNode(el));
@@ -105,13 +96,10 @@ const mergeHead = async (doc: Document) => {
     at = fresh;
   }
   await Promise.all(loads);
-  // tracked elements never reach here unmatched: a change forces a full load
   return () =>
     live.forEach((el) => el.matches('[data-navigate-preserve]') || el.remove());
 };
 
-// as on a full load: an autofocus field, else the top of the document; a
-// region takes focus itself
 const moveFocus = (from: Element) => {
   const auto = from.querySelector<HTMLElement>('[autofocus]');
   if (auto) {
@@ -129,11 +117,6 @@ const hasCtxAbove = (el: Element | null) => {
   return false;
 };
 
-/**
- * Morph with the app's roots kept in step. Morph releases the roots it
- * removes; at page level there is no scope to bind what it adds, so roots
- * the page adds are mounted here.
- */
 const render = (
   app: App,
   patch: typeof morph,
@@ -162,10 +145,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   let controller: AbortController | void;
   let rendered = pathOf(location);
   const posting = new WeakSet<HTMLFormElement>();
-  // the document, and the form that started it, while a request is in flight;
-  // a newer navigation takes the state over from an older one
   let busy: Element[] = [];
-  // one page fetched ahead of a click, used by a click on the same URL
   let pre:
     | { href: string; at: number; c: AbortController; res: Promise<Response> }
     | undefined;
@@ -198,7 +178,6 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     dropOld: () => void,
     y?: number
   ) => {
-    // history first, so the new page's scopes read its URL as they mount
     if (ok && y == null) {
       history[url.href === location.href ? 'replaceState' : 'pushState'](
         {},
@@ -208,12 +187,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     }
     rendered = pathOf(location);
     document.title = doc.title;
-    // a success shows the server's field values, as a full load would; an
-    // error such as a 422 keeps what was typed
     render(app, app.scope.$morph, from, doc.querySelector(target)!, ok);
     dropOld();
     if (options.scroll !== false) {
-      // back and forward return to where the user was, not to the anchor
       const id = url.hash.slice(1);
       const anchor =
         y == null &&
@@ -221,9 +197,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         (document.getElementById(id) || document.getElementById(decode(id)));
       anchor ? anchor.scrollIntoView() : scrollTo(0, y || 0);
     }
-    // an error rendered in place leaves focus on the field being corrected
     if (ok) moveFocus(from);
-    // as Next.js does: an untitled page still says where the user landed
     status.textContent =
       document.title ||
       document.querySelector('h1')?.textContent?.trim() ||
@@ -239,12 +213,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   ) => {
     // back and forward have already changed the URL, so they cannot be undone
     if (!emit('before', { url: href }, y == null)) return;
-    // Taken before awaiting, so a second click cannot read the same body; a
-    // prefetch not used is aborted.
     const p = !init.method && fresh(href) ? pre : pre?.c.abort();
     pre = undefined;
     controller?.abort();
-    // a used prefetch is this navigation's request, aborted with it
     const c = (controller = p ? p.c : new AbortController());
     setBusy([document.documentElement, form!].filter(Boolean));
     const post = init.method === 'POST';
@@ -268,15 +239,11 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       const url = new URL(res.url || href);
       // response URLs drop the fragment; a redirect keeps the requested one
       url.hash ||= new URL(href).hash;
-      // a failed POST renders in place, like a validation error; a failed
-      // GET, a redirected POST's included, is left to the browser's own
-      // error page
       if (
         !res.headers.get('content-type')?.includes('text/html') ||
         !isLocal(url) ||
         (!res.ok && (!post || res.redirected))
       ) {
-        // the full load fetches it again; stop downloading this copy
         res.body?.cancel();
         throw new Error(`cannot render ${res.status} from ${url.href}`);
       }
@@ -290,11 +257,9 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       if (assets(doc) !== assets(document)) {
         throw new Error(`${url.href} loads different scripts or styles`);
       }
-      // the page's own scripts already ran; fetched ones never do. One with no
-      // type, a JavaScript type or module would run; any other is a data
-      // island. DOMParser parses with scripting off, so a noscript holds live
-      // elements here. The live target drops them too, so the elements after
-      // one still line up; a script that ran stays run
+      // a script with no type, a JavaScript type or module would run; any
+      // other is a data island. DOMParser parses with scripting off, so a
+      // noscript holds live elements here
       [doc, from].forEach((d) =>
         d
           .querySelectorAll('script,noscript')
@@ -306,11 +271,7 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
           )
       );
       const dropOld = await mergeHead(doc);
-      // stylesheets and transitions both defer this; a newer navigation may
-      // have started meanwhile
       const ok = res.ok;
-      // busy clears with the swap, inside a transition too, and even if
-      // rendering throws
       const run = () =>
         c === controller && (setBusy([]), show(from, doc, url, ok, dropOld, y));
       options.transition && document.startViewTransition
@@ -320,14 +281,11 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
       if (c.signal.aborted) return;
       setBusy([]);
       emit('error', { url: href, error });
-      // replaying a POST as a GET would be wrong, so the form stays as it was;
-      // a redirect, though, already leads to a GET
       if (!post) location.assign(href);
       else if (res?.redirected) location.assign(res.url);
     }
   };
 
-  /** The URL a link leads to, when navigate would take it over. */
   const linkTo = (e: Event) => {
     const a = (e.target as Element).closest?.('a[href]');
     // an SVG link's target and href are not strings; the browser keeps it
@@ -341,8 +299,6 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
     return url;
   };
 
-  // another button or a modifier key: the browser opens a tab, a window or a
-  // menu instead
   const special = (e: MouseEvent) =>
     e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
 
@@ -368,7 +324,6 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
         headers: { 'X-Requested-With': 'litevue', 'X-Sec-Purpose': 'prefetch' },
       }),
     };
-    // a click reports the failure; an unused prefetch fails quietly
     pre.res.catch(() => {});
   };
   const onHover = (e: Event) => {
@@ -428,7 +383,6 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   const onPop = (e: PopStateEvent) => {
     // the browser has moved to another entry; a pending save would land there
     clearTimeout(saving);
-    // a hash change within the rendered page is the browser's
     if (pathOf(location) === rendered) return;
     go(location.href, {}, undefined, e.state?.y || 0);
   };
@@ -441,7 +395,6 @@ export const navigate: Plugin<NavigateOptions> = (app, options = {}) => {
   return () => {
     clearTimeout(saving);
     removeEventListener('scroll', onScroll);
-    // cleared too, so a navigation awaiting a stylesheet or transition stops
     controller = controller?.abort();
     pre?.c.abort();
     clearTimeout(timer);

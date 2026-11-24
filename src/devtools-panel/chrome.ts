@@ -1,4 +1,3 @@
-// Panel chrome: icons, the theme and layout options, and the persisted UI state.
 import type { MenuOption } from './menu';
 
 export const icon = (paths: string) =>
@@ -12,7 +11,6 @@ export type ThemeMode = 'dark' | 'light' | 'system';
 const THEME_KEY = 'litevue-devtools-theme';
 const UI_KEY = 'litevue-devtools-ui';
 
-// persisted panel chrome: open state, position (right/bottom offsets) and size
 export type Dock = 'float' | 'left' | 'bottom' | 'right';
 
 export interface UiState {
@@ -21,7 +19,6 @@ export interface UiState {
   bottom?: number;
   w?: number;
   h?: number;
-  /** dock-bottom height and dock-left / dock-right widths, remembered separately */
   bh?: number;
   lw?: number;
   rw?: number;
@@ -76,8 +73,6 @@ export const themeIcons: Record<ThemeMode, string> = {
   ),
 };
 
-/** Dock icons: an outlined viewport with the docked region filled, per browser
- *  devtools convention. Floating shows a detached window. */
 export const dockIcons: Record<Dock, string> = {
   float: icon(
     '<rect x="2" y="4" width="14" height="11" rx="1"/>' +
@@ -110,9 +105,6 @@ export const themeOptions: MenuOption<ThemeMode>[] = [
   { value: 'system', label: 'System', icon: themeIcons.system },
 ];
 
-// Bounds for every mode, mirroring min-width / min-height in the stylesheet.
-// CSS clamps what is rendered, this clamps what is stored; if they drift, a
-// stored value the layout will not honour comes back wrong on the next load.
 export const MIN_W = 320;
 export const MIN_H = 320;
 export const maxW = () => window.innerWidth - 24;

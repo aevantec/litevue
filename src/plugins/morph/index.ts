@@ -1,15 +1,6 @@
 import type { Context } from '../../context';
 import type { Plugin } from '../../app';
 
-/**
- * Update a live region in place from new HTML, instead of replacing it.
- *
- * Replacing markup destroys every element in the region — and with it every
- * scope, its state, and the browser state riding on those nodes: focus, caret,
- * selection, scroll, media playback, `<details open>`. Morphing patches only
- * the differences, so unchanged elements are never touched.
- */
-
 export interface MorphOptions {
   /**
    * Identity used to match children across the update. Defaults to `id`,
@@ -50,33 +41,18 @@ export interface MorphOptions {
   values?: boolean;
 }
 
-/**
- * A `data-` attribute rather than `v-preserve`: an unrecognised `v-` attribute
- * logs an unknown-directive error, and registering one would have the walker
- * strip it, leaving nothing for the next morph. Matches `data-morph-skip`.
- */
 const preserved = (node: Node, opts: MorphOptions) =>
   node.nodeType === 1 &&
   ((node as Element).hasAttribute('data-morph-preserve') ||
-    // a v-teleport element goes only with its marker, never with its target
     (node as any).__marker ||
     !!opts.preserve?.(node as Element));
 
-// a lazy region still waiting to mount; a literal, since importing lazy.ts's
-// selector costs the bundle more
 const LAZY = '[v-scope\\.visible],[v-scope\\.idle],[v-scope\\.interaction]';
 
 const dirRE = /^(?:v-|:|@)/;
 const bindRE = /^(?::|v-bind:)/;
-// v-scope roots often carry server-set custom properties; v-on writes nothing
 const clientStyleRE = /^v-(?!scope|on:)/;
 
-/**
- * Attributes tried in order when no `key` option is given. All three express
- * identity, so none repeat among siblings the way `name` does on a radio group
- * — hence its absence. The attribute name is part of the key, so `id="5"` and
- * `data-id="5"` stay distinct.
- */
 const KEY_ATTRS = ['id', 'data-key', 'data-id'];
 
 const defaultKey = (el: Element) => {
@@ -87,39 +63,23 @@ const defaultKey = (el: Element) => {
   return null;
 };
 
-/**
- * The nearest stashed context, walking up from a live node. `v-scope` elements
- * record theirs during walk, so inserted markup binds with the scope it landed
- * in rather than the root.
- */
 const nearestCtx = (node: Node | null): Context | undefined => {
   for (let el = node as any; el; el = el.parentElement) {
     if (el.__ctx) return el.__ctx as Context;
   }
 };
 
-/**
- * Disposal is per node, so any context can release any subtree. Outside every
- * scope there is no parent context to ask, but a root inside the subtree has
- * one; without this, its effects and listeners outlive it.
- */
 const ctxIn = (n: any): Context | undefined =>
   n.__ctx || [...(n.children || [])].map(ctxIn).find(Boolean);
 const release = (node: Node, ctx: Context | undefined) =>
   (ctx || ctxIn(node))?.dispose?.(node);
 
-/**
- * Attributes the client owns, read from the *incoming* markup — it still
- * carries the directives the live DOM had stripped. `:class` there means the
- * live `class` is bound and must survive the server's static value.
- */
 const boundAttrs = (to: Element) => {
   const owned = new Set<string>();
   // the user opens and closes these; showModal() sets open on a dialog too
   if (to.matches('details,dialog')) owned.add('open');
   for (const { name } of to.attributes) {
     if (bindRE.test(name)) {
-      // strip modifiers; with .camel, v-bind set the camel-cased name
       const attr = name.replace(bindRE, '').split('.')[0];
       owned.add(
         /\.camel\b/.test(name)
@@ -130,30 +90,21 @@ const boundAttrs = (to: Element) => {
       owned.add('value');
       owned.add('checked');
     } else if (name === 'v-bind') {
-      // object keys are only known at runtime, so keep every live attribute
       owned.add('*');
     } else if (clientStyleRE.test(name)) {
-      // v-show, v-collapse, v-transition and custom directives write inline style
       owned.add('style');
-      // and v-popover adds the attribute when the markup has none
       name == 'v-popover' && owned.add('popover');
     }
   }
   return owned;
 };
 
-/**
- * `v-for` and `v-if` render into Blocks: the live DOM holds anchors plus the
- * clones the data produced, while the server still sends one template. Matched
- * positionally, the rest would be deleted as "no longer sent".
- */
 const isBlockRoot = (el: Element) =>
   el.hasAttribute('v-for') ||
   el.hasAttribute('v-if') ||
   el.hasAttribute('v-else') ||
   el.hasAttribute('v-else-if');
 
-/** True when the client, not the server, decides this element's contents. */
 const ownsChildren = (to: Element) => {
   if (
     to.hasAttribute('v-text') ||
@@ -164,25 +115,20 @@ const ownsChildren = (to: Element) => {
   ) {
     return true;
   }
-  // a container hosting a block belongs to the client as a whole
   for (let c = to.firstElementChild; c; c = c.nextElementSibling) {
     if (isBlockRoot(c)) return true;
   }
   return false;
 };
 
-// value, checked and selected, on fields that have a markup default
-// (defaultValue and so on); a select has none, its options carry it
 const FIELD_PROPS = ['Value', 'Checked', 'Selected'];
 
 const syncValues = (from: any, to: any, owned: Set<string>) => {
-  // an option's selection belongs to its select when the client binds that
   const ctl = boundAttrs(to.closest('select') || to);
   if (
     owned.has('*') ||
     ctl.has('*') ||
     ctl.has('value') ||
-    // an output's text is patched as children, and {{ }} renders client-side
     from.type == 'output' ||
     (from.type == 'textarea' && to.value.includes('{{'))
   )
@@ -190,9 +136,6 @@ const syncValues = (from: any, to: any, owned: Set<string>) => {
   for (const name of FIELD_PROPS) {
     const prop = name.toLowerCase();
     const init = 'default' + name;
-    // the incoming field's own state, as a full load shows it, so a field that
-    // already matches is left clean; but an option's own selected is its
-    // select's pick, which would deselect one bound with :selected
     const src = name == 'Selected' ? init : prop;
     if (!owned.has(prop) && init in from && from[prop] !== to[src]) {
       from[prop] = to[src];
@@ -202,16 +145,11 @@ const syncValues = (from: any, to: any, owned: Set<string>) => {
 
 const patchAttrs = (from: Element, to: Element, values?: boolean) => {
   const owned = boundAttrs(to);
-  // a v-anchor trigger: its anchor-name comes from the floating element
   if ((from as any).__anchor) owned.add('style');
   if (values) syncValues(from, to, owned);
-  // the keys a v-bind object last set, so the server's other attributes still
-  // update; Object() so a missing or non-object value owns nothing
   const bound = Object((from as any).__bound);
 
   for (const { name, value } of to.attributes) {
-    // directives were stripped from the live element during walk; re-adding
-    // them leaves inert markup, or double-binds on a later walk
     if (dirRE.test(name) || owned.has(name) || name in bound) {
       continue;
     }
@@ -224,10 +162,6 @@ const patchAttrs = (from: Element, to: Element, values?: boolean) => {
   }
 };
 
-/**
- * Incoming text still holding `{{ }}` is rendered by a text directive on the
- * live side, so the live value wins.
- */
 const isInterpolation = (data: string, ctx?: Context) =>
   data.includes(ctx ? ctx.delimiters[0] : '{{');
 
@@ -241,11 +175,8 @@ const patchNode = (
 
   if (from.nodeType === 3 || from.nodeType === 8) {
     const data = (to as Text).data;
-    // the walker never interpolates a script's text, so a data island's is
-    // the server's
     if (isInterpolation(data, ctx) && from.parentNode?.nodeName != 'SCRIPT')
       return;
-    // an empty text is a v-teleport marker; replacing it removes its element
     if (!(from as Text).data) return replaceNode(from, to, ctx, opts);
     if ((from as Text).data !== data) (from as Text).data = data;
     return;
@@ -255,17 +186,12 @@ const patchNode = (
 
   const a = from as Element;
   const b = to as Element;
-  // a different tag can't be patched into place
   if (a.tagName !== b.tagName) return replaceNode(from, to, ctx, opts);
   if (opts.skip?.(a, b) || a.hasAttribute('data-morph-skip')) return;
-  // a lazy region still waiting holds markup nothing has consumed, so its
-  // directives and {{ }} are still the server's to change
   if (a.matches(LAZY))
     return a.isEqualNode(b) ? undefined : replaceNode(from, to, ctx, opts);
 
   patchAttrs(a, b, opts.values);
-  // a template's markup lives in .content, out of patchChildren's reach; it
-  // holds no live bindings, so copying it wholesale loses nothing
   if (
     a.tagName == 'TEMPLATE' &&
     !(a as HTMLTemplateElement).content.isEqualNode(
@@ -273,9 +199,7 @@ const patchNode = (
     )
   )
     a.innerHTML = b.innerHTML;
-  // a $template component's markup came from the client, so the server sends
-  // its root empty; only the live scope knows. Its own key: a nested scope
-  // inherits the component's. Not Object.hasOwn, which raises the browser floor
+  // Not Object.hasOwn, which raises the browser floor
   if (
     !ownsChildren(b) &&
     !Object.getOwnPropertyDescriptor(
@@ -296,22 +220,14 @@ const replaceNode = (
   if (preserved(from, opts)) return;
   const fresh = to.cloneNode(true);
   if (opts.beforeNodeAdded?.(fresh) === false) return;
-  // replaceChild detaches as surely as removeChild, so release first
   release(from, ctx);
   from.parentNode!.replaceChild(fresh, from);
   opts.afterNodeRemoved?.(from);
   mountNew(fresh, ctx);
-  // morph() hands it back in place of the detached `from`
   return fresh;
 };
 
-/**
- * Bind never-walked markup with the scope it was inserted into. The walker
- * comes off the context, not an import, so this plugin doesn't pull a second
- * copy of the core into the plugins bundle.
- */
 const mountNew = (node: Node, ctx: Context | undefined) => {
-  // a lazy region still waiting walks this markup itself when it fires
   if (node.parentElement?.closest(LAZY)) return;
   const target = ctx || nearestCtx(node.parentNode);
   target?.walk?.(node, target);
@@ -325,15 +241,11 @@ const patchChildren = (
 ) => {
   const key = opts.key || defaultKey;
 
-  // index the live children that carry a key, so a reordered or
-  // newly-prepended server list still reuses the matching live nodes
   const keyed = new Map<string, Element>();
   for (let n = from.firstChild; n; n = n.nextSibling) {
     if (n.nodeType === 1) {
       const k = key(n as Element);
       if (k == null) continue;
-      // a repeated key costs the earlier element its node, and its scope
-      // state with it — say so rather than losing it quietly
       if (import.meta.env.DEV && keyed.has(k)) {
         console.warn(
           `[morph] duplicate key ${JSON.stringify(k)} among siblings; ` +
@@ -352,8 +264,6 @@ const patchChildren = (
 
   const drop = (node: ChildNode) => {
     if (!preserved(node, opts)) {
-      // release what the subtree owned first: removeChild alone leaves its
-      // effects live and still reacting
       release(node, ctx);
       from.removeChild(node);
       opts.afterNodeRemoved?.(node);
@@ -378,12 +288,10 @@ const patchChildren = (
       (oldChild as Text)?.data === '' &&
       (newChild as Element).hasAttribute?.('v-teleport')
     ) {
-      // the marker stands in for the element, which lives in its target
       oldChild = oldChild!.nextSibling;
     } else if (wantKey != null) {
       const match = keyed.get(wantKey);
       if (match) {
-        // reuse the live node, moving it if the server reordered it
         if (match === oldChild) {
           oldChild = oldChild.nextSibling;
         } else {
@@ -392,39 +300,27 @@ const patchChildren = (
         keyed.delete(wantKey);
         patchNode(match, newChild, ctx, opts);
       } else {
-        // a key with no live counterpart is genuinely new; patching it over
-        // this position would hand one row's identity, and scope, to another
         insert(newChild);
       }
     } else if (oldChild && keyOf(oldChild) == null) {
-      // A preserved node the server did not send stays where it is, and the
-      // server's node goes to the next position rather than into it.
       if (preserved(oldChild, opts) && !preserved(newChild, opts)) {
         oldChild = oldChild.nextSibling;
         continue;
       }
-      // unkeyed on both sides: match by position
       const nextOld = oldChild.nextSibling;
       patchNode(oldChild, newChild, ctx, opts);
       oldChild = nextOld;
     } else if (oldChild && !wanted.has(keyOf(oldChild))) {
-      // a keyed live node the server no longer sends would hold the cursor
-      // and cost every unkeyed node after it its own; drop it and retry
       const nextOld = oldChild.nextSibling;
       drop(oldChild);
       oldChild = nextOld;
       continue;
     } else {
-      // never consume a keyed live node for an unkeyed slot: it belongs to a
-      // later position and would lose its scope here
       insert(newChild);
     }
     newChild = nextNew;
   }
 
-  // Whatever the server no longer sends. Every reused node was moved ahead of
-  // this cursor, so the remainder is genuinely unmatched — sweeping the key
-  // map instead would delete nodes that were matched positionally.
   while (oldChild) {
     const next = oldChild.nextSibling;
     drop(oldChild);
@@ -443,8 +339,6 @@ export const morph = (
 ): Element => {
   let target: Element | null;
   if (typeof to === 'string') {
-    // parsed in a <template> so table rows, <li> and <option> survive; a
-    // lone element is the outer target, but not one beside text
     const holder = document.createElement('template');
     // inside an <svg>, so SVG children are parsed in the SVG namespace
     const svg = from instanceof SVGElement;
@@ -466,8 +360,6 @@ export const morph = (
   if (target) {
     const patch = () => {
       const restore = captureFocus();
-      // from the parent: a root whose tag changes is released before its
-      // replacement is walked, so its own context is dead by then
       from = (patchNode(from, target!, nearestCtx(from.parentNode), opts) ||
         from) as Element;
       restore();
@@ -491,7 +383,6 @@ const captureFocus = () => {
   let start: number | null = null;
   let end: number | null = null;
   try {
-    // throws on input types that don't expose a selection (email, number, …)
     start = field.selectionStart;
     end = field.selectionEnd;
   } catch {}

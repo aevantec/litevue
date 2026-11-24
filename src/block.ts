@@ -4,15 +4,12 @@ import { remove } from '@vue/shared';
 import { stopEffect } from './scheduler';
 import { disposeSubtree, own } from './ownership';
 
-// Effects only: a block waiting on a leave stays in the document, but must not
-// re-render data that is gone. Its listeners and cleanups wait for the leave.
 const stopEffects = (block: Block): void => {
   block.ctx.blocks.forEach(stopEffects);
   block.ctx.effects.splice(0).forEach(stopEffect);
 };
 
 export class Block {
-  // `declare`: assigned in the constructor or later, so no field initializers
   declare template: Element | DocumentFragment;
   declare ctx: Context;
   declare key?: any;
@@ -23,7 +20,6 @@ export class Block {
   declare end?: Text;
   declare owned?: boolean;
 
-  // a teleported root's marker: where the block sits among its siblings
   get el() {
     return (
       this.start ||
@@ -38,8 +34,6 @@ export class Block {
     if (isRoot) {
       this.template = template;
     } else if (template.hasAttribute('v-for')) {
-      // v-if beside v-for: the list replaces its element with an anchor,
-      // which needs a parent, so the clone goes in a fragment
       this.isFragment = true;
       (this.template = new DocumentFragment()).append(template.cloneNode(true));
     } else if (this.isFragment) {
@@ -51,12 +45,8 @@ export class Block {
     }
 
     if (isRoot) {
-      // A root gets its own context, not the app's: sharing put every root's
-      // effects in one pair of arrays, leaving no boundary to tear down.
-      // createContext keeps scope and dirs, forks effects/blocks/cleanups.
       this.ctx = createContext(parentCtx);
     } else {
-      // create child context
       this.parentCtx = parentCtx;
       parentCtx.blocks.push(this);
       this.ctx = createContext(parentCtx);
@@ -68,7 +58,6 @@ export class Block {
   insert(parent: Element, anchor: Node | null = null) {
     if (this.isFragment) {
       if (this.start) {
-        // already inserted, moving
         let node: Node | null = this.start;
         let next: Node | null;
         while (node) {
@@ -85,18 +74,9 @@ export class Block {
         parent.insertBefore(this.template, this.end);
       }
     } else {
-      // a teleported root already lives under its target; its marker moves
       parent.insertBefore(this.el, anchor);
     }
 
-    // Registered once, and only after insertion. A block detached wholesale
-    // (morph removes subtrees directly) must leave its parent's block list and
-    // tear down, or its context, scope proxy and effects outlive the document.
-    //
-    // After, because a fragment's `el` is the start marker this insert
-    // creates. Earlier, the disposer would sit on the DocumentFragment —
-    // emptied by insertBefore, never in the document, unreachable by any
-    // subtree walk. Later inserts are moves; the marker moves too.
     if (!this.owned) {
       this.owned = true;
       own(() => this.discard(), this.el);
@@ -106,13 +86,9 @@ export class Block {
   remove() {
     if (this.parentCtx) {
       remove(this.parentCtx.blocks, this);
-      // discard() runs next, from the node disposer; spare it a second scan
       this.parentCtx = undefined;
     }
     const removeNow = () => {
-      // The nodes can already be gone: a leave hook defers this call, and
-      // the region may be torn out meanwhile, which used to dereference a
-      // null parentNode and reject into nothing. Tear down either way.
       const parent = this.start
         ? this.start.parentNode
         : this.template.parentNode;
@@ -129,22 +105,16 @@ export class Block {
           }
         } else {
           parent.removeChild(this.template);
-          // what handlers created after the walk is owned by nodes, not by
-          // this block's context, so teardown alone would leave it running
           disposeSubtree(this.template);
         }
       }
       (this.template as any).__marker?.remove();
       this.teardown();
     };
-    // Leave hooks (transition plugin, unmount mode) defer removal until every
-    // animation finishes. A fragment's <template> never enters the DOM, so
-    // its hooks sit on its top-level nodes instead.
     stopEffects(this);
     const leaves: Promise<void>[] = [];
     let node: Node | null = this.start || this.template;
     while (node) {
-      // still in place while it leaves; v-for steps over it
       (node as any).__leaving = 1;
       const leave = (node as any).__leave as (() => Promise<void>) | undefined;
       if (leave) leaves.push(leave());
@@ -158,10 +128,6 @@ export class Block {
     }
   }
 
-  /**
-   * The bookkeeping half of `remove()`, for a block whose nodes are already
-   * gone — `remove()`'s `removeChild` calls would throw on them.
-   */
   discard() {
     if (this.parentCtx) {
       remove(this.parentCtx.blocks, this);
@@ -170,9 +136,6 @@ export class Block {
   }
 
   teardown() {
-    // Drained, not iterated: a cleanup can splice these same arrays and
-    // forEach would skip entries. Draining also makes a second teardown a
-    // no-op, which the per-node disposers rely on.
     this.ctx.blocks.splice(0).forEach((child) => {
       child.teardown();
     });

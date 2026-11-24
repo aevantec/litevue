@@ -20,7 +20,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const anchor = new Comment('v-if');
   el.before(anchor);
 
-  // an empty or blank v-if is false, rather than a compile error
   const branches: Branch[] = [
     {
       exp: exp.trim() || '0',
@@ -28,7 +27,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
     },
   ];
 
-  // locate else branch
   let elseEl: Element | null;
   let elseExp: string | null;
   while ((elseEl = el.nextElementSibling)) {
@@ -41,7 +39,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
         console.warn(`v-else-if expression cannot be empty.`);
       }
       elseEl.remove();
-      // an empty v-else-if is false, as an empty v-if is, not a v-else
       branches.push({
         exp: elseExp == null ? elseExp : elseExp.trim() || '0',
         el: elseEl,
@@ -54,8 +51,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const nextNode = el.nextSibling;
   el.remove();
 
-  // as in v-for, `el` is a template outside the document and can own nothing
-  // a subtree disposal could reach
   setOwner(anchor);
 
   let block: Block | undefined;
@@ -64,18 +59,12 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
   const removeActiveBlock = () => {
     if (block) {
       if (!anchor.parentNode) block.el.before(anchor);
-      // removal disposes the block's nodes, which must not stop this effect
       disown(stopBranches, block.el);
       block.remove();
       block = undefined;
     }
   };
 
-  // Unlike v-for, this anchor is only in the document while no branch is
-  // rendered. So the effect is owned twice — by the anchor and by each block
-  // root — and whichever lands in a disposed subtree stops it. Stopping twice
-  // is a no-op. Removed as well as stopped, as ctx.effect's own disposer does,
-  // or each morph that drops a shown branch leaves a dead runner in ctx.effects.
   let branchEffect: ReactiveEffectRunner;
   const stopBranches = () => {
     stopEffect(branchEffect);
@@ -87,9 +76,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
       if (!exp || evaluate(ctx.scope, exp, el, { source: 'v-if', el })) {
         if (i !== activeBranchIndex) {
           removeActiveBlock();
-          // read per insert, not captured: inside a <template> block the
-          // parent starts as its DocumentFragment, which empties into the
-          // real element once that block is inserted
           const parent = anchor.parentNode as Element;
           block = new Block(el, ctx);
           block.insert(parent, anchor);
@@ -100,7 +86,6 @@ export const _if = (el: Element, exp: string, ctx: Context) => {
         return;
       }
     }
-    // no matched branch.
     activeBranchIndex = -1;
     removeActiveBlock();
   });
